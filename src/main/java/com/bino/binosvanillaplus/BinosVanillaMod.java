@@ -1,5 +1,6 @@
 package com.bino.binosvanillaplus;
 
+import com.bino.binosvanillaplus.block.ModBlocks;
 import com.bino.binosvanillaplus.item.ModItems;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.api.distmarker.Dist;
@@ -38,6 +39,7 @@ public class BinosVanillaMod {
         NeoForge.EVENT_BUS.register(this);
 
         ModItems.register(modEventBus);
+        ModBlocks.register(modEventBus);
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
@@ -53,6 +55,10 @@ public class BinosVanillaMod {
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if(event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept(ModItems.RUBI);
+        }
+
+        if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(ModBlocks.RUBI_ORE);
         }
     }
 
