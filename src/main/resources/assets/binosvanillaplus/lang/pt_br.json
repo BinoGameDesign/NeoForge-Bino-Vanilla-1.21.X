@@ -1,5 +1,10 @@
 {
   "item.binosvanillaplus.rubi": "Rubi",
 
-  "block.binosvanillaplus.rubi_ore": "Minério de Rubi"
+  "block.binosvanillaplus.rubi_ore": "Minério de Rubi",
+  "block.binosvanillaplus.rubi_deepslate_ore": "Minério de Rubi Profundo",
+  "block.binosvanillaplus.rubi_block": "Bloco de Rubi",
+
+  "creativetab.binosvanillaplus.mining.items": "Mining Items",
+  "creativetab.binosvanillaplus.mining.blocks": "Mining Blocks"
 }

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "cookingtime": 200,
+  "experience": 0.25,
+  "group": "rubi",
+  "ingredient": {
+    "item": "binosvanillaplus:rubi_ore"
+  },
+  "result": {
+    "count": 1,
+    "id": "binosvanillaplus:rubi"
+  }
+}

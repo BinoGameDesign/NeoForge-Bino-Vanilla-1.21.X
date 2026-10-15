@@ -1,6 +1,7 @@
 package com.bino.binosvanillaplus;
 
 import com.bino.binosvanillaplus.block.ModBlocks;
+import com.bino.binosvanillaplus.item.ModCreativeModeTabs;
 import com.bino.binosvanillaplus.item.ModItems;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.api.distmarker.Dist;
@@ -38,6 +39,8 @@ public class BinosVanillaMod {
         // Do not add this line if there are no @SubscribeEvent-annotated functions in this class, like onServerStarting() below.
         NeoForge.EVENT_BUS.register(this);
 
+        ModCreativeModeTabs.register(modEventBus);
+
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
 
@@ -59,6 +62,14 @@ public class BinosVanillaMod {
 
         if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(ModBlocks.RUBI_ORE);
+        }
+
+        if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(ModBlocks.RUBI_DEEPSLATE_ORE);
+        }
+
+        if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(ModBlocks.RUBI_BLOCK);
         }
     }
 
