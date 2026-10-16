@@ -91,6 +91,17 @@ public class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy("has_rubi", has(ModItems.RUBI.get()))
                 .save(recipeOutput);
 
+        // ----- BASTÃO DE CYALUME -----
+// 'G' = tinta de lula brilhante, 'S' = graveto. Diagonal: canto superior direito, centro, canto inferior esquerdo
+        ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, ModItems.CYALUME_STICK.get())
+                .pattern("  G")
+                .pattern(" S ")
+                .pattern("G  ")
+                .define('G', Items.GLOW_INK_SAC)
+                .define('S', Items.STICK)
+                .unlockedBy("has_glow_ink_sac", has(Items.GLOW_INK_SAC))   // a receita aparece no livro ao pegar a tinta
+                .save(recipeOutput);
+
         // 1 bloco de rubi vira 9 rubis (sem formato: "shapeless" = ingredientes em qualquer lugar).
         // O nome explícito evita conflito com a receita da fornalha, que também gera o rubi.
         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.RUBI.get(), 9)

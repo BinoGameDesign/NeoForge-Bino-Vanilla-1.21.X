@@ -21,7 +21,6 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creativetab.binosvanillaplus.mining_items"))
                     .displayItems((itemDisplayParameters, output) -> {
                         output.accept(ModItems.RUBI);
-                        output.accept(ModItems.CYALUME_STICK);
                         output.accept(ModItems.RUBI_SWORD);
                         output.accept(ModItems.RUBI_PICKAXE);
                         output.accept(ModItems.RUBI_SHOVEL);
@@ -37,6 +36,14 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.RUBI_ORE);
                         output.accept(ModBlocks.RUBI_DEEPSLATE_ORE);
                         output.accept(ModBlocks.RUBI_BLOCK);
+                    }).build());
+
+    public static final Supplier<CreativeModeTab> CAVE_EXPLORATION_TAB = CREATIVE_MODE_TAB.register("cave_exploration_tab",
+            () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.CYALUME_STICK.get()))
+                    .withTabsBefore(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "mining_blocks_tab"))
+                    .title(Component.translatable("creativetab.binosvanillaplus.cave_exploration"))
+                    .displayItems((itemDisplayParameters, output) -> {
+                        output.accept(ModItems.CYALUME_STICK);
                     }).build());
 
     public static void register(IEventBus eventBus) {

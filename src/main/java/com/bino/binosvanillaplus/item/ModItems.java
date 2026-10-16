@@ -34,7 +34,7 @@ public class ModItems {
 
     // fireResistant() = o item não queima se cair na lava (tire se quiser que queime)
     public static final DeferredItem<CyalumeStickItem> CYALUME_STICK = ITEMS.register("cyalume_stick",
-            () -> new CyalumeStickItem(new Item.Properties().stacksTo(16).fireResistant()));
+            () -> new CyalumeStickItem(new Item.Properties().fireResistant()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
