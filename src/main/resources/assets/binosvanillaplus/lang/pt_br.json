@@ -1,10 +1,15 @@
 {
   "item.binosvanillaplus.rubi": "Rubi",
+  "item.binosvanillaplus.rubi_sword": "Espada de Rubi",
+  "item.binosvanillaplus.rubi_pickaxe": "Picareta de Rubi",
+  "item.binosvanillaplus.rubi_shovel": "Pá de Rubi",
+  "item.binosvanillaplus.rubi_axe": "Machado de Rubi",
+  "item.binosvanillaplus.rubi_hoe": "Enxada de Rubi",
 
   "block.binosvanillaplus.rubi_ore": "Minério de Rubi",
-  "block.binosvanillaplus.rubi_deepslate_ore": "Minério de Rubi Profundo",
+  "block.binosvanillaplus.rubi_deepslate_ore": "Minério de Rubi de Ardósia",
   "block.binosvanillaplus.rubi_block": "Bloco de Rubi",
 
-  "creativetab.binosvanillaplus.mining.items": "Mining Items",
-  "creativetab.binosvanillaplus.mining.blocks": "Mining Blocks"
+  "creativetab.binosvanillaplus.mining_items": "Itens de Mineração",
+  "creativetab.binosvanillaplus.mining_blocks": "Blocos de Mineração"
 }
