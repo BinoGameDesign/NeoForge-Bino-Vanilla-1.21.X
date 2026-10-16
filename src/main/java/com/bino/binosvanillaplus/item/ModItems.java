@@ -1,10 +1,7 @@
 package com.bino.binosvanillaplus.item;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
-import com.bino.binosvanillaplus.item.custom.RubiAxeItem;
-import com.bino.binosvanillaplus.item.custom.RubiHoeItem;
-import com.bino.binosvanillaplus.item.custom.RubiPickaxeItem;
-import com.bino.binosvanillaplus.item.custom.RubiShovelItem;
+import com.bino.binosvanillaplus.item.custom.*;
 import net.minecraft.world.item.*;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -35,7 +32,9 @@ public class ModItems {
             () -> new RubiHoeItem(ModToolTiers.RUBI, new Item.Properties()       // antes: new HoeItem
                     .attributes(HoeItem.createAttributes(ModToolTiers.RUBI, -3, 0f))));
 
-
+    // fireResistant() = o item não queima se cair na lava (tire se quiser que queime)
+    public static final DeferredItem<CyalumeStickItem> CYALUME_STICK = ITEMS.register("cyalume_stick",
+            () -> new CyalumeStickItem(new Item.Properties().stacksTo(16).fireResistant()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

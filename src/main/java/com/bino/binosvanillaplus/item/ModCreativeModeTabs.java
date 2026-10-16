@@ -21,7 +21,7 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creativetab.binosvanillaplus.mining_items"))
                     .displayItems((itemDisplayParameters, output) -> {
                         output.accept(ModItems.RUBI);
-
+                        output.accept(ModItems.CYALUME_STICK);
                         output.accept(ModItems.RUBI_SWORD);
                         output.accept(ModItems.RUBI_PICKAXE);
                         output.accept(ModItems.RUBI_SHOVEL);
