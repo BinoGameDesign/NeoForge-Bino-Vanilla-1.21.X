@@ -29,12 +29,11 @@ public class ModPlacedFeatures {
         register(context, RUBI_ORE_PLACED_KEY,
                 configuredFeatures.getOrThrow(ModConfiguredFeatures.RUBI_ORE_KEY),
                 List.of(
-                        CountPlacement.of(7),          // 7 tentativas de veio por chunk (igual ao diamante)
-                        InSquarePlacement.spread(),    // espalha as tentativas em posições X/Z aleatórias
-                        // Altura: de Y=-144 a Y=16, mais comum no meio da faixa (o "triângulo").
-                        // aboveBottom(-80) significa "80 blocos abaixo do fundo do mundo (Y=-64)", ou seja, Y=-144
-                        HeightRangePlacement.triangle(VerticalAnchor.aboveBottom(-80), VerticalAnchor.aboveBottom(80)),
-                        BiomeFilter.biome()            // só gera nos biomas liberados pelo BiomeModifier
+                        CountPlacement.of(100),     // TESTE: 100 tentativas por chunk
+                        InSquarePlacement.spread(),
+                        // TESTE: altura uniforme de Y=-60 a Y=60
+                        HeightRangePlacement.uniform(VerticalAnchor.absolute(-60), VerticalAnchor.absolute(60)),
+                        BiomeFilter.biome()
                 ));
     }
 

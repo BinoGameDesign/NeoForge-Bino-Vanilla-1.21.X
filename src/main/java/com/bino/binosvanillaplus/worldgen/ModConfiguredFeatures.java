@@ -32,8 +32,8 @@ public class ModConfiguredFeatures {
                 OreConfiguration.target(stoneReplaceable, ModBlocks.RUBI_ORE.get().defaultBlockState()),
                 OreConfiguration.target(deepslateReplaceable, ModBlocks.RUBI_DEEPSLATE_ORE.get().defaultBlockState()));
 
-        // 4 = tamanho máximo do veio | 0.5f = chance de descartar blocos que tocam o ar (como o diamante)
-        register(context, RUBI_ORE_KEY, Feature.ORE, new OreConfiguration(rubiOres, 4, 0.5f));
+        // TESTE: veio de tamanho 30, sem descartar blocos expostos ao ar
+        register(context, RUBI_ORE_KEY, Feature.ORE, new OreConfiguration(rubiOres, 30, 0.0f));
     }
 
     // Cria a chave com o nome do seu mod
