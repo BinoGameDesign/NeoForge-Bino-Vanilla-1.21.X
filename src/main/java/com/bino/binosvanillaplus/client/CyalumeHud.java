@@ -35,8 +35,8 @@ public class CyalumeHud {
         Minecraft mc = Minecraft.getInstance();
         PoseStack pose = graphics.pose();
         pose.pushPose();
-        pose.translate(graphics.guiWidth() / 2.0, graphics.guiHeight() / 2.0 + 14.0, 0.0);
-        pose.scale(1.5f, 1.5f, 1.0f);   // texto 2x maior
+        pose.translate(graphics.guiWidth() / 2.0, graphics.guiHeight() / 2.0 + 85.0, 0.0);
+        pose.scale(1.1f, 1.1f, 1.0f);   // texto 2x maior
         graphics.drawCenteredString(mc.font, text, 0, 0, color);
         pose.popPose();
     }
