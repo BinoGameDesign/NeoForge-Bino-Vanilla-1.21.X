@@ -109,7 +109,7 @@ public class CyalumeStickEntity extends ThrowableItemProjectile {
         Vec3 loc = hit.getLocation();
         setPos(loc.x, loc.y + 0.15, loc.z);
 
-        float height = (float) Math.max(0.0, startY - loc.y);
+        float height = (float) Math.max(0.0, startY - 1.52 - loc.y);
 
         // Som de impacto (o dono ouve de qualquer distância)
         playSoundForAll(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0f, 1.2f);

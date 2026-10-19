@@ -16,7 +16,7 @@ public class ModItemModelProvider extends ItemModelProvider {
     protected void registerModels() {
         // Item comum: usa o modelo "generated" (textura plana)
         basicItem(ModItems.RUBI.get());
-        basicItem(ModItems.CYALUME_STICK.get());
+        handheldItem(ModItems.CYALUME_STICK.get());
 
         // Ferramentas: usam o modelo "handheld" (seguradas na mão)
         handheldItem(ModItems.RUBI_SWORD.get());
