@@ -14,5 +14,8 @@
 
   "creativetab.binosvanillaplus.mining_items": "Itens de Mineração",
   "creativetab.binosvanillaplus.mining_blocks": "Blocos de Mineração",
-  "creativetab.binosvanillaplus.cave_exploration": "Ferramentas de exploração"
+  "creativetab.binosvanillaplus.cave_exploration": "Ferramentas de exploração",
+
+  "entity.binosvanillaplus.companion_allay": "Allay",
+  "message.binosvanillaplus.pet_inventory_full": "Inventário cheio! O Allay deixou cair algo."
 }

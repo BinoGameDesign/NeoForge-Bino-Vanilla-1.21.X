@@ -2,8 +2,10 @@ package com.bino.binosvanillaplus.client;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.entity.ModEntities;
+import net.minecraft.client.renderer.entity.AllayRenderer;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.animal.allay.Allay;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -18,7 +20,11 @@ public class ModClientEvents {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.CYALUME_STICK.get(),
                 context -> new ThrownItemRenderer<>(context, 1.0f, true));
+
+        // Usa o renderizador original do Allay (modelo e animação vanilla)
+        event.<Allay>registerEntityRenderer(ModEntities.COMPANION_ALLAY.get(), AllayRenderer::new);
     }
+
 
     // Registra a camada da tela que mostra o cronômetro
     @SubscribeEvent
@@ -27,4 +33,5 @@ public class ModClientEvents {
                 ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "cyalume_timer"),
                 CyalumeHud::render);
     }
+
 }

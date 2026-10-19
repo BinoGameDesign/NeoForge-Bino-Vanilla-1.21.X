@@ -21,6 +21,17 @@ public class ModEntities {
                             .updateInterval(10)         // de quantos em quantos ticks sincroniza a posição
                             .build("cyalume_stick"));
 
+    // noSave() = o jogo nunca grava esta entidade no mundo
+    public static final Supplier<EntityType<CompanionAllayEntity>> COMPANION_ALLAY =
+            ENTITY_TYPES.register("companion_allay",
+                    () -> EntityType.Builder.<CompanionAllayEntity>of(CompanionAllayEntity::new, MobCategory.MISC)
+                            .sized(0.35f, 0.6f)       // mesmo tamanho do Allay (o atributo SCALE diminui 30%)
+                            .eyeHeight(0.36f)
+                            .clientTrackingRange(8)
+                            .updateInterval(2)
+                            .noSave()
+                            .build("companion_allay"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }
