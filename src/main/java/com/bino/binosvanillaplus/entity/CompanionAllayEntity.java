@@ -191,13 +191,13 @@ public class CompanionAllayEntity extends Allay {
 
         Vec3 lookAt;   // ponto para onde ele olha (null = copiar a cabeça do jogador)
         if (carrying) {
-            lookAt = owner.getEyePosition();             // voltando: de frente para o jogador
+            lookAt = owner.getEyePosition();
         } else if (fetchTarget != null) {
-            lookAt = fetchTarget;                        // indo: olhando para o item
+            lookAt = fetchTarget;
         } else if (CompanionAllayManager.isFrontCamera(owner.getUUID())) {
-            lookAt = null;                               // parado na câmera frontal: copia a cabeça
+            lookAt = null;
         } else {
-            lookAt = owner.getEyePosition();             // parado nos outros modos: olha para o jogador
+            lookAt = owner.getEyePosition();
         }
 
         float targetYaw, targetPitch;
@@ -210,25 +210,6 @@ public class CompanionAllayEntity extends Allay {
             targetPitch = (float) -(Mth.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 57.29577951308232);
         }
 
-        // Gira suave (0.5 = metade do caminho por tick), para não dar tranco ao trocar de modo
-        float yaw = Mth.rotLerp(0.5f, this.getYRot(), targetYaw);
-        float pitch = Mth.lerp(0.5f, this.getXRot(), targetPitch);
-        this.setYRot(yaw);
-        this.setYHeadRot(yaw);
-        this.setXRot(pitch);
-    }
-
-        float targetYaw, targetPitch;
-        if (lookAt == null) {
-            targetYaw = owner.getYHeadRot();
-            targetPitch = owner.getXRot();
-        } else {
-            double dx = lookAt.x - getX(), dy = lookAt.y - getEyeY(), dz = lookAt.z - getZ();
-            targetYaw = (float) (Mth.atan2(dz, dx) * 57.29577951308232) - 90.0f;
-            targetPitch = (float) -(Mth.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 57.29577951308232);
-        }
-
-        // Gira suave (0.5 = metade do caminho por tick), para não dar tranco ao trocar de modo
         float yaw = Mth.rotLerp(0.5f, this.getYRot(), targetYaw);
         float pitch = Mth.lerp(0.5f, this.getXRot(), targetPitch);
         this.setYRot(yaw);
