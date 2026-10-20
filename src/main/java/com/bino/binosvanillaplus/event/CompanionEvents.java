@@ -11,6 +11,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
 public class CompanionEvents {
@@ -59,6 +60,21 @@ public class CompanionEvents {
             drop.setPickUpDelay(100);
             CompanionAllayManager.track(player, drop);
         }
+
+    }
+
+    // A XP do mob morto pelo jogador vira um ponto de coleta do pet (não cria as esferas no chão)
+    @SubscribeEvent
+    public static void onXpDrop(LivingExperienceDropEvent event) {
+        if (event.getEntity() instanceof Player) return;
+        if (!(event.getAttackingPlayer() instanceof ServerPlayer player)) return;
+        if (!CompanionAllayManager.hasPet(player)) return;
+
+        int amount = event.getDroppedExperience();
+        if (amount <= 0) return;
+
+        CompanionAllayManager.trackXp(player, event.getEntity().position(), amount);
+        event.setDroppedExperience(0);
     }
 
     // Fechou o mundo (ou o servidor): limpa a memória
