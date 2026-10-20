@@ -2,6 +2,7 @@ package com.bino.binosvanillaplus.network;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.client.CyalumeClientState;
+import com.bino.binosvanillaplus.entity.CompanionAllayManager;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -17,5 +18,10 @@ public class ModNetwork {
         // "playToClient" = mensagem que o servidor manda para o cliente
         registrar.playToClient(CyalumeStatePayload.TYPE, CyalumeStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> CyalumeClientState.handle(payload)));
+
+        // "playToServer" = mensagem que o cliente manda para o servidor
+        registrar.playToServer(CameraModePayload.TYPE, CameraModePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        CompanionAllayManager.setFrontCamera(context.player().getUUID(), payload.front())));
     }
 }

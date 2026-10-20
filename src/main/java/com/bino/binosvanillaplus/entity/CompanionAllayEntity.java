@@ -38,11 +38,10 @@ public class CompanionAllayEntity extends Allay {
     private static final double SIDE = 0.9;               // blocos à DIREITA do jogador
     private static final double HEIGHT = 1.7;             // altura acima dos pés do jogador
     private static final double FOLLOW_MAX_SPEED = 0.34;  // velocidade máxima seguindo (blocos por tick)
-    private static final double FETCH_MAX_SPEED = 0.20;   // velocidade máxima buscando/entregando
+    private static final double FETCH_MAX_SPEED = 0.30;   // velocidade máxima buscando/entregando
     private static final int LIGHT_LEVEL = 6;             // luz que ele emite (0 a 15; tocha = 14)
     private static final double FETCH_RANGE_SQ = 32.0 * 32.0;   // só busca drops a até 32 blocos do dono
     private static final double CLUSTER_RADIUS_SQ = 4.0 * 4.0;  // pega tudo que estiver a até 4 blocos do drop
-    private static final boolean FACE_PLAYER = false;     // false = cabeça copia a sua; true = olha para você
 
     private UUID ownerId;                                  // dono do pet
     private final List<ItemStack> carriedStacks = new ArrayList<>();   // itens que está levando
@@ -163,7 +162,7 @@ public class CompanionAllayEntity extends Allay {
         }
 
         steerTo(goal, maxSpeed);
-        faceCamera(owner);
+        faceCamera(owner, target);   // antes: faceCamera(owner, carrying);
         updateLight(server);
 
         // A cada 1 segundo: guarda o nome dado com a etiqueta (ignora o nome padrão traduzido)
@@ -185,18 +184,53 @@ public class CompanionAllayEntity extends Allay {
         this.setDeltaMovement(this.getDeltaMovement().lerp(desired, 0.2));
     }
 
-    // A cabeça copia a rotação da cabeça do jogador (como o personagem no F5)
-    private void faceCamera(Player owner) {
-        float yaw, pitch;
-        if (FACE_PLAYER) {
-            Vec3 eye = owner.getEyePosition();
-            double dx = eye.x - getX(), dy = eye.y - getEyeY(), dz = eye.z - getZ();
-            yaw = (float) (Mth.atan2(dz, dx) * 57.29577951308232) - 90.0f;
-            pitch = (float) -(Mth.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 57.29577951308232);
+    // Indo buscar: olha para o item (de costas para o jogador). Voltando com itens: olha para o jogador.
+// Parado: câmera frontal copia a sua cabeça; nos outros modos olha para o jogador.
+    private void faceCamera(Player owner, Vec3 fetchTarget) {
+        boolean carrying = !this.carriedStacks.isEmpty() || this.carriedXp > 0;
+
+        Vec3 lookAt;   // ponto para onde ele olha (null = copiar a cabeça do jogador)
+        if (carrying) {
+            lookAt = owner.getEyePosition();             // voltando: de frente para o jogador
+        } else if (fetchTarget != null) {
+            lookAt = fetchTarget;                        // indo: olhando para o item
+        } else if (CompanionAllayManager.isFrontCamera(owner.getUUID())) {
+            lookAt = null;                               // parado na câmera frontal: copia a cabeça
         } else {
-            yaw = owner.getYHeadRot();
-            pitch = owner.getXRot();
+            lookAt = owner.getEyePosition();             // parado nos outros modos: olha para o jogador
         }
+
+        float targetYaw, targetPitch;
+        if (lookAt == null) {
+            targetYaw = owner.getYHeadRot();
+            targetPitch = owner.getXRot();
+        } else {
+            double dx = lookAt.x - getX(), dy = lookAt.y - getEyeY(), dz = lookAt.z - getZ();
+            targetYaw = (float) (Mth.atan2(dz, dx) * 57.29577951308232) - 90.0f;
+            targetPitch = (float) -(Mth.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 57.29577951308232);
+        }
+
+        // Gira suave (0.5 = metade do caminho por tick), para não dar tranco ao trocar de modo
+        float yaw = Mth.rotLerp(0.5f, this.getYRot(), targetYaw);
+        float pitch = Mth.lerp(0.5f, this.getXRot(), targetPitch);
+        this.setYRot(yaw);
+        this.setYHeadRot(yaw);
+        this.setXRot(pitch);
+    }
+
+        float targetYaw, targetPitch;
+        if (lookAt == null) {
+            targetYaw = owner.getYHeadRot();
+            targetPitch = owner.getXRot();
+        } else {
+            double dx = lookAt.x - getX(), dy = lookAt.y - getEyeY(), dz = lookAt.z - getZ();
+            targetYaw = (float) (Mth.atan2(dz, dx) * 57.29577951308232) - 90.0f;
+            targetPitch = (float) -(Mth.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 57.29577951308232);
+        }
+
+        // Gira suave (0.5 = metade do caminho por tick), para não dar tranco ao trocar de modo
+        float yaw = Mth.rotLerp(0.5f, this.getYRot(), targetYaw);
+        float pitch = Mth.lerp(0.5f, this.getXRot(), targetPitch);
         this.setYRot(yaw);
         this.setYHeadRot(yaw);
         this.setXRot(pitch);

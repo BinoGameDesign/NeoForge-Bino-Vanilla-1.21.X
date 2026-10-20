@@ -11,9 +11,29 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import com.bino.binosvanillaplus.network.CameraModePayload;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.Minecraft;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public class ModClientEvents {
+
+    private static boolean lastFront = false;   // último estado enviado ao servidor
+
+    // A cada tick do cliente: se você trocou para (ou saiu de) a câmera frontal, avisa o servidor
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) { lastFront = false; return; }   // fora de um mundo: reseta
+
+        boolean front = mc.options.getCameraType() == CameraType.THIRD_PERSON_FRONT;
+        if (front != lastFront) {
+            lastFront = front;
+            PacketDistributor.sendToServer(new CameraModePayload(front));
+        }
+    }
 
     // Ensina o jogo a desenhar a entidade: o ícone do item, sempre iluminado (true = brilho total)
     @SubscribeEvent

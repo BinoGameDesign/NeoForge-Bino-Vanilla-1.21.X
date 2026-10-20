@@ -24,6 +24,7 @@ public class CompanionAllayManager {
     private static final Map<UUID, List<TrackedXp>> XP = new HashMap<>();        // jogador -> XP pendente
     private static final Map<UUID, String> NAMES = new HashMap<>();              // jogador -> nome do pet
     private static final Set<UUID> FULL_NOTIFIED = new HashSet<>();
+    private static final Set<UUID> FRONT_CAMERA = new HashSet<>();   // jogadores em câmera frontal
 
     public static boolean hasPet(ServerPlayer player) {
         UUID id = PETS.get(player.getUUID());
@@ -68,6 +69,7 @@ public class CompanionAllayManager {
         DROPS.remove(player.getUUID());
         XP.remove(player.getUUID());
         FULL_NOTIFIED.remove(player.getUUID());
+        FRONT_CAMERA.remove(player.getUUID());
     }
 
     // ---------- Drops e XP ----------
@@ -116,5 +118,14 @@ public class CompanionAllayManager {
         XP.clear();
         NAMES.clear();
         FULL_NOTIFIED.clear();
+        FRONT_CAMERA.clear();
+
+
     }
+
+    public static void setFrontCamera(UUID playerId, boolean front) {
+        if (front) FRONT_CAMERA.add(playerId); else FRONT_CAMERA.remove(playerId);
+    }
+
+    public static boolean isFrontCamera(UUID playerId) { return FRONT_CAMERA.contains(playerId); }
 }
