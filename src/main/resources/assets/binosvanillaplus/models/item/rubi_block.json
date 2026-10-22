@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "binosvanillaplus:block/rubi_ore"
-  }
+    "all": "binosvanillaplus:block/rubi_block",
 }
