@@ -26,6 +26,18 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.RUBI_SHOVEL);
                         output.accept(ModItems.RUBI_AXE);
                         output.accept(ModItems.RUBI_HOE);
+                        output.accept(ModItems.SAPPHIRE);
+                        output.accept(ModItems.SAPPHIRE_SWORD);
+                        output.accept(ModItems.SAPPHIRE_PICKAXE);
+                        output.accept(ModItems.SAPPHIRE_SHOVEL);
+                        output.accept(ModItems.SAPPHIRE_AXE);
+                        output.accept(ModItems.SAPPHIRE_HOE);
+                        output.accept(ModItems.JADE);
+                        output.accept(ModItems.JADE_SWORD);
+                        output.accept(ModItems.JADE_PICKAXE);
+                        output.accept(ModItems.JADE_SHOVEL);
+                        output.accept(ModItems.JADE_AXE);
+                        output.accept(ModItems.JADE_HOE);
                     }).build());
 
     public static final Supplier<CreativeModeTab> MINING_BLOCK_TAB = CREATIVE_MODE_TAB.register("mining_blocks_tab",
@@ -36,6 +48,12 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.RUBI_ORE);
                         output.accept(ModBlocks.RUBI_DEEPSLATE_ORE);
                         output.accept(ModBlocks.RUBI_BLOCK);
+                        output.accept(ModBlocks.SAPPHIRE_ORE);
+                        output.accept(ModBlocks.SAPPHIRE_DEEPSLATE_ORE);
+                        output.accept(ModBlocks.SAPPHIRE_BLOCK);
+                        output.accept(ModBlocks.JADE_ORE);
+                        output.accept(ModBlocks.JADE_DEEPSLATE_ORE);
+                        output.accept(ModBlocks.JADE_BLOCK);
                     }).build());
 
     public static final Supplier<CreativeModeTab> CAVE_EXPLORATION_TAB = CREATIVE_MODE_TAB.register("cave_exploration_tab",

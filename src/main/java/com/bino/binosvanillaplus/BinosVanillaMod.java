@@ -47,6 +47,8 @@ public class BinosVanillaMod {
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
 
+        // Durabilidade x1.25 das ferramentas de diamante (evento do barramento do mod)
+        modEventBus.addListener(com.bino.binosvanillaplus.event.DiamondBuffEvents::onModifyDefaultComponents);
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us

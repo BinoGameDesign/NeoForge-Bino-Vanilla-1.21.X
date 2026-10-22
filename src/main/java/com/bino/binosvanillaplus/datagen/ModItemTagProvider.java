@@ -32,5 +32,19 @@ public class ModItemTagProvider extends ItemTagsProvider {
 
         // Opcional: marca o rubi como gema, para outros mods o reconhecerem
         tag(Tags.Items.GEMS).add(ModItems.RUBI.get());
+
+        // ===== Safira e Jade =====
+        tag(ItemTags.SWORDS).add(ModItems.SAPPHIRE_SWORD.get());
+        tag(ItemTags.PICKAXES).add(ModItems.SAPPHIRE_PICKAXE.get());
+        tag(ItemTags.SHOVELS).add(ModItems.SAPPHIRE_SHOVEL.get());
+        tag(ItemTags.AXES).add(ModItems.SAPPHIRE_AXE.get());
+        tag(ItemTags.HOES).add(ModItems.SAPPHIRE_HOE.get());
+        tag(Tags.Items.GEMS).add(ModItems.SAPPHIRE.get());
+        tag(ItemTags.SWORDS).add(ModItems.JADE_SWORD.get());
+        tag(ItemTags.PICKAXES).add(ModItems.JADE_PICKAXE.get());
+        tag(ItemTags.SHOVELS).add(ModItems.JADE_SHOVEL.get());
+        tag(ItemTags.AXES).add(ModItems.JADE_AXE.get());
+        tag(ItemTags.HOES).add(ModItems.JADE_HOE.get());
+        tag(Tags.Items.GEMS).add(ModItems.JADE.get());
     }
 }

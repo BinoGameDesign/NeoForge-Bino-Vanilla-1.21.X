@@ -24,5 +24,19 @@ public class ModItemModelProvider extends ItemModelProvider {
         handheldItem(ModItems.RUBI_SHOVEL.get());
         handheldItem(ModItems.RUBI_AXE.get());
         handheldItem(ModItems.RUBI_HOE.get());
+
+        // ===== Safira e Jade =====
+        basicItem(ModItems.SAPPHIRE.get());
+        handheldItem(ModItems.SAPPHIRE_SWORD.get());
+        handheldItem(ModItems.SAPPHIRE_PICKAXE.get());
+        handheldItem(ModItems.SAPPHIRE_SHOVEL.get());
+        handheldItem(ModItems.SAPPHIRE_AXE.get());
+        handheldItem(ModItems.SAPPHIRE_HOE.get());
+        basicItem(ModItems.JADE.get());
+        handheldItem(ModItems.JADE_SWORD.get());
+        handheldItem(ModItems.JADE_PICKAXE.get());
+        handheldItem(ModItems.JADE_SHOVEL.get());
+        handheldItem(ModItems.JADE_AXE.get());
+        handheldItem(ModItems.JADE_HOE.get());
     }
 }

@@ -40,5 +40,29 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         tag(Tags.Blocks.ORES)
                 .add(ModBlocks.RUBI_ORE.get())
                 .add(ModBlocks.RUBI_DEEPSLATE_ORE.get());
+
+        // ===== Safira e Jade: mesmas regras do rubi =====
+        tag(BlockTags.MINEABLE_WITH_PICKAXE)
+                .add(ModBlocks.SAPPHIRE_ORE.get())
+                .add(ModBlocks.SAPPHIRE_DEEPSLATE_ORE.get())
+                .add(ModBlocks.SAPPHIRE_BLOCK.get());
+        tag(BlockTags.NEEDS_DIAMOND_TOOL)
+                .add(ModBlocks.SAPPHIRE_ORE.get())
+                .add(ModBlocks.SAPPHIRE_DEEPSLATE_ORE.get())
+                .add(ModBlocks.SAPPHIRE_BLOCK.get());
+        tag(Tags.Blocks.ORES)
+                .add(ModBlocks.SAPPHIRE_ORE.get())
+                .add(ModBlocks.SAPPHIRE_DEEPSLATE_ORE.get());
+        tag(BlockTags.MINEABLE_WITH_PICKAXE)
+                .add(ModBlocks.JADE_ORE.get())
+                .add(ModBlocks.JADE_DEEPSLATE_ORE.get())
+                .add(ModBlocks.JADE_BLOCK.get());
+        tag(BlockTags.NEEDS_DIAMOND_TOOL)
+                .add(ModBlocks.JADE_ORE.get())
+                .add(ModBlocks.JADE_DEEPSLATE_ORE.get())
+                .add(ModBlocks.JADE_BLOCK.get());
+        tag(Tags.Blocks.ORES)
+                .add(ModBlocks.JADE_ORE.get())
+                .add(ModBlocks.JADE_DEEPSLATE_ORE.get());
     }
 }

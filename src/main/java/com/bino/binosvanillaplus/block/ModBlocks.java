@@ -42,6 +42,48 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)));
 
+    // ===== SAPPHIRE =====
+    public static final DeferredBlock<Block> SAPPHIRE_ORE = registerBlock("sapphire_ore",
+            () -> new DropExperienceBlock(UniformInt.of(3,7),
+                    BlockBehaviour.Properties.of()
+                            .strength(3.0f, 3.0f)
+                            .requiresCorrectToolForDrops()
+                            .sound(SoundType.STONE)));
+
+    public static final DeferredBlock<Block> SAPPHIRE_DEEPSLATE_ORE = registerBlock("sapphire_deepslate_ore",
+            () -> new DropExperienceBlock(UniformInt.of(4,8),
+                    BlockBehaviour.Properties.of()
+                            .strength(4.0f, 5.0f)
+                            .requiresCorrectToolForDrops()
+                            .sound(SoundType.DEEPSLATE)));
+
+    public static final DeferredBlock<Block> SAPPHIRE_BLOCK = registerBlock("sapphire_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(5.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)));
+
+    // ===== JADE =====
+    public static final DeferredBlock<Block> JADE_ORE = registerBlock("jade_ore",
+            () -> new DropExperienceBlock(UniformInt.of(3,7),
+                    BlockBehaviour.Properties.of()
+                            .strength(3.0f, 3.0f)
+                            .requiresCorrectToolForDrops()
+                            .sound(SoundType.STONE)));
+
+    public static final DeferredBlock<Block> JADE_DEEPSLATE_ORE = registerBlock("jade_deepslate_ore",
+            () -> new DropExperienceBlock(UniformInt.of(4,8),
+                    BlockBehaviour.Properties.of()
+                            .strength(4.0f, 5.0f)
+                            .requiresCorrectToolForDrops()
+                            .sound(SoundType.DEEPSLATE)));
+
+    public static final DeferredBlock<Block> JADE_BLOCK = registerBlock("jade_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(5.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)));
+
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);
         registerBlockItem(name, toReturn);
