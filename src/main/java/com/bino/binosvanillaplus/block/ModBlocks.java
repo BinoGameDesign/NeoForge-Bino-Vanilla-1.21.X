@@ -23,16 +23,18 @@ public class ModBlocks {
     public static final DeferredBlock<Block> RUBI_ORE = registerBlock("rubi_ore",
             () -> new DropExperienceBlock(UniformInt.of(3,7),
                     BlockBehaviour.Properties.of()
-                    .strength(3.0f, 3.0f)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.STONE)));
+                            .strength(3.0f, 3.0f)
+                            .requiresCorrectToolForDrops()
+                            .noOcclusion() // permite que a luz chegue ao bloco, então os cristais deixam de ficar pretos
+                            .sound(SoundType.STONE)));
 
     public static final DeferredBlock<Block> RUBI_DEEPSLATE_ORE = registerBlock("rubi_deepslate_ore",
             () -> new DropExperienceBlock(UniformInt.of(4,8),
                     BlockBehaviour.Properties.of()
-                    .strength(4.0f, 5.0f)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.DEEPSLATE)));
+                            .strength(4.0f, 5.0f)
+                            .requiresCorrectToolForDrops()
+                            .noOcclusion() // mesma coisa para o minério da deepslate
+                            .sound(SoundType.DEEPSLATE)));
 
     public static final DeferredBlock<Block> RUBI_BLOCK = registerBlock("rubi_block",
             () -> new Block(BlockBehaviour.Properties.of()
