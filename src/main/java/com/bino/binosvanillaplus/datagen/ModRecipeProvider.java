@@ -132,6 +132,14 @@ public class ModRecipeProvider extends RecipeProvider {
         gemSet(recipeOutput, "jade", ModItems.JADE.get(), ModItems.JADE_SWORD.get(), ModItems.JADE_PICKAXE.get(),
                 ModItems.JADE_SHOVEL.get(), ModItems.JADE_AXE.get(), ModItems.JADE_HOE.get(),
                 ModBlocks.JADE_BLOCK.get(), ModBlocks.JADE_ORE.get(), ModBlocks.JADE_DEEPSLATE_ORE.get());
+
+        // ===== Armaduras =====
+        armorSet(recipeOutput, "rubi", ModItems.RUBI.get(), ModItems.RUBI_HELMET.get(), ModItems.RUBI_CHESTPLATE.get(),
+                ModItems.RUBI_LEGGINGS.get(), ModItems.RUBI_BOOTS.get());
+        armorSet(recipeOutput, "sapphire", ModItems.SAPPHIRE.get(), ModItems.SAPPHIRE_HELMET.get(), ModItems.SAPPHIRE_CHESTPLATE.get(),
+                ModItems.SAPPHIRE_LEGGINGS.get(), ModItems.SAPPHIRE_BOOTS.get());
+        armorSet(recipeOutput, "jade", ModItems.JADE.get(), ModItems.JADE_HELMET.get(), ModItems.JADE_CHESTPLATE.get(),
+                ModItems.JADE_LEGGINGS.get(), ModItems.JADE_BOOTS.get());
     }
 
     // Cria TODAS as receitas de uma gema (ferramentas, bloco, desfazer bloco e fundição).
@@ -166,5 +174,18 @@ public class ModRecipeProvider extends RecipeProvider {
         SimpleCookingRecipeBuilder.blasting(ores, RecipeCategory.MISC, gem, 0.7f, 100)
                 .unlockedBy("has_" + name + "_ore", has(ore))
                 .save(out, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name + "_from_blasting"));
+    }
+
+    // Receitas das 4 peças de armadura de uma gema ('G' = gema)
+    private void armorSet(RecipeOutput out, String name, ItemLike gem, ItemLike helmet, ItemLike chestplate,
+                          ItemLike leggings, ItemLike boots) {
+        ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, helmet).pattern("GGG").pattern("G G")
+                .define('G', gem).unlockedBy("has_" + name, has(gem)).save(out);
+        ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, chestplate).pattern("G G").pattern("GGG").pattern("GGG")
+                .define('G', gem).unlockedBy("has_" + name, has(gem)).save(out);
+        ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, leggings).pattern("GGG").pattern("G G").pattern("G G")
+                .define('G', gem).unlockedBy("has_" + name, has(gem)).save(out);
+        ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, boots).pattern("G G").pattern("G G")
+                .define('G', gem).unlockedBy("has_" + name, has(gem)).save(out);
     }
 }

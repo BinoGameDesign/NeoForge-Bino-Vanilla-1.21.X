@@ -2,6 +2,7 @@ package com.bino.binosvanillaplus;
 
 import com.bino.binosvanillaplus.block.ModBlocks;
 import com.bino.binosvanillaplus.entity.ModEntities;
+import com.bino.binosvanillaplus.entity.ModParticles;
 import com.bino.binosvanillaplus.item.ModCreativeModeTabs;
 import com.bino.binosvanillaplus.item.ModItems;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -43,6 +44,7 @@ public class BinosVanillaMod {
         ModCreativeModeTabs.register(modEventBus);
 
         ModEntities.register(modEventBus);
+        ModParticles.register(modEventBus);
 
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);

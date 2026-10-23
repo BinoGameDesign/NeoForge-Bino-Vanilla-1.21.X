@@ -28,7 +28,7 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .add(ModBlocks.RUBI_DEEPSLATE_ORE.get())
                 .add(ModBlocks.RUBI_BLOCK.get());
 
-        tag(BlockTags.NEEDS_DIAMOND_TOOL)
+        tag(BlockTags.NEEDS_IRON_TOOL)
                 .add(ModBlocks.RUBI_ORE.get())
                 .add(ModBlocks.RUBI_DEEPSLATE_ORE.get())
                 .add(ModBlocks.RUBI_BLOCK.get());
@@ -46,7 +46,7 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .add(ModBlocks.SAPPHIRE_ORE.get())
                 .add(ModBlocks.SAPPHIRE_DEEPSLATE_ORE.get())
                 .add(ModBlocks.SAPPHIRE_BLOCK.get());
-        tag(BlockTags.NEEDS_DIAMOND_TOOL)
+        tag(BlockTags.NEEDS_IRON_TOOL)
                 .add(ModBlocks.SAPPHIRE_ORE.get())
                 .add(ModBlocks.SAPPHIRE_DEEPSLATE_ORE.get())
                 .add(ModBlocks.SAPPHIRE_BLOCK.get());
@@ -57,7 +57,7 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .add(ModBlocks.JADE_ORE.get())
                 .add(ModBlocks.JADE_DEEPSLATE_ORE.get())
                 .add(ModBlocks.JADE_BLOCK.get());
-        tag(BlockTags.NEEDS_DIAMOND_TOOL)
+        tag(BlockTags.NEEDS_IRON_TOOL)
                 .add(ModBlocks.JADE_ORE.get())
                 .add(ModBlocks.JADE_DEEPSLATE_ORE.get())
                 .add(ModBlocks.JADE_BLOCK.get());

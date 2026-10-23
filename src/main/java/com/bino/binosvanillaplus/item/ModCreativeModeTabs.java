@@ -26,18 +26,30 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.RUBI_SHOVEL);
                         output.accept(ModItems.RUBI_AXE);
                         output.accept(ModItems.RUBI_HOE);
+                        output.accept(ModItems.RUBI_HELMET);
+                        output.accept(ModItems.RUBI_CHESTPLATE);
+                        output.accept(ModItems.RUBI_LEGGINGS);
+                        output.accept(ModItems.RUBI_BOOTS);
                         output.accept(ModItems.SAPPHIRE);
                         output.accept(ModItems.SAPPHIRE_SWORD);
                         output.accept(ModItems.SAPPHIRE_PICKAXE);
                         output.accept(ModItems.SAPPHIRE_SHOVEL);
                         output.accept(ModItems.SAPPHIRE_AXE);
                         output.accept(ModItems.SAPPHIRE_HOE);
+                        output.accept(ModItems.SAPPHIRE_HELMET);
+                        output.accept(ModItems.SAPPHIRE_CHESTPLATE);
+                        output.accept(ModItems.SAPPHIRE_LEGGINGS);
+                        output.accept(ModItems.SAPPHIRE_BOOTS);
                         output.accept(ModItems.JADE);
                         output.accept(ModItems.JADE_SWORD);
                         output.accept(ModItems.JADE_PICKAXE);
                         output.accept(ModItems.JADE_SHOVEL);
                         output.accept(ModItems.JADE_AXE);
                         output.accept(ModItems.JADE_HOE);
+                        output.accept(ModItems.JADE_HELMET);
+                        output.accept(ModItems.JADE_CHESTPLATE);
+                        output.accept(ModItems.JADE_LEGGINGS);
+                        output.accept(ModItems.JADE_BOOTS);
                     }).build());
 
     public static final Supplier<CreativeModeTab> MINING_BLOCK_TAB = CREATIVE_MODE_TAB.register("mining_blocks_tab",

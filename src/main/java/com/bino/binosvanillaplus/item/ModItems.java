@@ -72,6 +72,48 @@ public class ModItems {
             () -> new HoeItem(ModToolTiers.JADE, new Item.Properties()
                     .attributes(HoeItem.createAttributes(ModToolTiers.JADE, -3, 0.0f))));
 
+    // ===== Armadura de Rubi =====
+    public static final DeferredItem<ArmorItem> RUBI_HELMET = ITEMS.register("rubi_helmet",
+            () -> new ArmorItem(ModArmorMaterials.RUBI, ArmorItem.Type.HELMET,
+                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> RUBI_CHESTPLATE = ITEMS.register("rubi_chestplate",
+            () -> new ArmorItem(ModArmorMaterials.RUBI, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> RUBI_LEGGINGS = ITEMS.register("rubi_leggings",
+            () -> new ArmorItem(ModArmorMaterials.RUBI, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> RUBI_BOOTS = ITEMS.register("rubi_boots",
+            () -> new ArmorItem(ModArmorMaterials.RUBI, ArmorItem.Type.BOOTS,
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33))));   // 33 = multiplicador do diamante
+
+    // ===== Armadura de Safira =====
+    public static final DeferredItem<ArmorItem> SAPPHIRE_HELMET = ITEMS.register("sapphire_helmet",
+            () -> new ArmorItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.HELMET,
+                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> SAPPHIRE_CHESTPLATE = ITEMS.register("sapphire_chestplate",
+            () -> new ArmorItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> SAPPHIRE_LEGGINGS = ITEMS.register("sapphire_leggings",
+            () -> new ArmorItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> SAPPHIRE_BOOTS = ITEMS.register("sapphire_boots",
+            () -> new ArmorItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.BOOTS,
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33))));   // 33 = multiplicador do diamante
+
+    // ===== Armadura de Jade =====
+    public static final DeferredItem<ArmorItem> JADE_HELMET = ITEMS.register("jade_helmet",
+            () -> new ArmorItem(ModArmorMaterials.JADE, ArmorItem.Type.HELMET,
+                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> JADE_CHESTPLATE = ITEMS.register("jade_chestplate",
+            () -> new ArmorItem(ModArmorMaterials.JADE, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> JADE_LEGGINGS = ITEMS.register("jade_leggings",
+            () -> new ArmorItem(ModArmorMaterials.JADE, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33))));   // 33 = multiplicador do diamante
+    public static final DeferredItem<ArmorItem> JADE_BOOTS = ITEMS.register("jade_boots",
+            () -> new ArmorItem(ModArmorMaterials.JADE, ArmorItem.Type.BOOTS,
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33))));   // 33 = multiplicador do diamante
+
     // fireResistant() = o item não queima se cair na lava (tire se quiser que queime)
     public static final DeferredItem<CyalumeStickItem> CYALUME_STICK = ITEMS.register("cyalume_stick",
             () -> new CyalumeStickItem(new Item.Properties().fireResistant()));

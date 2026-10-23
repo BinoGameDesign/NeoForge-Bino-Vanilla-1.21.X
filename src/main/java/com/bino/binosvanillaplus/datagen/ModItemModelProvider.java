@@ -38,5 +38,19 @@ public class ModItemModelProvider extends ItemModelProvider {
         handheldItem(ModItems.JADE_SHOVEL.get());
         handheldItem(ModItems.JADE_AXE.get());
         handheldItem(ModItems.JADE_HOE.get());
+
+        // ===== Armaduras =====
+        basicItem(ModItems.RUBI_HELMET.get());
+        basicItem(ModItems.RUBI_CHESTPLATE.get());
+        basicItem(ModItems.RUBI_LEGGINGS.get());
+        basicItem(ModItems.RUBI_BOOTS.get());
+        basicItem(ModItems.SAPPHIRE_HELMET.get());
+        basicItem(ModItems.SAPPHIRE_CHESTPLATE.get());
+        basicItem(ModItems.SAPPHIRE_LEGGINGS.get());
+        basicItem(ModItems.SAPPHIRE_BOOTS.get());
+        basicItem(ModItems.JADE_HELMET.get());
+        basicItem(ModItems.JADE_CHESTPLATE.get());
+        basicItem(ModItems.JADE_LEGGINGS.get());
+        basicItem(ModItems.JADE_BOOTS.get());
     }
 }

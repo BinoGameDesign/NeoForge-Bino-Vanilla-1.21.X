@@ -4,6 +4,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -17,7 +20,9 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.animal.allay.Allay;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -43,6 +48,14 @@ public class CompanionAllayEntity extends Allay {
     private static final double FETCH_RANGE_SQ = 32.0 * 32.0;   // só busca drops a até 32 blocos do dono
     private static final double CLUSTER_RADIUS_SQ = 4.0 * 4.0;  // pega tudo que estiver a até 4 blocos do drop
 
+    // Cor do pet: -1 = cor original; 0 a 15 = número do corante (DyeColor). É sincronizada com o cliente,
+    // que precisa saber a cor para desenhar a textura certa.
+    private static final EntityDataAccessor<Integer> DATA_COLOR =
+            SynchedEntityData.defineId(CompanionAllayEntity.class, EntityDataSerializers.INT);
+
+    private static final int PET_COOLDOWN_TICKS = 100;   // 5 segundos entre um carinho e outro (20 ticks = 1 segundo)
+    private long nextPetTick = 0;                        // a partir de que momento o próximo carinho é permitido
+
     private UUID ownerId;                                  // dono do pet
     private final List<ItemStack> carriedStacks = new ArrayList<>();   // itens que está levando
     private int carriedXp = 0;                             // XP que está levando
@@ -57,6 +70,16 @@ public class CompanionAllayEntity extends Allay {
         this.setPersistenceRequired();
         this.setCustomNameVisible(true);                   // o nome fica sempre aparecendo acima dele
     }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_COLOR, -1);          // começa sem cor (azul original)
+    }
+
+    public int getColorIndex() { return this.entityData.get(DATA_COLOR); }
+
+    public void setColorIndex(int index) { this.entityData.set(DATA_COLOR, index); }
 
     public void setOwner(Player owner) {
         this.ownerId = owner.getUUID();
@@ -107,11 +130,61 @@ public class CompanionAllayEntity extends Allay {
         return source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) && super.hurt(source, amount);
     }
 
-    // Desliga as interações do Allay (dar item, dançar...). A etiqueta de nome continua funcionando,
-    // porque o jogo a trata antes deste método.
+    // Desliga as interações do Allay (dar item, dançar...), menos uma: usar um CORANTE no pet muda a cor dele.
+    // A etiqueta de nome continua funcionando, porque o jogo a trata antes deste método.
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
-        return InteractionResult.PASS;
+        ItemStack stack = player.getItemInHand(hand);
+
+        // ----- CARINHO: botão direito com as DUAS mãos vazias -----
+        if (player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
+            if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);   // só o balanço do braço
+
+            if (this.level() instanceof ServerLevel server && server.getGameTime() >= this.nextPetTick) {
+                this.nextPetTick = server.getGameTime() + PET_COOLDOWN_TICKS;   // começa a espera de 5 segundos
+
+                // Barulhinho fofo (tom mais agudo que o normal do Allay). Troque o som aqui se quiser outro.
+                server.playSound(null, getX(), getY(), getZ(),
+                        SoundEvents.ALLAY_AMBIENT_WITHOUT_ITEM, SoundSource.NEUTRAL, 1.0f, 1.6f);
+
+                // Corações rosa: 7 partículas espalhadas ao redor do pet (como no breed)
+                server.sendParticles(ModParticles.PINK_HEART.get(), getX(), getY() + 0.5, getZ(),
+                        3, 0.25, 0.25, 0.25, 0.02);   // só 3 corações
+            }
+            return InteractionResult.sidedSuccess(false);   // mesmo na espera, o clique é "consumido"
+        }
+
+        // ----- BALDE DE ÁGUA: lava o pet e volta à cor original (o balde NÃO é gasto) -----
+        if (stack.is(Items.WATER_BUCKET) && getColorIndex() >= 0) {
+            if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
+            if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
+
+            setColorIndex(-1);                                   // -1 = azul original
+            CompanionAllayManager.setColor(player, -1);          // esquece a cor guardada
+            this.level().playSound(null, getX(), getY(), getZ(), SoundEvents.BUCKET_EMPTY, SoundSource.NEUTRAL, 0.8f, 1.2f);
+            if (this.level() instanceof ServerLevel server) {
+                server.sendParticles(ParticleTypes.SPLASH, getX(), getY() + 0.3, getZ(), 10, 0.2, 0.2, 0.2, 0.1);
+            }
+            return InteractionResult.sidedSuccess(false);
+        }
+
+        // ----- CORANTE: muda a cor do pet -----
+        if (!(stack.getItem() instanceof DyeItem dye)) return InteractionResult.PASS;
+
+        // No cliente só mostra o balanço do braço; quem decide é o servidor
+        if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
+
+        // Só o dono pode tingir o pet
+        if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
+
+        int color = dye.getDyeColor().getId();
+        if (color != getColorIndex()) {                       // se já é essa cor, não gasta o corante
+            setColorIndex(color);
+            CompanionAllayManager.setColor(player, color);    // lembra a cor (o pet é recriado ao entrar no jogo)
+            if (!player.getAbilities().instabuild) stack.shrink(1);   // no criativo o corante não acaba
+            this.level().playSound(null, getX(), getY(), getZ(), SoundEvents.DYE_USE, SoundSource.NEUTRAL, 1.0f, 1.0f);
+        }
+        return InteractionResult.sidedSuccess(false);
     }
 
     // ---------- Lógica principal (a cada tick, só no servidor) ----------
@@ -169,10 +242,6 @@ public class CompanionAllayEntity extends Allay {
         if (this.tickCount % 20 == 0 && this.hasCustomName()
                 && !(this.getCustomName().getContents() instanceof TranslatableContents)) {
             CompanionAllayManager.setName(owner, this.getCustomName().getString());
-        }
-        // Brilhinhos ocasionais
-        if (this.tickCount % 15 == 0) {
-            server.sendParticles(ParticleTypes.GLOW, getX(), getY() + 0.2, getZ(), 1, 0.2, 0.2, 0.2, 0.0);
         }
     }
 

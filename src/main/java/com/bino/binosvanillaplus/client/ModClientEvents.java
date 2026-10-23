@@ -2,7 +2,6 @@ package com.bino.binosvanillaplus.client;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.entity.ModEntities;
-import net.minecraft.client.renderer.entity.AllayRenderer;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.animal.allay.Allay;
@@ -10,6 +9,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
+import net.minecraft.client.particle.HeartParticle;
+import com.bino.binosvanillaplus.entity.ModParticles;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import com.bino.binosvanillaplus.network.CameraModePayload;
 import net.minecraft.client.CameraType;
@@ -41,8 +44,31 @@ public class ModClientEvents {
         event.registerEntityRenderer(ModEntities.CYALUME_STICK.get(),
                 context -> new ThrownItemRenderer<>(context, 1.0f, true));
 
-        // Usa o renderizador original do Allay (modelo e animação vanilla)
-        event.<Allay>registerEntityRenderer(ModEntities.COMPANION_ALLAY.get(), AllayRenderer::new);
+        // Renderizador do Allay (modelo e animação vanilla), mas com a textura trocada conforme a cor do pet
+        event.<Allay>registerEntityRenderer(ModEntities.COMPANION_ALLAY.get(), CompanionAllayRenderer::new);
+    }
+
+    // Ensina o jogo a desenhar o coração rosa: usa o comportamento do coração normal (sobe e some)
+    // mas com a imagem pink_heart.png
+    @SubscribeEvent
+    public static void registerParticles(RegisterParticleProvidersEvent event) {
+        event.registerSpriteSet(ModParticles.PINK_HEART.get(), sprites -> {
+            HeartParticle.Provider base = new HeartParticle.Provider(sprites);
+            // Cria o coração normal e encolhe pela metade (0.5). Mude o número para ajustar o tamanho.
+            return (type, level, x, y, z, xSpeed, ySpeed, zSpeed) -> {
+                net.minecraft.client.particle.Particle particle =
+                        base.createParticle(type, level, x, y, z, xSpeed, ySpeed, zSpeed);
+                if (particle != null) particle.scale(0.5f);
+                return particle;
+            };
+        });
+    }
+
+    // Quando os recursos recarregam (F3+T, troca de resource pack), as texturas pintadas são refeitas
+    @SubscribeEvent
+    public static void registerReloadListeners(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener)
+                manager -> AllayColorTextures.clear());
     }
 
 

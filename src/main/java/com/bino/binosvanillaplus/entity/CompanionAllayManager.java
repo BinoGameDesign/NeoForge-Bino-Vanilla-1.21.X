@@ -18,11 +18,13 @@ public class CompanionAllayManager {
     public record TrackedXp(Vec3 pos, int amount, long createdTick) {}   // XP que ficou no ponto da morte do mob
 
     private static final String NAME_KEY = "binosvanillaplus_pet_name";
+    private static final String COLOR_KEY = "binosvanillaplus_pet_color";
 
     private static final Map<UUID, UUID> PETS = new HashMap<>();                 // jogador -> pet
     private static final Map<UUID, List<TrackedDrop>> DROPS = new HashMap<>();   // jogador -> drops
     private static final Map<UUID, List<TrackedXp>> XP = new HashMap<>();        // jogador -> XP pendente
     private static final Map<UUID, String> NAMES = new HashMap<>();              // jogador -> nome do pet
+    private static final Map<UUID, Integer> COLORS = new HashMap<>();             // jogador -> cor do pet
     private static final Set<UUID> FULL_NOTIFIED = new HashSet<>();
     private static final Set<UUID> FRONT_CAMERA = new HashSet<>();   // jogadores em câmera frontal
 
@@ -51,6 +53,8 @@ public class CompanionAllayManager {
                 ? Component.literal(saved)
                 : Component.translatable("entity.binosvanillaplus.companion_allay"));
         pet.setCustomNameVisible(true);
+
+        pet.setColorIndex(getColor(player));        // aplica a cor guardada (-1 = original)
 
         level.addFreshEntity(pet);
         PETS.put(player.getUUID(), pet.getUUID());
@@ -105,6 +109,22 @@ public class CompanionAllayManager {
         return name;
     }
 
+    // ---------- Cor (guardada na memória e nos dados do jogador, como o nome) ----------
+
+    public static void setColor(Player player, int color) {
+        COLORS.put(player.getUUID(), color);
+        player.getPersistentData().putInt(COLOR_KEY, color);
+    }
+
+    // -1 = nunca foi tingido (cor original)
+    public static int getColor(Player player) {
+        Integer color = COLORS.get(player.getUUID());
+        if (color == null && player.getPersistentData().contains(COLOR_KEY)) {
+            color = player.getPersistentData().getInt(COLOR_KEY);
+        }
+        return color == null ? -1 : color;
+    }
+
     // ---------- Aviso de inventário cheio ----------
 
     // true na primeira vez (deve avisar); false se já avisou e o inventário continua cheio
@@ -117,6 +137,7 @@ public class CompanionAllayManager {
         DROPS.clear();
         XP.clear();
         NAMES.clear();
+        COLORS.clear();
         FULL_NOTIFIED.clear();
         FRONT_CAMERA.clear();
 

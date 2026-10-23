@@ -8,6 +8,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.TieredItem;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
@@ -53,8 +54,9 @@ public class GemAbilityEvents {
         }
     }
 
-    // Roda quando um mob morre e vai soltar experiência
-    @SubscribeEvent
+    // Roda quando um mob morre e vai soltar experiência.
+    // Prioridade ALTA: roda ANTES do pet recolher a XP (que zera o valor), senão o bônus de jade se perderia.
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onMobXp(LivingExperienceDropEvent event) {
         Player player = event.getAttackingPlayer();
         if (player == null) return;
