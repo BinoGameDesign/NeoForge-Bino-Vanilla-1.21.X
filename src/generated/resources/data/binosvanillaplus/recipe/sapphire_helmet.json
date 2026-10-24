@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": {
+      "item": "binosvanillaplus:sapphire"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "G G"
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosvanillaplus:sapphire_helmet"
+  }
+}

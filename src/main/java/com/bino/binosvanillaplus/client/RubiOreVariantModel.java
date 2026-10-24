@@ -1,5 +1,6 @@
 package com.bino.binosvanillaplus.client;
 
+import com.bino.binosvanillaplus.BinosVanillaMod;
 import java.util.List;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -7,24 +8,45 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.BakedModelWrapper;
+import net.neoforged.neoforge.client.model.QuadTransformers;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
+import net.neoforged.neoforge.common.util.TriState;
 import org.jetbrains.annotations.Nullable;
 
 // Escolhe, pela POSICAO do bloco, qual dos 8 modelos desenhar. Nao guarda nada: a mesma posicao sempre da o mesmo modelo.
+// Tambem deixa os CRISTAIS (textura rubi_ore_crystal) brilhando no maximo, mesmo no escuro; a pedra da base nao brilha.
 public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
     public static final ModelProperty<Integer> VARIANT = new ModelProperty<>();
 
-    private final BakedModel[] variants;
+    private static final ResourceLocation CRYSTAL = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "block/rubi_ore_crystal");
+    // Brilho dos cristais, de 0 (nenhum) a 15 (maximo). Mude aqui para deixar mais fraco.
+    private static final int CRYSTAL_GLOW = 15;
 
+    private final BakedModel[] variants;
+    // [variante][lado: 0..5 = Direction.ordinal(), 6 = sem lado] ja com o brilho aplicado
+    private final List<BakedQuad>[][] glowing;
+
+    @SuppressWarnings("unchecked")
     public RubiOreVariantModel(BakedModel[] variants) {
         super(variants[0]);
         this.variants = variants;
+        this.glowing = new List[variants.length][7];
+        for (int v = 0; v < variants.length; v++) {
+            for (int s = 0; s < 7; s++) {
+                Direction side = s == 6 ? null : Direction.values()[s];
+                List<BakedQuad> quads = variants[v].getQuads(null, side, RandomSource.create(42L), ModelData.EMPTY, null);
+                glowing[v][s] = quads.stream().map(q ->
+                        q.getSprite().contents().name().equals(CRYSTAL) ? QuadTransformers.settingEmissivity(CRYSTAL_GLOW).process(q) : q
+                ).toList();
+            }
+        }
     }
 
     // Formula: f = (a(x) + b(y) + c(z)) mod 8, onde cada termo = 4*(paridade da coordenada) + hash(0..3).
@@ -40,9 +62,9 @@ public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
         return 4 * (c & 1) + (h & 3);
     }
 
-    private BakedModel pick(ModelData data) {
+    private int index(ModelData data) {
         Integer v = data.get(VARIANT);
-        return variants[v == null ? 0 : v];
+        return v == null ? 0 : v;
     }
 
     @Override
@@ -52,16 +74,22 @@ public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
 
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand, ModelData data, @Nullable RenderType renderType) {
-        return pick(data).getQuads(state, side, rand, data, renderType);
+        return glowing[index(data)][side == null ? 6 : side.ordinal()];
+    }
+
+    // O bloco emite luz, e por padrao isso desliga a iluminacao suave (AO). Forcamos ligada para a pedra nao ficar "chapada".
+    @Override
+    public TriState useAmbientOcclusion(BlockState state, ModelData data, RenderType renderType) {
+        return TriState.TRUE;
     }
 
     @Override
     public ChunkRenderTypeSet getRenderTypes(BlockState state, RandomSource rand, ModelData data) {
-        return pick(data).getRenderTypes(state, rand, data);
+        return variants[index(data)].getRenderTypes(state, rand, data);
     }
 
     @Override
     public TextureAtlasSprite getParticleIcon(ModelData data) {
-        return pick(data).getParticleIcon(data);
+        return variants[index(data)].getParticleIcon(data);
     }
 }

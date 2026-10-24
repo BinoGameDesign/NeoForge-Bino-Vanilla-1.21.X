@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "F": {
+      "item": "binosvanillaplus:forge_stone_9"
+    },
+    "L": {
+      "item": "binosvanillaplus:philosopher_stone_large"
+    }
+  },
+  "pattern": [
+    "LLL",
+    "LFL",
+    "LLL"
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosvanillaplus:forge_stone_10"
+  }
+}

@@ -1,6 +1,7 @@
 package com.bino.binosvanillaplus.block.custom;
 
 import net.minecraft.util.valueproviders.IntProvider;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DropExperienceBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -12,13 +13,16 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 public class VariantOreBlock extends DropExperienceBlock {
     public static final IntegerProperty VARIANT = IntegerProperty.create("variant", 0, 7);
 
+    // Quanta luz o minerio emite (0 a 15). Uma tocha e' 14, redstone acesa e' 9. Mude aqui se quiser mais/menos.
+    public static final int LIGHT_LEVEL = 6;
+
     public VariantOreBlock(IntProvider xpRange, Properties properties) {
-        super(xpRange, properties);
+        super(xpRange, properties.lightLevel(state -> LIGHT_LEVEL));
         registerDefaultState(stateDefinition.any().setValue(VARIANT, 0));
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(VARIANT);
     }

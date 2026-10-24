@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "F": {
+      "item": "minecraft:iron_bars"
+    },
+    "M": {
+      "tag": "minecraft:planks"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    " RF",
+    "MMM",
+    "M M"
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosvanillaplus:lapidary_table"
+  }
+}

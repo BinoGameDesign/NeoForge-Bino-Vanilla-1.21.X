@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_forge_stone_3": {
+      "conditions": {
+        "items": [
+          {
+            "items": "binosvanillaplus:forge_stone_3"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "binosvanillaplus:forge_stone_4"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_forge_stone_3"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "binosvanillaplus:forge_stone_4"
+    ]
+  }
+}

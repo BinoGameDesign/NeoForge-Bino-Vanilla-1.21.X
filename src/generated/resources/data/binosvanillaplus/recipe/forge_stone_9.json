@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "binosvanillaplus:forge_stone_8"
+    },
+    {
+      "item": "binosvanillaplus:philosopher_stone_large"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosvanillaplus:forge_stone_9"
+  }
+}

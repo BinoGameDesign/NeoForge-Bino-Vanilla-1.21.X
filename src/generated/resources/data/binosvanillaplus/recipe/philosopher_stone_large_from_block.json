@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "binosvanillaplus:philosopher_block"
+    }
+  ],
+  "result": {
+    "count": 9,
+    "id": "binosvanillaplus:philosopher_stone_large"
+  }
+}
