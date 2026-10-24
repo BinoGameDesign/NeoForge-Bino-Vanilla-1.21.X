@@ -30,21 +30,27 @@ import java.util.List;
 public class GemArmorEvents {
 
     // ====== VALORES QUE VOCÊ PODE AJUSTAR ======
-    private static final float RUBI_DODGE_CHANCE = 0.10f;      // 10% de chance de ignorar um dano
-    private static final float JADE_FALL_MULTIPLIER = 0.52f;   // dano de queda x0.52 (igual a Peso-pena IV, -48%). Use 0 para nunca tomar dano de queda
-    private static final double SAPPHIRE_MAGNET_RANGE = 6.0;   // alcance do imã, em blocos (o normal do jogo é 1)
+    public static final float RUBI_DODGE_CHANCE = 0.10f;      // 10% de chance de ignorar um dano
+    public static final float JADE_FALL_MULTIPLIER = 0.52f;   // dano de queda x0.52 (igual a Peso-pena IV, -48%). Use 0 para nunca tomar dano de queda
+    public static final double SAPPHIRE_MAGNET_RANGE = 6.0;   // alcance do imã, em blocos (o normal do jogo é 1)
     private static final double SAPPHIRE_MAGNET_SPEED = 0.25;  // velocidade com que os itens vêm até você
+
+    // Conta quantas peças (0 a 4) do material o jogador está vestindo
+    public static int countPieces(Player player, DeferredHolder<ArmorMaterial, ArmorMaterial> material) {
+        int count = 0;
+        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST,
+                EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            if (player.getItemBySlot(slot).getItem() instanceof ArmorItem armor
+                    && armor.getMaterial().is(material.getId())) {
+                count++;
+            }
+        }
+        return count;
+    }
 
     // Diz se o jogador veste as 4 peças feitas com o material indicado
     private static boolean hasFullSet(Player player, DeferredHolder<ArmorMaterial, ArmorMaterial> material) {
-        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST,
-                EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            if (!(player.getItemBySlot(slot).getItem() instanceof ArmorItem armor)
-                    || !armor.getMaterial().is(material.getId())) {
-                return false;
-            }
-        }
-        return true;
+        return countPieces(player, material) == 4;
     }
 
     // ---------- RUBI: 10% de chance de desviar de um dano ----------

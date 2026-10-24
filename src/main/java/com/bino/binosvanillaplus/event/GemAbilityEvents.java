@@ -19,8 +19,8 @@ import net.neoforged.neoforge.event.level.BlockDropsEvent;
 public class GemAbilityEvents {
 
     // ====== VALORES QUE VOCÊ PODE AJUSTAR ======
-    private static final int SAPPHIRE_EXTRA_DROP_CHANCE = 3; // 1 em 3 = 1/3 de chance
-    private static final double JADE_XP_MULTIPLIER = 1.25;   // +25% de experiência
+    public static final int SAPPHIRE_EXTRA_DROP_CHANCE = 3; // 1 em 3 = 1/3 de chance
+    public static final double JADE_XP_MULTIPLIER = 1.25;   // +25% de experiência
 
     // Diz se o item é uma espada/ferramenta feita com o material (tier) indicado
     private static boolean isMadeOf(ItemStack stack, Tier tier) {

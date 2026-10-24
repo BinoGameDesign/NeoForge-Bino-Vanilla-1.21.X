@@ -64,5 +64,15 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         tag(Tags.Blocks.ORES)
                 .add(ModBlocks.JADE_ORE.get())
                 .add(ModBlocks.JADE_DEEPSLATE_ORE.get());
+
+        // ===== Minério de forja: picareta de ferro ou melhor =====
+        tag(BlockTags.MINEABLE_WITH_PICKAXE).add(ModBlocks.FORGE_ORE.get());
+        tag(BlockTags.NEEDS_IRON_TOOL).add(ModBlocks.FORGE_ORE.get());
+        tag(Tags.Blocks.ORES).add(ModBlocks.FORGE_ORE.get());
+
+        // ===== Bloco filosofal (picareta de ferro) e Mesa de Lapidação (machado) =====
+        tag(BlockTags.MINEABLE_WITH_PICKAXE).add(ModBlocks.PHILOSOPHER_BLOCK.get());
+        tag(BlockTags.NEEDS_IRON_TOOL).add(ModBlocks.PHILOSOPHER_BLOCK.get());
+        tag(BlockTags.MINEABLE_WITH_AXE).add(ModBlocks.LAPIDARY_TABLE.get());
     }
 }

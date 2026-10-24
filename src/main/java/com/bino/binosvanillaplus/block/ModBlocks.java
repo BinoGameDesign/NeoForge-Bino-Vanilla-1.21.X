@@ -2,6 +2,8 @@ package com.bino.binosvanillaplus.block;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.item.ModItems;
+import com.bino.binosvanillaplus.block.custom.LapidaryTableBlock;
+import com.bino.binosvanillaplus.block.custom.VariantOreBlock;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -21,7 +23,7 @@ public class ModBlocks {
 
 
     public static final DeferredBlock<Block> RUBI_ORE = registerBlock("rubi_ore",
-            () -> new DropExperienceBlock(UniformInt.of(3,7),
+            () -> new VariantOreBlock(UniformInt.of(3,7),
                     BlockBehaviour.Properties.of()
                             .strength(3.0f, 3.0f)
                             .requiresCorrectToolForDrops()
@@ -29,7 +31,7 @@ public class ModBlocks {
                             .sound(SoundType.STONE)));
 
     public static final DeferredBlock<Block> RUBI_DEEPSLATE_ORE = registerBlock("rubi_deepslate_ore",
-            () -> new DropExperienceBlock(UniformInt.of(4,8),
+            () -> new VariantOreBlock(UniformInt.of(4,8),
                     BlockBehaviour.Properties.of()
                             .strength(4.0f, 5.0f)
                             .requiresCorrectToolForDrops()
@@ -83,6 +85,28 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)));
+
+    // Minério de forja: solta a Pedra de Forja +1 (loot table em data/.../loot_table/blocks/forge_ore.json)
+    public static final DeferredBlock<Block> FORGE_ORE = registerBlock("forge_ore",
+            () -> new DropExperienceBlock(UniformInt.of(2,5),
+                    BlockBehaviour.Properties.of()
+                            .strength(3.0f, 3.0f)
+                            .requiresCorrectToolForDrops()
+                            .sound(SoundType.STONE)));
+
+    // Bloco de Pedra Filosofal (9 pedras filosofais grandes)
+    public static final DeferredBlock<Block> PHILOSOPHER_BLOCK = registerBlock("philosopher_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(5.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.AMETHYST)));
+
+    // Mesa de Lapidação (modelo 3D: noOcclusion porque não é um cubo cheio)
+    public static final DeferredBlock<Block> LAPIDARY_TABLE = registerBlock("lapidary_table",
+            () -> new LapidaryTableBlock(BlockBehaviour.Properties.of()
+                    .strength(2.5f)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()));
 
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);

@@ -20,6 +20,7 @@ public class ModBiomeModifiers {
     public static final ResourceKey<BiomeModifier> ADD_RUBI_ORE = registerKey("add_rubi_ore");
     public static final ResourceKey<BiomeModifier> ADD_SAPPHIRE_ORE = registerKey("add_sapphire_ore");
     public static final ResourceKey<BiomeModifier> ADD_JADE_ORE = registerKey("add_jade_ore");
+    public static final ResourceKey<BiomeModifier> ADD_FORGE_ORE = registerKey("add_forge_ore");
 
     public static void bootstrap(BootstrapContext<BiomeModifier> context) {
         HolderGetter<PlacedFeature> placedFeatures = context.lookup(Registries.PLACED_FEATURE);
@@ -29,6 +30,7 @@ public class ModBiomeModifiers {
         addOre(context, biomes, placedFeatures, ADD_RUBI_ORE, ModPlacedFeatures.RUBI_ORE_PLACED_KEY);
         addOre(context, biomes, placedFeatures, ADD_SAPPHIRE_ORE, ModPlacedFeatures.SAPPHIRE_ORE_PLACED_KEY);
         addOre(context, biomes, placedFeatures, ADD_JADE_ORE, ModPlacedFeatures.JADE_ORE_PLACED_KEY);
+        addOre(context, biomes, placedFeatures, ADD_FORGE_ORE, ModPlacedFeatures.FORGE_ORE_PLACED_KEY);
     }
 
     private static void addOre(BootstrapContext<BiomeModifier> context, HolderGetter<Biome> biomes,

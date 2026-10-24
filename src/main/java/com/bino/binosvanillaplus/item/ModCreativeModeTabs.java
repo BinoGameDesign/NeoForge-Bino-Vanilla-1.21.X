@@ -50,6 +50,24 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.JADE_CHESTPLATE);
                         output.accept(ModItems.JADE_LEGGINGS);
                         output.accept(ModItems.JADE_BOOTS);
+                        output.accept(ModItems.FORGE_STONE_1);
+                        output.accept(ModItems.FORGE_STONE_2);
+                        output.accept(ModItems.FORGE_STONE_3);
+                        output.accept(ModItems.FORGE_STONE_4);
+                        output.accept(ModItems.FORGE_STONE_5);
+                        output.accept(ModItems.FORGE_STONE_6);
+                        output.accept(ModItems.FORGE_STONE_7);
+                        output.accept(ModItems.FORGE_STONE_8);
+                        output.accept(ModItems.FORGE_STONE_9);
+                        output.accept(ModItems.FORGE_STONE_10);
+                        output.accept(ModItems.PHILOSOPHER_FRAGMENT);
+                        output.accept(ModItems.PHILOSOPHER_STONE_INCOMPLETE);
+                        output.accept(ModItems.PHILOSOPHER_STONE_SMALL);
+                        output.accept(ModItems.PHILOSOPHER_STONE_LARGE);
+                        output.accept(ModItems.RAW_DIAMOND);
+                        output.accept(ModItems.RAW_RUBI);
+                        output.accept(ModItems.RAW_SAPPHIRE);
+                        output.accept(ModItems.RAW_JADE);
                     }).build());
 
     public static final Supplier<CreativeModeTab> MINING_BLOCK_TAB = CREATIVE_MODE_TAB.register("mining_blocks_tab",
@@ -66,6 +84,9 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.JADE_ORE);
                         output.accept(ModBlocks.JADE_DEEPSLATE_ORE);
                         output.accept(ModBlocks.JADE_BLOCK);
+                        output.accept(ModBlocks.FORGE_ORE);
+                        output.accept(ModBlocks.PHILOSOPHER_BLOCK);
+                        output.accept(ModBlocks.LAPIDARY_TABLE);
                     }).build());
 
     public static final Supplier<CreativeModeTab> CAVE_EXPLORATION_TAB = CREATIVE_MODE_TAB.register("cave_exploration_tab",

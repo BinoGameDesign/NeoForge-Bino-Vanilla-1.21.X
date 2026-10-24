@@ -52,5 +52,27 @@ public class ModItemModelProvider extends ItemModelProvider {
         basicItem(ModItems.JADE_CHESTPLATE.get());
         basicItem(ModItems.JADE_LEGGINGS.get());
         basicItem(ModItems.JADE_BOOTS.get());
+
+        // ===== Forja =====
+        basicItem(ModItems.FORGE_STONE_1.get());
+        basicItem(ModItems.FORGE_STONE_2.get());
+        basicItem(ModItems.FORGE_STONE_3.get());
+        basicItem(ModItems.FORGE_STONE_4.get());
+        basicItem(ModItems.FORGE_STONE_5.get());
+        basicItem(ModItems.FORGE_STONE_6.get());
+        basicItem(ModItems.FORGE_STONE_7.get());
+        basicItem(ModItems.FORGE_STONE_8.get());
+        basicItem(ModItems.FORGE_STONE_9.get());
+        basicItem(ModItems.FORGE_STONE_10.get());
+        basicItem(ModItems.PHILOSOPHER_FRAGMENT.get());
+        basicItem(ModItems.PHILOSOPHER_STONE_INCOMPLETE.get());
+        basicItem(ModItems.PHILOSOPHER_STONE_SMALL.get());
+        basicItem(ModItems.PHILOSOPHER_STONE_LARGE.get());
+
+        // ===== Minérios brutos =====
+        basicItem(ModItems.RAW_DIAMOND.get());
+        basicItem(ModItems.RAW_RUBI.get());
+        basicItem(ModItems.RAW_SAPPHIRE.get());
+        basicItem(ModItems.RAW_JADE.get());
     }
 }

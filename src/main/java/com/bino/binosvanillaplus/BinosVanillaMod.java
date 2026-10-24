@@ -45,7 +45,10 @@ public class BinosVanillaMod {
 
         ModEntities.register(modEventBus);
         ModParticles.register(modEventBus);
+        com.bino.binosvanillaplus.item.ModArmorMaterials.register(modEventBus);   // materiais das armaduras
 
+        com.bino.binosvanillaplus.item.ModDataComponents.register(modEventBus);   // nível de forja dos itens
+        com.bino.binosvanillaplus.menu.ModMenuTypes.register(modEventBus);   // janelas (menu da Mesa de Lapidação)
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
 

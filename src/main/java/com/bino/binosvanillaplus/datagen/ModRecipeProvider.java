@@ -12,6 +12,7 @@ import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.data.recipes.ShapelessRecipeBuilder;
 import net.minecraft.data.recipes.SimpleCookingRecipeBuilder;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
@@ -110,20 +111,6 @@ public class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy("has_rubi_block", has(ModBlocks.RUBI_BLOCK.get()))
                 .save(recipeOutput, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "rubi_from_rubi_block"));
 
-        // ----- FUNDIÇÃO DO MINÉRIO -----
-
-        // Os dois minérios (normal e deepslate) contam como o mesmo ingrediente
-        Ingredient rubiOres = Ingredient.of(ModBlocks.RUBI_ORE.get(), ModBlocks.RUBI_DEEPSLATE_ORE.get());
-
-        // Fornalha: 0.7 de XP por item, 200 ticks (10 segundos)
-        SimpleCookingRecipeBuilder.smelting(rubiOres, RecipeCategory.MISC, ModItems.RUBI.get(), 0.7f, 200)
-                .unlockedBy("has_rubi_ore", has(ModBlocks.RUBI_ORE.get()))
-                .save(recipeOutput, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "rubi_from_smelting"));
-
-        // Alta-fornalha: mesma XP, metade do tempo (100 ticks)
-        SimpleCookingRecipeBuilder.blasting(rubiOres, RecipeCategory.MISC, ModItems.RUBI.get(), 0.7f, 100)
-                .unlockedBy("has_rubi_ore", has(ModBlocks.RUBI_ORE.get()))
-                .save(recipeOutput, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "rubi_from_blasting"));
 
         // ===== Safira e Jade =====
         gemSet(recipeOutput, "sapphire", ModItems.SAPPHIRE.get(), ModItems.SAPPHIRE_SWORD.get(), ModItems.SAPPHIRE_PICKAXE.get(),
@@ -140,6 +127,12 @@ public class ModRecipeProvider extends RecipeProvider {
                 ModItems.SAPPHIRE_LEGGINGS.get(), ModItems.SAPPHIRE_BOOTS.get());
         armorSet(recipeOutput, "jade", ModItems.JADE.get(), ModItems.JADE_HELMET.get(), ModItems.JADE_CHESTPLATE.get(),
                 ModItems.JADE_LEGGINGS.get(), ModItems.JADE_BOOTS.get());
+
+        // ===== Forja =====
+        forgeRecipes(recipeOutput);
+
+        // ===== Bloco de pedra filosofal e Mesa de Lapidação =====
+        extraRecipes(recipeOutput);
     }
 
     // Cria TODAS as receitas de uma gema (ferramentas, bloco, desfazer bloco e fundição).
@@ -166,14 +159,6 @@ public class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy("has_" + name + "_block", has(block))
                 .save(out, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name + "_from_" + name + "_block"));
 
-        // Fundição dos dois minérios
-        Ingredient ores = Ingredient.of(ore, deepslateOre);
-        SimpleCookingRecipeBuilder.smelting(ores, RecipeCategory.MISC, gem, 0.7f, 200)
-                .unlockedBy("has_" + name + "_ore", has(ore))
-                .save(out, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name + "_from_smelting"));
-        SimpleCookingRecipeBuilder.blasting(ores, RecipeCategory.MISC, gem, 0.7f, 100)
-                .unlockedBy("has_" + name + "_ore", has(ore))
-                .save(out, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name + "_from_blasting"));
     }
 
     // Receitas das 4 peças de armadura de uma gema ('G' = gema)
@@ -187,5 +172,71 @@ public class ModRecipeProvider extends RecipeProvider {
                 .define('G', gem).unlockedBy("has_" + name, has(gem)).save(out);
         ShapedRecipeBuilder.shaped(RecipeCategory.COMBAT, boots).pattern("G G").pattern("G G")
                 .define('G', gem).unlockedBy("has_" + name, has(gem)).save(out);
+    }
+
+    // Receitas da forja e da pedra filosofal
+    private void forgeRecipes(RecipeOutput out) {
+        // 4 pedras +n em quadrado (2x2) -> 1 pedra +(n+1), de +1 até +5
+        for (int n = 1; n <= 4; n++) {
+            ItemLike from = ModItems.FORGE_STONES.get(n - 1).get();
+            ItemLike to = ModItems.FORGE_STONES.get(n).get();
+            ShapedRecipeBuilder.shaped(RecipeCategory.MISC, to).pattern("SS").pattern("SS")
+                    .define('S', from).unlockedBy("has_forge_stone_" + n, has(from)).save(out);
+        }
+
+        // Fragmento de pedra filosofal = diamante + rubi + safira + jade (sem formato fixo)
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.PHILOSOPHER_FRAGMENT.get())
+                .requires(Items.DIAMOND).requires(ModItems.RUBI.get())
+                .requires(ModItems.SAPPHIRE.get()).requires(ModItems.JADE.get())
+                .unlockedBy("has_rubi", has(ModItems.RUBI.get())).save(out);
+
+        // 4 fragmentos -> incompleta; 4 incompletas -> pequena; 4 pequenas -> grande (todos em quadrado 2x2)
+        square(out, ModItems.PHILOSOPHER_FRAGMENT.get(), ModItems.PHILOSOPHER_STONE_INCOMPLETE.get());
+        square(out, ModItems.PHILOSOPHER_STONE_INCOMPLETE.get(), ModItems.PHILOSOPHER_STONE_SMALL.get());
+        square(out, ModItems.PHILOSOPHER_STONE_SMALL.get(), ModItems.PHILOSOPHER_STONE_LARGE.get());
+
+        // +6 = +5 + fragmento; +7 = +6 + incompleta; +8 = +7 + pequena; +9 = +8 + grande
+        pair(out, 5, ModItems.PHILOSOPHER_FRAGMENT.get(), 6);
+        pair(out, 6, ModItems.PHILOSOPHER_STONE_INCOMPLETE.get(), 7);
+        pair(out, 7, ModItems.PHILOSOPHER_STONE_SMALL.get(), 8);
+        pair(out, 8, ModItems.PHILOSOPHER_STONE_LARGE.get(), 9);
+
+        // +10 = pedra +9 no centro e 8 pedras filosofais grandes ao redor (mesa de trabalho cheia)
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModItems.FORGE_STONE_10.get())
+                .pattern("LLL").pattern("LFL").pattern("LLL")
+                .define('L', ModItems.PHILOSOPHER_STONE_LARGE.get())
+                .define('F', ModItems.FORGE_STONE_9.get())
+                .unlockedBy("has_forge_stone_9", has(ModItems.FORGE_STONE_9.get())).save(out);
+    }
+
+    // 4 itens iguais em quadrado 2x2 viram 1 item do próximo tipo
+    private void square(RecipeOutput out, ItemLike from, ItemLike to) {
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, to).pattern("SS").pattern("SS")
+                .define('S', from).unlockedBy("has_" + "ingredient", has(from)).save(out);
+    }
+
+    // Pedra +fromLevel + um item filosofal -> pedra +toLevel (sem formato fixo)
+    private void pair(RecipeOutput out, int fromLevel, ItemLike extra, int toLevel) {
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.FORGE_STONES.get(toLevel - 1).get())
+                .requires(ModItems.FORGE_STONES.get(fromLevel - 1).get()).requires(extra)
+                .unlockedBy("has_forge_stone_" + fromLevel, has(ModItems.FORGE_STONES.get(fromLevel - 1).get())).save(out);
+    }
+
+    // Bloco de pedra filosofal (ida e volta) e a Mesa de Lapidação
+    private void extraRecipes(RecipeOutput out) {
+        ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.PHILOSOPHER_BLOCK.get())
+                .pattern("LLL").pattern("LLL").pattern("LLL")
+                .define('L', ModItems.PHILOSOPHER_STONE_LARGE.get())
+                .unlockedBy("has_philosopher_stone_large", has(ModItems.PHILOSOPHER_STONE_LARGE.get())).save(out);
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.PHILOSOPHER_STONE_LARGE.get(), 9)
+                .requires(ModBlocks.PHILOSOPHER_BLOCK.get())
+                .unlockedBy("has_philosopher_block", has(ModBlocks.PHILOSOPHER_BLOCK.get()))
+                .save(out, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "philosopher_stone_large_from_block"));
+
+        // Mesa de Lapidação: R = redstone, F = barra de ferro, M = tábuas de madeira
+        ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, ModBlocks.LAPIDARY_TABLE.get())
+                .pattern(" RF").pattern("MMM").pattern("M M")
+                .define('R', Items.REDSTONE).define('F', Items.IRON_BARS).define('M', ItemTags.PLANKS)
+                .unlockedBy("has_redstone", has(Items.REDSTONE)).save(out);
     }
 }

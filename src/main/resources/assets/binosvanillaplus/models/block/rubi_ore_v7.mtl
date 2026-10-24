@@ -1,0 +1,8 @@
+newmtl rubi_ore_v7
+Kd 1.000000 1.000000 1.000000
+map_Kd binosvanillaplus:block/rubi_ore_crystal
+
+newmtl rubi_ore_v7_1
+Kd 1.000000 1.000000 1.000000
+map_Kd minecraft:block/stone
+

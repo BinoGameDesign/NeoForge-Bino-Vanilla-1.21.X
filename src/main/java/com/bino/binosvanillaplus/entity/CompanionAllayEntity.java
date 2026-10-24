@@ -53,6 +53,11 @@ public class CompanionAllayEntity extends Allay {
     private static final EntityDataAccessor<Integer> DATA_COLOR =
             SynchedEntityData.defineId(CompanionAllayEntity.class, EntityDataSerializers.INT);
 
+    // true enquanto o pet está buscando ou carregando itens. Nesse tempo ele não pode ser "alvo" do cursor,
+    // senão fica na frente do bloco que você está quebrando e atrapalha a mineração.
+    private static final EntityDataAccessor<Boolean> DATA_BUSY =
+            SynchedEntityData.defineId(CompanionAllayEntity.class, EntityDataSerializers.BOOLEAN);
+
     private static final int PET_COOLDOWN_TICKS = 100;   // 5 segundos entre um carinho e outro (20 ticks = 1 segundo)
     private long nextPetTick = 0;                        // a partir de que momento o próximo carinho é permitido
 
@@ -75,6 +80,13 @@ public class CompanionAllayEntity extends Allay {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_COLOR, -1);          // começa sem cor (azul original)
+        builder.define(DATA_BUSY, false);
+    }
+
+    // Quando está ocupado, o cursor do jogador atravessa o pet (dá para quebrar blocos atrás dele)
+    @Override
+    public boolean isPickable() {
+        return !this.entityData.get(DATA_BUSY);
     }
 
     public int getColorIndex() { return this.entityData.get(DATA_COLOR); }
@@ -225,6 +237,7 @@ public class CompanionAllayEntity extends Allay {
 
         // Teletransporte se o jogador se afastou muito
         boolean busy = carrying || target != null;
+        this.entityData.set(DATA_BUSY, busy);      // avisa o cliente (sincronizado)
         double dist = this.distanceTo(owner);
         this.farTicks = (!busy && dist > 6.0) ? this.farTicks + 1 : 0;
         if (dist > (busy ? 48.0 : 12.0) || this.farTicks > 100) {

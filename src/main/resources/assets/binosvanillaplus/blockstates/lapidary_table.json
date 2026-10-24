@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=west": {
+      "model": "binosvanillaplus:block/lapidary_table"
+    },
+    "facing=north": {
+      "model": "binosvanillaplus:block/lapidary_table",
+      "y": 90
+    },
+    "facing=east": {
+      "model": "binosvanillaplus:block/lapidary_table",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "binosvanillaplus:block/lapidary_table",
+      "y": 270
+    }
+  }
+}

@@ -28,9 +28,9 @@ public class DiamondBuffEvents {
 
     // ====== VALORES QUE VOCÊ PODE AJUSTAR ======
     // Multiplicador de todos os status das ferramentas e da espada de diamante (1.25 = +25%)
-    private static final double TOOL_MULTIPLIER = 1.25;
+    public static final double TOOL_MULTIPLIER = 1.25;
     // Bônus de velocidade do set completo (0.15 = +15% de velocidade de movimento)
-    private static final double SET_SPEED_BONUS = 0.15;
+    public static final double SET_SPEED_BONUS = 0.15;
     // Durabilidade original de qualquer ferramenta de diamante no vanilla
     private static final int DIAMOND_BASE_DURABILITY = 1561;
 

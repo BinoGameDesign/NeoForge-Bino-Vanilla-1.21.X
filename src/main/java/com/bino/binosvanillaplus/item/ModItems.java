@@ -4,6 +4,7 @@ import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.item.custom.*;
 import net.minecraft.world.item.*;
 import net.neoforged.bus.api.IEventBus;
+import java.util.List;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -113,6 +114,50 @@ public class ModItems {
     public static final DeferredItem<ArmorItem> JADE_BOOTS = ITEMS.register("jade_boots",
             () -> new ArmorItem(ModArmorMaterials.JADE, ArmorItem.Type.BOOTS,
                     new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33))));   // 33 = multiplicador do diamante
+
+    // ===== FORJA =====
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_1 = ITEMS.register("forge_stone_1",
+            () -> new ForgeStoneItem(1, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_2 = ITEMS.register("forge_stone_2",
+            () -> new ForgeStoneItem(2, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_3 = ITEMS.register("forge_stone_3",
+            () -> new ForgeStoneItem(3, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_4 = ITEMS.register("forge_stone_4",
+            () -> new ForgeStoneItem(4, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_5 = ITEMS.register("forge_stone_5",
+            () -> new ForgeStoneItem(5, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_6 = ITEMS.register("forge_stone_6",
+            () -> new ForgeStoneItem(6, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_7 = ITEMS.register("forge_stone_7",
+            () -> new ForgeStoneItem(7, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_8 = ITEMS.register("forge_stone_8",
+            () -> new ForgeStoneItem(8, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_9 = ITEMS.register("forge_stone_9",
+            () -> new ForgeStoneItem(9, new Item.Properties()));
+    public static final DeferredItem<ForgeStoneItem> FORGE_STONE_10 = ITEMS.register("forge_stone_10",
+            () -> new ForgeStoneItem(10, new Item.Properties()));
+    // Lista em ordem: FORGE_STONES.get(0) = +1 ... get(9) = +10
+    public static final List<DeferredItem<ForgeStoneItem>> FORGE_STONES = List.of(
+            FORGE_STONE_1, FORGE_STONE_2, FORGE_STONE_3, FORGE_STONE_4, FORGE_STONE_5, FORGE_STONE_6, FORGE_STONE_7, FORGE_STONE_8, FORGE_STONE_9, FORGE_STONE_10);
+
+    public static final DeferredItem<Item> PHILOSOPHER_FRAGMENT = ITEMS.register("philosopher_fragment",
+            () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> PHILOSOPHER_STONE_INCOMPLETE = ITEMS.register("philosopher_stone_incomplete",
+            () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> PHILOSOPHER_STONE_SMALL = ITEMS.register("philosopher_stone_small",
+            () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> PHILOSOPHER_STONE_LARGE = ITEMS.register("philosopher_stone_large",
+            () -> new Item(new Item.Properties()));
+
+    // ===== Minérios brutos (soltos pelos minérios; viram gema na Mesa de Lapidação) =====
+    public static final DeferredItem<Item> RAW_DIAMOND = ITEMS.register("raw_diamond",
+            () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> RAW_RUBI = ITEMS.register("raw_rubi",
+            () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> RAW_SAPPHIRE = ITEMS.register("raw_sapphire",
+            () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> RAW_JADE = ITEMS.register("raw_jade",
+            () -> new Item(new Item.Properties()));
 
     // fireResistant() = o item não queima se cair na lava (tire se quiser que queime)
     public static final DeferredItem<CyalumeStickItem> CYALUME_STICK = ITEMS.register("cyalume_stick",

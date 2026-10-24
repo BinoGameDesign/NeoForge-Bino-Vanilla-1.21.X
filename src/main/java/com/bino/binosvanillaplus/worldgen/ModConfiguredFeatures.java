@@ -25,6 +25,7 @@ public class ModConfiguredFeatures {
     public static final ResourceKey<ConfiguredFeature<?, ?>> RUBI_ORE_KEY = registerKey("rubi_ore");
     public static final ResourceKey<ConfiguredFeature<?, ?>> SAPPHIRE_ORE_KEY = registerKey("sapphire_ore");
     public static final ResourceKey<ConfiguredFeature<?, ?>> JADE_ORE_KEY = registerKey("jade_ore");
+    public static final ResourceKey<ConfiguredFeature<?, ?>> FORGE_ORE_KEY = registerKey("forge_ore");
 
     // O datagen chama este método para criar o conteúdo
     public static void bootstrap(BootstrapContext<ConfiguredFeature<?, ?>> context) {
@@ -32,11 +33,18 @@ public class ModConfiguredFeatures {
         registerOre(context, RUBI_ORE_KEY, ModBlocks.RUBI_ORE.get(), ModBlocks.RUBI_DEEPSLATE_ORE.get());
         registerOre(context, SAPPHIRE_ORE_KEY, ModBlocks.SAPPHIRE_ORE.get(), ModBlocks.SAPPHIRE_DEEPSLATE_ORE.get());
         registerOre(context, JADE_ORE_KEY, ModBlocks.JADE_ORE.get(), ModBlocks.JADE_DEEPSLATE_ORE.get());
+        // Minério de forja: o mesmo bloco em pedra e em ardósia, veios um pouco maiores (6)
+        registerOre(context, FORGE_ORE_KEY, ModBlocks.FORGE_ORE.get(), ModBlocks.FORGE_ORE.get(), 6);
     }
 
     // Cria um veio: dentro de pedra vira o minério normal, dentro de ardósia vira o minério de ardósia
     private static void registerOre(BootstrapContext<ConfiguredFeature<?, ?>> context,
                                     ResourceKey<ConfiguredFeature<?, ?>> key, Block ore, Block deepslateOre) {
+        registerOre(context, key, ore, deepslateOre, VEIN_SIZE);
+    }
+
+    private static void registerOre(BootstrapContext<ConfiguredFeature<?, ?>> context,
+                                    ResourceKey<ConfiguredFeature<?, ?>> key, Block ore, Block deepslateOre, int veinSize) {
         RuleTest stoneReplaceable = new TagMatchTest(BlockTags.STONE_ORE_REPLACEABLES);
         RuleTest deepslateReplaceable = new TagMatchTest(BlockTags.DEEPSLATE_ORE_REPLACEABLES);
 
@@ -45,7 +53,7 @@ public class ModConfiguredFeatures {
                 OreConfiguration.target(deepslateReplaceable, deepslateOre.defaultBlockState()));
 
         // 0f = não descarta blocos que tocam o ar
-        context.register(key, new ConfiguredFeature<>(Feature.ORE, new OreConfiguration(targets, VEIN_SIZE, 0f)));
+        context.register(key, new ConfiguredFeature<>(Feature.ORE, new OreConfiguration(targets, veinSize, 0f)));
     }
 
     // Cria a chave com o namespace do seu mod

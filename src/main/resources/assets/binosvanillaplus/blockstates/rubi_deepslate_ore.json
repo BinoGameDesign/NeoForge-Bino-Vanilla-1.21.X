@@ -1,7 +1,28 @@
 {
   "variants": {
-    "": {
-      "model": "binosvanillaplus:block/rubi_deepslate_ore"
+    "variant=0": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v1"
+    },
+    "variant=1": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v2"
+    },
+    "variant=2": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v3"
+    },
+    "variant=3": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v4"
+    },
+    "variant=4": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v5"
+    },
+    "variant=5": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v6"
+    },
+    "variant=6": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v7"
+    },
+    "variant=7": {
+      "model": "binosvanillaplus:block/rubi_deepslate_ore_v8"
     }
   }
 }
