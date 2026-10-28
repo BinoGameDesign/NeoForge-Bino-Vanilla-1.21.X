@@ -1,0 +1,10 @@
+{
+  "loader": "neoforge:obj",
+  "model": "binosvanillaplus:models/block/sapphire_ore_v5.obj",
+  "flip_v": true,
+  "automatic_culling": true,
+  "shade_quads": true,
+  "textures": {
+    "particle": "minecraft:block/stone"
+  }
+}

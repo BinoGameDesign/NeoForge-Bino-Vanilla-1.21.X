@@ -125,6 +125,10 @@ dependencies {
     // só para testar no jogo de desenvolvimento (runClient). Não vira dependência do mod
     runtimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
     runtimeOnly "maven.modrinth:iris:1.8.12+1.21.1-neoforge"
+    // Complementary: add-on e patches para blocos de mods (só para testar no runClient)
+    runtimeOnly "maven.modrinth:euphoria-patches:QMsRXtSJ"       // Euphoria Patches 1.10.5-r5.9.3 (NeoForge)
+    runtimeOnly "maven.modrinth:supplemental-patches:lnHbQ2EA"   // Supplemental Patches 1.0.2 (NeoForge 1.21.1)
+    runtimeOnly "maven.modrinth:kotlin-for-forge:5.12.0"         // exigido pelo Supplemental Patches
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"

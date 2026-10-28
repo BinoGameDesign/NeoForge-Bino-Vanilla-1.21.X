@@ -1,0 +1,10 @@
+{
+  "name": "rubi_ore",
+  "glsl": "rubi_ore.glsl",
+  "mat0": [
+    "binosvanillaplus:rubi_ore",
+    "binosvanillaplus:rubi_deepslate_ore"
+  ],
+  "blocklight": "binosvanillaplus:rubi",
+  "held_lighting": false
+}

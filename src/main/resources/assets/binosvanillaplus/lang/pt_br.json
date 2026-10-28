@@ -87,5 +87,17 @@
   "item.binosvanillaplus.raw_jade": "Jade Bruto",
   "block.binosvanillaplus.philosopher_block": "Bloco de Pedra Filosofal",
   "block.binosvanillaplus.lapidary_table": "Mesa de Lapidação",
-  "container.binosvanillaplus.lapidary_table": "Mesa de Lapidação"
+  "container.binosvanillaplus.lapidary_table": "Mesa de Lapidação",
+  "key.categories.binosvanillaplus": "Bino's Vanilla+",
+  "key.binosvanillaplus.toggle_lookat": "Ligar/desligar painel de informações",
+  "lookat.binosvanillaplus.on": "Painel de informações ligado",
+  "lookat.binosvanillaplus.off": "Painel de informações desligado",
+  "lookat.binosvanillaplus.unbreakable": "Inquebrável",
+  "lookat.binosvanillaplus.tool": "Ferramenta: %s",
+  "lookat.binosvanillaplus.tool.pickaxe": "Picareta",
+  "lookat.binosvanillaplus.tool.axe": "Machado",
+  "lookat.binosvanillaplus.tool.shovel": "Pá",
+  "lookat.binosvanillaplus.tool.hoe": "Enxada",
+  "lookat.binosvanillaplus.hardness": "Dureza: %s",
+  "lookat.binosvanillaplus.growth": "Crescimento: %s%%"
 }

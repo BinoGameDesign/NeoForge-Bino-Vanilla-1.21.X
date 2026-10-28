@@ -46,17 +46,19 @@ public class ModBlocks {
 
     // ===== SAPPHIRE =====
     public static final DeferredBlock<Block> SAPPHIRE_ORE = registerBlock("sapphire_ore",
-            () -> new DropExperienceBlock(UniformInt.of(3,7),
+            () -> new VariantOreBlock(UniformInt.of(3,7),
                     BlockBehaviour.Properties.of()
                             .strength(3.0f, 3.0f)
                             .requiresCorrectToolForDrops()
+                            .noOcclusion() // deixa a luz chegar aos cristais
                             .sound(SoundType.STONE)));
 
     public static final DeferredBlock<Block> SAPPHIRE_DEEPSLATE_ORE = registerBlock("sapphire_deepslate_ore",
-            () -> new DropExperienceBlock(UniformInt.of(4,8),
+            () -> new VariantOreBlock(UniformInt.of(4,8),
                     BlockBehaviour.Properties.of()
                             .strength(4.0f, 5.0f)
                             .requiresCorrectToolForDrops()
+                            .noOcclusion() // deixa a luz chegar aos cristais
                             .sound(SoundType.DEEPSLATE)));
 
     public static final DeferredBlock<Block> SAPPHIRE_BLOCK = registerBlock("sapphire_block",
@@ -67,17 +69,19 @@ public class ModBlocks {
 
     // ===== JADE =====
     public static final DeferredBlock<Block> JADE_ORE = registerBlock("jade_ore",
-            () -> new DropExperienceBlock(UniformInt.of(3,7),
+            () -> new VariantOreBlock(UniformInt.of(3,7),
                     BlockBehaviour.Properties.of()
                             .strength(3.0f, 3.0f)
                             .requiresCorrectToolForDrops()
+                            .noOcclusion() // deixa a luz chegar aos cristais
                             .sound(SoundType.STONE)));
 
     public static final DeferredBlock<Block> JADE_DEEPSLATE_ORE = registerBlock("jade_deepslate_ore",
-            () -> new DropExperienceBlock(UniformInt.of(4,8),
+            () -> new VariantOreBlock(UniformInt.of(4,8),
                     BlockBehaviour.Properties.of()
                             .strength(4.0f, 5.0f)
                             .requiresCorrectToolForDrops()
+                            .noOcclusion() // deixa a luz chegar aos cristais
                             .sound(SoundType.DEEPSLATE)));
 
     public static final DeferredBlock<Block> JADE_BLOCK = registerBlock("jade_block",
@@ -88,10 +92,11 @@ public class ModBlocks {
 
     // Minério de forja: solta a Pedra de Forja +1 (loot table em data/.../loot_table/blocks/forge_ore.json)
     public static final DeferredBlock<Block> FORGE_ORE = registerBlock("forge_ore",
-            () -> new DropExperienceBlock(UniformInt.of(2,5),
+            () -> new VariantOreBlock(UniformInt.of(2,5),
                     BlockBehaviour.Properties.of()
                             .strength(3.0f, 3.0f)
                             .requiresCorrectToolForDrops()
+                            .noOcclusion() // deixa a luz chegar aos cristais
                             .sound(SoundType.STONE)));
 
     // Bloco de Pedra Filosofal (9 pedras filosofais grandes)

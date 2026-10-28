@@ -1,0 +1,10 @@
+{
+  "name": "jade_ore",
+  "glsl": "jade_ore.glsl",
+  "mat0": [
+    "binosvanillaplus:jade_ore",
+    "binosvanillaplus:jade_deepslate_ore"
+  ],
+  "blocklight": "binosvanillaplus:jade",
+  "held_lighting": false
+}

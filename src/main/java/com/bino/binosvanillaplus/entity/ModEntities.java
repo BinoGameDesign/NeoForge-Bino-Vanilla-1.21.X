@@ -32,6 +32,16 @@ public class ModEntities {
                             .noSave()
                             .build("companion_allay"));
 
+    // Espirito do jogador morto (guarda itens e xp). Salvo no mundo; nunca some sozinho.
+    public static final Supplier<EntityType<SpiritEntity>> SPIRIT =
+            ENTITY_TYPES.register("spirit",
+                    () -> EntityType.Builder.<SpiritEntity>of(SpiritEntity::new, MobCategory.MISC)
+                            .sized(0.8f, 2.1f)
+                            .clientTrackingRange(10)
+                            .updateInterval(3)
+                            .fireImmune()
+                            .build("spirit"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

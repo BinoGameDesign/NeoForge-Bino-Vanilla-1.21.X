@@ -1,0 +1,8 @@
+newmtl diamond_ore_v6
+Kd 1.000000 1.000000 1.000000
+map_Kd binosvanillaplus:block/diamond_ore_crystal
+
+newmtl diamond_ore_v6_1
+Kd 1.000000 1.000000 1.000000
+map_Kd minecraft:block/stone
+

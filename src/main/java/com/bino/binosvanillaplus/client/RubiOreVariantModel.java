@@ -25,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
     public static final ModelProperty<Integer> VARIANT = new ModelProperty<>();
 
-    private static final ResourceLocation CRYSTAL = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "block/rubi_ore_crystal");
     // Brilho dos cristais, de 0 (nenhum) a 15 (maximo). Mude aqui para deixar mais fraco.
     private static final int CRYSTAL_GLOW = 15;
 
@@ -43,10 +42,15 @@ public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
                 Direction side = s == 6 ? null : Direction.values()[s];
                 List<BakedQuad> quads = variants[v].getQuads(null, side, RandomSource.create(42L), ModelData.EMPTY, null);
                 glowing[v][s] = quads.stream().map(q ->
-                        q.getSprite().contents().name().equals(CRYSTAL) ? QuadTransformers.settingEmissivity(CRYSTAL_GLOW).process(q) : q
+                        isCrystal(q.getSprite().contents().name()) ? QuadTransformers.settingEmissivity(CRYSTAL_GLOW).process(q) : q
                 ).toList();
             }
         }
+    }
+
+    // Qualquer textura do nosso mod chamada block/<gema>_ore_crystal (rubi, safira, jade, diamante...) brilha.
+    private static boolean isCrystal(ResourceLocation name) {
+        return name.getNamespace().equals(BinosVanillaMod.MOD_ID) && name.getPath().endsWith("_ore_crystal");
     }
 
     // Formula: f = (a(x) + b(y) + c(z)) mod 8, onde cada termo = 4*(paridade da coordenada) + hash(0..3).

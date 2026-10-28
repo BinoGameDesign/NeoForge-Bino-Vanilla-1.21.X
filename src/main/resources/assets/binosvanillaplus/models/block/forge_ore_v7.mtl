@@ -1,0 +1,8 @@
+newmtl forge_ore_v7
+Kd 1.000000 1.000000 1.000000
+map_Kd binosvanillaplus:block/forge_ore_crystal
+
+newmtl forge_ore_v7_1
+Kd 1.000000 1.000000 1.000000
+map_Kd minecraft:block/stone
+

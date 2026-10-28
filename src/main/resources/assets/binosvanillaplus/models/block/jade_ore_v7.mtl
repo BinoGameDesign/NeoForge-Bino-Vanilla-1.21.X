@@ -1,0 +1,8 @@
+newmtl jade_ore_v7
+Kd 1.000000 1.000000 1.000000
+map_Kd binosvanillaplus:block/jade_ore_crystal
+
+newmtl jade_ore_v7_1
+Kd 1.000000 1.000000 1.000000
+map_Kd minecraft:block/stone
+

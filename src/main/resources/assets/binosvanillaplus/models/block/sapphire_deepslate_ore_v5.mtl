@@ -1,0 +1,8 @@
+newmtl sapphire_deepslate_ore_v5
+Kd 1.000000 1.000000 1.000000
+map_Kd binosvanillaplus:block/sapphire_ore_crystal
+
+newmtl sapphire_deepslate_ore_v5_1
+Kd 1.000000 1.000000 1.000000
+map_Kd minecraft:block/deepslate
+

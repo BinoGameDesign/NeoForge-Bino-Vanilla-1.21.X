@@ -1,0 +1,10 @@
+{
+  "loader": "neoforge:obj",
+  "model": "binosvanillaplus:models/block/jade_ore_v4.obj",
+  "flip_v": true,
+  "automatic_culling": true,
+  "shade_quads": true,
+  "textures": {
+    "particle": "minecraft:block/stone"
+  }
+}

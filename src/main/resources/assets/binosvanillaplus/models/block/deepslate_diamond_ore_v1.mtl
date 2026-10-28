@@ -1,0 +1,8 @@
+newmtl deepslate_diamond_ore_v1
+Kd 1.000000 1.000000 1.000000
+map_Kd binosvanillaplus:block/diamond_ore_crystal
+
+newmtl deepslate_diamond_ore_v1_1
+Kd 1.000000 1.000000 1.000000
+map_Kd minecraft:block/deepslate
+
