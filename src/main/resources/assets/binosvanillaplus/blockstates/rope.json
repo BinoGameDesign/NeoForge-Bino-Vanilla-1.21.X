@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "anchored=false": {
+      "model": "binosvanillaplus:block/rope"
+    },
+    "anchored=true": {
+      "model": "binosvanillaplus:block/rope"
+    }
+  }
+}

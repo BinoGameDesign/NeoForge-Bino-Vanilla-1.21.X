@@ -1,0 +1,57 @@
+{
+  "variants": {
+    "face=floor,facing=north": {
+      "model": "binosvanillaplus:block/climbing_hook"
+    },
+    "face=wall,facing=north": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 90
+    },
+    "face=ceiling,facing=north": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 180
+    },
+    "face=floor,facing=east": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "y": 90
+    },
+    "face=wall,facing=east": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 90,
+      "y": 90
+    },
+    "face=ceiling,facing=east": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 180,
+      "y": 90
+    },
+    "face=floor,facing=south": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "y": 180
+    },
+    "face=wall,facing=south": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 90,
+      "y": 180
+    },
+    "face=ceiling,facing=south": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 180,
+      "y": 180
+    },
+    "face=floor,facing=west": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "y": 270
+    },
+    "face=wall,facing=west": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 90,
+      "y": 270
+    },
+    "face=ceiling,facing=west": {
+      "model": "binosvanillaplus:block/climbing_hook",
+      "x": 180,
+      "y": 270
+    }
+  }
+}

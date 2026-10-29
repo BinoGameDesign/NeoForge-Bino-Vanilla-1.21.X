@@ -14,8 +14,12 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import com.bino.binosvanillaplus.block.custom.HookBlock;
+import com.bino.binosvanillaplus.block.custom.RopeBlock;
+import net.minecraft.world.level.material.PushReaction;
 
 import java.util.function.Supplier;
+
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS =
@@ -113,6 +117,20 @@ public class ModBlocks {
                     .sound(SoundType.WOOD)
                     .noOcclusion()));
 
+    // Corda e gancho: SEM BlockItem automatico (os itens sao registrados a mao em ModItems)
+    public static final DeferredBlock<RopeBlock> ROPE = BLOCKS.register("rope",
+            () -> new RopeBlock(BlockBehaviour.Properties.of()
+                    .noCollission()
+                    .strength(0.2f)
+                    .sound(SoundType.WOOL)
+                    .pushReaction(PushReaction.DESTROY)));
+
+    public static final DeferredBlock<HookBlock> CLIMBING_HOOK = BLOCKS.register("climbing_hook",
+            () -> new HookBlock(BlockBehaviour.Properties.of()
+                    .strength(1.5f)
+                    .noCollission()   // da para atravessar o gancho (a corda fica logo ao lado/abaixo)
+                    .noOcclusion()
+                    .sound(SoundType.CHAIN)));
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);
         registerBlockItem(name, toReturn);

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "binosvanillaplus:rope"
+    }
+  },
+  "pattern": [
+    "I I",
+    " I ",
+    " R "
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosvanillaplus:climbing_hook"
+  }
+}

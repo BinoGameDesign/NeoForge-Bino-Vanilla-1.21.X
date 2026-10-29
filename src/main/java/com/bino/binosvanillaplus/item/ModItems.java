@@ -1,6 +1,7 @@
 package com.bino.binosvanillaplus.item;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
+import com.bino.binosvanillaplus.block.ModBlocks;
 import com.bino.binosvanillaplus.item.custom.*;
 import net.minecraft.world.item.*;
 import net.neoforged.bus.api.IEventBus;
@@ -162,6 +163,12 @@ public class ModItems {
     // fireResistant() = o item não queima se cair na lava (tire se quiser que queime)
     public static final DeferredItem<CyalumeStickItem> CYALUME_STICK = ITEMS.register("cyalume_stick",
             () -> new CyalumeStickItem(new Item.Properties().fireResistant()));
+
+    // Corda (a cada item = 1 bloco de corda) e Gancho de Escalada
+    public static final DeferredItem<RopeItem> ROPE = ITEMS.register("rope",
+            () -> new RopeItem(new Item.Properties()));
+    public static final DeferredItem<ClimbingHookItem> CLIMBING_HOOK = ITEMS.register("climbing_hook",
+            () -> new ClimbingHookItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
