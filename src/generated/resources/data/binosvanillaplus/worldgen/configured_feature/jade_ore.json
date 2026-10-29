@@ -6,7 +6,10 @@
     "targets": [
       {
         "state": {
-          "Name": "binosvanillaplus:jade_ore"
+          "Name": "binosvanillaplus:jade_ore",
+          "Properties": {
+            "variant": "0"
+          }
         },
         "target": {
           "predicate_type": "minecraft:tag_match",
@@ -15,7 +18,10 @@
       },
       {
         "state": {
-          "Name": "binosvanillaplus:jade_deepslate_ore"
+          "Name": "binosvanillaplus:jade_deepslate_ore",
+          "Properties": {
+            "variant": "0"
+          }
         },
         "target": {
           "predicate_type": "minecraft:tag_match",
