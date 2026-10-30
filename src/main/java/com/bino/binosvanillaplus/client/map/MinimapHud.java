@@ -75,7 +75,7 @@ public class MinimapHud {
                 if (ch == null) continue;
 
                 int y = cave ? Math.min(slice, lvl.getMaxBuildHeight() - 1)
-                             : ch.getHeight(Heightmap.Types.WORLD_SURFACE, wx & 15, wz & 15) - 1;
+                             : ch.getHeight(Heightmap.Types.WORLD_SURFACE, wx & 15, wz & 15);   // LevelChunk.getHeight ja devolve o bloco mais alto (nao o ar acima)
                 int limit = Math.max(minY, y - 56);
                 int runs = 0;
                 Object curKey = null;

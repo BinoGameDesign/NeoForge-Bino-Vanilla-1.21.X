@@ -145,7 +145,8 @@ public final class ExploredMap {
                     while (y > minY && chunk.getBlockState(pos.set(wx, y, wz)).isAir()) y--;
                     y += 1;
                 } else {
-                    y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+                    // LevelChunk.getHeight devolve o Y do bloco mais alto; +1 = primeiro ar (o "top = y - 1" abaixo volta ao bloco)
+                    y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) + 1;
                 }
                 int top = y - 1;
                 BlockState st = chunk.getBlockState(pos.set(wx, top, wz));
@@ -256,7 +257,7 @@ public final class ExploredMap {
         try {
             Files.createDirectories(worldDir());
             try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file()))))) {
-                out.writeInt(3);
+                out.writeInt(4);
                 out.writeInt(TILES.size());
                 for (Map.Entry<Long, Tile> e : TILES.entrySet()) {
                     out.writeInt((int) (long) e.getKey());
@@ -283,14 +284,14 @@ public final class ExploredMap {
         if (!Files.exists(f)) return;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
             int ver = in.readInt();
-            if (ver != 2 && ver != 3) return;   // formato antigo (cores de mapa) e' descartado: o mapa se refaz com as cores reais
+            if (ver != 4) return;   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
             int n = in.readInt();
             for (int i = 0; i < n; i++) {
                 int cx = in.readInt(), cz = in.readInt();
                 Tile t = new Tile();
                 for (int k = 0; k < 256; k++) t.abgr[k] = in.readInt();
                 for (int k = 0; k < 256; k++) t.h[k] = in.readShort();
-                if (ver == 3) {
+                if (ver >= 3) {
                     for (int k = 0; k < 256; k++) {
                         t.canopy[k] = in.readByte(); t.gh[k] = in.readShort(); t.cb[k] = in.readShort();
                         t.gcol[k] = in.readInt(); t.tcol[k] = in.readInt();

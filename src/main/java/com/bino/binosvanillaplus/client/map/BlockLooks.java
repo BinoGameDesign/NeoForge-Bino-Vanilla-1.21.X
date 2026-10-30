@@ -33,15 +33,8 @@ public class BlockLooks {
         Look l = look(st);
         int c = vivid(tint(l.top, l.tintTop, st, level, pos));
         c = sane(st, c, level, pos);
-        if (LOGGED.size() < 80 && LOGGED.add(st.getBlock())) {
-            com.bino.binosvanillaplus.BinosVanillaMod.LOGGER.info("[Minimapa] {} topo=#{} tinta={} lateral=#{}",
-                    net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(st.getBlock()),
-                    Integer.toHexString(c & 0xFFFFFF), l.tintTop, Integer.toHexString(l.side & 0xFFFFFF));
-        }
         return c;
     }
-
-    private static final java.util.Set<net.minecraft.world.level.block.Block> LOGGED = new java.util.HashSet<>();
 
     // rede de seguranca: grama e folhas verdes (cor de mapa vanilla GRASS/PLANT) nunca podem sair marrons/acinzentadas
     private static int sane(BlockState st, int c, BlockAndTintGetter level, BlockPos pos) {

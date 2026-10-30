@@ -163,7 +163,7 @@ public class WorldMap3D {
                     quads += face(b, x, c.top() + 1 - 64, z, argb(c.topCol()));                      // topo da copa
                     if (c.trunk() && c.cb() > sTop) {                                               // tronco: caixa fina
                         float lo = sTop - 64, hi = c.cb() - 64;
-                        int tc = DioramaRenderer.scale(argb(c.tcol()), 0.95f), tb = DioramaRenderer.scale(argb(c.tcol()), 0.70f);
+                        int tc = DioramaRenderer.scale(argb(c.tcol()), 1.25f), tb = DioramaRenderer.scale(argb(c.tcol()), 0.90f);   // troncos escuros (cerejeira, carvalho escuro) nao viram preto
                         float a = x + 0.30f, bb = x + 0.70f, e = z + 0.30f, f = z + 0.70f;
                         DioramaRenderer.quadC(b, bb, hi, e, bb, hi, f, bb, lo, f, bb, lo, e, tc, tc, tb, tb, 1, 0, 0);
                         DioramaRenderer.quadC(b, a, hi, f, a, hi, e, a, lo, e, a, lo, f, tc, tc, tb, tb, -1, 0, 0);
