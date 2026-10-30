@@ -14,10 +14,10 @@ public class WaypointEditScreen extends Screen {
     private final Screen parent;
     @Nullable private final MapWaypoints.Waypoint editing;
     private final MapWaypoints.Waypoint draft;
-    private EditBox name, xB, yB, zB, sym, setB;
+    private EditBox name, xB, yB, zB, setB;
     private Button visBtn;
     private int top, left;
-    private static final int W = 240, H = 200;
+    private static final int W = 240, H = 262;
 
     // editing == null -> cria uma nova em (x,y,z)
     public WaypointEditScreen(@Nullable Screen parent, @Nullable MapWaypoints.Waypoint editing, int x, int y, int z) {
@@ -47,20 +47,17 @@ public class WaypointEditScreen extends Screen {
         yB = num(fx + 74, top + 62, draft.y);
         zB = num(fx + 148, top + 62, draft.z);
 
-        sym = addRenderableWidget(new EditBox(font, fx, top + 94, 34, 16, Component.literal("Símbolo")));
-        sym.setMaxLength(2);
-        sym.setValue(draft.symbol == null ? "" : draft.symbol);
-        setB = addRenderableWidget(new EditBox(font, fx + 48, top + 94, W - 20 - 48, 16, Component.literal("Grupo")));
+        setB = addRenderableWidget(new EditBox(font, fx, top + 94, W - 20, 16, Component.literal("Grupo")));
         setB.setMaxLength(24);
         setB.setValue(draft.setName());
 
         visBtn = addRenderableWidget(Button.builder(visText(), b -> { draft.hidden = !draft.hidden; b.setMessage(visText()); })
-                .bounds(fx, top + 152, 100, 18).build());
+                .bounds(fx, top + 218, 100, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Usar minha posição"), b -> {
             LocalPlayer p = Minecraft.getInstance().player;
             if (p == null) return;
             xB.setValue(String.valueOf(p.getBlockX())); yB.setValue(String.valueOf(p.getBlockY())); zB.setValue(String.valueOf(p.getBlockZ()));
-        }).bounds(fx + 106, top + 152, W - 20 - 106, 18).build());
+        }).bounds(fx + 106, top + 218, W - 20 - 106, 18).build());
 
         int by = top + H - 24;
         addRenderableWidget(Button.builder(Component.literal("Salvar"), b -> save()).bounds(fx, by, 70, 18).build());
@@ -92,7 +89,7 @@ public class WaypointEditScreen extends Screen {
         MapWaypoints.Waypoint w = editing != null ? editing : draft;
         w.name = name.getValue().trim().isEmpty() ? "Marcador" : name.getValue().trim();
         w.x = parse(xB, draft.x); w.y = parse(yB, draft.y); w.z = parse(zB, draft.z);
-        w.symbol = sym.getValue().trim();
+        w.symbol = draft.symbol;
         w.set = setB.getValue().trim().isEmpty() ? MapWaypoints.DEFAULT_SET : setB.getValue().trim();
         w.color = draft.color;
         w.hidden = draft.hidden;
@@ -117,11 +114,22 @@ public class WaypointEditScreen extends Screen {
         g.drawString(font, "X", fx, top + 52, 0xFFAAAAAA, false);
         g.drawString(font, "Y", fx + 74, top + 52, 0xFFAAAAAA, false);
         g.drawString(font, "Z", fx + 148, top + 52, 0xFFAAAAAA, false);
-        g.drawString(font, "Símbolo", fx, top + 84, 0xFFAAAAAA, false);
-        g.drawString(font, "Grupo", fx + 48, top + 84, 0xFFAAAAAA, false);
-        g.drawString(font, "Cor", fx, top + 116, 0xFFAAAAAA, false);
+        g.drawString(font, "Grupo", fx, top + 84, 0xFFAAAAAA, false);
+        g.drawString(font, "Ícone", fx, top + 116, 0xFFAAAAAA, false);
+        String hoverName = null;
+        for (int i = 0; i < WaypointIcons.IDS.size(); i++) {
+            int ix = fx + (i % 8) * 28, iy = top + 126 + (i / 8) * 22;
+            boolean sel = WaypointIcons.IDS.get(i).equals(draft.icon());
+            boolean over = mx >= ix && mx < ix + 22 && my >= iy && my < iy + 20;
+            g.fill(ix - 1, iy - 1, ix + 23, iy + 21, sel ? 0xFFFFFFFF : 0xFF000000);
+            g.fill(ix, iy, ix + 22, iy + 20, over ? 0xFF55557A : draft.color);
+            WaypointIcons.draw(g, WaypointIcons.IDS.get(i), ix + 3, iy + 2, 16);
+            if (over) hoverName = WaypointIcons.NAMES.get(i);
+        }
+        if (hoverName != null) g.renderTooltip(font, Component.literal(hoverName), mx, my);
+        g.drawString(font, "Cor", fx, top + 172, 0xFFAAAAAA, false);
         for (int i = 0; i < MapWaypoints.PALETTE.length; i++) {
-            int sx = fx + (i % 8) * 28, sy = top + 126 + (i / 8) * 14;
+            int sx = fx + (i % 8) * 28, sy = top + 182 + (i / 8) * 14;
             boolean sel = MapWaypoints.PALETTE[i] == draft.color;
             g.fill(sx - 1, sy - 1, sx + 23, sy + 11, sel ? 0xFFFFFFFF : 0xFF000000);
             g.fill(sx, sy, sx + 22, sy + 10, MapWaypoints.PALETTE[i]);
@@ -132,8 +140,12 @@ public class WaypointEditScreen extends Screen {
     public boolean mouseClicked(double mx, double my, int button) {
         if (super.mouseClicked(mx, my, button)) return true;
         int fx = left + 10;
+        for (int i = 0; i < WaypointIcons.IDS.size(); i++) {
+            int ix = fx + (i % 8) * 28, iy = top + 126 + (i / 8) * 22;
+            if (mx >= ix && mx < ix + 22 && my >= iy && my < iy + 20) { draft.symbol = WaypointIcons.IDS.get(i); return true; }
+        }
         for (int i = 0; i < MapWaypoints.PALETTE.length; i++) {
-            int sx = fx + (i % 8) * 28, sy = top + 126 + (i / 8) * 14;
+            int sx = fx + (i % 8) * 28, sy = top + 182 + (i / 8) * 14;
             if (mx >= sx && mx < sx + 22 && my >= sy && my < sy + 10) { draft.color = MapWaypoints.PALETTE[i]; return true; }
         }
         return false;

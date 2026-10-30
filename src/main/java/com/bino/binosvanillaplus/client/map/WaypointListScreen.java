@@ -108,7 +108,7 @@ public class WaypointListScreen extends Screen {
             // icone
             g.fill(x, y + 3, x + 18, y + 21, 0xFF000000);
             g.fill(x + 1, y + 4, x + 17, y + 20, w.hidden ? 0xFF555555 : w.color);
-            g.drawCenteredString(font, w.symbolOrInitial(), x + 9, y + 8, 0xFFFFFFFF);
+            WaypointIcons.draw(g, w.icon(), x + 1, y + 4, 16);
             // texto
             int tc = w.hidden ? 0xFF888888 : 0xFFFFFFFF;
             g.drawString(font, font.plainSubstrByWidth(w.name, 120), x + 24, y + 3, tc, false);

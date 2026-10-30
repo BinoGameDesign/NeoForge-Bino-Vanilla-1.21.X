@@ -38,7 +38,18 @@ public class BlockLooks {
         FluidState fs = st.getFluidState();
         if (!fs.isEmpty() && (st.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock)) return fluid(fs, level, pos);
         Look l = look(st);
-        return vivid(tint(l.side, l.tintSide, st, level, pos));
+        int s = tint(l.side, l.tintSide, st, level, pos);
+        if (l.tintTop >= 0 && l.tintSide < 0) {   // grama, micelio...: de cima a lateral e' quase toda verde, so a base e' terra
+            int tp = tint(l.top, l.tintTop, st, level, pos);
+            s = mix(tp, s, 0.30f);
+        }
+        return vivid(s);
+    }
+
+    private static int mix(int a, int b, float tb) {
+        int r = (int) (((a >> 16) & 0xFF) * (1 - tb) + ((b >> 16) & 0xFF) * tb), g = (int) (((a >> 8) & 0xFF) * (1 - tb) + ((b >> 8) & 0xFF) * tb),
+                bl = (int) ((a & 0xFF) * (1 - tb) + (b & 0xFF) * tb);
+        return 0xFF000000 | (r << 16) | (g << 8) | bl;
     }
 
     private static int fluid(FluidState fs, BlockAndTintGetter level, BlockPos pos) {

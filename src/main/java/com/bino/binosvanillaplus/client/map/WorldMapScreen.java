@@ -39,7 +39,7 @@ public class WorldMapScreen extends Screen {
     public WorldMapScreen() {
         super(Component.literal("Mapa-Mundi"));
         MapOptions.ensureLoaded();
-        mode3D = MapOptions.worldMap3D;
+        mode3D = true;   // o mapa-mundi e' sempre 3D
         LocalPlayer p = Minecraft.getInstance().player;
         if (p != null) { cx = p.getX(); cz = p.getZ(); }
     }
@@ -59,13 +59,6 @@ public class WorldMapScreen extends Screen {
             LocalPlayer p = Minecraft.getInstance().player;
             if (p != null) { cx = p.getX(); cz = p.getZ(); }
         }).bounds(bx, py + 3, 70, 16).build());
-        bx -= 36;
-        addRenderableWidget(Button.builder(Component.literal(mode3D ? "3D" : "2D"), b -> {
-            mode3D = !mode3D;
-            MapOptions.worldMap3D = mode3D;
-            MapOptions.save();
-            b.setMessage(Component.literal(mode3D ? "3D" : "2D"));
-        }).bounds(bx, py + 3, 34, 16).build());
         bx -= 54;
         addRenderableWidget(Button.builder(Component.literal("Opções"), b ->
                 Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).bounds(bx, py + 3, 52, 16).build());
@@ -167,7 +160,7 @@ public class WorldMapScreen extends Screen {
                 int sx = (int) s[0], sy = (int) s[1];
                 g.fill(sx - 6, sy - 6, sx + 7, sy + 7, w == hover ? 0xFFFFFFFF : 0xFF000000);
                 g.fill(sx - 5, sy - 5, sx + 6, sy + 6, w.color);
-                g.drawCenteredString(font, w.symbolOrInitial(), sx, sy - 4, 0xFFFFFFFF);
+                WaypointIcons.draw(g, w.icon(), sx - 5, sy - 5, 11);
                 if (MapOptions.worldLabels) {
                     String label = w.name;
                     if (MapOptions.showDistance && pl != null)

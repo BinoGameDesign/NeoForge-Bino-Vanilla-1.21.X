@@ -13,7 +13,8 @@ public class MapOptions {
     public static boolean minimapPins = true;      // marcacoes no minimapa
     public static boolean worldPins = true;        // marcacoes no mapa-mundi
     public static boolean worldLabels = true;      // nomes ao lado das marcacoes no mapa-mundi
-    public static boolean minimapLabels = false;   // letra/nome nas marcacoes do minimapa
+    public static boolean showMobs = true;         // pontos de mobs no minimapa (hostis vermelho, amigaveis azul)
+    public static int minimapOpacity = 80;         // opacidade do minimapa em %
     public static boolean chunkGrid = false;       // grade de chunks no mapa-mundi
     public static boolean deathPoint = true;       // cria marcacao automatica ao morrer
     public static boolean showDistance = true;     // distancia no nome das marcacoes
@@ -23,9 +24,10 @@ public class MapOptions {
     private static boolean loaded = false;
 
     private static class Data {
-        boolean minimapPins = true, worldPins = true, worldLabels = true, minimapLabels = false,
+        boolean minimapPins = true, worldPins = true, worldLabels = true, showMobs = true,
                 chunkGrid = false, deathPoint = true, showDistance = true, worldMap3D = true;
         int minimapZoom = 1;
+        int minimapOpacity = 80;
     }
 
     private static Path file() { return FMLPaths.GAMEDIR.get().resolve("binos_map").resolve("options.json"); }
@@ -38,7 +40,8 @@ public class MapOptions {
         try (Reader r = Files.newBufferedReader(f)) {
             Data d = new Gson().fromJson(r, Data.class);
             if (d == null) return;
-            minimapPins = d.minimapPins; worldPins = d.worldPins; worldLabels = d.worldLabels; minimapLabels = d.minimapLabels;
+            minimapPins = d.minimapPins; worldPins = d.worldPins; worldLabels = d.worldLabels; showMobs = d.showMobs;
+            minimapOpacity = d.minimapOpacity <= 0 ? 80 : Math.max(30, Math.min(100, d.minimapOpacity));
             chunkGrid = d.chunkGrid; deathPoint = d.deathPoint; showDistance = d.showDistance;
             minimapZoom = Math.max(0, Math.min(2, d.minimapZoom)); worldMap3D = d.worldMap3D;
         } catch (Exception ignored) {
@@ -47,7 +50,7 @@ public class MapOptions {
 
     public static void save() {
         Data d = new Data();
-        d.minimapPins = minimapPins; d.worldPins = worldPins; d.worldLabels = worldLabels; d.minimapLabels = minimapLabels;
+        d.minimapPins = minimapPins; d.worldPins = worldPins; d.worldLabels = worldLabels; d.showMobs = showMobs; d.minimapOpacity = minimapOpacity;
         d.chunkGrid = chunkGrid; d.deathPoint = deathPoint; d.showDistance = showDistance;
         d.minimapZoom = minimapZoom; d.worldMap3D = worldMap3D;
         try {

@@ -24,7 +24,7 @@ public class MapOptionsScreen extends Screen {
     @Override
     protected void init() {
         MapOptions.ensureLoaded();
-        H = 36 + 7 * 22 + 30;
+        H = 36 + 8 * 22 + 30;
         left = (width - W) / 2;
         top = (height - H) / 2;
         int y = top + 26;
@@ -32,9 +32,17 @@ public class MapOptionsScreen extends Screen {
         toggle(y, "Marcações no mapa-mundi", () -> MapOptions.worldPins, v -> MapOptions.worldPins = v); y += 22;
         toggle(y, "Nomes no mapa-mundi", () -> MapOptions.worldLabels, v -> MapOptions.worldLabels = v); y += 22;
         toggle(y, "Distância ao lado do nome", () -> MapOptions.showDistance, v -> MapOptions.showDistance = v); y += 22;
-        toggle(y, "Símbolo no minimapa", () -> MapOptions.minimapLabels, v -> MapOptions.minimapLabels = v); y += 22;
+        toggle(y, "Mobs no minimapa", () -> MapOptions.showMobs, v -> MapOptions.showMobs = v); y += 22;
         toggle(y, "Grade de chunks", () -> MapOptions.chunkGrid, v -> MapOptions.chunkGrid = v); y += 22;
         toggle(y, "Marcar local da morte", () -> MapOptions.deathPoint, v -> MapOptions.deathPoint = v); y += 22;
+        addRenderableWidget(Button.builder(Component.literal("Opacidade do minimapa: " + MapOptions.minimapOpacity + "%"), b -> {
+            int[] steps = {40, 60, 80, 100};
+            int cur = 0;
+            for (int i = 0; i < steps.length; i++) if (steps[i] == MapOptions.minimapOpacity) cur = i;
+            MapOptions.minimapOpacity = steps[(cur + 1) % steps.length];
+            b.setMessage(Component.literal("Opacidade do minimapa: " + MapOptions.minimapOpacity + "%"));
+            MapOptions.save();
+        }).bounds(left + 10, y, W - 20, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Concluído"), b -> onClose())
                 .bounds(left + W / 2 - 50, top + H - 24, 100, 18).build());
     }

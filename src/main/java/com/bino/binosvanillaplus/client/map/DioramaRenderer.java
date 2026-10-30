@@ -159,6 +159,7 @@ public class DioramaRenderer {
     static VertexBuffer pointer() {
         if (pointer != null) return pointer;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        halo(b, 3.8f, 0.22f, 0x55FFFFFF);       // brilho suave em volta do jogador
         arrow(b, 0.95f, 0.30f, 0xFFFFFFFF);     // seta toda branca
         MeshData md = b.build();
         pointer = new VertexBuffer(VertexBuffer.Usage.STATIC);
@@ -166,6 +167,16 @@ public class DioramaRenderer {
         if (md != null) pointer.upload(md);
         VertexBuffer.unbind();
         return pointer;
+    }
+
+    private static void halo(BufferBuilder b, float radius, float y, int col) {
+        int seg = 28;
+        for (int i = 0; i < seg; i++) {
+            double a0 = i * Math.PI * 2 / seg, a1 = (i + 1) * Math.PI * 2 / seg;
+            b.addVertex(0f, y, 0f).setColor(col).setNormal(0, 1, 0);
+            b.addVertex((float) Math.cos(a0) * radius, y, (float) Math.sin(a0) * radius).setColor(col & 0x00FFFFFF).setNormal(0, 1, 0);
+            b.addVertex((float) Math.cos(a1) * radius, y, (float) Math.sin(a1) * radius).setColor(col & 0x00FFFFFF).setNormal(0, 1, 0);
+        }
     }
 
     // seta (chevron) deitada no plano XZ a altura y; centro da seta ~ origem; aponta para -Z
@@ -192,6 +203,48 @@ public class DioramaRenderer {
         VertexBuffer.unbind();
     }
 
+    // ------------------------------------------------------------------ feixes de luz das marcacoes
+
+    private static VertexBuffer beam;
+    private static float curAlpha = 1f;
+
+    private static VertexBuffer beam() {
+        if (beam != null) return beam;
+        BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        int bot = 0xFFFFFFFF, top = 0x00FFFFFF;
+        float h = 0.5f;
+        quadC(b, h, 0, -h, h, 0, h, h, 1, h, h, 1, -h, bot, bot, top, top, 1, 0, 0);
+        quadC(b, -h, 0, h, -h, 0, -h, -h, 1, -h, -h, 1, h, bot, bot, top, top, -1, 0, 0);
+        quadC(b, h, 0, h, -h, 0, h, -h, 1, h, h, 1, h, bot, bot, top, top, 0, 0, 1);
+        quadC(b, -h, 0, -h, h, 0, -h, h, 1, -h, -h, 1, -h, bot, bot, top, top, 0, 0, -1);
+        MeshData md = b.build();
+        beam = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        beam.bind();
+        if (md != null) beam.upload(md);
+        VertexBuffer.unbind();
+        return beam;
+    }
+
+    // desenha um feixe de luz sobre cada marcacao visivel. (ox,oy,oz) = ponto do mundo que esta na origem da view.
+    static void drawBeams(Matrix4f baseView, Matrix4f projection, double ox, double oy, double oz, boolean enabled, float width, float height) {
+        if (!enabled || shader == null) return;
+        VertexBuffer bm = beam();
+        shader.safeGetUniform("Radius").set(100000f);
+        shader.safeGetUniform("Detail").set(0f);
+        shader.safeGetUniform("Origin").set(0f, 0f, 0f);
+        RenderSystem.depthMask(false);
+        for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
+            if (w.hidden) continue;
+            Matrix4f mv = new Matrix4f(baseView).translate((float) (w.x + 0.5 - ox), (float) (w.y - oy - 1.5), (float) (w.z + 0.5 - oz)).scale(width, height, width);
+            RenderSystem.setShaderColor(((w.color >> 16) & 0xFF) / 255f, ((w.color >> 8) & 0xFF) / 255f, (w.color & 0xFF) / 255f, curAlpha * 0.8f);
+            bm.bind();
+            bm.drawWithShader(mv, projection, shader);
+        }
+        VertexBuffer.unbind();
+        RenderSystem.setShaderColor(1f, 1f, 1f, curAlpha);
+        RenderSystem.depthMask(true);
+    }
+
     // ------------------------------------------------------------------ estado de GL compartilhado (minimapa e mapa-mundi)
 
     static class GlState {
@@ -200,6 +253,11 @@ public class DioramaRenderer {
     }
 
     static GlState begin(GuiGraphics g, int x0, int y0, int w, int h, Matrix4f projection) {
+        return begin(g, x0, y0, w, h, projection, 1f);
+    }
+
+    static GlState begin(GuiGraphics g, int x0, int y0, int w, int h, Matrix4f projection, float alpha) {
+        curAlpha = alpha;
         Minecraft mc = Minecraft.getInstance();
         Window win = mc.getWindow();
         double sc = win.getGuiScale();
@@ -216,7 +274,7 @@ public class DioramaRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
         return s;
     }
 
@@ -226,6 +284,7 @@ public class DioramaRenderer {
         RenderSystem.enableCull();
         RenderSystem.viewport(0, 0, win.getWidth(), win.getHeight());
         RenderSystem.setProjectionMatrix(s.oldProj, VertexSorting.ORTHOGRAPHIC_Z);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         g.disableScissor();
     }
 
@@ -236,7 +295,7 @@ public class DioramaRenderer {
         float yaw = (float) Math.toRadians(p.getYRot());
         view = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).rotateY(yaw + (float) Math.PI);
         proj = new Matrix4f().perspective(FOV, 1f, 0.1f, 400f);
-        GlState st = begin(g, x0, y0, box, box, proj);
+        GlState st = begin(g, x0, y0, box, box, proj, MapOptions.minimapOpacity / 100f);
 
         if (hasTerrain) {
             Matrix4f mv = new Matrix4f(view).translate((float) (ox0 - p.getX()), (float) (oy0 - p.getY()), (float) (oz0 - p.getZ()));
@@ -249,6 +308,7 @@ public class DioramaRenderer {
             terrain.drawWithShader(mv, proj, shader);
             VertexBuffer.unbind();
         }
+        drawBeams(view, proj, p.getX(), p.getY(), p.getZ(), MapOptions.minimapPins, 0.6f, 40f);
         // ponteiro do jogador por cima de tudo, deitado no plano do terreno, sempre apontando "para cima" no mapa
         RenderSystem.clear(256, Minecraft.ON_OSX);
         Matrix4f pmv = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).scale(dist / 30f * 0.62f);

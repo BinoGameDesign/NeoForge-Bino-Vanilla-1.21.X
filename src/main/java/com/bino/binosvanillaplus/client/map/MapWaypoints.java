@@ -20,14 +20,11 @@ public class MapWaypoints {
         public String name;
         public int x, y, z;
         public int color;          // ARGB
-        public String symbol;      // 1-2 caracteres; vazio = inicial do nome
+        public String symbol;      // id do icone (casa, mina, perigo...), ver WaypointIcons
         public String set;         // grupo (ex.: "Casa", "Minas")
         public boolean hidden;     // oculto = nao aparece em nenhum mapa
 
-        public String symbolOrInitial() {
-            if (symbol != null && !symbol.isEmpty()) return symbol;
-            return name == null || name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase();
-        }
+        public String icon() { return WaypointIcons.valid(symbol); }
 
         public String setName() { return set == null || set.isEmpty() ? DEFAULT_SET : set; }
     }
@@ -95,7 +92,7 @@ public class MapWaypoints {
         w.name = "Ponto de morte";
         w.x = x; w.y = y; w.z = z;
         w.color = PALETTE[0];
-        w.symbol = "X";
+        w.symbol = "skull";
         w.set = DEATH_SET;
         LIST.add(w);
         save();

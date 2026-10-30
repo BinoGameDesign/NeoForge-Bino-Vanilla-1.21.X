@@ -9,6 +9,8 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -126,21 +128,38 @@ public class MinimapHud {
         if (p == null || mc.level == null || mc.options.hideGui || !com.bino.binosvanillaplus.map.MapGate.hasMap(p)) return;
         MapOptions.ensureLoaded();
 
+        int a = (int) (255 * MapOptions.minimapOpacity / 100f) << 24;
         int x0 = g.guiWidth() - BOX - MARGIN_X, y0 = g.guiHeight() - BOX - MARGIN_Y;
-        g.fill(x0 - 2, y0 - 2, x0 + BOX + 2, y0 + BOX + 2, 0xFF1B1B1B);
-        g.fill(x0 - 1, y0 - 1, x0 + BOX + 1, y0 + BOX + 1, 0xFF6E6E6E);
-        g.fill(x0, y0, x0 + BOX, y0 + BOX, 0xFF0B0F14);
+        g.fill(x0 - 2, y0 - 2, x0 + BOX + 2, y0 + BOX + 2, a | 0x1B1B1B);
+        g.fill(x0 - 1, y0 - 1, x0 + BOX + 1, y0 + BOX + 1, a | 0x6E6E6E);
+        g.fill(x0, y0, x0 + BOX, y0 + BOX, a | 0x0B0F14);
         if (!DioramaRenderer.ready()) return;
 
         float dist = DISTS[Math.max(0, Math.min(DISTS.length - 1, MapOptions.minimapZoom))];
-        DioramaRenderer.draw(g, p, x0, y0, BOX, dist, dist * 0.5f);
+        DioramaRenderer.draw(g, p, x0, y0, BOX, dist, dist * 0.62f);
 
+        float cxm = x0 + BOX / 2f, cym = y0 + BOX / 2f;
+
+        // mobs: hostis em vermelho, amigaveis em azul claro
+        if (MapOptions.showMobs) {
+            for (Mob m : mc.level.getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(R))) {
+                if (!m.isAlive() || m.isInvisible()) continue;
+                float[] s = DioramaRenderer.project((float) (m.getX() - p.getX()), (float) (m.getY() - p.getY()) + 0.6f, (float) (m.getZ() - p.getZ()), x0, y0, BOX);
+                if (s[2] == 0f || s[0] < x0 + 4 || s[0] > x0 + BOX - 4 || s[1] < y0 + 4 || s[1] > y0 + BOX - 4) continue;
+                int col = m instanceof Enemy ? 0xFFFF3B30 : 0xFF8FD8FF;
+                int sx = (int) s[0], sy = (int) s[1];
+                g.fill(sx - 2, sy - 2, sx + 3, sy + 3, 0xFF000000);
+                g.fill(sx - 1, sy - 1, sx + 2, sy + 2, col);
+            }
+        }
+
+        // marcacoes: icone pequeno acima do feixe de luz; fora da area, preso a borda
         if (MapOptions.minimapPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
                 if (w.hidden) continue;
                 float dx = (float) (w.x + 0.5 - p.getX()), dy = (float) (w.y - p.getY()), dz = (float) (w.z + 0.5 - p.getZ());
-                float[] s = DioramaRenderer.project(dx, dy, dz, x0, y0, BOX);
-                float cxm = x0 + BOX / 2f, cym = y0 + BOX / 2f, lim = BOX / 2f - 6f;
+                float[] s = DioramaRenderer.project(dx, dy + 5f, dz, x0, y0, BOX);
+                float lim = BOX / 2f - 7f;
                 float ox = s[0] - cxm, oy = s[1] - cym;
                 if (s[2] == 0f) { ox = -ox; oy = -oy; }
                 boolean edge = s[2] == 0f || Math.abs(ox) > lim || Math.abs(oy) > lim;
@@ -149,15 +168,15 @@ public class MinimapHud {
                     ox *= k; oy *= k;
                 }
                 int sx = (int) (cxm + ox), sy = (int) (cym + oy);
-                g.fill(sx - 4, sy - 4, sx + 5, sy + 5, edge ? 0xFFAAAAAA : 0xFF000000);
-                g.fill(sx - 3, sy - 3, sx + 4, sy + 4, w.color);
-                if (MapOptions.minimapLabels) g.drawCenteredString(mc.font, w.symbolOrInitial(), sx, sy - 4, 0xFFFFFFFF);
+                g.fill(sx - 6, sy - 6, sx + 6, sy + 6, edge ? 0xFFCCCCCC : 0xFF000000);
+                g.fill(sx - 5, sy - 5, sx + 5, sy + 5, w.color);
+                WaypointIcons.draw(g, w.icon(), sx - 5, sy - 5, 10);
             }
         }
         double yaw = Math.toRadians(p.getYRot());
         float nr = (float) Math.sin(yaw), nf = (float) -Math.cos(yaw);
         int nx = (int) (x0 + BOX / 2 + nr * (BOX / 2 - 7)), ny = (int) (y0 + BOX / 2 - nf * (BOX / 2 - 7) * 0.9f);
         g.drawCenteredString(mc.font, "N", nx, ny - 4, 0xFFFF5555);
-        if (cave) g.drawString(mc.font, "↓", x0 + 3, y0 + 3, 0xFFFFD84A, true);   // seta: modo corte de caverna
+        if (cave) g.drawString(mc.font, "\u2193", x0 + 3, y0 + 3, 0xFFFFD84A, true);   // seta: modo corte de caverna
     }
 }

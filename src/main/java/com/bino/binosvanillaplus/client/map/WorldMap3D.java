@@ -66,6 +66,8 @@ public class WorldMap3D {
         }
         VertexBuffer.unbind();
 
+        DioramaRenderer.drawBeams(view, proj, tx, targetY, tz, MapOptions.worldPins, Math.max(0.8f, dist / 80f), Math.max(60f, dist * 1.2f));
+
         // ponteiro do jogador (sempre visivel)
         if (player != null) {
             RenderSystem.clear(256, Minecraft.ON_OSX);
