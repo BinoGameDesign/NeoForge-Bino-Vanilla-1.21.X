@@ -18,8 +18,9 @@ public class DioramaRenderer {
     private static final float TILT = (float) Math.toRadians(52);
     private static final float FOV = (float) Math.toRadians(45);
 
-    private static VertexBuffer terrain, pointer;
-    private static boolean hasTerrain = false;
+    private static VertexBuffer terrain, water, pointer;
+    private static boolean hasTerrain = false, hasWater = false;
+    private static final ByteBufferBuilder WBUF = new ByteBufferBuilder(1 << 16);
     private static int ox0, oy0, oz0;             // origem (bloco) da malha
     public static Matrix4f view = new Matrix4f(), proj = new Matrix4f();
 
@@ -31,6 +32,7 @@ public class DioramaRenderer {
                         int px, int py, int pz) {
         if (shader == null) return;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        BufferBuilder bw = new BufferBuilder(WBUF, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
         int[] sp = new int[32], tmp = new int[32];
         final int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
@@ -43,16 +45,19 @@ public class DioramaRenderer {
                 int top = RTOP[i][r] + 1;
                 int bot = ground ? top - 9 : RBOT[i][r];
                 int col = RCOL[i][r], sideCol = RSIDE[i][r];
+                boolean wat = (col >>> 24) < 255;                 // agua: translucida, vai para a malha de agua
+                BufferBuilder bb = wat ? bw : b;
 
                 // topo, com oclusao ambiente por canto (so no bloco mais alto da coluna)
-                boolean covered = r > 0 && RBOT[i][r - 1] == top;
+                boolean covered = r > 0 && RBOT[i][r - 1] == top && (RCOL[i][r - 1] >>> 24) == 255;
                 if (!covered) {
                     float y = top - py;
                     int[] c = new int[4];
                     int[][] corner = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
-                    boolean shadow = Sun.shadows && shadowed(RC, RTOP, RBOT, RGROUND, N, R, dx + 0.5f, top + 0.05f, dz + 0.5f);
                     for (int k = 0; k < 4; k++) {
-                        float ao = shadow ? 0.60f : 1f;
+                        // sombra por vertice (o degrade entre vertices vira penumbra suave)
+                        boolean shadow = Sun.shadows && !wat && shadowed(RC, RTOP, RBOT, RCOL, RGROUND, N, R, dx + 0.5f + corner[k][0] * 0.5f, top + 0.05f, dz + 0.5f + corner[k][1] * 0.5f);
+                        float ao = shadow ? 0.58f : 1f;
                         if (r == 0) {
                             boolean s1 = higher(RC, RTOP, N, R, dx + corner[k][0], dz, top);
                             boolean s2 = higher(RC, RTOP, N, R, dx, dz + corner[k][1], top);
@@ -62,7 +67,7 @@ public class DioramaRenderer {
                         }
                         c[k] = scale(col, ao);
                     }
-                    quadC(b, dx, y, dz, dx + 1, y, dz, dx + 1, y, dz + 1, dx, y, dz + 1, c[0], c[1], c[2], c[3], 0, 1, 0);
+                    quadC(bb, dx, y, dz, dx + 1, y, dz, dx + 1, y, dz + 1, dx, y, dz + 1, c[0], c[1], c[2], c[3], 0, 1, 0);
                 }
                 // laterais, descontando o que a coluna vizinha ja cobre
                 for (int[] d : dirs) {
@@ -75,6 +80,7 @@ public class DioramaRenderer {
                         cnt = subtract(sp, cnt, tmp, Integer.MIN_VALUE, top - 8);
                     } else {
                         for (int k = 0; k < RC[ni]; k++) {
+                            if (!wat && (RCOL[ni][k] >>> 24) < 255) continue;   // agua nao esconde a lateral de bloco solido
                             boolean ng = RGROUND[ni] && k == RC[ni] - 1;
                             int a = ng ? Integer.MIN_VALUE : RBOT[ni][k];
                             cnt = subtract(sp, cnt, tmp, a, RTOP[ni][k] + 1);
@@ -85,12 +91,12 @@ public class DioramaRenderer {
                         float t = Math.max(0.0f, Math.min(1f, (sp[s + 1] - sp[s]) / 6f));
                         float sh = 1f;
                         if (Sun.shadows && d[0] * Sun.dx + d[1] * Sun.dz > 0.05f
-                                && shadowed(RC, RTOP, RBOT, RGROUND, N, R, dx + 0.5f + d[0] * 0.55f, (sp[s] + sp[s + 1]) / 2f, dz + 0.5f + d[1] * 0.55f)) sh = 0.65f;
+                                && !wat && shadowed(RC, RTOP, RBOT, RCOL, RGROUND, N, R, dx + 0.5f + d[0] * 0.55f, (sp[s] + sp[s + 1]) / 2f, dz + 0.5f + d[1] * 0.55f)) sh = 0.65f;
                         int cTop = scale(sideCol, 0.92f * sh), cBot = scale(sideCol, (0.92f - 0.22f * t) * sh);
-                        if (d[0] == 1) quadC(b, dx + 1, y1, dz, dx + 1, y1, dz + 1, dx + 1, y0, dz + 1, dx + 1, y0, dz, cTop, cTop, cBot, cBot, 1, 0, 0);
-                        else if (d[0] == -1) quadC(b, dx, y1, dz + 1, dx, y1, dz, dx, y0, dz, dx, y0, dz + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
-                        else if (d[1] == 1) quadC(b, dx + 1, y1, dz + 1, dx, y1, dz + 1, dx, y0, dz + 1, dx + 1, y0, dz + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
-                        else quadC(b, dx, y1, dz, dx + 1, y1, dz, dx + 1, y0, dz, dx, y0, dz, cTop, cTop, cBot, cBot, 0, 0, -1);
+                        if (d[0] == 1) quadC(bb, dx + 1, y1, dz, dx + 1, y1, dz + 1, dx + 1, y0, dz + 1, dx + 1, y0, dz, cTop, cTop, cBot, cBot, 1, 0, 0);
+                        else if (d[0] == -1) quadC(bb, dx, y1, dz + 1, dx, y1, dz, dx, y0, dz, dx, y0, dz + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
+                        else if (d[1] == 1) quadC(bb, dx + 1, y1, dz + 1, dx, y1, dz + 1, dx, y0, dz + 1, dx + 1, y0, dz + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
+                        else quadC(bb, dx, y1, dz, dx + 1, y1, dz, dx + 1, y0, dz, dx, y0, dz, cTop, cTop, cBot, cBot, 0, 0, -1);
                     }
                 }
             }
@@ -100,17 +106,23 @@ public class DioramaRenderer {
         terrain.bind();
         if (md != null) { terrain.upload(md); hasTerrain = true; } else hasTerrain = false;
         VertexBuffer.unbind();
+        MeshData mw = bw.build();
+        if (water == null) water = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        water.bind();
+        if (mw != null) { water.upload(mw); hasWater = true; } else hasWater = false;
+        VertexBuffer.unbind();
         ox0 = px; oy0 = py; oz0 = pz;
     }
 
     // o ponto (x,y,z) (x,z em blocos relativos ao jogador, y absoluto) esta na sombra? Marcha em direcao ao sol pela malha.
-    private static boolean shadowed(int[] RC, int[][] RTOP, int[][] RBOT, boolean[] RGROUND, int N, int R, float x, float y, float z) {
+    private static boolean shadowed(int[] RC, int[][] RTOP, int[][] RBOT, int[][] RCOL, boolean[] RGROUND, int N, int R, float x, float y, float z) {
         for (float t = 0.25f; t < 18f; t += 0.5f) {
             float px = x + Sun.dx * t, py = y + Sun.dy * t, pz = z + Sun.dz * t;
             int ix = (int) Math.floor(px), iz = (int) Math.floor(pz);
             if (Math.abs(ix) > R || Math.abs(iz) > R) return false;
             int i = (iz + R) * N + (ix + R);
             for (int r = 0; r < RC[i]; r++) {
+                if ((RCOL[i][r] >>> 24) < 255) continue;   // agua nao faz sombra
                 int yt = RTOP[i][r] + 1;
                 boolean ground = RGROUND[i] && r == RC[i] - 1;
                 if (ground ? py < yt : (py >= RBOT[i][r] && py < yt)) return true;
@@ -141,7 +153,8 @@ public class DioramaRenderer {
     static int scale(int argb, float f) {
         int r = Math.min(255, (int) (((argb >> 16) & 0xFF) * f)), g = Math.min(255, (int) (((argb >> 8) & 0xFF) * f)),
                 bl = Math.min(255, (int) ((argb & 0xFF) * f));
-        return 0xFF000000 | (r << 16) | (g << 8) | bl;
+        int a = argb >>> 24;
+        return (a == 0 ? 0xFF : a) << 24 | (r << 16) | (g << 8) | bl;
     }
 
     // quadrado com uma cor por vertice (usado tambem pelo mapa-mundi 3D)
@@ -159,8 +172,9 @@ public class DioramaRenderer {
     static VertexBuffer pointer() {
         if (pointer != null) return pointer;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-        halo(b, 3.8f, 0.22f, 0x55FFFFFF);       // brilho suave em volta do jogador
-        arrow(b, 0.95f, 0.30f, 0xFFFFFFFF);     // seta toda branca
+        // chevron cinza em 3D (estilo do ponteiro do Diorama, mas cinza e com volume): contorno escuro embaixo + corpo extrudado
+        chevron(b, 1.12f, 0.00f, 0.22f, 0xFF2E3238, 0xFF23262B, 0xFF2E3238);   // contorno (um pouco maior e mais baixo)
+        chevron(b, 0.92f, 0.10f, 0.62f, 0xFFD2D6DC, 0xFF8E939B, 0xFFA7ACB4);   // corpo: topo claro, laterais mais escuras
         MeshData md = b.build();
         pointer = new VertexBuffer(VertexBuffer.Usage.STATIC);
         pointer.bind();
@@ -169,21 +183,25 @@ public class DioramaRenderer {
         return pointer;
     }
 
-    private static void halo(BufferBuilder b, float radius, float y, int col) {
-        int seg = 28;
-        for (int i = 0; i < seg; i++) {
-            double a0 = i * Math.PI * 2 / seg, a1 = (i + 1) * Math.PI * 2 / seg;
-            b.addVertex(0f, y, 0f).setColor(col).setNormal(0, 1, 0);
-            b.addVertex((float) Math.cos(a0) * radius, y, (float) Math.sin(a0) * radius).setColor(col & 0x00FFFFFF).setNormal(0, 1, 0);
-            b.addVertex((float) Math.cos(a1) * radius, y, (float) Math.sin(a1) * radius).setColor(col & 0x00FFFFFF).setNormal(0, 1, 0);
+    // chevron (ponta de seta com entalhe) deitado no plano XZ, de y0 a y1; aponta para -Z
+    private static void chevron(BufferBuilder b, float k, float y0, float y1, int topCol, int sideLo, int sideHi) {
+        float[][] p = {{0f, -3.0f * k}, {2.1f * k, 2.0f * k}, {0f, 0.7f * k}, {-2.1f * k, 2.0f * k}};
+        // tampa de cima (dois triangulos)
+        tri(b, p[0], p[1], p[2], y1, topCol);
+        tri(b, p[0], p[2], p[3], y1, topCol);
+        // laterais
+        for (int i = 0; i < 4; i++) {
+            float[] a = p[i], c = p[(i + 1) % 4];
+            float nx = c[1] - a[1], nz = -(c[0] - a[0]);
+            float len = (float) Math.sqrt(nx * nx + nz * nz);
+            nx /= len; nz /= len;
+            b.addVertex(a[0], y1, a[1]).setColor(sideHi).setNormal(nx, 0, nz);
+            b.addVertex(a[0], y0, a[1]).setColor(sideLo).setNormal(nx, 0, nz);
+            b.addVertex(c[0], y0, c[1]).setColor(sideLo).setNormal(nx, 0, nz);
+            b.addVertex(a[0], y1, a[1]).setColor(sideHi).setNormal(nx, 0, nz);
+            b.addVertex(c[0], y0, c[1]).setColor(sideLo).setNormal(nx, 0, nz);
+            b.addVertex(c[0], y1, c[1]).setColor(sideHi).setNormal(nx, 0, nz);
         }
-    }
-
-    // seta (chevron) deitada no plano XZ a altura y; centro da seta ~ origem; aponta para -Z
-    private static void arrow(BufferBuilder b, float k, float y, int col) {
-        float[] tip = {0f, -3.0f * k}, right = {2.1f * k, 2.0f * k}, notch = {0f, 0.7f * k}, left = {-2.1f * k, 2.0f * k};
-        tri(b, tip, right, notch, y, col);
-        tri(b, tip, notch, left, y, col);
     }
 
     private static void tri(BufferBuilder b, float[] p1, float[] p2, float[] p3, float y, int col) {
@@ -300,6 +318,7 @@ public class DioramaRenderer {
         if (hasTerrain) {
             Matrix4f mv = new Matrix4f(view).translate((float) (ox0 - p.getX()), (float) (oy0 - p.getY()), (float) (oz0 - p.getZ()));
             Sun.applyUniforms();
+            shader.safeGetUniform("Exposure").set(1.0f);
             shader.safeGetUniform("Radius").set(fadeRadius);
             shader.safeGetUniform("Detail").set(1f);
             // Origin = canto da malha no mundo, para a textura procedural ficar presa aos blocos
@@ -308,10 +327,23 @@ public class DioramaRenderer {
             terrain.drawWithShader(mv, proj, shader);
             VertexBuffer.unbind();
         }
+        if (hasWater) {   // agua translucida por cima do terreno
+            Matrix4f mv = new Matrix4f(view).translate((float) (ox0 - p.getX()), (float) (oy0 - p.getY()), (float) (oz0 - p.getZ()));
+            Sun.applyUniforms();
+            shader.safeGetUniform("Exposure").set(1.0f);
+            shader.safeGetUniform("Radius").set(fadeRadius);
+            shader.safeGetUniform("Detail").set(1f);
+            shader.safeGetUniform("Origin").set((float) ox0, (float) oy0, (float) oz0);
+            RenderSystem.depthMask(false);
+            water.bind();
+            water.drawWithShader(mv, proj, shader);
+            VertexBuffer.unbind();
+            RenderSystem.depthMask(true);
+        }
         drawBeams(view, proj, p.getX(), p.getY(), p.getZ(), MapOptions.minimapPins, 0.6f, 40f);
         // ponteiro do jogador por cima de tudo, deitado no plano do terreno, sempre apontando "para cima" no mapa
         RenderSystem.clear(256, Minecraft.ON_OSX);
-        Matrix4f pmv = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).scale(dist / 30f * 0.62f);
+        Matrix4f pmv = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).scale(dist / 30f * 0.55f);
         drawPointer(pmv, proj);
         end(g, st);
     }

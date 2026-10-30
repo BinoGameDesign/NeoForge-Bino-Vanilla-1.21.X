@@ -16,6 +16,7 @@ uniform vec3 Origin;
 uniform float Detail;
 uniform vec3 SunDir;      // direcao do sol (ou da lua a noite), em coordenadas do mundo
 uniform float DayLight;   // 1 = dia, ~0.45 = noite
+uniform float Exposure;   // 1.0 minimapa; menor no mapa-mundi (tela grande estoura mais facil)
 
 out vec4 fragColor;
 
@@ -47,16 +48,25 @@ void main() {
     vec3 sunDir = normalize(SunDir);
     float sun = max(dot(n, sunDir), 0.0);
     float sky = 0.5 + 0.5 * n.y;
-    // cor do sol: quente perto do horizonte (amanhecer/entardecer), neutra ao meio-dia
+    // cor do sol: quente perto do horizonte (amanhecer/entardecer), quase neutra ao meio-dia
     float h = clamp(sunDir.y, 0.0, 1.0);
-    vec3 sunCol = mix(vec3(1.00, 0.62, 0.35), vec3(1.00, 0.95, 0.85), smoothstep(0.05, 0.6, h));
-    vec3 skyCol = mix(vec3(0.55, 0.62, 0.95), vec3(0.72, 0.84, 1.00), DayLight);
-    vec3 light = skyCol * (0.50 + 0.34 * sky) * DayLight + sunCol * sun * 0.62 * DayLight + vec3(0.07);
-    float depthDark = clamp(1.0 + vPos.y * 0.010, 0.78, 1.10);
-    vec3 col = base * light * depthDark * 1.10;
+    vec3 sunCol = mix(vec3(1.00, 0.72, 0.48), vec3(1.00, 0.96, 0.88), smoothstep(0.05, 0.6, h));
+    vec3 skyCol = mix(vec3(0.60, 0.66, 0.95), vec3(0.74, 0.85, 1.00), DayLight);
+    // luz total ~1.0 numa face iluminada (nao passa de 1 para nao estourar); ceu enche a sombra
+    vec3 light = skyCol * (0.36 + 0.20 * sky) * DayLight + sunCol * sun * 0.50 * DayLight + vec3(0.05);
+    float depthDark = clamp(1.0 + vPos.y * 0.008, 0.80, 1.06);
+    vec3 col = base * light * depthDark * Exposure;
 
+    // agua (alpha < 1): reflexo suave do ceu e brilho do sol
+    if (vColor.a < 0.99 && n.y > 0.5) {
+        col = mix(col, skyCol * 0.85 * DayLight, 0.10);
+        col += sunCol * pow(max(dot(n, sunDir), 0.0), 6.0) * 0.06 * DayLight;
+    }
+
+    // saturacao leve e "ombro" suave: valores altos comprimem em vez de estourar para branco
     float luma = dot(col, vec3(0.299, 0.587, 0.114));
-    col = clamp(mix(vec3(luma), col, 1.30), 0.0, 1.0);
+    col = max(mix(vec3(luma), col, 1.15), 0.0);
+    col = mix(col, 0.80 + 0.20 * tanh((col - 0.80) / 0.20), step(0.80, col));
 
     float d = length(vPos.xz) / Radius;
     float fade = 1.0 - smoothstep(0.80, 1.0, d);

@@ -31,7 +31,25 @@ public class BlockLooks {
         FluidState fs = st.getFluidState();
         if (!fs.isEmpty() && (st.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock)) return fluid(fs, level, pos);
         Look l = look(st);
-        return vivid(tint(l.top, l.tintTop, st, level, pos));
+        int c = vivid(tint(l.top, l.tintTop, st, level, pos));
+        c = sane(st, c, level, pos);
+        if (LOGGED.size() < 80 && LOGGED.add(st.getBlock())) {
+            com.bino.binosvanillaplus.BinosVanillaMod.LOGGER.info("[Minimapa] {} topo=#{} tinta={} lateral=#{}",
+                    net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(st.getBlock()),
+                    Integer.toHexString(c & 0xFFFFFF), l.tintTop, Integer.toHexString(l.side & 0xFFFFFF));
+        }
+        return c;
+    }
+
+    private static final java.util.Set<net.minecraft.world.level.block.Block> LOGGED = new java.util.HashSet<>();
+
+    // rede de seguranca: grama e folhas verdes (cor de mapa vanilla GRASS/PLANT) nunca podem sair marrons/acinzentadas
+    private static int sane(BlockState st, int c, BlockAndTintGetter level, BlockPos pos) {
+        net.minecraft.world.level.material.MapColor mc = st.getMapColor(level, pos);
+        if (mc != net.minecraft.world.level.material.MapColor.GRASS && mc != net.minecraft.world.level.material.MapColor.PLANT) return c;
+        int r = (c >> 16) & 0xFF, g = (c >> 8) & 0xFF, b = c & 0xFF;
+        if (g >= r + 6 && g >= b + 6) return c;     // ja e' verde
+        return vivid(0xFF000000 | mc.col);
     }
 
     public static int side(BlockState st, BlockAndTintGetter level, BlockPos pos) {
@@ -41,9 +59,9 @@ public class BlockLooks {
         int s = tint(l.side, l.tintSide, st, level, pos);
         if (l.tintTop >= 0 && l.tintSide < 0) {   // grama, micelio...: de cima a lateral e' quase toda verde, so a base e' terra
             int tp = tint(l.top, l.tintTop, st, level, pos);
-            s = mix(tp, s, 0.30f);
+            s = mix(tp, s, 0.18f);
         }
-        return vivid(s);
+        return sane(st, vivid(s), level, pos);
     }
 
     private static int mix(int a, int b, float tb) {

@@ -20,12 +20,13 @@ public class MapOptions {
     public static boolean showDistance = true;     // distancia no nome das marcacoes
     public static int minimapZoom = 1;             // 0 = perto, 1 = medio, 2 = longe
     public static boolean worldMap3D = true;       // mapa-mundi em 3D (false = 2D)
+    public static boolean worldBeams = true;       // feixe de luz das marcacoes no mundo (como um beacon)
 
     private static boolean loaded = false;
 
     private static class Data {
         boolean minimapPins = true, worldPins = true, worldLabels = true, showMobs = true,
-                chunkGrid = false, deathPoint = true, showDistance = true, worldMap3D = true;
+                chunkGrid = false, deathPoint = true, showDistance = true, worldMap3D = true, worldBeams = true;
         int minimapZoom = 1;
         int minimapOpacity = 80;
     }
@@ -43,7 +44,7 @@ public class MapOptions {
             minimapPins = d.minimapPins; worldPins = d.worldPins; worldLabels = d.worldLabels; showMobs = d.showMobs;
             minimapOpacity = d.minimapOpacity <= 0 ? 80 : Math.max(30, Math.min(100, d.minimapOpacity));
             chunkGrid = d.chunkGrid; deathPoint = d.deathPoint; showDistance = d.showDistance;
-            minimapZoom = Math.max(0, Math.min(2, d.minimapZoom)); worldMap3D = d.worldMap3D;
+            minimapZoom = Math.max(0, Math.min(2, d.minimapZoom)); worldMap3D = d.worldMap3D; worldBeams = d.worldBeams;
         } catch (Exception ignored) {
         }
     }
@@ -52,7 +53,7 @@ public class MapOptions {
         Data d = new Data();
         d.minimapPins = minimapPins; d.worldPins = worldPins; d.worldLabels = worldLabels; d.showMobs = showMobs; d.minimapOpacity = minimapOpacity;
         d.chunkGrid = chunkGrid; d.deathPoint = deathPoint; d.showDistance = showDistance;
-        d.minimapZoom = minimapZoom; d.worldMap3D = worldMap3D;
+        d.minimapZoom = minimapZoom; d.worldMap3D = worldMap3D; d.worldBeams = worldBeams;
         try {
             Files.createDirectories(file().getParent());
             try (Writer w = Files.newBufferedWriter(file())) { new Gson().toJson(d, w); }

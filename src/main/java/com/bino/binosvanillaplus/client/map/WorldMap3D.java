@@ -23,11 +23,11 @@ public class WorldMap3D {
     public static Matrix4f view = new Matrix4f(), proj = new Matrix4f();
     public static double targetY = 64;                  // altura do alvo (suavizada)
 
-    private static class ChunkMesh { VertexBuffer vb; int version = -1; boolean has; }
+    private static class ChunkMesh { VertexBuffer vb, wvb; int version = -1; boolean has, hasW; }
     private static final Map<Long, ChunkMesh> MESHES = new HashMap<>();
 
     public static void clearAll() {
-        for (ChunkMesh m : MESHES.values()) if (m.vb != null) m.vb.close();
+        for (ChunkMesh m : MESHES.values()) { if (m.vb != null) m.vb.close(); if (m.wvb != null) m.wvb.close(); }
         MESHES.clear();
     }
 
@@ -46,6 +46,7 @@ public class WorldMap3D {
 
         Sun.update(Minecraft.getInstance());
         Sun.applyUniforms();
+        DioramaRenderer.shader.safeGetUniform("Exposure").set(0.80f);   // mapa-mundi: menos luz (tela grande estourava)
         DioramaRenderer.shader.safeGetUniform("Radius").set(1.0e6f);
         DioramaRenderer.shader.safeGetUniform("Detail").set(1f);
         for (int dz = -VIEW_CHUNKS; dz <= VIEW_CHUNKS; dz++) {
@@ -66,6 +67,22 @@ public class WorldMap3D {
         }
         VertexBuffer.unbind();
 
+        // agua translucida por cima do terreno
+        RenderSystem.depthMask(false);
+        for (int dz = -VIEW_CHUNKS; dz <= VIEW_CHUNKS; dz++) {
+            for (int dx = -VIEW_CHUNKS; dx <= VIEW_CHUNKS; dx++) {
+                int cx = cxm + dx, cz = czm + dz;
+                ChunkMesh m = MESHES.get(ExploredMap.key(cx, cz));
+                if (m == null || !m.hasW) continue;
+                Matrix4f mv = new Matrix4f(view).translate((float) (cx * 16 - tx), (float) (64 - targetY), (float) (cz * 16 - tz));
+                DioramaRenderer.shader.safeGetUniform("Origin").set((float) (cx * 16), 64f, (float) (cz * 16));
+                m.wvb.bind();
+                m.wvb.drawWithShader(mv, proj, DioramaRenderer.shader);
+            }
+        }
+        VertexBuffer.unbind();
+        RenderSystem.depthMask(true);
+
         DioramaRenderer.drawBeams(view, proj, tx, targetY, tz, MapOptions.worldPins, Math.max(0.8f, dist / 80f), Math.max(60f, dist * 1.2f));
 
         // ponteiro do jogador (sempre visivel)
@@ -82,7 +99,7 @@ public class WorldMap3D {
     }
 
     // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida
-    private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol) {}
+    private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water) {}
 
     private static Col col(int wx, int wz) {
         ExploredMap.Tile t = ExploredMap.tile(wx >> 4, wz >> 4);
@@ -90,7 +107,8 @@ public class WorldMap3D {
         int i = (wz & 15) * 16 + (wx & 15);
         if (t.abgr[i] == 0) return null;
         boolean canopy = (t.canopy[i] & 1) != 0;
-        return new Col(t.h[i], canopy ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i]);
+        boolean water = (t.canopy[i] & 4) != 0;
+        return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water);
     }
 
     private static int argb(int abgr) { return 0xFF000000 | ((abgr & 0xFF) << 16) | (abgr & 0xFF00) | ((abgr >> 16) & 0xFF); }
@@ -98,6 +116,8 @@ public class WorldMap3D {
     private static void build(ChunkMesh m, ExploredMap.Tile t, int cx, int cz) {
         m.version = t.version;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        BufferBuilder bw = new BufferBuilder(WBUF, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        int waterQuads = 0;
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         int[] sp = new int[32], tmp = new int[32];
         int quads = 0;
@@ -107,8 +127,14 @@ public class WorldMap3D {
                 Col c = col(wx, wz);
                 if (c == null) continue;
                 int sTop = c.ground() + 1;                       // topo do chao
-                int topArgb = argb(c.canopy() ? c.gcol() : c.topCol());
+                int topArgb = argb(c.canopy() || c.water() ? c.gcol() : c.topCol());
                 quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (ou do terreno sem copa)
+                if (c.water()) {                                 // agua: quadrado translucido na superficie; mais fundo = mais opaco
+                    int depth = Math.max(1, c.top() - c.ground());
+                    int alpha = Math.min(215, 120 + depth * 12);
+                    face(bw, x, c.top() + 1 - 64 - 0.1f, z, (alpha << 24) | (argb(c.topCol()) & 0xFFFFFF));
+                    waterQuads++;
+                }
 
                 for (int[] d : dirs) {
                     Col n = col(wx + d[0], wz + d[1]);
@@ -153,7 +179,15 @@ public class WorldMap3D {
         m.vb.bind();
         if (md != null && quads > 0) { m.vb.upload(md); m.has = true; } else m.has = false;
         VertexBuffer.unbind();
+
+        MeshData mw = bw.build();
+        if (m.wvb == null) m.wvb = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        m.wvb.bind();
+        if (mw != null && waterQuads > 0) { m.wvb.upload(mw); m.hasW = true; } else { m.hasW = false; if (mw != null) mw.close(); }
+        VertexBuffer.unbind();
     }
+
+    private static final ByteBufferBuilder WBUF = new ByteBufferBuilder(1 << 16);
 
     private static int face(BufferBuilder b, int x, float y, int z, int col) {
         DioramaRenderer.quadC(b, x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1, col, col, col, col, 0, 1, 0);

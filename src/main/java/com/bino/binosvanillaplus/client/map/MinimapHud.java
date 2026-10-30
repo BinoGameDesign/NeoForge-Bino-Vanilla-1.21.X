@@ -101,12 +101,13 @@ public class MinimapHud {
                         if (fluid) {   // agua escurece com a profundidade
                             int d = 0, yy = y;
                             while (yy > minY && d < 12 && ch.getBlockState(pos.set(wx, yy, wz)).getFluidState().isSource()) { yy--; d++; }
-                            float f = Math.max(0.5f, 1.05f - d * 0.05f);
-                            curCol = DioramaRenderer.scale(curCol, f);
+                            float f = Math.max(0.55f, 1.05f - d * 0.04f);
+                            int alpha = Math.min(215, 120 + d * 12);   // quanto mais fundo, menos se enxerga o fundo
+                            curCol = (alpha << 24) | (DioramaRenderer.scale(curCol, f) & 0xFFFFFF);
                             curSide = curCol;
                             pos.set(wx, y, wz);
                         }
-                        curCanopy = !fluid && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS));
+                        curCanopy = fluid || st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS);   // agua tambem deixa ver o leito por baixo
                     }
                 }
                 if (curKey != null && runs < MAXR) {
@@ -118,6 +119,16 @@ public class MinimapHud {
             }
         }
         DioramaRenderer.rebuild(R, N, RC, RTOP, RBOT, RCOL, RSIDE, RGROUND, px, py, pz);
+    }
+
+    // pet do jogador (companheiro do mod ou qualquer animal domado dele) nao aparece como ponto
+    private static boolean isPet(Mob m, LocalPlayer p) {
+        if (m instanceof com.bino.binosvanillaplus.entity.CompanionAllayEntity) return true;
+        if (m instanceof net.minecraft.world.entity.OwnableEntity oe) {
+            java.util.UUID id = oe.getOwnerUUID();
+            return id != null && id.equals(p.getUUID());
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------ desenho
@@ -143,7 +154,7 @@ public class MinimapHud {
         // mobs: hostis em vermelho, amigaveis em azul claro
         if (MapOptions.showMobs) {
             for (Mob m : mc.level.getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(R))) {
-                if (!m.isAlive() || m.isInvisible()) continue;
+                if (!m.isAlive() || m.isInvisible() || isPet(m, p)) continue;
                 float[] s = DioramaRenderer.project((float) (m.getX() - p.getX()), (float) (m.getY() - p.getY()) + 0.6f, (float) (m.getZ() - p.getZ()), x0, y0, BOX);
                 if (s[2] == 0f || s[0] < x0 + 4 || s[0] > x0 + BOX - 4 || s[1] < y0 + 4 || s[1] > y0 + BOX - 4) continue;
                 int col = m instanceof Enemy ? 0xFFFF3B30 : 0xFF8FD8FF;
@@ -176,7 +187,9 @@ public class MinimapHud {
         double yaw = Math.toRadians(p.getYRot());
         float nr = (float) Math.sin(yaw), nf = (float) -Math.cos(yaw);
         int nx = (int) (x0 + BOX / 2 + nr * (BOX / 2 - 7)), ny = (int) (y0 + BOX / 2 - nf * (BOX / 2 - 7) * 0.9f);
-        g.drawCenteredString(mc.font, "N", nx, ny - 4, 0xFFFF5555);
+        for (int[] o : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1}, {-1, 1}, {1, -1}})
+            g.drawCenteredString(mc.font, "N", nx + o[0], ny - 4 + o[1], 0xFF000000);   // contorno preto
+        g.drawCenteredString(mc.font, "N", nx, ny - 4, 0xFFFFFFFF);
         if (cave) g.drawString(mc.font, "\u2193", x0 + 3, y0 + 3, 0xFFFFD84A, true);   // seta: modo corte de caverna
     }
 }

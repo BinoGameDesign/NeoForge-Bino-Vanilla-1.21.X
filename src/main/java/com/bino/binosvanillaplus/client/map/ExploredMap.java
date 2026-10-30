@@ -155,11 +155,13 @@ public final class ExploredMap {
                 }
                 int idx = z * 16 + x;
                 hs[idx] = top;
-                int argb;
+                int argb, waterBed = Integer.MIN_VALUE, bedArgb = 0;
                 if (!st.getFluidState().isEmpty() && st.getFluidState().is(FluidTags.WATER)) {
                     int d = 0, yy = top;
                     while (yy > minY && d < 14 && chunk.getBlockState(pos.set(wx, yy, wz)).getFluidState().is(FluidTags.WATER)) { yy--; d++; }
-                    argb = shade(BlockLooks.top(st, level, pos.set(wx, top, wz)), Math.max(0.55f, 1.05f - d * 0.045f));
+                    argb = shade(BlockLooks.top(st, level, pos.set(wx, top, wz)), Math.max(0.60f, 1.05f - d * 0.03f));
+                    waterBed = yy;
+                    bedArgb = BlockLooks.top(chunk.getBlockState(pos.set(wx, yy, wz)), level, pos);
                 } else {
                     argb = BlockLooks.top(st, level, pos.set(wx, top, wz));
                     int north = z > 0 ? hs[(z - 1) * 16 + x] : top;
@@ -171,6 +173,11 @@ public final class ExploredMap {
                 t.canopy[idx] = 0;
                 t.gh[idx] = (short) top;
                 t.cb[idx] = (short) top;
+                if (waterBed != Integer.MIN_VALUE) {   // agua: guarda o leito (altura + cor) para desenhar a agua translucida por cima
+                    t.canopy[idx] = 4;
+                    t.gh[idx] = (short) waterBed;
+                    t.gcol[idx] = 0xFF000000 | ((bedArgb & 0xFF) << 16) | (bedArgb & 0xFF00) | ((bedArgb >> 16) & 0xFF);
+                }
                 if (st.getFluidState().isEmpty() && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) scanCanopy(level, chunk, t, idx, wx, wz, top, minY, pos);
             }
         }

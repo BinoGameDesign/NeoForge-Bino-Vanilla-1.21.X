@@ -24,12 +24,13 @@ public class MapOptionsScreen extends Screen {
     @Override
     protected void init() {
         MapOptions.ensureLoaded();
-        H = 36 + 8 * 22 + 30;
+        H = 36 + 9 * 22 + 30;
         left = (width - W) / 2;
         top = (height - H) / 2;
         int y = top + 26;
         toggle(y, "Marcações no minimapa", () -> MapOptions.minimapPins, v -> MapOptions.minimapPins = v); y += 22;
         toggle(y, "Marcações no mapa-mundi", () -> MapOptions.worldPins, v -> MapOptions.worldPins = v); y += 22;
+        toggle(y, "Feixe de luz no mundo", () -> MapOptions.worldBeams, v -> MapOptions.worldBeams = v); y += 22;
         toggle(y, "Nomes no mapa-mundi", () -> MapOptions.worldLabels, v -> MapOptions.worldLabels = v); y += 22;
         toggle(y, "Distância ao lado do nome", () -> MapOptions.showDistance, v -> MapOptions.showDistance = v); y += 22;
         toggle(y, "Mobs no minimapa", () -> MapOptions.showMobs, v -> MapOptions.showMobs = v); y += 22;
