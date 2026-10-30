@@ -108,7 +108,9 @@ public class BlockLooks {
             BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModelShaper().getBlockModel(st);
             RandomSource rs = RandomSource.create(42L);
             BakedQuad up = first(model.getQuads(st, Direction.UP, rs));
-            BakedQuad side = first(model.getQuads(st, Direction.NORTH, rs));
+            List<BakedQuad> norths = model.getQuads(st, Direction.NORTH, rs);
+            BakedQuad side = first(norths);
+            if (norths != null) for (BakedQuad q : norths) if (!q.isTinted()) { side = q; break; }   // grama: a textura de terra, nao a camada verde por cima
             BakedQuad any = up != null ? up : first(model.getQuads(st, null, rs));   // plantas em cruz, etc.
             if (any != null) { l.tintTop = any.isTinted() ? any.getTintIndex() : -1; l.top = average(any.getSprite()); if (l.tintTop >= 0) l.top = normalize(l.top); }
             BakedQuad s = side != null ? side : any;

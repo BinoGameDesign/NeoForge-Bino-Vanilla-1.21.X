@@ -24,7 +24,7 @@ public class MinimapHud {
 
     // ---- ajustes (mude aqui) ----
     static final int R = 20;                   // raio da malha, em blocos
-    private static final int BOX = 92;         // tamanho da caixa em pixels
+    private static final int BOX = 76;         // tamanho da caixa em pixels
     private static final float[] DISTS = {22f, 30f, 42f};   // distancia da camera por nivel de zoom (teclas de zoom)
     private static final int MARGIN_X = 6, MARGIN_Y = 6;
     private static final int SLICE = 4;        // altura do corte (acima dos pes) em cavernas
@@ -172,11 +172,18 @@ public class MinimapHud {
                 float[] s = DioramaRenderer.project(dx, dy + 5f, dz, x0, y0, BOX);
                 float lim = BOX / 2f - 7f;
                 float ox = s[0] - cxm, oy = s[1] - cym;
-                if (s[2] == 0f) { ox = -ox; oy = -oy; }
-                boolean edge = s[2] == 0f || Math.abs(ox) > lim || Math.abs(oy) > lim;
-                if (edge && (Math.abs(ox) + Math.abs(oy)) > 0.01f) {
-                    float k = lim / Math.max(Math.abs(ox), Math.abs(oy));
-                    ox *= k; oy *= k;
+                boolean far = dx * dx + dz * dz > (R - 2) * (R - 2);
+                boolean edge = far || s[2] == 0f || Math.abs(ox) > lim || Math.abs(oy) > lim;
+                if (edge) {
+                    // fora da maquete: vai para a borda, na direcao da marcacao vista de cima (a projecao em perspectiva
+                    // falha para pontos atras da camera - era isso que jogava o icone em cima do ponteiro)
+                    double yr = Math.toRadians(p.getYRot());
+                    float c = (float) Math.cos(yr), sn = (float) Math.sin(yr);
+                    ox = -dx * c - dz * sn;           // direita na tela
+                    oy = -(-dx * sn + dz * c);        // para baixo na tela (frente do jogador = para cima)
+                    float m = Math.max(Math.abs(ox), Math.abs(oy));
+                    if (m < 0.001f) { ox = 0; oy = -lim; }
+                    else { ox *= lim / m; oy *= lim / m; }
                 }
                 int sx = (int) (cxm + ox), sy = (int) (cym + oy);
                 g.fill(sx - 6, sy - 6, sx + 6, sy + 6, edge ? 0xFFCCCCCC : 0xFF000000);
