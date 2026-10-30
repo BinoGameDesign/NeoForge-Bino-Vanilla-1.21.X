@@ -173,6 +173,7 @@ public final class ExploredMap {
             t.tex = new DynamicTexture(new NativeImage(16, 16, false));
             t.texId = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "explored/t" + (texCounter++));
             mc.getTextureManager().register(t.texId, t.tex);
+            t.tex.setFilter(false, false);   // pixels nitidos (sem suavizar)
             t.texDirty = true;
         }
         if (t.texDirty) {

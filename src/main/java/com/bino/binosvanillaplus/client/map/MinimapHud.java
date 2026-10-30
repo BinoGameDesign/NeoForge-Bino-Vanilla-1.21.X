@@ -28,17 +28,17 @@ public class MinimapHud {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "minimap");
 
     // ---- ajustes (mude aqui) ----
-    private static final int R = 12;           // raio em blocos
+    static final int R = 16;           // raio em blocos
     private static final int BOX = 84;         // tamanho da caixa em pixels
-    private static final float S = 3.2f;       // pixels por bloco
+    private static final float S = 2.5f;       // pixels por bloco
     private static final float TILT = 0.55f;   // 1 = vista de cima, menor = mais inclinado
     private static final float HS = 1.6f;      // pixels por bloco de altura
     private static final int MARGIN_X = 6, MARGIN_Y = 6;
 
-    private static final int N = 2 * R + 1, MAXR = 4;
-    private static final int[] RC = new int[N * N];                 // quantidade de blocos empilhados
-    private static final int[][] RTOP = new int[N * N][MAXR], RBOT = new int[N * N][MAXR], RCOL = new int[N * N][MAXR];
-    private static final boolean[] RGROUND = new boolean[N * N];    // o ultimo bloco e' o chao?
+    static final int N = 2 * R + 1, MAXR = 4;
+    static final int[] RC = new int[N * N];                 // quantidade de blocos empilhados
+    static final int[][] RTOP = new int[N * N][MAXR], RBOT = new int[N * N][MAXR], RCOL = new int[N * N][MAXR];
+    static final boolean[] RGROUND = new boolean[N * N];    // o ultimo bloco e' o chao?
     private static final int[] GROUND = new int[N * N];             // altura do chao (UNKNOWN se nao ha)
     private static final long[] ORDER = new long[N * N];
     private static final int BG = 0x0B0F14, WATER = 0xFF3F6FD8;
@@ -108,6 +108,7 @@ public class MinimapHud {
                 if (RGROUND[i]) RBOT[i][runs - 1] = RTOP[i][runs - 1];
             }
         }
+        DioramaRenderer.rebuild(R, N, RC, RTOP, RBOT, RCOL, RGROUND, px, py, pz);
     }
 
     private static int toArgb(int abgr) {
@@ -129,6 +130,11 @@ public class MinimapHud {
         g.fill(x0 - 1, y0 - 1, x0 + BOX + 1, y0 + BOX + 1, 0xFF6E6E6E);
         g.fill(x0, y0, x0 + BOX, y0 + BOX, 0xFF000000 | BG);
         g.flush();
+
+        if (DioramaRenderer.ready()) {
+            renderGpu(g, mc, p, x0, y0);
+            return;
+        }
 
         double yaw = Math.toRadians(p.getYRot());
         float fx = (float) -Math.sin(yaw), fz = (float) Math.cos(yaw);     // frente do jogador
@@ -193,6 +199,7 @@ public class MinimapHud {
 
         // marcacoes do mapa-mundi
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
+            if (w.hidden || !MapOptions.minimapPins) continue;
             float dx = w.x + 0.5f - p.getBlockX(), dz = w.z + 0.5f - p.getBlockZ();
             float sx = (dx * rx + dz * rz) * S, sy = -(dx * fx + dz * fz) * S * TILT;
             int lim = BOX / 2 - 4;
@@ -204,6 +211,37 @@ public class MinimapHud {
 
         g.fill(cx - 2, cy - 2, cx + 3, cy + 3, 0xFF000000);
         g.fill(cx - 1, cy - 1, cx + 2, cy + 2, 0xFFFFFFFF);
+        float nr = (float) Math.sin(yaw), nf = (float) -Math.cos(yaw);
+        int nx = (int) (x0 + BOX / 2 + nr * (BOX / 2 - 7)), ny = (int) (y0 + BOX / 2 - nf * (BOX / 2 - 7) * 0.9f);
+        g.drawCenteredString(mc.font, "N", nx, ny - 4, 0xFFFF5555);
+    }
+
+    // ---- caminho GPU: malha 3D + shader proprio (DioramaRenderer) ----
+    private static void renderGpu(GuiGraphics g, Minecraft mc, LocalPlayer p, int x0, int y0) {
+        MapOptions.ensureLoaded();
+        DioramaRenderer.draw(g, p, x0, y0, BOX, R);
+
+        if (MapOptions.minimapPins) {
+            for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
+                if (w.hidden) continue;
+                float dx = (float) (w.x + 0.5 - p.getX()), dy = (float) (w.y - p.getY()), dz = (float) (w.z + 0.5 - p.getZ());
+                float[] s = DioramaRenderer.project(dx, dy, dz, x0, y0, BOX);
+                float cxm = x0 + BOX / 2f, cym = y0 + BOX / 2f, lim = BOX / 2f - 6f;
+                float ox = s[0] - cxm, oy = s[1] - cym;
+                if (s[2] == 0f) { ox = -ox; oy = -oy; }                       // atras da camera: empurra para a borda oposta
+                float len = (float) Math.sqrt(ox * ox + oy * oy);
+                boolean edge = s[2] == 0f || Math.abs(ox) > lim || Math.abs(oy) > lim;
+                if (edge && len > 0.01f) {
+                    float k = lim / Math.max(Math.abs(ox), Math.abs(oy));
+                    ox *= k; oy *= k;
+                }
+                int sx = (int) (cxm + ox), sy = (int) (cym + oy);
+                g.fill(sx - 4, sy - 4, sx + 5, sy + 5, edge ? 0xFFAAAAAA : 0xFF000000);
+                g.fill(sx - 3, sy - 3, sx + 4, sy + 4, w.color);
+                if (MapOptions.minimapLabels) g.drawCenteredString(mc.font, w.symbolOrInitial(), sx, sy - 4, 0xFFFFFFFF);
+            }
+        }
+        double yaw = Math.toRadians(p.getYRot());
         float nr = (float) Math.sin(yaw), nf = (float) -Math.cos(yaw);
         int nx = (int) (x0 + BOX / 2 + nr * (BOX / 2 - 7)), ny = (int) (y0 + BOX / 2 - nf * (BOX / 2 - 7) * 0.9f);
         g.drawCenteredString(mc.font, "N", nx, ny - 4, 0xFFFF5555);

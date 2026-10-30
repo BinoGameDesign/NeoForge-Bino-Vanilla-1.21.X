@@ -11,6 +11,13 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.gui.screens.DeathScreen;
+import net.minecraft.resources.ResourceLocation;
+import java.io.IOException;
 import org.lwjgl.glfw.GLFW;
 
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
@@ -18,9 +25,31 @@ public class MapClientEvents {
     public static final KeyMapping OPEN_MAP = new KeyMapping("key.binosvanillaplus.world_map",
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_M, "key.categories.binosvanillaplus");
 
+    public static final KeyMapping ADD_WAYPOINT = new KeyMapping("key.binosvanillaplus.add_waypoint",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, "key.categories.binosvanillaplus");
+
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(OPEN_MAP);
+        event.register(ADD_WAYPOINT);
+    }
+
+    // shader proprio do minimapa diorama (assets/binosvanillaplus/shaders/core/diorama.*)
+    @SubscribeEvent
+    public static void registerShaders(RegisterShadersEvent event) throws IOException {
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "diorama"), DefaultVertexFormat.POSITION_COLOR_NORMAL),
+                s -> DioramaRenderer.shader = s);
+    }
+
+    // ponto de morte automatico
+    @SubscribeEvent
+    public static void onScreenOpening(ScreenEvent.Opening event) {
+        if (!(event.getNewScreen() instanceof DeathScreen)) return;
+        Minecraft mc = Minecraft.getInstance();
+        MapOptions.ensureLoaded();
+        if (MapOptions.deathPoint && mc.player != null)
+            MapWaypoints.setDeathPoint(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ());
     }
 
     @SubscribeEvent
@@ -34,6 +63,10 @@ public class MapClientEvents {
         ExploredMap.tick(mc);
         if (mc.player != null && mc.level != null && mc.player.tickCount % 3 == 0 && com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player))
             MinimapHud.sample(mc);
+        while (ADD_WAYPOINT.consumeClick()) {
+            if (mc.screen == null && mc.player != null)
+                mc.setScreen(new WaypointEditScreen(null, null, mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ()));
+        }
         while (OPEN_MAP.consumeClick()) {
             if (mc.screen == null) MapClientBridge.openWorldMap();
         }
