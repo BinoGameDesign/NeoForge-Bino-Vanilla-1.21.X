@@ -99,7 +99,7 @@ public class WorldMap3D {
     }
 
     // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida
-    private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water) {}
+    private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water, boolean fringe) {}
 
     private static Col col(int wx, int wz) {
         ExploredMap.Tile t = ExploredMap.tile(wx >> 4, wz >> 4);
@@ -108,7 +108,7 @@ public class WorldMap3D {
         if (t.abgr[i] == 0) return null;
         boolean canopy = (t.canopy[i] & 1) != 0;
         boolean water = (t.canopy[i] & 4) != 0;
-        return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water);
+        return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water, (t.canopy[i] & 8) != 0);
     }
 
     private static int argb(int abgr) { return 0xFF000000 | ((abgr & 0xFF) << 16) | (abgr & 0xFF00) | ((abgr >> 16) & 0xFF); }
@@ -140,9 +140,20 @@ public class WorldMap3D {
                     Col n = col(wx + d[0], wz + d[1]);
                     int nS = n == null ? sTop - 6 : n.ground() + 1;
                     if (nS < sTop) {                              // lateral do chao
-                        int cTop = DioramaRenderer.scale(topArgb, 0.78f), cBot = DioramaRenderer.scale(topArgb, 0.55f);
-                        side(b, d, x, z, nS - 64, sTop - 64, cTop, cBot);
-                        quads++;
+                        float y0 = nS - 64, y1 = sTop - 64;
+                        int sideArgb = !c.canopy() && !c.water() && c.tcol() != 0 ? argb(c.tcol()) : topArgb;
+                        if (c.fringe()) {                         // grama: faixa verde no alto, o resto terra
+                            float yf = Math.max(y0, y1 - 0.22f);
+                            int g = DioramaRenderer.scale(topArgb, 0.82f);
+                            side(b, d, x, z, yf, y1, g, g);
+                            quads++;
+                            y1 = yf;
+                        }
+                        if (y1 > y0) {
+                            int cTop = DioramaRenderer.scale(sideArgb, 0.85f), cBot = DioramaRenderer.scale(sideArgb, 0.60f);
+                            side(b, d, x, z, y0, y1, cTop, cBot);
+                            quads++;
+                        }
                     }
                     if (c.canopy()) {                             // lateral da copa de folhas
                         int cnt = 2;

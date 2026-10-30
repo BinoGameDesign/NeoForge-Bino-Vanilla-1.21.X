@@ -92,7 +92,16 @@ public class DioramaRenderer {
                         float sh = 1f;
                         if (Sun.shadows && d[0] * Sun.dx + d[1] * Sun.dz > 0.05f
                                 && !wat && shadowed(RC, RTOP, RBOT, RCOL, RGROUND, N, R, dx + 0.5f + d[0] * 0.55f, (sp[s] + sp[s + 1]) / 2f, dz + 0.5f + d[1] * 0.55f)) sh = 0.65f;
-                        int cTop = scale(sideCol, 0.92f * sh), cBot = scale(sideCol, (0.92f - 0.22f * t) * sh);
+                        int cTop = scale(sideCol, 0.92f * sh) | 0xFF000000, cBot = scale(sideCol, (0.92f - 0.22f * t) * sh) | 0xFF000000;
+                        if (wat) { cTop = scale(sideCol, 0.92f * sh); cBot = scale(sideCol, (0.92f - 0.22f * t) * sh); }
+                        else if (BlockLooks.hasFringe(sideCol) && sp[s + 1] == top) {
+                            // grama: faixa verde no alto da lateral, o resto e' terra
+                            float yf = Math.max(y0, y1 - 0.22f);
+                            int g = scale(col, 0.86f * sh) | 0xFF000000;
+                            sideQuad(bb, d, dx, dz, yf, y1, g, g);
+                            y1 = yf;
+                            if (y1 <= y0) continue;
+                        }
                         if (d[0] == 1) quadC(bb, dx + 1, y1, dz, dx + 1, y1, dz + 1, dx + 1, y0, dz + 1, dx + 1, y0, dz, cTop, cTop, cBot, cBot, 1, 0, 0);
                         else if (d[0] == -1) quadC(bb, dx, y1, dz + 1, dx, y1, dz, dx, y0, dz, dx, y0, dz + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
                         else if (d[1] == 1) quadC(bb, dx + 1, y1, dz + 1, dx, y1, dz + 1, dx, y0, dz + 1, dx + 1, y0, dz + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
@@ -129,6 +138,13 @@ public class DioramaRenderer {
             }
         }
         return false;
+    }
+
+    private static void sideQuad(BufferBuilder bb, int[] d, int dx, int dz, float y0, float y1, int cTop, int cBot) {
+        if (d[0] == 1) quadC(bb, dx + 1, y1, dz, dx + 1, y1, dz + 1, dx + 1, y0, dz + 1, dx + 1, y0, dz, cTop, cTop, cBot, cBot, 1, 0, 0);
+        else if (d[0] == -1) quadC(bb, dx, y1, dz + 1, dx, y1, dz, dx, y0, dz, dx, y0, dz + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
+        else if (d[1] == 1) quadC(bb, dx + 1, y1, dz + 1, dx, y1, dz + 1, dx, y0, dz + 1, dx + 1, y0, dz + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
+        else quadC(bb, dx, y1, dz, dx + 1, y1, dz, dx + 1, y0, dz, dx, y0, dz, cTop, cTop, cBot, cBot, 0, 0, -1);
     }
 
     private static boolean higher(int[] RC, int[][] RTOP, int N, int R, int nx, int nz, int top) {

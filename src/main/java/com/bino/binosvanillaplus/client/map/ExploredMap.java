@@ -172,6 +172,12 @@ public final class ExploredMap {
                 t.abgr[idx] = abgr;
                 t.h[idx] = (short) top;
                 t.canopy[idx] = 0;
+                t.tcol[idx] = 0;
+                if (st.getFluidState().isEmpty()) {   // lateral propria (grama: terra + faixa verde, bit 8)
+                    int sc = BlockLooks.side(st, level, pos.set(wx, top, wz));
+                    if (BlockLooks.hasFringe(sc)) t.canopy[idx] = 8;
+                    t.tcol[idx] = 0xFF000000 | ((sc & 0xFF) << 16) | (sc & 0xFF00) | ((sc >> 16) & 0xFF);
+                }
                 t.gh[idx] = (short) top;
                 t.cb[idx] = (short) top;
                 if (waterBed != Integer.MIN_VALUE) {   // agua: guarda o leito (altura + cor) para desenhar a agua translucida por cima

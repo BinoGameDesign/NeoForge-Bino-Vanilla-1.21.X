@@ -50,11 +50,14 @@ public class BlockLooks {
         if (!fs.isEmpty() && (st.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock)) return fluid(fs, level, pos);
         Look l = look(st);
         int s = tint(l.side, l.tintSide, st, level, pos);
-        if (l.tintTop >= 0 && l.tintSide < 0) {   // grama: a lateral usa a cor do topo (verde), um pouco mais escura - nada de terra
-            s = scaleRgb(tint(l.top, l.tintTop, st, level, pos), 0.92f);
+        if (l.tintTop >= 0 && l.tintSide < 0) {   // grama: lateral de terra (marrom) com uma faixinha verde no alto (ver hasFringe)
+            return (vivid(s) & 0xFFFFFF) | 0xFE000000;
         }
         return sane(st, vivid(s), level, pos);
     }
+
+    // lateral marcada (alpha 0xFE) = bloco tipo grama: desenhar terra com uma faixa da cor do topo na borda de cima
+    public static boolean hasFringe(int sideArgb) { return (sideArgb >>> 24) == 0xFE; }
 
     private static int scaleRgb(int c, float f) {
         return 0xFF000000 | (Math.min(255, (int) (((c >> 16) & 0xFF) * f)) << 16) | (Math.min(255, (int) (((c >> 8) & 0xFF) * f)) << 8) | Math.min(255, (int) ((c & 0xFF) * f));
