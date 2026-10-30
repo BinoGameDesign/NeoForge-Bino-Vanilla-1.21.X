@@ -51,7 +51,7 @@ public class BinosVanillaMod {
         com.bino.binosvanillaplus.menu.ModMenuTypes.register(modEventBus);   // janelas (menu da Mesa de Lapidação)
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
-        com.bino.binosvanillaplus.block.entity.ModBlockEntities.register(modEventBus);
+        com.bino.binosvanillaplus.block.entity.ModBlockEntities.register(modEventBus);   // dono da corda solta
 
         // Durabilidade x1.25 das ferramentas de diamante (evento do barramento do mod)
         modEventBus.addListener(com.bino.binosvanillaplus.event.DiamondBuffEvents::onModifyDefaultComponents);

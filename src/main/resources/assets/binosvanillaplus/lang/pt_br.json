@@ -99,5 +99,17 @@
   "lookat.binosvanillaplus.tool.shovel": "Pá",
   "lookat.binosvanillaplus.tool.hoe": "Enxada",
   "lookat.binosvanillaplus.hardness": "Dureza: %s",
-  "lookat.binosvanillaplus.growth": "Crescimento: %s%%"
+  "lookat.binosvanillaplus.growth": "Crescimento: %s%%",
+  "item.binosvanillaplus.rope": "Corda",
+  "block.binosvanillaplus.rope": "Corda",
+  "item.binosvanillaplus.climbing_hook": "Gancho de Escalada",
+  "block.binosvanillaplus.climbing_hook": "Gancho de Escalada",
+  "message.binosvanillaplus.rope_no_space": "Não há onde pendurar a corda aqui. Use o gancho na beirada.",
+  "message.binosvanillaplus.rope_none": "Você não tem cordas.",
+  "message.binosvanillaplus.rope_not_yours": "Essa corda não é sua: só quem a jogou pode recolhê-la.",
+  "message.binosvanillaplus.hook_miss": "Não dá para fixar o gancho ali.",
+  "key.binosvanillaplus.world_map": "Abrir mapa-mundi",
+  "map.binosvanillaplus.title": "Mapa-Mundi",
+  "message.binosvanillaplus.map_saved": "Mapa salvo! Voce pode coloca-lo numa moldura.",
+  "message.binosvanillaplus.map_already_saved": "Este mapa ja esta salvo. Coloque-o numa moldura."
 }

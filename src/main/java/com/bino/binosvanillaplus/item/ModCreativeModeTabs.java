@@ -95,6 +95,8 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creativetab.binosvanillaplus.cave_exploration"))
                     .displayItems((itemDisplayParameters, output) -> {
                         output.accept(ModItems.CYALUME_STICK);
+                        output.accept(ModItems.ROPE);
+                        output.accept(ModItems.CLIMBING_HOOK);
                     }).build());
 
     public static void register(IEventBus eventBus) {

@@ -75,9 +75,12 @@ public class LookAtHud {
         int h = pad * 2 + lineH * (2 + info.lines.size()) - 2 + (hasBar ? 6 : 0);
         h = Math.max(h, pad * 2 + iconSize);
 
-        int x = (g.guiWidth() - w) / 2, y = 6;
-        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xFF000000);       // borda
-        g.fill(x, y, x + w, y + h, 0xCC101018);                         // fundo
+        // Tamanho do painel: 0.5 = metade. Mude aqui para ajustar.
+        final float scale = 0.5f;
+        g.pose().pushPose();
+        g.pose().scale(scale, scale, 1.0f);
+        int x = (int) ((g.guiWidth() / scale - w) / 2), y = (int) (4 / scale);
+        g.fill(x, y, x + w, y + h, 0x99000000);                         // fundo preto, 60% de opacidade
 
         int tx = x + pad + (hasIcon ? iconSize + 4 : 0), ty = y + pad;
         if (hasIcon) g.renderItem(info.icon, x + pad, y + pad);
@@ -95,5 +98,6 @@ public class LookAtHud {
             g.fill(x + pad, y + h - pad - 2, x + pad + bw, y + h - pad + 2, 0xFF3A0A0A);
             g.fill(x + pad, y + h - pad - 2, x + pad + (int) (bw * frac), y + h - pad + 2, 0xFFE03030);
         }
+        g.pose().popPose();
     }
 }

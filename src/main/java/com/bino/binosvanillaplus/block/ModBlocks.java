@@ -2,7 +2,10 @@ package com.bino.binosvanillaplus.block;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.item.ModItems;
+import com.bino.binosvanillaplus.block.custom.HookBlock;
 import com.bino.binosvanillaplus.block.custom.LapidaryTableBlock;
+import com.bino.binosvanillaplus.block.custom.RopeBlock;
+import net.minecraft.world.level.material.PushReaction;
 import com.bino.binosvanillaplus.block.custom.VariantOreBlock;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.item.BlockItem;
@@ -14,12 +17,8 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import com.bino.binosvanillaplus.block.custom.HookBlock;
-import com.bino.binosvanillaplus.block.custom.RopeBlock;
-import net.minecraft.world.level.material.PushReaction;
 
 import java.util.function.Supplier;
-
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS =
@@ -131,6 +130,7 @@ public class ModBlocks {
                     .noCollission()   // da para atravessar o gancho (a corda fica logo ao lado/abaixo)
                     .noOcclusion()
                     .sound(SoundType.CHAIN)));
+
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);
         registerBlockItem(name, toReturn);
