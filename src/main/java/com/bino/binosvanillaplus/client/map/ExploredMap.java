@@ -150,7 +150,7 @@ public final class ExploredMap {
                 }
                 int top = y - 1;
                 BlockState st = chunk.getBlockState(pos.set(wx, top, wz));
-                while (top > minY && (st.isAir() || st.getCollisionShape(level, pos).isEmpty()) && st.getFluidState().isEmpty()) {   // ignora ar, grama alta, flores, tochas...
+                while (top > minY && (st.isAir() || BlockLooks.invisible(st) || st.getCollisionShape(level, pos).isEmpty()) && st.getFluidState().isEmpty()) {   // ignora ar, grama alta, flores, tochas...
                     top--;
                     st = chunk.getBlockState(pos.set(wx, top, wz));
                 }
@@ -199,7 +199,7 @@ public final class ExploredMap {
         int limit = Math.max(minY, y - 40);
         while (y > limit) {   // atravessa o ar embaixo da copa ate o chao
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
-            if (!(s.isAir() || s.getCollisionShape(level, pos).isEmpty()) || !s.getFluidState().isEmpty()) break;
+            if (!(s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty()) || !s.getFluidState().isEmpty()) break;
             y--;
         }
         BlockState ground = chunk.getBlockState(pos.set(wx, y, wz));

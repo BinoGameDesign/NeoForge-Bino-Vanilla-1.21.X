@@ -86,7 +86,7 @@ public class MinimapHud {
                     BlockState st = ch.getBlockState(pos.set(wx, y, wz));
                     FluidState fs = st.getFluidState();
                     boolean fluid = !fs.isEmpty();
-                    boolean air = st.isAir() || (!fluid && st.getCollisionShape(lvl, pos).isEmpty());   // ignora grama alta, flores, tochas...
+                    boolean air = st.isAir() || BlockLooks.invisible(st) || (!fluid && st.getCollisionShape(lvl, pos).isEmpty());   // ignora grama alta, flores, tochas...
                     Object key = air ? null : (fluid ? fs.getType() : st);
 
                     if (curKey != null && key != curKey) {

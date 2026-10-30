@@ -53,7 +53,7 @@ void main() {
     vec3 sunCol = mix(vec3(1.00, 0.72, 0.48), vec3(1.00, 0.96, 0.88), smoothstep(0.05, 0.6, h));
     vec3 skyCol = mix(vec3(0.60, 0.66, 0.95), vec3(0.74, 0.85, 1.00), DayLight);
     // luz total ~1.0 numa face iluminada (nao passa de 1 para nao estourar); ceu enche a sombra
-    vec3 light = skyCol * (0.36 + 0.20 * sky) * DayLight + sunCol * sun * 0.50 * DayLight + vec3(0.05);
+    vec3 light = skyCol * (0.46 + 0.12 * sky) * DayLight + sunCol * sun * 0.50 * DayLight + vec3(0.05);
     float depthDark = clamp(1.0 + vPos.y * 0.008, 0.80, 1.06);
     vec3 col = base * light * depthDark * Exposure;
 
