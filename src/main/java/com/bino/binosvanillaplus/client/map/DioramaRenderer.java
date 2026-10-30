@@ -50,14 +50,15 @@ public class DioramaRenderer {
                     float y = top - py;
                     int[] c = new int[4];
                     int[][] corner = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
+                    boolean shadow = Sun.shadows && shadowed(RC, RTOP, RBOT, RGROUND, N, R, dx + 0.5f, top + 0.05f, dz + 0.5f);
                     for (int k = 0; k < 4; k++) {
-                        float ao = 1f;
+                        float ao = shadow ? 0.60f : 1f;
                         if (r == 0) {
                             boolean s1 = higher(RC, RTOP, N, R, dx + corner[k][0], dz, top);
                             boolean s2 = higher(RC, RTOP, N, R, dx, dz + corner[k][1], top);
                             boolean cc = higher(RC, RTOP, N, R, dx + corner[k][0], dz + corner[k][1], top);
                             int a = (s1 && s2) ? 0 : 3 - ((s1 ? 1 : 0) + (s2 ? 1 : 0) + (cc ? 1 : 0));
-                            ao = 0.58f + 0.42f * a / 3f;
+                            ao *= 0.58f + 0.42f * a / 3f;
                         }
                         c[k] = scale(col, ao);
                     }
@@ -82,7 +83,10 @@ public class DioramaRenderer {
                     for (int s = 0; s < cnt; s += 2) {
                         float y0 = sp[s] - py, y1 = sp[s + 1] - py;
                         float t = Math.max(0.0f, Math.min(1f, (sp[s + 1] - sp[s]) / 6f));
-                        int cTop = scale(sideCol, 0.92f), cBot = scale(sideCol, 0.92f - 0.22f * t);
+                        float sh = 1f;
+                        if (Sun.shadows && d[0] * Sun.dx + d[1] * Sun.dz > 0.05f
+                                && shadowed(RC, RTOP, RBOT, RGROUND, N, R, dx + 0.5f + d[0] * 0.55f, (sp[s] + sp[s + 1]) / 2f, dz + 0.5f + d[1] * 0.55f)) sh = 0.65f;
+                        int cTop = scale(sideCol, 0.92f * sh), cBot = scale(sideCol, (0.92f - 0.22f * t) * sh);
                         if (d[0] == 1) quadC(b, dx + 1, y1, dz, dx + 1, y1, dz + 1, dx + 1, y0, dz + 1, dx + 1, y0, dz, cTop, cTop, cBot, cBot, 1, 0, 0);
                         else if (d[0] == -1) quadC(b, dx, y1, dz + 1, dx, y1, dz, dx, y0, dz, dx, y0, dz + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
                         else if (d[1] == 1) quadC(b, dx + 1, y1, dz + 1, dx, y1, dz + 1, dx, y0, dz + 1, dx + 1, y0, dz + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
@@ -97,6 +101,22 @@ public class DioramaRenderer {
         if (md != null) { terrain.upload(md); hasTerrain = true; } else hasTerrain = false;
         VertexBuffer.unbind();
         ox0 = px; oy0 = py; oz0 = pz;
+    }
+
+    // o ponto (x,y,z) (x,z em blocos relativos ao jogador, y absoluto) esta na sombra? Marcha em direcao ao sol pela malha.
+    private static boolean shadowed(int[] RC, int[][] RTOP, int[][] RBOT, boolean[] RGROUND, int N, int R, float x, float y, float z) {
+        for (float t = 0.25f; t < 18f; t += 0.5f) {
+            float px = x + Sun.dx * t, py = y + Sun.dy * t, pz = z + Sun.dz * t;
+            int ix = (int) Math.floor(px), iz = (int) Math.floor(pz);
+            if (Math.abs(ix) > R || Math.abs(iz) > R) return false;
+            int i = (iz + R) * N + (ix + R);
+            for (int r = 0; r < RC[i]; r++) {
+                int yt = RTOP[i][r] + 1;
+                boolean ground = RGROUND[i] && r == RC[i] - 1;
+                if (ground ? py < yt : (py >= RBOT[i][r] && py < yt)) return true;
+            }
+        }
+        return false;
     }
 
     private static boolean higher(int[] RC, int[][] RTOP, int N, int R, int nx, int nz, int top) {
@@ -139,10 +159,7 @@ public class DioramaRenderer {
     static VertexBuffer pointer() {
         if (pointer != null) return pointer;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-        // contorno escuro (maior) por baixo, seta clara por cima
-        arrow(b, 1.0f, 0.30f, 0xFF101418);
-        arrow(b, 0.70f, 0.36f, 0xFFFFFFFF);
-        arrow(b, 0.30f, 0.42f, 0xFFE8433A);     // miolo vermelho, como a ponta de uma bussola
+        arrow(b, 0.95f, 0.30f, 0xFFFFFFFF);     // seta toda branca
         MeshData md = b.build();
         pointer = new VertexBuffer(VertexBuffer.Usage.STATIC);
         pointer.bind();
@@ -223,6 +240,7 @@ public class DioramaRenderer {
 
         if (hasTerrain) {
             Matrix4f mv = new Matrix4f(view).translate((float) (ox0 - p.getX()), (float) (oy0 - p.getY()), (float) (oz0 - p.getZ()));
+            Sun.applyUniforms();
             shader.safeGetUniform("Radius").set(fadeRadius);
             shader.safeGetUniform("Detail").set(1f);
             // Origin = canto da malha no mundo, para a textura procedural ficar presa aos blocos
@@ -233,7 +251,7 @@ public class DioramaRenderer {
         }
         // ponteiro do jogador por cima de tudo, deitado no plano do terreno, sempre apontando "para cima" no mapa
         RenderSystem.clear(256, Minecraft.ON_OSX);
-        Matrix4f pmv = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).scale(dist / 30f * 0.9f);
+        Matrix4f pmv = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).scale(dist / 30f * 0.62f);
         drawPointer(pmv, proj);
         end(g, st);
     }

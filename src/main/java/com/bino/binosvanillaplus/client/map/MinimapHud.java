@@ -44,10 +44,24 @@ public class MinimapHud {
         int minY = lvl.getMinBuildHeight();
         boolean ceilingDim = lvl.dimensionType().hasCeiling();
 
+        Sun.update(mc);
         int surf = lvl.getHeight(Heightmap.Types.MOTION_BLOCKING, px, pz);
-        boolean covered = !lvl.canSeeSky(p.blockPosition().above());
-        cave = ceilingDim || (covered && surf > py + (cave ? 4 : 8));
+        boolean roofed = !lvl.canSeeSky(p.blockPosition().above());
+        int skyLight = lvl.getBrightness(net.minecraft.world.level.LightLayer.SKY, p.blockPosition().above());
+        // entra no modo corte quando esta coberto e quase sem luz do ceu (caverna/mina/casa fechada); sai quando volta a ter ceu
+        if (ceilingDim) cave = true;
+        else if (!cave) cave = roofed && skyLight <= 5 && surf > py + 4;
+        else cave = roofed && skyLight < 10 && surf > py + 2;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        // altura do corte: logo abaixo do teto local (tunel baixo) ou 4 blocos acima da cabeca (caverna ampla)
+        int slice = py + SLICE;
+        if (cave) {
+            for (int c = py + 2; c <= py + 8; c++) {
+                BlockState above = lvl.getBlockState(pos.set(px, c, pz));
+                if (!above.getCollisionShape(lvl, pos).isEmpty()) { slice = Math.max(py + 1, c - 1); break; }
+            }
+        }
 
         for (int dz = -R; dz <= R; dz++) {
             for (int dx = -R; dx <= R; dx++) {
@@ -58,7 +72,7 @@ public class MinimapHud {
                 LevelChunk ch = lvl.getChunkSource().getChunkNow(wx >> 4, wz >> 4);
                 if (ch == null) continue;
 
-                int y = cave ? Math.min(py + SLICE, lvl.getMaxBuildHeight() - 1)
+                int y = cave ? Math.min(slice, lvl.getMaxBuildHeight() - 1)
                              : ch.getHeight(Heightmap.Types.WORLD_SURFACE, wx & 15, wz & 15) - 1;
                 int limit = Math.max(minY, y - 56);
                 int runs = 0;

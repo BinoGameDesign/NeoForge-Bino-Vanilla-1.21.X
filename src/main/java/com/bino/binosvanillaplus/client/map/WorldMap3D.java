@@ -44,6 +44,8 @@ public class WorldMap3D {
         int cxm = (int) Math.floor(tx / 16), czm = (int) Math.floor(tz / 16), built = 0;
         DioramaRenderer.GlState st = DioramaRenderer.begin(g, x0, y0, w, h, proj);
 
+        Sun.update(Minecraft.getInstance());
+        Sun.applyUniforms();
         DioramaRenderer.shader.safeGetUniform("Radius").set(1.0e6f);
         DioramaRenderer.shader.safeGetUniform("Detail").set(1f);
         for (int dz = -VIEW_CHUNKS; dz <= VIEW_CHUNKS; dz++) {
@@ -67,7 +69,7 @@ public class WorldMap3D {
         // ponteiro do jogador (sempre visivel)
         if (player != null) {
             RenderSystem.clear(256, Minecraft.ON_OSX);
-            float s = dist / 38f;
+            float s = dist / 55f;
             Matrix4f pmv = new Matrix4f(view)
                     .translate((float) (player.getX() - tx), (float) (player.getY() - targetY + 1.0), (float) (player.getZ() - tz))
                     .rotateY((float) (Math.PI - Math.toRadians(player.getYRot())))
@@ -77,38 +79,70 @@ public class WorldMap3D {
         DioramaRenderer.end(g, st);
     }
 
+    // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida
+    private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol) {}
+
+    private static Col col(int wx, int wz) {
+        ExploredMap.Tile t = ExploredMap.tile(wx >> 4, wz >> 4);
+        if (t == null) return null;
+        int i = (wz & 15) * 16 + (wx & 15);
+        if (t.abgr[i] == 0) return null;
+        boolean canopy = (t.canopy[i] & 1) != 0;
+        return new Col(t.h[i], canopy ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i]);
+    }
+
+    private static int argb(int abgr) { return 0xFF000000 | ((abgr & 0xFF) << 16) | (abgr & 0xFF00) | ((abgr >> 16) & 0xFF); }
+
     private static void build(ChunkMesh m, ExploredMap.Tile t, int cx, int cz) {
         m.version = t.version;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        int[] sp = new int[32], tmp = new int[32];
         int quads = 0;
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
-                int i = z * 16 + x;
-                if (t.abgr[i] == 0) continue;
-                int hgt = t.h[i];
-                int abgr = t.abgr[i];
-                int col = 0xFF000000 | ((abgr & 0xFF) << 16) | (abgr & 0xFF00) | ((abgr >> 16) & 0xFF);
-                float y = hgt + 1 - 64;
-                DioramaRenderer.quadC(b, x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1, col, col, col, col, 0, 1, 0);
-                quads++;
+                int wx = cx * 16 + x, wz = cz * 16 + z;
+                Col c = col(wx, wz);
+                if (c == null) continue;
+                int sTop = c.ground() + 1;                       // topo do chao
+                int topArgb = argb(c.canopy() ? c.gcol() : c.topCol());
+                quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (ou do terreno sem copa)
+
                 for (int[] d : dirs) {
-                    int nx = x + d[0], nz = z + d[1], nh;
-                    if (nx >= 0 && nx < 16 && nz >= 0 && nz < 16) {
-                        int ni = nz * 16 + nx;
-                        nh = t.abgr[ni] == 0 ? hgt - 6 : t.h[ni];
-                    } else {
-                        int w = ExploredMap.heightAt(cx * 16 + nx, cz * 16 + nz);
-                        nh = w == ExploredMap.UNKNOWN ? hgt - 6 : w;
+                    Col n = col(wx + d[0], wz + d[1]);
+                    int nS = n == null ? sTop - 6 : n.ground() + 1;
+                    if (nS < sTop) {                              // lateral do chao
+                        int cTop = DioramaRenderer.scale(topArgb, 0.78f), cBot = DioramaRenderer.scale(topArgb, 0.55f);
+                        side(b, d, x, z, nS - 64, sTop - 64, cTop, cBot);
+                        quads++;
                     }
-                    if (nh >= hgt) continue;
-                    float y1 = hgt + 1 - 64, y0 = nh + 1 - 64;
-                    int cTop = DioramaRenderer.scale(col, 0.78f), cBot = DioramaRenderer.scale(col, 0.55f);
-                    if (d[0] == 1) DioramaRenderer.quadC(b, x + 1, y1, z, x + 1, y1, z + 1, x + 1, y0, z + 1, x + 1, y0, z, cTop, cTop, cBot, cBot, 1, 0, 0);
-                    else if (d[0] == -1) DioramaRenderer.quadC(b, x, y1, z + 1, x, y1, z, x, y0, z, x, y0, z + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
-                    else if (d[1] == 1) DioramaRenderer.quadC(b, x + 1, y1, z + 1, x, y1, z + 1, x, y0, z + 1, x + 1, y0, z + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
-                    else DioramaRenderer.quadC(b, x, y1, z, x + 1, y1, z, x + 1, y0, z, x, y0, z, cTop, cTop, cBot, cBot, 0, 0, -1);
-                    quads++;
+                    if (c.canopy()) {                             // lateral da copa de folhas
+                        int cnt = 2;
+                        sp[0] = c.cb(); sp[1] = c.top() + 1;
+                        if (n == null) cnt = sub(sp, cnt, tmp, Integer.MIN_VALUE, c.top() + 1 - 6);
+                        else {
+                            cnt = sub(sp, cnt, tmp, Integer.MIN_VALUE, nS);
+                            if (n.canopy()) cnt = sub(sp, cnt, tmp, n.cb(), n.top() + 1);
+                        }
+                        int lc = DioramaRenderer.scale(argb(c.topCol()), 0.80f);
+                        for (int s = 0; s < cnt; s += 2) {
+                            side(b, d, x, z, sp[s] - 64, sp[s + 1] - 64, lc, DioramaRenderer.scale(lc, 0.75f));
+                            quads++;
+                        }
+                    }
+                }
+                if (c.canopy()) {
+                    quads += face(b, x, c.top() + 1 - 64, z, argb(c.topCol()));                      // topo da copa
+                    if (c.trunk() && c.cb() > sTop) {                                               // tronco: caixa fina
+                        float lo = sTop - 64, hi = c.cb() - 64;
+                        int tc = DioramaRenderer.scale(argb(c.tcol()), 0.95f), tb = DioramaRenderer.scale(argb(c.tcol()), 0.70f);
+                        float a = x + 0.30f, bb = x + 0.70f, e = z + 0.30f, f = z + 0.70f;
+                        DioramaRenderer.quadC(b, bb, hi, e, bb, hi, f, bb, lo, f, bb, lo, e, tc, tc, tb, tb, 1, 0, 0);
+                        DioramaRenderer.quadC(b, a, hi, f, a, hi, e, a, lo, e, a, lo, f, tc, tc, tb, tb, -1, 0, 0);
+                        DioramaRenderer.quadC(b, bb, hi, f, a, hi, f, a, lo, f, bb, lo, f, tc, tc, tb, tb, 0, 0, 1);
+                        DioramaRenderer.quadC(b, a, hi, e, bb, hi, e, bb, lo, e, a, lo, e, tc, tc, tb, tb, 0, 0, -1);
+                        quads += 4;
+                    }
                 }
             }
         }
@@ -117,6 +151,31 @@ public class WorldMap3D {
         m.vb.bind();
         if (md != null && quads > 0) { m.vb.upload(md); m.has = true; } else m.has = false;
         VertexBuffer.unbind();
+    }
+
+    private static int face(BufferBuilder b, int x, float y, int z, int col) {
+        DioramaRenderer.quadC(b, x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1, col, col, col, col, 0, 1, 0);
+        return 1;
+    }
+
+    private static void side(BufferBuilder b, int[] d, int x, int z, float y0, float y1, int cTop, int cBot) {
+        if (d[0] == 1) DioramaRenderer.quadC(b, x + 1, y1, z, x + 1, y1, z + 1, x + 1, y0, z + 1, x + 1, y0, z, cTop, cTop, cBot, cBot, 1, 0, 0);
+        else if (d[0] == -1) DioramaRenderer.quadC(b, x, y1, z + 1, x, y1, z, x, y0, z, x, y0, z + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
+        else if (d[1] == 1) DioramaRenderer.quadC(b, x + 1, y1, z + 1, x, y1, z + 1, x, y0, z + 1, x + 1, y0, z + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
+        else DioramaRenderer.quadC(b, x, y1, z, x + 1, y1, z, x + 1, y0, z, x, y0, z, cTop, cTop, cBot, cBot, 0, 0, -1);
+    }
+
+    private static int sub(int[] sp, int cnt, int[] tmp, int a, int b) {
+        int out = 0;
+        for (int s = 0; s < cnt; s += 2) {
+            int lo = sp[s], hi = sp[s + 1];
+            if (b <= lo || a >= hi) { tmp[out++] = lo; tmp[out++] = hi; continue; }
+            if (lo < a) { tmp[out++] = lo; tmp[out++] = a; }
+            if (b < hi) { tmp[out++] = b; tmp[out++] = hi; }
+            if (out > 28) break;
+        }
+        System.arraycopy(tmp, 0, sp, 0, out);
+        return out;
     }
 
     // ---------------------------------------------------------------- selecao com o mouse

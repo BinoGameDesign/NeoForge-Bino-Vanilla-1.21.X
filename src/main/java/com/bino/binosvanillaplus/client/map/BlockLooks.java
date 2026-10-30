@@ -31,14 +31,14 @@ public class BlockLooks {
         FluidState fs = st.getFluidState();
         if (!fs.isEmpty() && (st.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock)) return fluid(fs, level, pos);
         Look l = look(st);
-        return tint(l.top, l.tintTop, st, level, pos);
+        return vivid(tint(l.top, l.tintTop, st, level, pos));
     }
 
     public static int side(BlockState st, BlockAndTintGetter level, BlockPos pos) {
         FluidState fs = st.getFluidState();
         if (!fs.isEmpty() && (st.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock)) return fluid(fs, level, pos);
         Look l = look(st);
-        return tint(l.side, l.tintSide, st, level, pos);
+        return vivid(tint(l.side, l.tintSide, st, level, pos));
     }
 
     private static int fluid(FluidState fs, BlockAndTintGetter level, BlockPos pos) {
@@ -47,10 +47,21 @@ public class BlockLooks {
         return 0xFF000000 | (c & 0xFFFFFF);
     }
 
+    // cores mais vivas: clareia (gama) e aumenta a saturacao
+    private static int vivid(int argb) {
+        float r = (float) Math.pow(((argb >> 16) & 0xFF) / 255.0, 0.80), g = (float) Math.pow(((argb >> 8) & 0xFF) / 255.0, 0.80),
+                b = (float) Math.pow((argb & 0xFF) / 255.0, 0.80);
+        float l = 0.299f * r + 0.587f * g + 0.114f * b;
+        r = Math.max(0f, Math.min(1f, l + (r - l) * 1.30f));
+        g = Math.max(0f, Math.min(1f, l + (g - l) * 1.30f));
+        b = Math.max(0f, Math.min(1f, l + (b - l) * 1.30f));
+        return 0xFF000000 | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
+    }
+
     private static int tint(int base, int tintIndex, BlockState st, BlockAndTintGetter level, BlockPos pos) {
         if (tintIndex < 0) return base;
         int c = Minecraft.getInstance().getBlockColors().getColor(st, level, pos, tintIndex);
-        if (c == -1) return base;
+        if (c == -1) return 0xFF000000 | st.getMapColor(level, pos).col;   // sem cor de bioma: usa a cor do mapa vanilla (verde para grama/folha)
         int r = ((base >> 16) & 0xFF) * ((c >> 16) & 0xFF) / 255, g = ((base >> 8) & 0xFF) * ((c >> 8) & 0xFF) / 255,
                 b = (base & 0xFF) * (c & 0xFF) / 255;
         return 0xFF000000 | (r << 16) | (g << 8) | b;
@@ -66,9 +77,9 @@ public class BlockLooks {
             BakedQuad up = first(model.getQuads(st, Direction.UP, rs));
             BakedQuad side = first(model.getQuads(st, Direction.NORTH, rs));
             BakedQuad any = up != null ? up : first(model.getQuads(st, null, rs));   // plantas em cruz, etc.
-            if (any != null) { l.top = average(any.getSprite()); l.tintTop = any.isTinted() ? any.getTintIndex() : -1; }
+            if (any != null) { l.tintTop = any.isTinted() ? any.getTintIndex() : -1; l.top = average(any.getSprite()); if (l.tintTop >= 0) l.top = normalize(l.top); }
             BakedQuad s = side != null ? side : any;
-            if (s != null) { l.side = average(s.getSprite()); l.tintSide = s.isTinted() ? s.getTintIndex() : -1; }
+            if (s != null) { l.tintSide = s.isTinted() ? s.getTintIndex() : -1; l.side = average(s.getSprite()); if (l.tintSide >= 0) l.side = normalize(l.side); }
             else { l.side = l.top; l.tintSide = l.tintTop; }
             // lateral de bloco com topo tingido (ex.: grama): a lateral nao e' tingida, entao fica terra - correto
         } catch (Exception ignored) {
@@ -76,6 +87,15 @@ public class BlockLooks {
         }
         CACHE.put(st, l);
         return l;
+    }
+
+    // textura cinza que sera tingida (grama, folhas): leva a luminosidade para ~0.82 para a cor do bioma aparecer viva
+    private static int normalize(int argb) {
+        float r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
+        float luma = 0.299f * r + 0.587f * g + 0.114f * b;
+        if (luma < 1f) return argb;
+        float k = Math.min(3f, 0.82f * 255f / luma);
+        return 0xFF000000 | (Math.min(255, (int) (r * k)) << 16) | (Math.min(255, (int) (g * k)) << 8) | Math.min(255, (int) (b * k));
     }
 
     private static BakedQuad first(List<BakedQuad> quads) { return quads == null || quads.isEmpty() ? null : quads.get(0); }

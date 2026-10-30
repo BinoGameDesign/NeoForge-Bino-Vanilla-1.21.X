@@ -14,6 +14,8 @@ uniform vec4 ColorModulator;
 uniform float Radius;
 uniform vec3 Origin;
 uniform float Detail;
+uniform vec3 SunDir;      // direcao do sol (ou da lua a noite), em coordenadas do mundo
+uniform float DayLight;   // 1 = dia, ~0.45 = noite
 
 out vec4 fragColor;
 
@@ -24,6 +26,10 @@ float hash(vec3 p) {
 }
 
 void main() {
+    if (Detail < 0.5) {               // ponteiro: branco puro, sem iluminacao
+        fragColor = vec4(vColor.rgb, vColor.a) * ColorModulator;
+        return;
+    }
     vec3 n = normalize(vNormal);
     vec3 base = vColor.rgb;
 
@@ -38,17 +44,19 @@ void main() {
         base *= (1.0 + noise) * edge;
     }
 
-    vec3 sunDir = normalize(vec3(0.45, 0.85, 0.30));
+    vec3 sunDir = normalize(SunDir);
     float sun = max(dot(n, sunDir), 0.0);
     float sky = 0.5 + 0.5 * n.y;
-    vec3 sunCol = vec3(1.00, 0.92, 0.80);
-    vec3 skyCol = vec3(0.62, 0.74, 0.98);
-    vec3 light = skyCol * (0.30 + 0.38 * sky) + sunCol * sun * 0.64;
-    float depthDark = clamp(1.0 + vPos.y * 0.016, 0.60, 1.08);
-    vec3 col = base * light * depthDark * 1.12;
+    // cor do sol: quente perto do horizonte (amanhecer/entardecer), neutra ao meio-dia
+    float h = clamp(sunDir.y, 0.0, 1.0);
+    vec3 sunCol = mix(vec3(1.00, 0.62, 0.35), vec3(1.00, 0.95, 0.85), smoothstep(0.05, 0.6, h));
+    vec3 skyCol = mix(vec3(0.55, 0.62, 0.95), vec3(0.72, 0.84, 1.00), DayLight);
+    vec3 light = skyCol * (0.50 + 0.34 * sky) * DayLight + sunCol * sun * 0.62 * DayLight + vec3(0.10);
+    float depthDark = clamp(1.0 + vPos.y * 0.010, 0.78, 1.10);
+    vec3 col = base * light * depthDark * 1.22;
 
     float luma = dot(col, vec3(0.299, 0.587, 0.114));
-    col = clamp(mix(vec3(luma), col, 1.14), 0.0, 1.0);
+    col = clamp(mix(vec3(luma), col, 1.30), 0.0, 1.0);
 
     float d = length(vPos.xz) / Radius;
     float fade = 1.0 - smoothstep(0.72, 1.0, d);

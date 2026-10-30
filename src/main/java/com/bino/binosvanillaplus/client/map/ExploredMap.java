@@ -8,6 +8,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -29,6 +30,12 @@ public final class ExploredMap {
     public static final class Tile {
         public final int[] abgr = new int[256];     // cor no formato do NativeImage (ABGR), 0 = nunca visto
         public final short[] h = new short[256];
+        // copas de arvores: bit0 = ha copa (folhas/tronco no topo), bit1 = a coluna tem tronco
+        public final byte[] canopy = new byte[256];
+        public final short[] gh = new short[256];      // altura do chao (sob a copa); sem copa = h
+        public final short[] cb = new short[256];      // altura da folha mais baixa da copa
+        public final int[] gcol = new int[256];        // cor do chao sob a copa (ABGR)
+        public final int[] tcol = new int[256];        // cor do tronco (ABGR)
         long lastScan;
         public int version;                 // sobe a cada nova leitura (invalida malhas 3D em cache)
         boolean texDirty = true;
@@ -161,8 +168,39 @@ public final class ExploredMap {
                 int abgr = 0xFF000000 | ((argb & 0xFF) << 16) | (argb & 0xFF00) | ((argb >> 16) & 0xFF);
                 t.abgr[idx] = abgr;
                 t.h[idx] = (short) top;
+                t.canopy[idx] = 0;
+                t.gh[idx] = (short) top;
+                t.cb[idx] = (short) top;
+                if (st.getFluidState().isEmpty() && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) scanCanopy(level, chunk, t, idx, wx, wz, top, minY, pos);
             }
         }
+    }
+
+    // arvore: descobre onde estao as folhas, se ha tronco e onde fica o chao embaixo da copa
+    private static void scanCanopy(ClientLevel level, LevelChunk chunk, Tile t, int idx, int wx, int wz, int top, int minY,
+                                   BlockPos.MutableBlockPos pos) {
+        int y = top, lowestLeaf = Integer.MIN_VALUE, trunkCol = 0;
+        boolean trunk = false;
+        while (y > minY) {
+            BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
+            if (s.is(BlockTags.LEAVES)) lowestLeaf = y;
+            else if (s.is(BlockTags.LOGS)) { if (!trunk) { trunk = true; trunkCol = BlockLooks.side(s, level, pos); } }
+            else break;
+            y--;
+        }
+        int limit = Math.max(minY, y - 40);
+        while (y > limit) {   // atravessa o ar embaixo da copa ate o chao
+            BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
+            if (!(s.isAir() || s.getCollisionShape(level, pos).isEmpty()) || !s.getFluidState().isEmpty()) break;
+            y--;
+        }
+        BlockState ground = chunk.getBlockState(pos.set(wx, y, wz));
+        int gc = BlockLooks.top(ground, level, pos);
+        t.canopy[idx] = (byte) (1 | (trunk ? 2 : 0));
+        t.gh[idx] = (short) y;
+        t.cb[idx] = (short) (lowestLeaf == Integer.MIN_VALUE ? top : lowestLeaf);
+        t.gcol[idx] = 0xFF000000 | ((gc & 0xFF) << 16) | (gc & 0xFF00) | ((gc >> 16) & 0xFF);
+        t.tcol[idx] = 0xFF000000 | ((trunkCol & 0xFF) << 16) | (trunkCol & 0xFF00) | ((trunkCol >> 16) & 0xFF);
     }
 
     private static int shade(int argb, float f) {
@@ -211,13 +249,21 @@ public final class ExploredMap {
         try {
             Files.createDirectories(worldDir());
             try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file()))))) {
-                out.writeInt(2);
+                out.writeInt(3);
                 out.writeInt(TILES.size());
                 for (Map.Entry<Long, Tile> e : TILES.entrySet()) {
                     out.writeInt((int) (long) e.getKey());
                     out.writeInt((int) (e.getKey() >> 32));
                     for (int c : e.getValue().abgr) out.writeInt(c);
                     for (short h : e.getValue().h) out.writeShort(h);
+                    Tile tt = e.getValue();
+                    for (int k = 0; k < 256; k++) {
+                        out.writeByte(tt.canopy[k]);
+                        out.writeShort(tt.gh[k]);
+                        out.writeShort(tt.cb[k]);
+                        out.writeInt(tt.gcol[k]);
+                        out.writeInt(tt.tcol[k]);
+                    }
                 }
             }
         } catch (IOException ignored) {
@@ -230,13 +276,21 @@ public final class ExploredMap {
         if (!Files.exists(f)) return;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
             int ver = in.readInt();
-            if (ver != 2) return;   // formato antigo (cores de mapa) e' descartado: o mapa se refaz com as cores reais
+            if (ver != 2 && ver != 3) return;   // formato antigo (cores de mapa) e' descartado: o mapa se refaz com as cores reais
             int n = in.readInt();
             for (int i = 0; i < n; i++) {
                 int cx = in.readInt(), cz = in.readInt();
                 Tile t = new Tile();
                 for (int k = 0; k < 256; k++) t.abgr[k] = in.readInt();
                 for (int k = 0; k < 256; k++) t.h[k] = in.readShort();
+                if (ver == 3) {
+                    for (int k = 0; k < 256; k++) {
+                        t.canopy[k] = in.readByte(); t.gh[k] = in.readShort(); t.cb[k] = in.readShort();
+                        t.gcol[k] = in.readInt(); t.tcol[k] = in.readInt();
+                    }
+                } else {
+                    for (int k = 0; k < 256; k++) { t.gh[k] = t.h[k]; t.cb[k] = t.h[k]; }
+                }
                 TILES.put(key(cx, cz), t);
             }
         } catch (IOException ignored) {
