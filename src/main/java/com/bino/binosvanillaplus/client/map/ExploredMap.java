@@ -30,6 +30,7 @@ public final class ExploredMap {
         public final int[] abgr = new int[256];     // cor no formato do NativeImage (ABGR), 0 = nunca visto
         public final short[] h = new short[256];
         long lastScan;
+        public int version;                 // sobe a cada nova leitura (invalida malhas 3D em cache)
         boolean texDirty = true;
         DynamicTexture tex;
         ResourceLocation texId;
@@ -114,6 +115,7 @@ public final class ExploredMap {
                     scan(level, chunk, t, p.getBlockY());
                     t.lastScan = now;
                     t.texDirty = true;
+                    t.version++;
                     budget--;
                 }
             }
@@ -140,29 +142,33 @@ public final class ExploredMap {
                 }
                 int top = y - 1;
                 BlockState st = chunk.getBlockState(pos.set(wx, top, wz));
-                while (top > minY && st.getMapColor(level, pos) == MapColor.NONE && st.getFluidState().isEmpty()) {
+                while (top > minY && (st.isAir() || st.getCollisionShape(level, pos).isEmpty()) && st.getFluidState().isEmpty()) {   // ignora ar, grama alta, flores, tochas...
                     top--;
                     st = chunk.getBlockState(pos.set(wx, top, wz));
                 }
                 int idx = z * 16 + x;
                 hs[idx] = top;
-                MapColor.Brightness b;
-                MapColor color;
+                int argb;
                 if (!st.getFluidState().isEmpty() && st.getFluidState().is(FluidTags.WATER)) {
                     int d = 0, yy = top;
-                    while (yy > minY && d < 12 && chunk.getBlockState(pos.set(wx, yy, wz)).getFluidState().is(FluidTags.WATER)) { yy--; d++; }
-                    b = d < 3 ? MapColor.Brightness.HIGH : d < 6 ? MapColor.Brightness.NORMAL : d < 9 ? MapColor.Brightness.LOW : MapColor.Brightness.LOWEST;
-                    color = MapColor.WATER;
+                    while (yy > minY && d < 14 && chunk.getBlockState(pos.set(wx, yy, wz)).getFluidState().is(FluidTags.WATER)) { yy--; d++; }
+                    argb = shade(BlockLooks.top(st, level, pos.set(wx, top, wz)), Math.max(0.55f, 1.05f - d * 0.045f));
                 } else {
-                    color = st.getMapColor(level, pos.set(wx, top, wz));
+                    argb = BlockLooks.top(st, level, pos.set(wx, top, wz));
                     int north = z > 0 ? hs[(z - 1) * 16 + x] : top;
-                    b = top > north ? MapColor.Brightness.HIGH : top < north ? MapColor.Brightness.LOW : MapColor.Brightness.NORMAL;
+                    argb = shade(argb, top > north ? 1.10f : top < north ? 0.88f : 1.0f);
                 }
-                int abgr = color == MapColor.NONE ? 0xFF000000 : color.calculateRGBColor(b);
-                t.abgr[idx] = abgr == 0 ? 0xFF000001 : abgr;
+                int abgr = 0xFF000000 | ((argb & 0xFF) << 16) | (argb & 0xFF00) | ((argb >> 16) & 0xFF);
+                t.abgr[idx] = abgr;
                 t.h[idx] = (short) top;
             }
         }
+    }
+
+    private static int shade(int argb, float f) {
+        int r = Math.min(255, (int) (((argb >> 16) & 0xFF) * f)), g = Math.min(255, (int) (((argb >> 8) & 0xFF) * f)),
+                b = Math.min(255, (int) ((argb & 0xFF) * f));
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
     // ----------------------------------------------------------- texturas (mapa-mundi)
@@ -192,6 +198,7 @@ public final class ExploredMap {
         Minecraft mc = Minecraft.getInstance();
         for (Tile t : TILES.values()) if (t.texId != null) mc.getTextureManager().release(t.texId);
         TILES.clear();
+        WorldMap3D.clearAll();
         MapWaypoints.clear();
         curWorld = null;
         curDim = null;
@@ -204,7 +211,7 @@ public final class ExploredMap {
         try {
             Files.createDirectories(worldDir());
             try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file()))))) {
-                out.writeInt(1);
+                out.writeInt(2);
                 out.writeInt(TILES.size());
                 for (Map.Entry<Long, Tile> e : TILES.entrySet()) {
                     out.writeInt((int) (long) e.getKey());
@@ -222,7 +229,8 @@ public final class ExploredMap {
         Path f = file();
         if (!Files.exists(f)) return;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
-            if (in.readInt() != 1) return;
+            int ver = in.readInt();
+            if (ver != 2) return;   // formato antigo (cores de mapa) e' descartado: o mapa se refaz com as cores reais
             int n = in.readInt();
             for (int i = 0; i < n; i++) {
                 int cx = in.readInt(), cz = in.readInt();

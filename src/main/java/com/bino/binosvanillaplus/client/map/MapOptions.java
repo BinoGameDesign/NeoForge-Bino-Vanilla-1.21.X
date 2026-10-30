@@ -17,12 +17,15 @@ public class MapOptions {
     public static boolean chunkGrid = false;       // grade de chunks no mapa-mundi
     public static boolean deathPoint = true;       // cria marcacao automatica ao morrer
     public static boolean showDistance = true;     // distancia no nome das marcacoes
+    public static int minimapZoom = 1;             // 0 = perto, 1 = medio, 2 = longe
+    public static boolean worldMap3D = true;       // mapa-mundi em 3D (false = 2D)
 
     private static boolean loaded = false;
 
     private static class Data {
         boolean minimapPins = true, worldPins = true, worldLabels = true, minimapLabels = false,
-                chunkGrid = false, deathPoint = true, showDistance = true;
+                chunkGrid = false, deathPoint = true, showDistance = true, worldMap3D = true;
+        int minimapZoom = 1;
     }
 
     private static Path file() { return FMLPaths.GAMEDIR.get().resolve("binos_map").resolve("options.json"); }
@@ -37,6 +40,7 @@ public class MapOptions {
             if (d == null) return;
             minimapPins = d.minimapPins; worldPins = d.worldPins; worldLabels = d.worldLabels; minimapLabels = d.minimapLabels;
             chunkGrid = d.chunkGrid; deathPoint = d.deathPoint; showDistance = d.showDistance;
+            minimapZoom = Math.max(0, Math.min(2, d.minimapZoom)); worldMap3D = d.worldMap3D;
         } catch (Exception ignored) {
         }
     }
@@ -45,6 +49,7 @@ public class MapOptions {
         Data d = new Data();
         d.minimapPins = minimapPins; d.worldPins = worldPins; d.worldLabels = worldLabels; d.minimapLabels = minimapLabels;
         d.chunkGrid = chunkGrid; d.deathPoint = deathPoint; d.showDistance = showDistance;
+        d.minimapZoom = minimapZoom; d.worldMap3D = worldMap3D;
         try {
             Files.createDirectories(file().getParent());
             try (Writer w = Files.newBufferedWriter(file())) { new Gson().toJson(d, w); }

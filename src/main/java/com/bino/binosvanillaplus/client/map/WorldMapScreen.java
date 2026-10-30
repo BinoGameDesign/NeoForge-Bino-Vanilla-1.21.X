@@ -28,6 +28,9 @@ public class WorldMapScreen extends Screen {
     private double zoom = 1.0;
     private final List<Mark> marks = new ArrayList<>();
     private long lastMarkScan = -1000;
+    private boolean mode3D;
+    private boolean rDown, rMoved;
+    private double rStartX, rStartY;
 
     // menu de contexto
     private final List<MenuItem> menu = new ArrayList<>();
@@ -36,6 +39,7 @@ public class WorldMapScreen extends Screen {
     public WorldMapScreen() {
         super(Component.literal("Mapa-Mundi"));
         MapOptions.ensureLoaded();
+        mode3D = MapOptions.worldMap3D;
         LocalPlayer p = Minecraft.getInstance().player;
         if (p != null) { cx = p.getX(); cz = p.getZ(); }
     }
@@ -55,6 +59,13 @@ public class WorldMapScreen extends Screen {
             LocalPlayer p = Minecraft.getInstance().player;
             if (p != null) { cx = p.getX(); cz = p.getZ(); }
         }).bounds(bx, py + 3, 70, 16).build());
+        bx -= 36;
+        addRenderableWidget(Button.builder(Component.literal(mode3D ? "3D" : "2D"), b -> {
+            mode3D = !mode3D;
+            MapOptions.worldMap3D = mode3D;
+            MapOptions.save();
+            b.setMessage(Component.literal(mode3D ? "3D" : "2D"));
+        }).bounds(bx, py + 3, 34, 16).build());
         bx -= 54;
         addRenderableWidget(Button.builder(Component.literal("Opções"), b ->
                 Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).bounds(bx, py + 3, 52, 16).build());
@@ -69,6 +80,19 @@ public class WorldMapScreen extends Screen {
     private double toWorldZ(double sy) { return cz + (sy - (mapY + mapH / 2.0)) / zoom; }
     private float toScreenX(double wx) { return (float) (mapX + mapW / 2.0 + (wx - cx) * zoom); }
     private float toScreenY(double wz) { return (float) (mapY + mapH / 2.0 + (wz - cz) * zoom); }
+    // posição na tela de um ponto do mundo (2D ou 3D); [2] == 0 -> fora/atrás da câmera
+    private float[] screenOf(double wx, double wy, double wz) {
+        if (!mode3D) return new float[]{toScreenX(wx), toScreenY(wz), 1f};
+        return DioramaRenderer.projectWith(WorldMap3D.view, WorldMap3D.proj, (float) (wx - cx), (float) (wy - WorldMap3D.targetY),
+                (float) (wz - cz), mapX, mapY, mapW, mapH);
+    }
+
+    // coordenadas de mundo sob o cursor (null se o cursor não está sobre terreno explorado, no 3D)
+    private int[] pickWorld(double mx, double my) {
+        if (!mode3D) return new int[]{(int) Math.floor(toWorldX(mx)), (int) Math.floor(toWorldZ(my))};
+        return WorldMap3D.pick(mx, my, mapX, mapY, mapW, mapH, cx, cz);
+    }
+
     private boolean inMap(double mx, double my) { return mx >= mapX && mx < mapX + mapW && my >= mapY && my < mapY + mapH; }
 
     private void scanMarks() {
@@ -97,17 +121,17 @@ public class WorldMapScreen extends Screen {
         if (!MapOptions.worldPins) return null;
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
             if (w.hidden) continue;
-            if (Math.abs(mx - toScreenX(w.x + 0.5)) <= 6 && Math.abs(my - toScreenY(w.z + 0.5)) <= 6) return w;
+            float[] s = screenOf(w.x + 0.5, w.y, w.z + 0.5);
+            if (s[2] != 0f && Math.abs(mx - s[0]) <= 6 && Math.abs(my - s[1]) <= 6) return w;
         }
         return null;
     }
 
     // ---------------------------------------------------------------- desenho
 
+    // vazio de propósito: o Screen.render do vanilla chamaria isto DEPOIS de eu desenhar o mapa (e aplica blur); o fundo é desenhado em render()
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        // sem blur do vanilla; so um escurecimento leve
-        g.fill(0, 0, width, height, 0x80000000);
     }
 
     @Override
@@ -115,23 +139,32 @@ public class WorldMapScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null && mc.level.getGameTime() - lastMarkScan > 20) { scanMarks(); lastMarkScan = mc.level.getGameTime(); }
 
-        renderBackground(g, mx, my, pt);
+        g.fill(0, 0, width, height, 0x80000000);   // escurece o jogo atrás da janela
         g.fill(px - 2, py - 2, px + pw + 2, py + ph + 2, 0xFF000000);
         g.fill(px, py, px + pw, py + ph, 0xFF2A2A38);
         g.drawString(font, "Mapa-Mundi", px + 8, py + 8, 0xFFFFFFFF, true);
         g.fill(mapX - 1, mapY - 1, mapX + mapW + 1, mapY + mapH + 1, 0xFF000000);
         g.fill(mapX, mapY, mapX + mapW, mapY + mapH, 0xFF0A0A0F);
 
+        LocalPlayer pl = mc.player;
+        if (mode3D && DioramaRenderer.ready()) {
+            WorldMap3D.render(g, mapX, mapY, mapW, mapH, cx, cz, pl);
+        } else if (mode3D) {
+            g.drawCenteredString(font, "Shader do mapa indisponível", mapX + mapW / 2, mapY + mapH / 2, 0xFFFF8888);
+        }
         g.enableScissor(mapX, mapY, mapX + mapW, mapY + mapH);
-        drawTerrain(g);
-        if (MapOptions.chunkGrid && zoom >= 1.5) drawGrid(g);
+        if (!mode3D) {
+            drawTerrain(g);
+            if (MapOptions.chunkGrid && zoom >= 1.5) drawGrid(g);
+        }
 
         MapWaypoints.Waypoint hover = waypointAt(mx, my);
-        LocalPlayer pl = mc.player;
         if (MapOptions.worldPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
                 if (w.hidden) continue;
-                int sx = (int) toScreenX(w.x + 0.5), sy = (int) toScreenY(w.z + 0.5);
+                float[] s = screenOf(w.x + 0.5, w.y, w.z + 0.5);
+                if (s[2] == 0f) continue;
+                int sx = (int) s[0], sy = (int) s[1];
                 g.fill(sx - 6, sy - 6, sx + 7, sy + 7, w == hover ? 0xFFFFFFFF : 0xFF000000);
                 g.fill(sx - 5, sy - 5, sx + 6, sy + 6, w.color);
                 g.drawCenteredString(font, w.symbolOrInitial(), sx, sy - 4, 0xFFFFFFFF);
@@ -144,11 +177,13 @@ public class WorldMapScreen extends Screen {
             }
         }
         for (Mark m : marks) {
-            int sx = (int) toScreenX(m.x() + 0.5), sy = (int) toScreenY(m.z() + 0.5);
-            g.drawCenteredString(font, "X", sx, sy - 4, 0xFFFF2222);
-            g.drawString(font, m.label(), sx + 7, sy - 4, 0xFFFFC0C0, true);
+            int h0 = ExploredMap.heightAt(m.x(), m.z());
+            float[] s = screenOf(m.x() + 0.5, h0 == ExploredMap.UNKNOWN ? 64 : h0 + 1, m.z() + 0.5);
+            if (s[2] == 0f) continue;
+            g.drawCenteredString(font, "X", (int) s[0], (int) s[1] - 4, 0xFFFF2222);
+            g.drawString(font, m.label(), (int) s[0] + 7, (int) s[1] - 4, 0xFFFFC0C0, true);
         }
-        if (pl != null) {
+        if (pl != null && !mode3D) {
             g.pose().pushPose();
             g.pose().translate(toScreenX(pl.getX()), toScreenY(pl.getZ()), 0);
             g.pose().mulPose(Axis.ZP.rotationDegrees(pl.getYRot() - 180f));
@@ -160,11 +195,15 @@ public class WorldMapScreen extends Screen {
         }
         g.disableScissor();
 
-        int wx = (int) Math.floor(toWorldX(mx)), wz = (int) Math.floor(toWorldZ(my));
-        int h = ExploredMap.heightAt(wx, wz);
-        String info = inMap(mx, my) ? "X: " + wx + "  Z: " + wz + (h == ExploredMap.UNKNOWN ? "" : "  Y: " + h) : "";
+        int[] under = inMap(mx, my) ? pickWorld(mx, my) : null;
+        String info = "";
+        if (under != null) {
+            int h = ExploredMap.heightAt(under[0], under[1]);
+            info = "X: " + under[0] + "  Z: " + under[1] + (h == ExploredMap.UNKNOWN ? "" : "  Y: " + h);
+        }
         g.drawString(font, info, mapX + 2, mapY + mapH + 5, 0xFFFFFFFF, false);
-        String hint = "Botão direito: menu  |  Roda: zoom  |  Arraste: mover";
+        String hint = mode3D ? "Arraste: mover | Botão dir. arrastar: girar | Roda: zoom | Botão dir.: menu"
+                : "Botão direito: menu  |  Roda: zoom  |  Arraste: mover";
         g.drawString(font, hint, mapX + mapW - font.width(hint) - 2, mapY + mapH + 5, 0xFF9A9AAA, false);
 
         super.render(g, mx, my, pt);
@@ -203,10 +242,12 @@ public class WorldMapScreen extends Screen {
 
     private void openMenu(double mx, double my) {
         menu.clear();
-        int wx = (int) Math.floor(toWorldX(mx)), wz = (int) Math.floor(toWorldZ(my));
+        MapWaypoints.Waypoint w = waypointAt(mx, my);
+        int[] at = pickWorld(mx, my);
+        if (w == null && at == null) return;
+        int wx = at == null ? w.x : at[0], wz = at == null ? w.z : at[1];
         int h = ExploredMap.heightAt(wx, wz);
         int wy = h == ExploredMap.UNKNOWN ? 64 : h + 1;
-        MapWaypoints.Waypoint w = waypointAt(mx, my);
         Minecraft mc = Minecraft.getInstance();
         if (w != null) {
             menu.add(new MenuItem("Editar marcação", () -> mc.setScreen(new WaypointEditScreen(this, w, w.x, w.y, w.z))));
@@ -267,7 +308,7 @@ public class WorldMapScreen extends Screen {
         }
         if (super.mouseClicked(mx, my, button)) return true;
         if (!inMap(mx, my)) return false;
-        if (button == 1) { openMenu(mx, my); return true; }
+        if (button == 1) { rDown = true; rMoved = false; rStartX = mx; rStartY = my; return true; }
         if (button == 0) {
             MapWaypoints.Waypoint w = waypointAt(mx, my);
             if (w != null) {
@@ -280,18 +321,45 @@ public class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
-        if (button == 0 && menu.isEmpty()) {
-            cx -= dx / zoom;
-            cz -= dy / zoom;
+        if (!menu.isEmpty()) return super.mouseDragged(mx, my, button, dx, dy);
+        if (button == 0) {
+            if (!mode3D) {
+                cx -= dx / zoom;
+                cz -= dy / zoom;
+            } else {
+                double k = WorldMap3D.dist / Math.max(1, mapH) * 0.93;
+                double sy = Math.sin(WorldMap3D.yaw), cyw = Math.cos(WorldMap3D.yaw);
+                cx += (sy * dy - cyw * dx) * k;      // frente = (sin, -cos), direita = (cos, sin)
+                cz += (-cyw * dy - sy * dx) * k;
+            }
+            return true;
+        }
+        if (button == 1 && rDown) {
+            if (Math.abs(mx - rStartX) + Math.abs(my - rStartY) > 4) rMoved = true;
+            if (mode3D && rMoved) {
+                WorldMap3D.yaw += dx * 0.01;
+                WorldMap3D.pitch = (float) Math.max(0.25, Math.min(1.45, WorldMap3D.pitch + dy * 0.008));
+            }
             return true;
         }
         return super.mouseDragged(mx, my, button, dx, dy);
     }
 
     @Override
+    public boolean mouseReleased(double mx, double my, int button) {
+        if (button == 1 && rDown) {
+            rDown = false;
+            if (!rMoved) openMenu(rStartX, rStartY);   // clique direito sem arrastar = menu
+            return true;
+        }
+        return super.mouseReleased(mx, my, button);
+    }
+
+    @Override
     public boolean mouseScrolled(double mx, double my, double sx, double sy) {
         if (sy != 0) {
-            zoom = Math.max(0.25, Math.min(10.0, zoom * (sy > 0 ? 1.25 : 0.8)));
+            if (mode3D) WorldMap3D.dist = (float) Math.max(18, Math.min(700, WorldMap3D.dist * (sy > 0 ? 0.85 : 1.18)));
+            else zoom = Math.max(0.25, Math.min(10.0, zoom * (sy > 0 ? 1.25 : 0.8)));
             return true;
         }
         return super.mouseScrolled(mx, my, sx, sy);

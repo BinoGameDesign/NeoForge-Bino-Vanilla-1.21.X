@@ -8,30 +8,26 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.joml.Vector4f;
 
-// Minimapa em 3D de verdade: a malha do terreno (cubos com faces visiveis) vai para a GPU num VertexBuffer e e' desenhada
-// com o shader proprio "diorama" (assets/binosvanillaplus/shaders/core/diorama.*), com perspectiva e depth buffer.
-// Se o shader nao carregar (shader == null), o MinimapHud usa o desenho 2D antigo.
+// Minimapa em 3D: a malha do terreno (cubos com faces visiveis, cor real do bloco, oclusao ambiente nos cantos) vai para a GPU
+// num VertexBuffer e e' desenhada com o shader proprio "diorama" (perspectiva + depth buffer).
 public class DioramaRenderer {
     public static ShaderInstance shader;          // preenchido por MapClientEvents (RegisterShadersEvent)
 
-    // camera
     private static final float TILT = (float) Math.toRadians(52);
     private static final float FOV = (float) Math.toRadians(45);
-    private static final float DIST = 40f;
 
-    private static VertexBuffer terrain, pin;
+    private static VertexBuffer terrain, pointer;
     private static boolean hasTerrain = false;
     private static int ox0, oy0, oz0;             // origem (bloco) da malha
     public static Matrix4f view = new Matrix4f(), proj = new Matrix4f();
 
     public static boolean ready() { return shader != null; }
 
-    // ------------------------------------------------------------------ malha do terreno
+    // ------------------------------------------------------------------ malha do terreno (minimapa)
 
-    static void rebuild(int R, int N, int[] RC, int[][] RTOP, int[][] RBOT, int[][] RCOL, boolean[] RGROUND,
+    static void rebuild(int R, int N, int[] RC, int[][] RTOP, int[][] RBOT, int[][] RCOL, int[][] RSIDE, boolean[] RGROUND,
                         int px, int py, int pz) {
         if (shader == null) return;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
@@ -46,15 +42,26 @@ public class DioramaRenderer {
                 boolean ground = RGROUND[i] && r == n - 1;
                 int top = RTOP[i][r] + 1;
                 int bot = ground ? top - 9 : RBOT[i][r];
-                int col = RCOL[i][r];
+                int col = RCOL[i][r], sideCol = RSIDE[i][r];
 
-                // topo (escondido se houver outro bloco colado em cima)
+                // topo, com oclusao ambiente por canto (so no bloco mais alto da coluna)
                 boolean covered = r > 0 && RBOT[i][r - 1] == top;
                 if (!covered) {
-                    int hv = (dx * 73856093 ^ dz * 19349663 ^ top * 83492791) & 3;
-                    int tc = scale(col, 0.95f + 0.025f * hv);
                     float y = top - py;
-                    quad(b, dx, y, dz, dx + 1, y, dz, dx + 1, y, dz + 1, dx, y, dz + 1, tc, 0, 1, 0);
+                    int[] c = new int[4];
+                    int[][] corner = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
+                    for (int k = 0; k < 4; k++) {
+                        float ao = 1f;
+                        if (r == 0) {
+                            boolean s1 = higher(RC, RTOP, N, R, dx + corner[k][0], dz, top);
+                            boolean s2 = higher(RC, RTOP, N, R, dx, dz + corner[k][1], top);
+                            boolean cc = higher(RC, RTOP, N, R, dx + corner[k][0], dz + corner[k][1], top);
+                            int a = (s1 && s2) ? 0 : 3 - ((s1 ? 1 : 0) + (s2 ? 1 : 0) + (cc ? 1 : 0));
+                            ao = 0.58f + 0.42f * a / 3f;
+                        }
+                        c[k] = scale(col, ao);
+                    }
+                    quadC(b, dx, y, dz, dx + 1, y, dz, dx + 1, y, dz + 1, dx, y, dz + 1, c[0], c[1], c[2], c[3], 0, 1, 0);
                 }
                 // laterais, descontando o que a coluna vizinha ja cobre
                 for (int[] d : dirs) {
@@ -64,7 +71,7 @@ public class DioramaRenderer {
                     boolean inside = Math.abs(nx) <= R && Math.abs(nz) <= R;
                     int ni = inside ? (nz + R) * N + (nx + R) : -1;
                     if (ni < 0 || RC[ni] == 0) {
-                        cnt = subtract(sp, cnt, tmp, Integer.MIN_VALUE, top - 8);   // borda: so um "corte" de 8 blocos
+                        cnt = subtract(sp, cnt, tmp, Integer.MIN_VALUE, top - 8);
                     } else {
                         for (int k = 0; k < RC[ni]; k++) {
                             boolean ng = RGROUND[ni] && k == RC[ni] - 1;
@@ -74,11 +81,12 @@ public class DioramaRenderer {
                     }
                     for (int s = 0; s < cnt; s += 2) {
                         float y0 = sp[s] - py, y1 = sp[s + 1] - py;
-                        int sc = scale(col, 0.9f);
-                        if (d[0] == 1) quad(b, dx + 1, y1, dz, dx + 1, y1, dz + 1, dx + 1, y0, dz + 1, dx + 1, y0, dz, sc, 1, 0, 0);
-                        else if (d[0] == -1) quad(b, dx, y1, dz + 1, dx, y1, dz, dx, y0, dz, dx, y0, dz + 1, sc, -1, 0, 0);
-                        else if (d[1] == 1) quad(b, dx + 1, y1, dz + 1, dx, y1, dz + 1, dx, y0, dz + 1, dx + 1, y0, dz + 1, sc, 0, 0, 1);
-                        else quad(b, dx, y1, dz, dx + 1, y1, dz, dx + 1, y0, dz, dx, y0, dz, sc, 0, 0, -1);
+                        float t = Math.max(0.0f, Math.min(1f, (sp[s + 1] - sp[s]) / 6f));
+                        int cTop = scale(sideCol, 0.92f), cBot = scale(sideCol, 0.92f - 0.22f * t);
+                        if (d[0] == 1) quadC(b, dx + 1, y1, dz, dx + 1, y1, dz + 1, dx + 1, y0, dz + 1, dx + 1, y0, dz, cTop, cTop, cBot, cBot, 1, 0, 0);
+                        else if (d[0] == -1) quadC(b, dx, y1, dz + 1, dx, y1, dz, dx, y0, dz, dx, y0, dz + 1, cTop, cTop, cBot, cBot, -1, 0, 0);
+                        else if (d[1] == 1) quadC(b, dx + 1, y1, dz + 1, dx, y1, dz + 1, dx, y0, dz + 1, dx + 1, y0, dz + 1, cTop, cTop, cBot, cBot, 0, 0, 1);
+                        else quadC(b, dx, y1, dz, dx + 1, y1, dz, dx + 1, y0, dz, dx, y0, dz, cTop, cTop, cBot, cBot, 0, 0, -1);
                     }
                 }
             }
@@ -91,7 +99,12 @@ public class DioramaRenderer {
         ox0 = px; oy0 = py; oz0 = pz;
     }
 
-    // remove o intervalo [a,b) da lista de trechos sp (pares lo,hi). Devolve a nova quantidade de ints.
+    private static boolean higher(int[] RC, int[][] RTOP, int N, int R, int nx, int nz, int top) {
+        if (Math.abs(nx) > R || Math.abs(nz) > R) return false;
+        int ni = (nz + R) * N + (nx + R);
+        return RC[ni] > 0 && RTOP[ni][0] + 1 > top;
+    }
+
     private static int subtract(int[] sp, int cnt, int[] tmp, int a, int b) {
         int out = 0;
         for (int s = 0; s < cnt; s += 2) {
@@ -105,86 +118,81 @@ public class DioramaRenderer {
         return out;
     }
 
-    private static int scale(int argb, float f) {
+    static int scale(int argb, float f) {
         int r = Math.min(255, (int) (((argb >> 16) & 0xFF) * f)), g = Math.min(255, (int) (((argb >> 8) & 0xFF) * f)),
                 bl = Math.min(255, (int) ((argb & 0xFF) * f));
         return 0xFF000000 | (r << 16) | (g << 8) | bl;
     }
 
-    private static void quad(BufferBuilder b, float ax, float ay, float az, float bx, float by, float bz,
-                             float cx, float cy, float cz, float dx, float dy, float dz, int col, float nx, float ny, float nz) {
-        b.addVertex(ax, ay, az).setColor(col).setNormal(nx, ny, nz);
-        b.addVertex(bx, by, bz).setColor(col).setNormal(nx, ny, nz);
-        b.addVertex(cx, cy, cz).setColor(col).setNormal(nx, ny, nz);
-        b.addVertex(dx, dy, dz).setColor(col).setNormal(nx, ny, nz);
+    // quadrado com uma cor por vertice (usado tambem pelo mapa-mundi 3D)
+    static void quadC(BufferBuilder b, float ax, float ay, float az, float bx, float by, float bz,
+                      float cx, float cy, float cz, float dx, float dy, float dz,
+                      int c0, int c1, int c2, int c3, float nx, float ny, float nz) {
+        b.addVertex(ax, ay, az).setColor(c0).setNormal(nx, ny, nz);
+        b.addVertex(bx, by, bz).setColor(c1).setNormal(nx, ny, nz);
+        b.addVertex(cx, cy, cz).setColor(c2).setNormal(nx, ny, nz);
+        b.addVertex(dx, dy, dz).setColor(c3).setNormal(nx, ny, nz);
     }
 
-    // ------------------------------------------------------------------ o pin do jogador (aponta para onde ele olha)
+    // ------------------------------------------------------------------ ponteiro do jogador (seta plana, aponta -Z)
 
-    private static void buildPin() {
+    static VertexBuffer pointer() {
+        if (pointer != null) return pointer;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-        final float cy = 3.2f;
-        Vector3f tip = new Vector3f(0, cy, -2.4f), tail = new Vector3f(0, cy, 1.1f);
-        Vector3f left = new Vector3f(-1.0f, cy, 0.2f), right = new Vector3f(1.0f, cy, 0.2f);
-        Vector3f top = new Vector3f(0, cy + 0.7f, 0.2f), bottom = new Vector3f(0, cy - 0.7f, 0.2f);
-        Vector3f center = new Vector3f(0, cy, 0);
-        int head = 0xFFFFD84A, tipCol = 0xFFFF4A3A;
-        // frente (ponta vermelha) e traseira (amarela)
-        tri(b, tip, left, top, center, tipCol); tri(b, tip, top, right, center, tipCol);
-        tri(b, tip, right, bottom, center, tipCol); tri(b, tip, bottom, left, center, tipCol);
-        tri(b, tail, top, left, center, head); tri(b, tail, right, top, center, head);
-        tri(b, tail, bottom, right, center, head); tri(b, tail, left, bottom, center, head);
-        // agulha do pin
-        float w = 0.16f;
-        float[][] sides = {{-w, -w, w, -w}, {w, -w, w, w}, {w, w, -w, w}, {-w, w, -w, -w}};
-        for (float[] s : sides) {
-            Vector3f nrm = new Vector3f(s[3] - s[1], 0, -(s[2] - s[0])).normalize();
-            quadN(b, s[0], cy - 0.7f, s[1], s[2], cy - 0.7f, s[3], s[2], 0f, s[3], s[0], 0f, s[1], 0xFFE8E8E8, nrm);
-        }
+        // contorno escuro (maior) por baixo, seta clara por cima
+        arrow(b, 1.0f, 0.30f, 0xFF101418);
+        arrow(b, 0.70f, 0.36f, 0xFFFFFFFF);
+        arrow(b, 0.30f, 0.42f, 0xFFE8433A);     // miolo vermelho, como a ponta de uma bussola
         MeshData md = b.build();
-        pin = new VertexBuffer(VertexBuffer.Usage.STATIC);
-        pin.bind();
-        if (md != null) pin.upload(md);
+        pointer = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        pointer.bind();
+        if (md != null) pointer.upload(md);
+        VertexBuffer.unbind();
+        return pointer;
+    }
+
+    // seta (chevron) deitada no plano XZ a altura y; centro da seta ~ origem; aponta para -Z
+    private static void arrow(BufferBuilder b, float k, float y, int col) {
+        float[] tip = {0f, -3.0f * k}, right = {2.1f * k, 2.0f * k}, notch = {0f, 0.7f * k}, left = {-2.1f * k, 2.0f * k};
+        tri(b, tip, right, notch, y, col);
+        tri(b, tip, notch, left, y, col);
+    }
+
+    private static void tri(BufferBuilder b, float[] p1, float[] p2, float[] p3, float y, int col) {
+        b.addVertex(p1[0], y, p1[1]).setColor(col).setNormal(0, 1, 0);
+        b.addVertex(p2[0], y, p2[1]).setColor(col).setNormal(0, 1, 0);
+        b.addVertex(p3[0], y, p3[1]).setColor(col).setNormal(0, 1, 0);
+    }
+
+    // desenha o ponteiro com uma matriz modelview qualquer
+    static void drawPointer(Matrix4f mv, Matrix4f projection) {
+        VertexBuffer p = pointer();
+        shader.safeGetUniform("Radius").set(100000f);
+        shader.safeGetUniform("Detail").set(0f);
+        shader.safeGetUniform("Origin").set(0f, 0f, 0f);
+        p.bind();
+        p.drawWithShader(mv, projection, shader);
         VertexBuffer.unbind();
     }
 
-    private static void quadN(BufferBuilder b, float ax, float ay, float az, float bx, float by, float bz,
-                              float cx, float cy, float cz, float dx, float dy, float dz, int col, Vector3f n) {
-        // quad como 2 triangulos nao e' necessario: o buffer do pin e' TRIANGLES, entao quebramos aqui
-        vert(b, ax, ay, az, col, n); vert(b, bx, by, bz, col, n); vert(b, cx, cy, cz, col, n);
-        vert(b, ax, ay, az, col, n); vert(b, cx, cy, cz, col, n); vert(b, dx, dy, dz, col, n);
+    // ------------------------------------------------------------------ estado de GL compartilhado (minimapa e mapa-mundi)
+
+    static class GlState {
+        Matrix4f oldProj;
+        int vw, vx, vy, vh;
     }
 
-    private static void tri(BufferBuilder b, Vector3f p1, Vector3f p2, Vector3f p3, Vector3f center, int col) {
-        Vector3f n = new Vector3f(p2).sub(p1).cross(new Vector3f(p3).sub(p1)).normalize();
-        Vector3f mid = new Vector3f(p1).add(p2).add(p3).div(3f).sub(center);
-        if (n.dot(mid) < 0) n.negate();   // normal sempre para fora
-        vert(b, p1.x, p1.y, p1.z, col, n); vert(b, p2.x, p2.y, p2.z, col, n); vert(b, p3.x, p3.y, p3.z, col, n);
-    }
-
-    private static void vert(BufferBuilder b, float x, float y, float z, int col, Vector3f n) {
-        b.addVertex(x, y, z).setColor(col).setNormal(n.x, n.y, n.z);
-    }
-
-    // ------------------------------------------------------------------ desenho
-
-    public static void draw(GuiGraphics g, LocalPlayer p, int x0, int y0, int box, float radius) {
-        if (shader == null) return;
-        if (pin == null) buildPin();
+    static GlState begin(GuiGraphics g, int x0, int y0, int w, int h, Matrix4f projection) {
         Minecraft mc = Minecraft.getInstance();
-        Window w = mc.getWindow();
-        double sc = w.getGuiScale();
-        int vx = (int) (x0 * sc), vw = (int) (box * sc), vy = (int) (w.getHeight() - (y0 + box) * sc);
-
+        Window win = mc.getWindow();
+        double sc = win.getGuiScale();
+        GlState s = new GlState();
+        s.vx = (int) (x0 * sc); s.vw = (int) (w * sc); s.vh = (int) (h * sc); s.vy = (int) (win.getHeight() - (y0 + h) * sc);
         g.flush();
-        float yaw = (float) Math.toRadians(p.getYRot());
-        view = new Matrix4f().translate(0, 0, -DIST).rotateX(TILT).rotateY(yaw + (float) Math.PI);
-        proj = new Matrix4f().perspective(FOV, 1f, 0.1f, 300f);
-
-        Matrix4f oldProj = new Matrix4f(RenderSystem.getProjectionMatrix());
-        g.enableScissor(x0, y0, x0 + box, y0 + box);
-        RenderSystem.viewport(vx, vy, vw, vw);
-        RenderSystem.setProjectionMatrix(proj, VertexSorting.DISTANCE_TO_ORIGIN);
+        s.oldProj = new Matrix4f(RenderSystem.getProjectionMatrix());
+        g.enableScissor(x0, y0, x0 + w, y0 + h);
+        RenderSystem.viewport(s.vx, s.vy, s.vw, s.vh);
+        RenderSystem.setProjectionMatrix(projection, VertexSorting.DISTANCE_TO_ORIGIN);
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
         RenderSystem.clear(256, Minecraft.ON_OSX);
@@ -192,37 +200,54 @@ public class DioramaRenderer {
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        return s;
+    }
+
+    static void end(GuiGraphics g, GlState s) {
+        Window win = Minecraft.getInstance().getWindow();
+        RenderSystem.disableDepthTest();
+        RenderSystem.enableCull();
+        RenderSystem.viewport(0, 0, win.getWidth(), win.getHeight());
+        RenderSystem.setProjectionMatrix(s.oldProj, VertexSorting.ORTHOGRAPHIC_Z);
+        g.disableScissor();
+    }
+
+    // ------------------------------------------------------------------ desenho do minimapa
+
+    public static void draw(GuiGraphics g, LocalPlayer p, int x0, int y0, int box, float dist, float fadeRadius) {
+        if (shader == null) return;
+        float yaw = (float) Math.toRadians(p.getYRot());
+        view = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).rotateY(yaw + (float) Math.PI);
+        proj = new Matrix4f().perspective(FOV, 1f, 0.1f, 400f);
+        GlState st = begin(g, x0, y0, box, box, proj);
 
         if (hasTerrain) {
             Matrix4f mv = new Matrix4f(view).translate((float) (ox0 - p.getX()), (float) (oy0 - p.getY()), (float) (oz0 - p.getZ()));
-            shader.safeGetUniform("Radius").set(radius);
+            shader.safeGetUniform("Radius").set(fadeRadius);
+            shader.safeGetUniform("Detail").set(1f);
+            // Origin = canto da malha no mundo, para a textura procedural ficar presa aos blocos
+            shader.safeGetUniform("Origin").set((float) ox0, (float) oy0, (float) oz0);
             terrain.bind();
             terrain.drawWithShader(mv, proj, shader);
             VertexBuffer.unbind();
         }
-        // pin do jogador por cima de tudo
+        // ponteiro do jogador por cima de tudo, deitado no plano do terreno, sempre apontando "para cima" no mapa
         RenderSystem.clear(256, Minecraft.ON_OSX);
-        Matrix4f pinMv = new Matrix4f().translate(0, 0, -DIST).rotateX(TILT);
-        shader.safeGetUniform("Radius").set(1000f);
-        pin.bind();
-        pin.drawWithShader(pinMv, proj, shader);
-        VertexBuffer.unbind();
-
-        RenderSystem.disableDepthTest();
-        RenderSystem.enableCull();
-        RenderSystem.viewport(0, 0, w.getWidth(), w.getHeight());
-        RenderSystem.setProjectionMatrix(oldProj, VertexSorting.ORTHOGRAPHIC_Z);
-        g.disableScissor();
+        Matrix4f pmv = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).scale(dist / 30f * 0.9f);
+        drawPointer(pmv, proj);
+        end(g, st);
     }
 
-    // projeta um ponto (offset em blocos a partir da posicao exata do jogador) para pixels da tela
-    // retorna {sx, sy, visivel(1/0)}
+    // projeta um ponto (offset em blocos a partir da posicao exata do jogador) para pixels da tela: {sx, sy, visivel}
     public static float[] project(float dx, float dy, float dz, int x0, int y0, int box) {
-        Vector4f v = new Vector4f(dx, dy, dz, 1f);
-        view.transform(v);
-        proj.transform(v);
-        if (v.w <= 0.0001f) return new float[]{x0 + box / 2f, y0 + box / 2f, 0};
-        float nx = v.x / v.w, ny = v.y / v.w;
-        return new float[]{x0 + box / 2f + nx * box / 2f, y0 + box / 2f - ny * box / 2f, 1};
+        return projectWith(view, proj, dx, dy, dz, x0, y0, box, box);
+    }
+
+    public static float[] projectWith(Matrix4f v, Matrix4f pr, float dx, float dy, float dz, int x0, int y0, int w, int h) {
+        Vector4f vec = new Vector4f(dx, dy, dz, 1f);
+        v.transform(vec);
+        pr.transform(vec);
+        if (vec.w <= 0.0001f) return new float[]{x0 + w / 2f, y0 + h / 2f, 0};
+        return new float[]{x0 + w / 2f + vec.x / vec.w * w / 2f, y0 + h / 2f - vec.y / vec.w * h / 2f, 1};
     }
 }

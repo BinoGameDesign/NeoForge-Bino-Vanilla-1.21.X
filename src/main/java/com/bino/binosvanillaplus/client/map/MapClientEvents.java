@@ -28,8 +28,15 @@ public class MapClientEvents {
     public static final KeyMapping ADD_WAYPOINT = new KeyMapping("key.binosvanillaplus.add_waypoint",
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, "key.categories.binosvanillaplus");
 
+    public static final KeyMapping ZOOM_IN = new KeyMapping("key.binosvanillaplus.minimap_zoom_in",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_EQUAL, "key.categories.binosvanillaplus");
+    public static final KeyMapping ZOOM_OUT = new KeyMapping("key.binosvanillaplus.minimap_zoom_out",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_MINUS, "key.categories.binosvanillaplus");
+
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.register(ZOOM_IN);
+        event.register(ZOOM_OUT);
         event.register(OPEN_MAP);
         event.register(ADD_WAYPOINT);
     }
@@ -63,6 +70,8 @@ public class MapClientEvents {
         ExploredMap.tick(mc);
         if (mc.player != null && mc.level != null && mc.player.tickCount % 3 == 0 && com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player))
             MinimapHud.sample(mc);
+        while (ZOOM_IN.consumeClick()) { MapOptions.ensureLoaded(); MapOptions.minimapZoom = Math.max(0, MapOptions.minimapZoom - 1); MapOptions.save(); }
+        while (ZOOM_OUT.consumeClick()) { MapOptions.ensureLoaded(); MapOptions.minimapZoom = Math.min(2, MapOptions.minimapZoom + 1); MapOptions.save(); }
         while (ADD_WAYPOINT.consumeClick()) {
             if (mc.screen == null && mc.player != null)
                 mc.setScreen(new WaypointEditScreen(null, null, mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ()));

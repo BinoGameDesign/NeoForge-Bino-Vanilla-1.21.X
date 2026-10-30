@@ -112,5 +112,7 @@
   "map.binosvanillaplus.title": "Mapa-Mundi",
   "message.binosvanillaplus.map_saved": "Mapa salvo! Voce pode coloca-lo numa moldura.",
   "message.binosvanillaplus.map_already_saved": "Este mapa ja esta salvo. Coloque-o numa moldura.",
-  "key.binosvanillaplus.add_waypoint": "Criar marcação na minha posição"
+  "key.binosvanillaplus.add_waypoint": "Criar marcação na minha posição",
+  "key.binosvanillaplus.minimap_zoom_in": "Minimapa: aproximar",
+  "key.binosvanillaplus.minimap_zoom_out": "Minimapa: afastar"
 }
