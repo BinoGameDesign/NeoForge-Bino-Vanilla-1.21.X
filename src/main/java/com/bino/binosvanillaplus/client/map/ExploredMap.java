@@ -233,20 +233,29 @@ public final class ExploredMap {
     // arvore: descobre onde estao as folhas, se ha tronco e onde fica o chao embaixo da copa
     private static void scanCanopy(ClientLevel level, LevelChunk chunk, Tile t, int idx, int wx, int wz, int top, int minY,
                                    BlockPos.MutableBlockPos pos) {
+        // 1) copa de cima: folhas/troncos contiguos a partir do topo
         int y = top, lowestLeaf = Integer.MIN_VALUE, trunkCol = 0;
-        boolean trunk = false;
+        boolean sawLog = false, lastWasLog = false;
+        BlockState logState = null;
         while (y > minY) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
-            // so a copa de cima conta como folhas: depois que o tronco comeca, folhas mais embaixo (arbustos) nao esticam a copa ate o chao
-            if (s.is(BlockTags.LEAVES)) { if (!trunk) lowestLeaf = y; }
-            else if (s.is(BlockTags.LOGS)) { if (!trunk) { trunk = true; trunkCol = BlockLooks.side(s, level, pos); t.sTrunk[idx] = Block.getId(s); } }
+            if (s.is(BlockTags.LEAVES)) { if (!sawLog) lowestLeaf = y; lastWasLog = false; }
+            else if (s.is(BlockTags.LOGS)) { if (!sawLog) { sawLog = true; logState = s; trunkCol = BlockLooks.side(s, level, pos); } lastWasLog = true; }
             else break;
             y--;
         }
-        int limit = Math.max(minY, y - 40);
-        while (y > limit) {   // atravessa o ar embaixo da copa ate o chao
+        // tronco de verdade = os troncos descem direto ate o chao (galho solto no alto nao vira tronco falso)
+        BlockState stop = chunk.getBlockState(pos.set(wx, y, wz));
+        boolean trunk = sawLog && lastWasLog && !stop.isAir() && !stop.getCollisionShape(level, pos).isEmpty();
+        t.sTrunk[idx] = trunk && logState != null ? Block.getId(logState) : 0;
+        // 2) desce ate o chao de verdade: atravessa ar, plantas e tambem galhos e cachos de folhas mais baixos
+        //    (antes um galho ou cacho de folhas embaixo da copa virava "chao" e aparecia um pilar ate o solo)
+        int limit = Math.max(minY, y - 60);
+        while (y > limit) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
-            if (!(s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty()) || !s.getFluidState().isEmpty()) break;
+            boolean pass = s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty()
+                    || s.is(BlockTags.LEAVES) || s.is(BlockTags.LOGS);
+            if (!pass || !s.getFluidState().isEmpty()) break;
             y--;
         }
         BlockState ground = chunk.getBlockState(pos.set(wx, y, wz));

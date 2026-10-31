@@ -95,6 +95,9 @@ public class MinimapHud {
                     boolean fluid = !fs.isEmpty();
                     boolean air = st.isAir() || BlockLooks.invisible(st) || (!fluid && st.getCollisionShape(lvl, pos).isEmpty());   // ignora grama alta, flores, tochas...
                     Object key = air ? null : (fluid ? fs.getType() : st);
+                    // arvores grandes (galhos e cachos de folhas em varias alturas) gastavam todas as camadas e o chao sumia
+                    // (aparecia o ceu por baixo): a ultima camada fica sempre reservada para o chao
+                    if (key != null && curKey == null && runs >= MAXR - 1 && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) key = null;
 
                     if (curKey != null && key != curKey) {
                         RTOP[i][runs] = curTop; RBOT[i][runs] = y + 1; RCOL[i][runs] = curCol; RSIDE[i][runs] = curSide;
