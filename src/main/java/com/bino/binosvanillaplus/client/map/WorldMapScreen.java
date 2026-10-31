@@ -31,7 +31,6 @@ public class WorldMapScreen extends BinoScreen {
     private boolean rDown, rMoved;
     private double rStartX, rStartY;
     private boolean help = false;
-    private BinoUi.Button helpClose;
     private final PopupMenu menu = new PopupMenu("Menu");
     private final Tween helpT = new Tween(0f, 55f);
     private float distTarget = WorldMap3D.dist;
@@ -69,15 +68,12 @@ public class WorldMapScreen extends BinoScreen {
         addRenderableWidget(BinoUi.closeButton(mapX + mapW - 8, mapY - 6, 13, this::onClose));
         int by = mapY + mapH - 12, bx = mapX + mapW - 10 - 4 * 24 + 5;
         addRenderableWidget(new BinoUi.Button(bx, by, 19, 19, "", BinoUi.Style.LIGHT,
-                () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this))).icon(BinoUi.tex("map/waypoints"), 17).tooltip("Marcações"));
+                () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this))).icon(BinoUi.tex("map/waypoints"), 11).tooltip("Marcações"));
         addRenderableWidget(new BinoUi.Button(bx + 24, by, 19, 19, "", BinoUi.Style.LIGHT,
-                () -> Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).icon(BinoUi.tex("map/options"), 17).tooltip("Opções"));
+                () -> Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).icon(BinoUi.tex("map/options"), 11).tooltip("Opções"));
         addRenderableWidget(new BinoUi.Button(bx + 48, by, 19, 19, "", BinoUi.Style.LIGHT, this::centerOnPlayer)
-                .icon(BinoUi.tex("map/center"), 17).tooltip("Centralizar no jogador (C)"));
+                .icon(BinoUi.tex("map/center"), 11).tooltip("Centralizar no jogador (C)"));
         addRenderableWidget(new BinoUi.Button(bx + 72, by, 19, 19, "?", BinoUi.Style.LIGHT, () -> help = !help).tooltip("Ajuda (H)"));
-        int[] hr = helpRect();
-        helpClose = addRenderableWidget(BinoUi.closeButton(hr[0] + hr[2] - 7, hr[1] - 5, 13, () -> help = false));
-        helpClose.visible = false;
     }
 
     private void centerOnPlayer() {
@@ -207,7 +203,6 @@ public class WorldMapScreen extends BinoScreen {
             g.drawString(font, day, mapX + 4, ty, 0xFFFFFFFF, false);
             g.drawString(font, pos, mapX + 4 + w1 + 18, ty, 0xFFFFFFFF, false);
         }
-        helpClose.visible = help;
         if (hover != null) {
             setTooltipForNextRenderPass(Component.literal(hover.name + " (" + hover.x + ", " + hover.y + ", " + hover.z + ")  [" + hover.setName() + "]"));
         }

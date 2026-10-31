@@ -88,7 +88,7 @@ public class WorldMap3D {
         // ponteiro do jogador (sempre visivel)
         if (player != null) {
             RenderSystem.clear(256, Minecraft.ON_OSX);
-            float s = dist / 55f;
+            float s = dist / 130f;   // ponteiro menor
             Matrix4f pmv = new Matrix4f(view)
                     .translate((float) (player.getX() - tx), (float) (player.getY() - targetY + 1.0), (float) (player.getZ() - tz))
                     .rotateY((float) (Math.PI - Math.toRadians(player.getYRot())))
