@@ -60,6 +60,7 @@ public class MinimapHud {
         else if (!cave) cave = roofed && skyLight <= 5 && surf > py + 4;
         else cave = roofed && skyLight < 10 && surf > py + 2;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos below = new BlockPos.MutableBlockPos();
 
         // altura do corte: logo abaixo do teto local (tunel baixo) ou 4 blocos acima da cabeca (caverna ampla)
         int slice = py + SLICE;
@@ -95,15 +96,18 @@ public class MinimapHud {
                     boolean fluid = !fs.isEmpty();
                     boolean air = st.isAir() || BlockLooks.invisible(st) || (!fluid && st.getCollisionShape(lvl, pos).isEmpty());   // ignora grama alta, flores, tochas...
                     Object key = air ? null : (fluid ? fs.getType() : st);
-                    // arvores grandes (galhos e cachos de folhas em varias alturas) gastavam todas as camadas e o chao sumia
-                    // (aparecia o ceu por baixo): a ultima camada fica sempre reservada para o chao
-                    if (key != null && curKey == null && runs >= MAXR - 1 && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) key = null;
+                    // arvores grandes (galhos, cachos de folhas, colmeias em varias alturas) gastavam todas as camadas e o chao
+                    // sumia (aparecia o ceu por baixo): a ultima camada fica reservada para o chao de verdade
+                    if (key != null && curKey == null && runs >= MAXR - 1 && !fluid
+                            && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS) || !solidBelow(ch, lvl, below, wx, y, wz))) key = null;
 
                     if (curKey != null && key != curKey) {
                         RTOP[i][runs] = curTop; RBOT[i][runs] = y + 1; RCOL[i][runs] = curCol; RSIDE[i][runs] = curSide;
                         RST[i][runs] = curState; RTINT[i][runs] = curTint; runs++;
                         curKey = null;
-                        if (!curCanopy) {
+                        // bloco "flutuando" (colmeia, galho, beirada com ar embaixo): nao e' o chao, continua descendo
+                        boolean floating = key == null && !fluid;
+                        if (!curCanopy && !floating) {
                             RGROUND[i] = true;
                             if (!air && !fluid) { RFILL[i] = st; RFTINT[i] = BlockLooks.tint(st, lvl, pos); }
                             break;
@@ -153,6 +157,13 @@ public class MinimapHud {
     static float smallScale(Minecraft mc) {
         double gs = mc.getWindow().getGuiScale();
         return (float) Math.max(0.5, Math.min(1.0, 2.0 / gs));
+    }
+
+    // o bloco abaixo de (x,y,z) e' solido ou liquido? (chao de verdade, e nao algo pendurado)
+    static boolean solidBelow(LevelChunk ch, ClientLevel lvl, BlockPos.MutableBlockPos p, int x, int y, int z) {
+        BlockState b = ch.getBlockState(p.set(x, y - 1, z));
+        if (b.isAir()) return false;
+        return !b.getFluidState().isEmpty() || !b.getCollisionShape(lvl, p).isEmpty();
     }
 
     // ------------------------------------------------------------------ desenho

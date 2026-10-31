@@ -230,10 +230,15 @@ public class WorldMap3D {
                 int topArgb = argb(c.canopy() || c.water() ? c.gcol() : c.topCol());
                 // texturas de verdade (mapas salvos antes desta versao nao tem os blocos: usam so a cor)
                 BlockState gState = state(c.sGround()), tState = state(c.sTop()), fState = state(c.sFill());
+                // sem bloco embaixo (beirada com ar embaixo): grama/terra usa terra; o resto repete o proprio bloco
+                // (antes repetia a lateral da grama sem tinta = "camada branca" em cada bloco do barranco)
+                if (fState == null && gState != null && gState.is(net.minecraft.tags.BlockTags.DIRT))
+                    fState = net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState();
                 BlockLooks.Layer[] gUp = BlockLooks.layers(gState, true), gSide = BlockLooks.layers(gState, false);
                 BlockLooks.Layer[] fSide = fState != null ? BlockLooks.layers(fState, false) : gSide;
                 BlockState dState = state(c.sDeep());
                 BlockLooks.Layer[] dSide = dState != null ? BlockLooks.layers(dState, false) : fSide;
+                int fTint = fSide == gSide ? c.tGround() : 0xFFFFFF;
                 if (gUp.length > 0) { MapTex.top(b, gUp, c.tGround(), x, sTop - 64, z, ones, 255); quads++; }
                 else quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (sem textura: mapas antigos)
                 BlockState pState = state(c.sPlant());
@@ -266,7 +271,7 @@ public class WorldMap3D {
                             float fT = 0.95f - 0.30f * depth, fB = 0.95f - 0.30f * Math.min(1f, depth + 0.125f);
                             boolean first = yTop == sTop;
                             BlockLooks.Layer[] seg = first ? gSide : (sTop - yTop < 3 ? fSide : dSide);   // topo, 3 de terra, depois pedra
-                            MapTex.side(b, seg, first ? c.tGround() : 0xFFFFFF, d, x, z, yBot - 64, yTop - 64, fT, fB, 255);
+                            MapTex.side(b, seg, first || seg == gSide ? c.tGround() : (seg == fSide ? fTint : 0xFFFFFF), d, x, z, yBot - 64, yTop - 64, fT, fB, 255);
                             quads++;
                             if (yBot == nS) break;
                         }

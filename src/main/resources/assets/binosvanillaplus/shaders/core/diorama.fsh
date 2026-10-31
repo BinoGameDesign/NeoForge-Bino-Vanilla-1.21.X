@@ -84,7 +84,16 @@ void main() {
     bool textured = vUV.x >= 0.0;
     vec4 tex = vec4(1.0);
     if (textured) {
-        tex = texture(Sampler0, vUV);
+        // le a textura sem "vazar" para a textura vizinha do atlas (de longe, o jogo usa versoes menores da
+        // textura e a borda pegava cor da vizinha = listras/camada clara nas emendas): prende dentro da celula 16x16
+        vec2 asz = vec2(textureSize(Sampler0, 0));
+        vec2 px = vUV * asz;
+        vec2 cell = floor(px / 16.0) * 16.0;
+        vec2 ddx = dFdx(px), ddy = dFdy(px);
+        float lod = clamp(0.5 * log2(max(max(dot(ddx, ddx), dot(ddy, ddy)), 1e-6)), 0.0, 4.0);
+        float m = exp2(floor(lod + 0.5)) * 0.5 + 0.01;
+        px = clamp(px, cell + m, cell + 16.0 - m);
+        tex = textureLod(Sampler0, px / asz, lod);
         if (tex.a < 0.1) {
             if (overlay || water) discard;
             tex.rgb = vec3(0.30);                       // buracos das folhas viram folhagem escura (sem ver o chao)

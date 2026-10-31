@@ -250,12 +250,17 @@ public final class ExploredMap {
         t.sTrunk[idx] = trunk && logState != null ? Block.getId(logState) : 0;
         // 2) desce ate o chao de verdade: atravessa ar, plantas e tambem galhos e cachos de folhas mais baixos
         //    (antes um galho ou cacho de folhas embaixo da copa virava "chao" e aparecia um pilar ate o solo)
+        //    (colmeias, galhos e cachos de folhas pendurados tambem): chao = bloco solido com algo solido embaixo
         int limit = Math.max(minY, y - 60);
         while (y > limit) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
-            boolean pass = s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty()
-                    || s.is(BlockTags.LEAVES) || s.is(BlockTags.LOGS);
-            if (!pass || !s.getFluidState().isEmpty()) break;
+            if (!s.getFluidState().isEmpty()) break;                         // agua: e' o chao
+            boolean empty = s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty();
+            if (!empty && !s.is(BlockTags.LEAVES) && !s.is(BlockTags.LOGS)) {
+                BlockState b = chunk.getBlockState(pos.set(wx, y - 1, wz));
+                boolean solid = !b.isAir() && (!b.getFluidState().isEmpty() || !b.getCollisionShape(level, pos).isEmpty());
+                if (solid) break;                                            // chao de verdade
+            }
             y--;
         }
         BlockState ground = chunk.getBlockState(pos.set(wx, y, wz));
@@ -317,7 +322,7 @@ public final class ExploredMap {
         try {
             Files.createDirectories(worldDir());
             try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file()))))) {
-                out.writeInt(7);
+                out.writeInt(8);
                 out.writeInt(TILES.size());
                 for (Map.Entry<Long, Tile> e : TILES.entrySet()) {
                     out.writeInt((int) (long) e.getKey());
@@ -347,7 +352,7 @@ public final class ExploredMap {
         if (!Files.exists(f)) return;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
             int ver = in.readInt();
-            if (ver < 4 || ver > 7) return;   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
+            if (ver != 8) return;   // versoes antigas tinham arvores lidas errado (pilares): o mapa se refaz   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
             int n = in.readInt();
             for (int i = 0; i < n; i++) {
                 int cx = in.readInt(), cz = in.readInt();
