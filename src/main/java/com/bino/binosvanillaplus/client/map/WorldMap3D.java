@@ -5,19 +5,22 @@ import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.ShaderInstance;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // Vista 3D do mapa-mundi (estilo "3D view" do Diorama): o terreno ja explorado vira uma maquete 3D que voce gira e inclina.
 // Cada chunk explorado e' uma malha na GPU (VertexBuffer) desenhada com o shader "diorama".
 public class WorldMap3D {
     private static final float FOV = (float) Math.toRadians(50);
-    private static final int VIEW_CHUNKS = 10;          // raio de chunks desenhados em volta do alvo
-    private static final int BUILD_PER_FRAME = 6;
+    private static final int BUILD_PER_FRAME = 14;
 
     public static float yaw = 0.0f, pitch = 0.95f, dist = 110f;
     public static Matrix4f view = new Matrix4f(), proj = new Matrix4f();
@@ -32,27 +35,30 @@ public class WorldMap3D {
     }
 
     // desenha a maquete na area (x0,y0,w,h). tx,tz = ponto central no mundo.
+    public static ShaderInstance depthShader;            // map_depth (passo de sombra)
+    private static TextureTarget shadowTarget;
+    private static final int SHADOW_RES = 2048;
+    private static final float SHADOW_FAR = 1600f;
+
+    // raio (em chunks) desenhado: cresce com o zoom para mostrar tudo o que ja foi explorado
+    private static int viewChunks() { return Math.max(10, Math.min(48, (int) (dist * 2.2f / 16f) + 4)); }
+
     public static void render(GuiGraphics g, int x0, int y0, int w, int h, double tx, double tz, LocalPlayer player) {
         if (!DioramaRenderer.ready()) return;
         int th = ExploredMap.heightAt((int) Math.floor(tx), (int) Math.floor(tz));
         double goal = th == ExploredMap.UNKNOWN ? (player != null ? player.getY() : 64) : th;
         targetY += (goal - targetY) * 0.12;
 
-        proj = new Matrix4f().perspective(FOV, w / (float) h, 0.5f, 3000f);
+        int vc = viewChunks();
+        proj = new Matrix4f().perspective(FOV, w / (float) h, 0.5f, 4000f);
         view = new Matrix4f().translate(0, 0, -dist).rotateX(pitch).rotateY(yaw);
 
+        // chunks explorados num CIRCULO em volta do alvo (monta as malhas que faltam, poucas por frame)
         int cxm = (int) Math.floor(tx / 16), czm = (int) Math.floor(tz / 16), built = 0;
-        DioramaRenderer.GlState st = DioramaRenderer.begin(g, x0, y0, w, h, proj);
-
-        Sun.update(Minecraft.getInstance());
-        Sun.applyUniforms();
-        DioramaRenderer.shader.safeGetUniform("Exposure").set(0.80f);   // mapa-mundi: menos luz (tela grande estourava)
-        DioramaRenderer.shader.safeGetUniform("Radius").set(1.0e6f);
-        DioramaRenderer.drawSky(view, proj, tx, targetY, tz);
-        DioramaRenderer.applyFog(dist + VIEW_CHUNKS * 16 * 0.35f, dist + VIEW_CHUNKS * 16 * 0.95f, 0f, 0f);
-        DioramaRenderer.shader.safeGetUniform("Detail").set(1f);
-        for (int dz = -VIEW_CHUNKS; dz <= VIEW_CHUNKS; dz++) {
-            for (int dx = -VIEW_CHUNKS; dx <= VIEW_CHUNKS; dx++) {
+        List<long[]> vis = new ArrayList<>();
+        for (int dz = -vc; dz <= vc; dz++) {
+            for (int dx = -vc; dx <= vc; dx++) {
+                if (dx * dx + dz * dz > vc * vc) continue;
                 int cx = cxm + dx, cz = czm + dz;
                 ExploredMap.Tile t = ExploredMap.tile(cx, cz);
                 if (t == null) continue;
@@ -60,30 +66,56 @@ public class WorldMap3D {
                 ChunkMesh m = MESHES.get(key);
                 if (m == null) { m = new ChunkMesh(); MESHES.put(key, m); }
                 if (m.version != t.version && built < BUILD_PER_FRAME) { build(m, t, cx, cz); built++; }
-                if (!m.has) continue;
-                Matrix4f mv = new Matrix4f(view).translate((float) (cx * 16 - tx), (float) (64 - targetY), (float) (cz * 16 - tz));
-                DioramaRenderer.shader.safeGetUniform("Origin").set((float) (cx * 16), 64f, (float) (cz * 16));
-                m.vb.bind();
-                m.vb.drawWithShader(mv, proj, DioramaRenderer.shader);
+                if (m.has || m.hasW) vis.add(new long[]{cx, cz, dx * dx + dz * dz});
             }
+        }
+
+        g.flush();
+        Minecraft mc = Minecraft.getInstance();
+        Sun.update(mc);
+        Matrix4f lightMat = new Matrix4f();
+        float shadowHalf = Math.max(40f, Math.min(320f, dist * 1.15f + 24f));
+        boolean shadowsOk = shadowPass(vis, tx, tz, shadowHalf, lightMat);
+
+        DioramaRenderer.GlState st = DioramaRenderer.begin(g, x0, y0, w, h, proj);
+        ShaderInstance sh = DioramaRenderer.shader;
+        Sun.applyUniforms();
+        sh.safeGetUniform("Exposure").set(1.0f);
+        sh.safeGetUniform("Radius").set(1.0e6f);
+        DioramaRenderer.drawSky(view, proj, tx, targetY, tz, 56f);   // nuvens mais baixas no mapa-mundi
+        DioramaRenderer.applyFog(dist + vc * 16 * 0.45f, dist + vc * 16 * 0.92f, 0f, 0f);
+        sh.safeGetUniform("Detail").set(1f);
+        // qualidade "Complementary": sombra real, luz do sol/lua, agua com reflexo
+        sh.safeGetUniform("Quality").set(1f);
+        sh.safeGetUniform("ShadowOn").set(shadowsOk ? 1f : 0f);
+        sh.safeGetUniform("LightMat").set(lightMat);
+        sh.safeGetUniform("ShadowTexel").set(1f / SHADOW_RES);
+        sh.safeGetUniform("ShadowBias").set(0.35f / SHADOW_FAR);
+        sh.safeGetUniform("ShadowNormalOffset").set(2f * shadowHalf / SHADOW_RES * 1.5f);
+        Vector3f cam = new Matrix4f(view).invert().transformPosition(new Vector3f());
+        sh.safeGetUniform("CamRel").set(cam.x, cam.y, cam.z);
+        float[] sky = MapAtmosphere.provider.skyColor();
+        sh.safeGetUniform("SkyAmbient").set(sky[0], sky[1], sky[2]);
+        if (shadowsOk) sh.setSampler("ShadowMap", shadowTarget.getDepthTextureId());
+
+        for (long[] c : vis) {
+            ChunkMesh m = MESHES.get(ExploredMap.key((int) c[0], (int) c[1]));
+            if (m == null || !m.has) continue;
+            drawChunk(m.vb, (int) c[0], (int) c[1], tx, tz);
         }
         VertexBuffer.unbind();
 
         // agua translucida por cima do terreno
         RenderSystem.depthMask(false);
-        for (int dz = -VIEW_CHUNKS; dz <= VIEW_CHUNKS; dz++) {
-            for (int dx = -VIEW_CHUNKS; dx <= VIEW_CHUNKS; dx++) {
-                int cx = cxm + dx, cz = czm + dz;
-                ChunkMesh m = MESHES.get(ExploredMap.key(cx, cz));
-                if (m == null || !m.hasW) continue;
-                Matrix4f mv = new Matrix4f(view).translate((float) (cx * 16 - tx), (float) (64 - targetY), (float) (cz * 16 - tz));
-                DioramaRenderer.shader.safeGetUniform("Origin").set((float) (cx * 16), 64f, (float) (cz * 16));
-                m.wvb.bind();
-                m.wvb.drawWithShader(mv, proj, DioramaRenderer.shader);
-            }
+        for (long[] c : vis) {
+            ChunkMesh m = MESHES.get(ExploredMap.key((int) c[0], (int) c[1]));
+            if (m == null || !m.hasW) continue;
+            drawChunk(m.wvb, (int) c[0], (int) c[1], tx, tz);
         }
         VertexBuffer.unbind();
         RenderSystem.depthMask(true);
+        sh.safeGetUniform("Quality").set(0f);
+        sh.safeGetUniform("ShadowOn").set(0f);
 
         DioramaRenderer.drawBeams(view, proj, tx, targetY, tz, MapOptions.worldPins, Math.max(0.8f, dist / 80f), Math.max(60f, dist * 1.2f));
 
@@ -98,6 +130,55 @@ public class WorldMap3D {
             DioramaRenderer.drawPointer(pmv, proj);
         }
         DioramaRenderer.end(g, st);
+    }
+
+    private static void drawChunk(VertexBuffer vb, int cx, int cz, double tx, double tz) {
+        float ox = (float) (cx * 16 - tx), oy = (float) (64 - targetY), oz = (float) (cz * 16 - tz);
+        Matrix4f mv = new Matrix4f(view).translate(ox, oy, oz);
+        DioramaRenderer.shader.safeGetUniform("Origin").set((float) (cx * 16), 64f, (float) (cz * 16));
+        DioramaRenderer.shader.safeGetUniform("ShadowOrigin").set(ox, oy, oz);
+        vb.bind();
+        vb.drawWithShader(mv, proj, DioramaRenderer.shader);
+    }
+
+    // Sombra real: desenha o terreno visto do sol/lua (so profundidade) num shadow map 2048x2048 em volta do alvo.
+    // O shader do terreno compara cada ponto com esse mapa (com borda suave). Devolve false se nao deu para fazer.
+    private static boolean shadowPass(List<long[]> vis, double tx, double tz, float half, Matrix4f outLightMat) {
+        if (depthShader == null || !Sun.hasSky || Sun.dy < 0.03f) return false;
+        try {
+            if (shadowTarget == null) shadowTarget = new TextureTarget(SHADOW_RES, SHADOW_RES, true, Minecraft.ON_OSX);
+            Vector3f L = new Vector3f(Sun.dx, Sun.dy, Sun.dz);
+            Vector3f eye = new Vector3f(L).mul(SHADOW_FAR / 2f);
+            Vector3f up = Math.abs(L.y) > 0.98f ? new Vector3f(0f, 0f, 1f) : new Vector3f(0f, 1f, 0f);
+            Matrix4f lv = new Matrix4f().lookAt(eye.x, eye.y, eye.z, 0f, 0f, 0f, up.x, up.y, up.z);
+            Matrix4f lp = new Matrix4f().ortho(-half, half, -half, half, 1f, SHADOW_FAR);
+            outLightMat.set(lp).mul(lv);
+
+            shadowTarget.setClearColor(1f, 1f, 1f, 1f);
+            shadowTarget.clear(Minecraft.ON_OSX);
+            shadowTarget.bindWrite(true);
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthMask(true);
+            RenderSystem.disableBlend();
+            RenderSystem.disableCull();
+            float reach = (half + 48f) / 16f;
+            for (long[] c : vis) {
+                if (c[2] > (long) (reach * reach)) continue;   // longe demais da area da sombra
+                ChunkMesh m = MESHES.get(ExploredMap.key((int) c[0], (int) c[1]));
+                if (m == null || !m.has) continue;
+                Matrix4f mv = new Matrix4f(lv).translate((float) (c[0] * 16 - tx), (float) (64 - targetY), (float) (c[1] * 16 - tz));
+                m.vb.bind();
+                m.vb.drawWithShader(mv, lp, depthShader);
+            }
+            VertexBuffer.unbind();
+            Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            return true;
+        } catch (Exception e) {
+            Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
+            return false;
+        }
     }
 
     // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida

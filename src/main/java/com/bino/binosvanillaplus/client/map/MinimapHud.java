@@ -23,9 +23,9 @@ public class MinimapHud {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "minimap");
 
     // ---- ajustes (mude aqui) ----
-    static final int R = 20;                   // raio da malha, em blocos
+    static final int R = 32;                   // raio da malha, em blocos (alcance do minimapa)
     private static final int BOX = 76;         // tamanho da caixa em pixels
-    private static final float[] DISTS = {22f, 30f, 42f};   // distancia da camera por nivel de zoom (teclas de zoom)
+    private static final float[] DISTS = {30f, 43f, 60f};   // distancia da camera por nivel de zoom (teclas de zoom)
     private static final int MARGIN_X = 9, MARGIN_Y = 9;
     private static final int SLICE = 4;        // altura do corte (acima dos pes) em cavernas
 
@@ -153,7 +153,7 @@ public class MinimapHud {
         if (!DioramaRenderer.ready()) return;
 
         float dist = DISTS[Math.max(0, Math.min(DISTS.length - 1, MapOptions.minimapZoom))];
-        DioramaRenderer.draw(g, p, x0, y0, BOX, dist, dist * 0.62f);
+        DioramaRenderer.draw(g, p, x0, y0, BOX, dist, Math.min(R - 1.5f, dist * 0.70f));
 
         float cxm = x0 + BOX / 2f, cym = y0 + BOX / 2f;
 

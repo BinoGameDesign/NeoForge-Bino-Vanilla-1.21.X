@@ -20,7 +20,10 @@ public class DioramaRenderer {
     // ------------------------------------------------------------------ ceu + neblina
 
     // desenha o ceu (degrade, sol, nuvens) atras de tudo. (rx,ry,rz) = ponto do mundo que esta na origem da 'view'
-    static void drawSky(Matrix4f view, Matrix4f projection, double rx, double ry, double rz) {
+    static void drawSky(Matrix4f view, Matrix4f projection, double rx, double ry, double rz) { drawSky(view, projection, rx, ry, rz, 0f); }
+
+    // cloudShift: quanto baixar as nuvens (o mapa-mundi usa nuvens mais baixas)
+    static void drawSky(Matrix4f view, Matrix4f projection, double rx, double ry, double rz, float cloudShift) {
         if (skyShader == null) return;
         if (skyQuad == null) {
             BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
@@ -43,10 +46,12 @@ public class DioramaRenderer {
         skyShader.safeGetUniform("InvProjView").set(new Matrix4f(projection).mul(view).invert());
         skyShader.safeGetUniform("SkyColor").set(sky[0], sky[1], sky[2]);
         skyShader.safeGetUniform("MapFogColor").set(fog[0], fog[1], fog[2]);
-        skyShader.safeGetUniform("SunDir").set(Sun.dx, Sun.dy, Sun.dz);
-        skyShader.safeGetUniform("DayLight").set(Sun.day);
+        skyShader.safeGetUniform("SunVis").set(Sun.vx, Sun.vy, Sun.vz);
+        skyShader.safeGetUniform("Night").set(Sun.night);
+        skyShader.safeGetUniform("MoonPhase").set((float) Sun.moonPhase);
+        skyShader.safeGetUniform("HasSky").set(Sun.hasSky ? 1f : 0f);
         skyShader.safeGetUniform("CamPos").set((float) (cam.x + rx), (float) (cam.y + ry), (float) (cam.z + rz));
-        skyShader.safeGetUniform("CloudY").set(Float.isNaN(cloud) ? -10000f : cloud);
+        skyShader.safeGetUniform("CloudY").set(Float.isNaN(cloud) ? -10000f : cloud - cloudShift);
         skyShader.safeGetUniform("Time").set(time);
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
@@ -389,6 +394,8 @@ public class DioramaRenderer {
         proj = new Matrix4f().perspective(FOV, 1f, 0.1f, 400f);
         GlState st = begin(g, x0, y0, box, box, proj, MapOptions.minimapOpacity / 100f);
         drawSky(view, proj, p.getX(), p.getY(), p.getZ());
+        shader.safeGetUniform("Quality").set(0f);
+        shader.safeGetUniform("ShadowOn").set(0f);
         float dens = Math.max(0.05f, MapAtmosphere.provider.fogDensity());
         applyFog(1.0e5f, 1.0e5f + 1f, (float) (ox0 - p.getX()), (float) (oz0 - p.getZ()));
 
