@@ -25,7 +25,67 @@ public class BlockLooks {
     private static final Map<BlockState, Look> CACHE = new HashMap<>();
 
     // limpa o cache (chamar ao recarregar recursos)
-    public static void clear() { CACHE.clear(); }
+    public static void clear() { CACHE.clear(); LAYERS.clear(); }
+
+    // ------------------------------------------------------------------ texturas de verdade (atlas de blocos)
+
+    // uma "camada" de uma face: o sprite do atlas e o indice de tinta (-1 = sem tinta; >= 0 = cor do bioma)
+    public record Layer(TextureAtlasSprite sprite, int tintIndex) {}
+
+    private static final Map<BlockState, Layer[][]> LAYERS = new HashMap<>();
+    private static final Layer[] NONE = new Layer[0];
+
+    // camadas da face de cima (up=true) ou da lateral (up=false) do bloco, na ordem do modelo
+    // (grama: lateral = terra + camada verde por cima). Vazio = sem textura (usa so a cor).
+    public static Layer[] layers(BlockState st, boolean up) {
+        if (st == null) return NONE;
+        Layer[][] l = LAYERS.get(st);
+        if (l == null) {
+            l = new Layer[][]{compute(st, true), compute(st, false)};
+            LAYERS.put(st, l);
+        }
+        return l[up ? 0 : 1];
+    }
+
+    private static Layer[] compute(BlockState st, boolean up) {
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            FluidState fs = st.getFluidState();
+            if (!fs.isEmpty() && st.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+                net.minecraft.resources.ResourceLocation still = IClientFluidTypeExtensions.of(fs).getStillTexture();
+                TextureAtlasSprite sp = mc.getTextureAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS).apply(still);
+                return new Layer[]{new Layer(sp, fs.is(FluidTags.WATER) ? 0 : -1)};
+            }
+            BakedModel model = mc.getBlockRenderer().getBlockModelShaper().getBlockModel(st);
+            RandomSource rs = RandomSource.create(42L);
+            List<BakedQuad> qs = model.getQuads(st, up ? Direction.UP : Direction.NORTH, rs);
+            if (qs == null || qs.isEmpty()) qs = model.getQuads(st, null, rs);
+            java.util.ArrayList<Layer> out = new java.util.ArrayList<>();
+            if (qs != null) {
+                for (BakedQuad q : qs) {
+                    if (out.size() >= 2) break;
+                    if (!up && q.getDirection() != Direction.NORTH && qs.size() > 1 && out.size() > 0) continue;
+                    out.add(new Layer(q.getSprite(), q.isTinted() ? q.getTintIndex() : -1));
+                }
+            }
+            if (out.isEmpty()) out.add(new Layer(model.getParticleIcon(), -1));
+            return out.toArray(new Layer[0]);
+        } catch (Exception e) {
+            return NONE;
+        }
+    }
+
+    // cor do bioma (tinta) do bloco nesta posicao, RGB; branco se o bloco nao tem tinta
+    public static int tint(BlockState st, BlockAndTintGetter level, BlockPos pos) {
+        if (st == null) return 0xFFFFFF;
+        FluidState fs = st.getFluidState();
+        if (!fs.isEmpty() && st.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+            if (!fs.is(FluidTags.WATER)) return 0xFFFFFF;
+            return IClientFluidTypeExtensions.of(fs).getTintColor(fs, level, pos) & 0xFFFFFF;
+        }
+        int c = Minecraft.getInstance().getBlockColors().getColor(st, level, pos, 0);
+        return c == -1 ? 0xFFFFFF : c & 0xFFFFFF;
+    }
 
     public static int top(BlockState st, BlockAndTintGetter level, BlockPos pos) {
         FluidState fs = st.getFluidState();

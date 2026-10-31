@@ -50,10 +50,14 @@ vec2 bodyUV(vec3 dir, vec3 body) {
     return vec2(dot(dir, side), dot(dir, up)) / max(k, 1e-4);
 }
 
-float cloudAt(vec2 p) {
-    vec2 cell = floor(p / 12.0);
-    float n = vnoise(cell * 0.21) * 0.68 + vnoise(cell * 0.53 + 17.0) * 0.32;
-    return smoothstep(0.545, 0.565, n);
+float fbm(vec2 p) {
+    float v = 0.0, amp = 0.5;
+    for (int i = 0; i < 5; i++) {
+        v += amp * vnoise(p);
+        p = p * 2.03 + vec2(17.1, 9.2);
+        amp *= 0.5;
+    }
+    return v;
 }
 
 void main() {
@@ -92,41 +96,58 @@ void main() {
             col = mix(col, vec3(1.0, 0.98, 0.86), core);
             col += vec3(1.0, 0.85, 0.60) * (pow(ks, 60.0) * 0.35 + pow(ks, 8.0) * 0.10) * (1.0 - core);
         }
-        // lua: quadrado com "crateras" em pixels e a fase atual
+        // lua: quadrado claro com "crateras" em pixels; a parte escura da fase fica transparente (mostra o ceu, como no jogo)
         vec3 moon = -sun;
         float km = dot(dir, moon);
         if (km > 0.0) {
             vec2 uv = bodyUV(dir, moon);
             float m = max(abs(uv.x), abs(uv.y));
-            if (m < 0.06) {
-                vec2 px = floor((uv / 0.06 * 0.5 + 0.5) * 8.0);   // 8x8 "pixels"
-                float crater = hash(px + 3.0) > 0.78 ? 0.80 : 1.0;
-                // fase: escurece um lado (0 cheia, 4 nova)
-                float ph = MoonPhase < 4.5 ? MoonPhase / 4.0 : (8.0 - MoonPhase) / 4.0;   // 0..1
-                float lit = (MoonPhase < 4.5 ? (uv.x / 0.06) : -(uv.x / 0.06)) * 0.5 + 0.5;
-                float shade = step(ph, lit) * 0.85 + 0.15;
-                col = mix(col, vec3(0.86, 0.88, 0.95) * crater * shade, 1.0 - smoothstep(0.055, 0.06, m));
+            float inside = 1.0 - smoothstep(0.054, 0.060, m);
+            if (inside > 0.0) {
+                vec2 q = clamp(uv / 0.06 * 0.5 + 0.5, 0.0, 0.999);
+                vec2 px = floor(q * 8.0);                              // 8x8 "pixels"
+                float crater = hash(px + 3.0) > 0.78 ? 0.82 : 1.0;
+                // fase: 0 cheia, 4 nova; ilumina uma fatia que diminui e cresce
+                float ph = MoonPhase < 4.5 ? MoonPhase / 4.0 : (8.0 - MoonPhase) / 4.0;   // 0 = cheia .. 1 = nova
+                float xs = MoonPhase < 4.5 ? q.x : 1.0 - q.x;
+                float lit = step(ph, xs);
+                vec3 moonCol = vec3(0.88, 0.90, 0.96) * crater;
+                col = mix(col, moonCol, inside * lit);
             }
-            col += vec3(0.55, 0.65, 1.0) * pow(km, 40.0) * 0.18 * Night;
+            col += vec3(0.55, 0.65, 1.0) * pow(km, 40.0) * 0.14 * Night;
         }
     }
 
-    // nuvens
-    if (CloudY > -1000.0 && abs(dir.y) > 0.004) {
+    // nuvens fofas (estilo Complementary): ruido em camadas, borda macia, lado do sol claro, base sombreada,
+    // borda prateada contra o sol; duas camadas (cumulos + uma camada fina mais alta)
+    if (CloudY > -1000.0 && abs(dir.y) > 0.003) {
+        vec2 wind = vec2(Time * 0.9, Time * 0.25);
+        // camada principal
         float t = (CloudY - CamPos.y) / dir.y;
         if (t > 0.0) {
-            vec2 p = CamPos.xz + dir.xz * t;
-            p.x += Time * 0.6;
-            float c = cloudAt(p);
-            if (c > 0.0) {
-                // borda do lado do sol mais clara, do lado oposto mais escura (da volume)
-                float lit = cloudAt(p - sun.xz * 6.0);
-                float shade = mix(1.0, 0.82, lit);
-                float fade = 1.0 - smoothstep(140.0, 600.0, t);
-                vec3 sunTint = mix(vec3(1.0, 0.80, 0.62), vec3(1.0), smoothstep(0.0, 0.4, sun.y));
-                vec3 cloudCol = mix(MapFogColor, vec3(1.0), 0.72) * sunTint * shade * mix(1.0, 0.35, Night);
-                col = mix(col, cloudCol, c * 0.88 * fade);
+            vec2 p = (CamPos.xz + dir.xz * t + wind) * 0.010;
+            float base = fbm(p);
+            float cov = smoothstep(0.50, 0.78, base);
+            if (cov > 0.0) {
+                // "densidade" na direcao do sol: quanto mais nuvem entre o ponto e o sol, mais escuro
+                float toward = fbm(p + sun.xz * 0.12);
+                float lightAmt = exp(-max(toward - 0.50, 0.0) * 4.5);
+                vec3 litCol = mix(vec3(1.0, 0.86, 0.70), vec3(1.0, 0.99, 0.97), smoothstep(0.0, 0.45, sun.y));
+                vec3 shadeCol = mix(MapFogColor, SkyColor, 0.35) * 0.78;
+                vec3 cc = mix(shadeCol, litCol, lightAmt);
+                float silver = pow(max(dot(dir, sun), 0.0), 12.0) * (1.0 - cov) * 1.4;
+                cc += litCol * silver;
+                cc *= mix(1.0, 0.28, Night);
+                float fade = 1.0 - smoothstep(180.0, 900.0, t);
+                col = mix(col, cc, cov * 0.92 * fade);
             }
+        }
+        // camada fina e alta (cirros)
+        float t2 = (CloudY + 70.0 - CamPos.y) / dir.y;
+        if (t2 > 0.0) {
+            vec2 p2 = (CamPos.xz + dir.xz * t2 + wind * 2.0) * vec2(0.0035, 0.012);
+            float c2 = smoothstep(0.58, 0.80, fbm(p2)) * 0.35 * (1.0 - smoothstep(300.0, 1400.0, t2));
+            col = mix(col, mix(vec3(1.0), MapFogColor, 0.25) * mix(1.0, 0.3, Night), c2);
         }
     }
 

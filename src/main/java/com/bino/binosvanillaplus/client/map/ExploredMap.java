@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -36,6 +37,9 @@ public final class ExploredMap {
         public final short[] cb = new short[256];      // altura da folha mais baixa da copa
         public final int[] gcol = new int[256];        // cor do chao sob a copa (ABGR)
         public final int[] tcol = new int[256];        // cor do tronco (ABGR)
+        // texturas: id do estado do bloco (Block.getId) do topo, do chao, do tronco e do bloco abaixo do chao; tintas do bioma (RGB)
+        public final int[] sTop = new int[256], sGround = new int[256], sTrunk = new int[256], sFill = new int[256];
+        public final int[] tTop = new int[256], tGround = new int[256];
         long lastScan;
         public int version;                 // sobe a cada nova leitura (invalida malhas 3D em cache)
         boolean texDirty = true;
@@ -170,6 +174,15 @@ public final class ExploredMap {
                 }
                 int abgr = 0xFF000000 | ((argb & 0xFF) << 16) | (argb & 0xFF00) | ((argb >> 16) & 0xFF);
                 t.abgr[idx] = abgr;
+                // blocos de verdade (para as texturas)
+                BlockState topState = st.getFluidState().isEmpty() ? st : st.getFluidState().createLegacyBlock();
+                t.sTop[idx] = Block.getId(topState);
+                t.tTop[idx] = BlockLooks.tint(topState, level, pos.set(wx, top, wz));
+                t.sGround[idx] = t.sTop[idx];
+                t.tGround[idx] = t.tTop[idx];
+                t.sTrunk[idx] = 0;
+                BlockState below = chunk.getBlockState(pos.set(wx, top - 1, wz));
+                t.sFill[idx] = below.isAir() || !below.getFluidState().isEmpty() ? 0 : Block.getId(below);
                 t.h[idx] = (short) top;
                 t.canopy[idx] = 0;
                 t.tcol[idx] = 0;
@@ -184,6 +197,11 @@ public final class ExploredMap {
                     t.canopy[idx] = 4;
                     t.gh[idx] = (short) waterBed;
                     t.gcol[idx] = 0xFF000000 | ((bedArgb & 0xFF) << 16) | (bedArgb & 0xFF00) | ((bedArgb >> 16) & 0xFF);
+                    BlockState bed = chunk.getBlockState(pos.set(wx, waterBed, wz));
+                    t.sGround[idx] = Block.getId(bed);
+                    t.tGround[idx] = BlockLooks.tint(bed, level, pos);
+                    BlockState under = chunk.getBlockState(pos.set(wx, waterBed - 1, wz));
+                    t.sFill[idx] = under.isAir() || !under.getFluidState().isEmpty() ? 0 : Block.getId(under);
                 }
                 if (st.getFluidState().isEmpty() && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) scanCanopy(level, chunk, t, idx, wx, wz, top, minY, pos);
             }
@@ -198,7 +216,7 @@ public final class ExploredMap {
         while (y > minY) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
             if (s.is(BlockTags.LEAVES)) lowestLeaf = y;
-            else if (s.is(BlockTags.LOGS)) { if (!trunk) { trunk = true; trunkCol = BlockLooks.side(s, level, pos); } }
+            else if (s.is(BlockTags.LOGS)) { if (!trunk) { trunk = true; trunkCol = BlockLooks.side(s, level, pos); t.sTrunk[idx] = Block.getId(s); } }
             else break;
             y--;
         }
@@ -210,6 +228,10 @@ public final class ExploredMap {
         }
         BlockState ground = chunk.getBlockState(pos.set(wx, y, wz));
         int gc = BlockLooks.top(ground, level, pos);
+        t.sGround[idx] = Block.getId(ground);
+        t.tGround[idx] = BlockLooks.tint(ground, level, pos);
+        BlockState under = chunk.getBlockState(pos.set(wx, y - 1, wz));
+        t.sFill[idx] = under.isAir() || !under.getFluidState().isEmpty() ? 0 : Block.getId(under);
         t.canopy[idx] = (byte) (1 | (trunk ? 2 : 0));
         t.gh[idx] = (short) y;
         t.cb[idx] = (short) (lowestLeaf == Integer.MIN_VALUE ? top : lowestLeaf);
@@ -263,7 +285,7 @@ public final class ExploredMap {
         try {
             Files.createDirectories(worldDir());
             try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file()))))) {
-                out.writeInt(4);
+                out.writeInt(5);
                 out.writeInt(TILES.size());
                 for (Map.Entry<Long, Tile> e : TILES.entrySet()) {
                     out.writeInt((int) (long) e.getKey());
@@ -277,6 +299,8 @@ public final class ExploredMap {
                         out.writeShort(tt.cb[k]);
                         out.writeInt(tt.gcol[k]);
                         out.writeInt(tt.tcol[k]);
+                        out.writeInt(tt.sTop[k]); out.writeInt(tt.sGround[k]); out.writeInt(tt.sTrunk[k]); out.writeInt(tt.sFill[k]);
+                        out.writeInt(tt.tTop[k]); out.writeInt(tt.tGround[k]);
                     }
                 }
             }
@@ -290,7 +314,7 @@ public final class ExploredMap {
         if (!Files.exists(f)) return;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
             int ver = in.readInt();
-            if (ver != 4) return;   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
+            if (ver != 4 && ver != 5) return;   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
             int n = in.readInt();
             for (int i = 0; i < n; i++) {
                 int cx = in.readInt(), cz = in.readInt();
@@ -301,6 +325,10 @@ public final class ExploredMap {
                     for (int k = 0; k < 256; k++) {
                         t.canopy[k] = in.readByte(); t.gh[k] = in.readShort(); t.cb[k] = in.readShort();
                         t.gcol[k] = in.readInt(); t.tcol[k] = in.readInt();
+                        if (ver >= 5) {
+                            t.sTop[k] = in.readInt(); t.sGround[k] = in.readInt(); t.sTrunk[k] = in.readInt(); t.sFill[k] = in.readInt();
+                            t.tTop[k] = in.readInt(); t.tGround[k] = in.readInt();
+                        }
                     }
                 } else {
                     for (int k = 0; k < 256; k++) { t.gh[k] = t.h[k]; t.cb[k] = t.h[k]; }

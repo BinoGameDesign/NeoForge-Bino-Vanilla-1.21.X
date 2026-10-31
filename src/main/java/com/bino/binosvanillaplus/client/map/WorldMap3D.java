@@ -7,6 +7,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ShaderInstance;
 import com.mojang.blaze3d.pipeline.TextureTarget;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -82,7 +84,7 @@ public class WorldMap3D {
         Sun.applyUniforms();
         sh.safeGetUniform("Exposure").set(1.0f);
         sh.safeGetUniform("Radius").set(1.0e6f);
-        DioramaRenderer.drawSky(view, proj, tx, targetY, tz, 56f);   // nuvens mais baixas no mapa-mundi
+        DioramaRenderer.drawSky(view, proj, tx, targetY, tz, 30f);   // nuvens mais baixas no mapa-mundi
         DioramaRenderer.applyFog(dist + vc * 16 * 0.45f, dist + vc * 16 * 0.92f, 0f, 0f);
         sh.safeGetUniform("Detail").set(1f);
         // qualidade "Complementary": sombra real, luz do sol/lua, agua com reflexo
@@ -98,6 +100,7 @@ public class WorldMap3D {
         sh.safeGetUniform("SkyAmbient").set(sky[0], sky[1], sky[2]);
         if (shadowsOk) sh.setSampler("ShadowMap", shadowTarget.getDepthTextureId());
 
+        RenderSystem.setShaderTexture(0, net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS);
         for (long[] c : vis) {
             ChunkMesh m = MESHES.get(ExploredMap.key((int) c[0], (int) c[1]));
             if (m == null || !m.has) continue;
@@ -182,7 +185,8 @@ public class WorldMap3D {
     }
 
     // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida
-    private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water, boolean fringe) {}
+    private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water, boolean fringe,
+                       int sTop, int sGround, int sTrunk, int sFill, int tTop, int tGround) {}
 
     private static Col col(int wx, int wz) {
         ExploredMap.Tile t = ExploredMap.tile(wx >> 4, wz >> 4);
@@ -191,15 +195,19 @@ public class WorldMap3D {
         if (t.abgr[i] == 0) return null;
         boolean canopy = (t.canopy[i] & 1) != 0;
         boolean water = (t.canopy[i] & 4) != 0;
-        return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water, (t.canopy[i] & 8) != 0);
+        return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water, (t.canopy[i] & 8) != 0,
+                t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i]);
     }
+
+    private static BlockState state(int id) { return id == 0 ? null : Block.stateById(id); }
 
     private static int argb(int abgr) { return 0xFF000000 | ((abgr & 0xFF) << 16) | (abgr & 0xFF00) | ((abgr >> 16) & 0xFF); }
 
     private static void build(ChunkMesh m, ExploredMap.Tile t, int cx, int cz) {
         m.version = t.version;
-        BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-        BufferBuilder bw = new BufferBuilder(WBUF, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, MapTex.FMT);
+        BufferBuilder bw = new BufferBuilder(WBUF, VertexFormat.Mode.QUADS, MapTex.FMT);
+        float[] ones = {1f, 1f, 1f, 1f};
         int waterQuads = 0;
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         int[] sp = new int[32], tmp = new int[32];
@@ -211,18 +219,37 @@ public class WorldMap3D {
                 if (c == null) continue;
                 int sTop = c.ground() + 1;                       // topo do chao
                 int topArgb = argb(c.canopy() || c.water() ? c.gcol() : c.topCol());
-                quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (ou do terreno sem copa)
+                // texturas de verdade (mapas salvos antes desta versao nao tem os blocos: usam so a cor)
+                BlockState gState = state(c.sGround()), tState = state(c.sTop()), fState = state(c.sFill());
+                BlockLooks.Layer[] gUp = BlockLooks.layers(gState, true), gSide = BlockLooks.layers(gState, false);
+                BlockLooks.Layer[] fSide = fState != null ? BlockLooks.layers(fState, false) : gSide;
+                if (gUp.length > 0) { MapTex.top(b, gUp, c.tGround(), x, sTop - 64, z, ones, 255); quads++; }
+                else quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (ou do terreno sem copa)
                 if (c.water()) {                                 // agua: quadrado translucido na superficie; mais fundo = mais opaco
                     int depth = Math.max(1, c.top() - c.ground());
                     int alpha = Math.min(215, 120 + depth * 12);
-                    face(bw, x, c.top() + 1 - 64 - 0.1f, z, (alpha << 24) | (argb(c.topCol()) & 0xFFFFFF));
+                    BlockLooks.Layer[] wl = BlockLooks.layers(tState, true);
+                    if (wl.length > 0) MapTex.top(bw, wl, c.tTop(), x, c.top() + 1 - 64 - 0.1f, z, ones, alpha);
+                    else face(bw, x, c.top() + 1 - 64 - 0.1f, z, (alpha << 24) | (argb(c.topCol()) & 0xFFFFFF));
                     waterQuads++;
                 }
 
                 for (int[] d : dirs) {
                     Col n = col(wx + d[0], wz + d[1]);
                     int nS = n == null ? sTop - 6 : n.ground() + 1;
-                    if (nS < sTop) {                              // lateral do chao
+                    if (nS < sTop && gSide.length > 0) {         // lateral do chao, 1 bloco por vez (bloco do topo, depois o de baixo)
+                        int segs = 0;
+                        for (int yTop = sTop; yTop > nS; yTop--) {
+                            int yBot = yTop - 1;
+                            if (++segs > 20) { yBot = nS; }       // penhasco muito alto: o resto vira um quadrado so
+                            float depth = Math.min(1f, (sTop - yTop) / 8f);
+                            float fT = 0.95f - 0.30f * depth, fB = 0.95f - 0.30f * Math.min(1f, depth + 0.125f);
+                            boolean first = yTop == sTop;
+                            MapTex.side(b, first ? gSide : fSide, first ? c.tGround() : 0xFFFFFF, d, x, z, yBot - 64, yTop - 64, fT, fB, 255);
+                            quads++;
+                            if (yBot == nS) break;
+                        }
+                    } else if (nS < sTop) {                       // lateral do chao (sem textura)
                         float y0 = nS - 64, y1 = sTop - 64;
                         int sideArgb = !c.canopy() && !c.water() && c.tcol() != 0 ? argb(c.tcol()) : topArgb;
                         if (c.fringe()) {                         // grama: faixa verde no alto, o resto terra
@@ -247,15 +274,29 @@ public class WorldMap3D {
                             if (n.canopy()) cnt = sub(sp, cnt, tmp, n.cb(), n.top() + 1);
                         }
                         int lc = DioramaRenderer.scale(argb(c.topCol()), 0.80f);
+                        BlockLooks.Layer[] leafSide = BlockLooks.layers(tState, false);
                         for (int s = 0; s < cnt; s += 2) {
-                            side(b, d, x, z, sp[s] - 64, sp[s + 1] - 64, lc, DioramaRenderer.scale(lc, 0.75f));
-                            quads++;
+                            if (leafSide.length > 0) {
+                                for (int yTop = sp[s + 1]; yTop > sp[s]; yTop--) {
+                                    MapTex.side(b, leafSide, c.tTop(), d, x, z, yTop - 1 - 64, yTop - 64, 0.92f, 0.82f, 255);
+                                    quads++;
+                                }
+                            } else {
+                                side(b, d, x, z, sp[s] - 64, sp[s + 1] - 64, lc, DioramaRenderer.scale(lc, 0.75f));
+                                quads++;
+                            }
                         }
                     }
                 }
                 if (c.canopy()) {
-                    quads += face(b, x, c.top() + 1 - 64, z, argb(c.topCol()));                      // topo da copa
-                    if (c.trunk() && c.cb() > sTop) {                                               // tronco: caixa fina
+                    BlockLooks.Layer[] leafUp = BlockLooks.layers(tState, true);
+                    if (leafUp.length > 0) { MapTex.top(b, leafUp, c.tTop(), x, c.top() + 1 - 64, z, ones, 255); quads++; }
+                    else quads += face(b, x, c.top() + 1 - 64, z, argb(c.topCol()));                 // topo da copa
+                    BlockLooks.Layer[] logSide = BlockLooks.layers(state(c.sTrunk()), false);
+                    if (c.trunk() && c.cb() > sTop && logSide.length > 0) {
+                        MapTex.post(b, logSide, 0xFFFFFF, x + 0.30f, x + 0.70f, z + 0.30f, z + 0.70f, sTop - 64, c.cb() - 64, 1.0f, 0.80f);
+                        quads += 4;
+                    } else if (c.trunk() && c.cb() > sTop) {                                        // tronco: caixa fina
                         float lo = sTop - 64, hi = c.cb() - 64;
                         int tc = DioramaRenderer.scale(argb(c.tcol()), 1.25f), tb = DioramaRenderer.scale(argb(c.tcol()), 0.90f);   // troncos escuros (cerejeira, carvalho escuro) nao viram preto
                         float a = x + 0.30f, bb = x + 0.70f, e = z + 0.30f, f = z + 0.70f;

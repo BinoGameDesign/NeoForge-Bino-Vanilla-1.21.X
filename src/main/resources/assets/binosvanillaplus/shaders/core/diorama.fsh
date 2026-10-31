@@ -5,6 +5,7 @@
 //  - Quality < 0.5 (minimapa): textura procedural, luz de sol/ceu simples, sombras ja vem prontas nas cores (CPU)
 //  - Quality >= 0.5 (mapa-mundi): sombra real (shadow map com PCF suave), luz do sol/lua com cor pela altura,
 //    luz do ceu + luz rebatida, agua com reflexo do ceu e brilho do sol, tonemap filmico e neblina com dispersao do sol
+in vec2 vUV;
 in vec4 vColor;
 in vec3 vNormal;
 in vec3 vPos;
@@ -13,6 +14,7 @@ in vec4 vShadowPos;
 in vec3 vRel;
 
 uniform sampler2D ShadowMap;
+uniform sampler2D Sampler0;    // atlas de blocos do jogo (texturas de verdade)
 
 uniform vec4 ColorModulator;
 uniform float Radius;
@@ -77,18 +79,28 @@ void main() {
         return;
     }
     vec3 n = normalize(vNormal);
-    vec3 base = vColor.rgb;
-    bool water = vColor.a < 0.99;
+    bool water = vColor.a < 0.95;                       // agua (translucida)
+    bool overlay = !water && vColor.a < 0.999;          // camada por cima (ex.: borda verde da grama)
+    bool textured = vUV.x >= 0.0;
+    vec4 tex = vec4(1.0);
+    if (textured) {
+        tex = texture(Sampler0, vUV);
+        if (tex.a < 0.1) {
+            if (overlay || water) discard;
+            tex.rgb = vec3(0.30);                       // buracos das folhas viram folhagem escura (sem ver o chao)
+        }
+    }
+    vec3 base = tex.rgb * vColor.rgb;
 
-    // textura procedural (4x4 "pixels" por bloco) + contorno suave nas arestas
+    // textura procedural (so sem textura de verdade) + contorno suave nas arestas
     {
         vec3 inside = vPos + Origin - n * 0.01;
-        float noise = (hash(floor(inside * 4.0)) - 0.5) * (water ? 0.06 : 0.14);
+        float noise = textured ? 0.0 : (hash(floor(inside * 4.0)) - 0.5) * (water ? 0.06 : 0.14);
         vec3 f = fract(inside);
         vec3 d = min(f, 1.0 - f);
         vec3 an = abs(n);
         float e = an.y > 0.5 ? min(d.x, d.z) : (an.x > 0.5 ? min(d.y, d.z) : min(d.x, d.y));
-        float edge = mix(water ? 0.94 : 0.80, 1.0, smoothstep(0.0, 0.07, e));
+        float edge = mix(water ? 0.94 : (textured ? 0.88 : 0.80), 1.0, smoothstep(0.0, 0.07, e));
         base *= (1.0 + noise) * edge;
     }
 
@@ -154,7 +166,7 @@ void main() {
         float fog = smoothstep(MapFogStart, MapFogEnd, vDist);
         fog = max(fog, (1.0 - exp(-max(vDist - MapFogStart * 0.5, 0.0) * 0.0012)) * 0.35);   // leve bruma ao longe
         col = mix(col, fogC, clamp(fog, 0.0, 1.0));
-        float a = water ? mix(vColor.a, 1.0, 0.35 * pow(1.0 - max(dot(-V, n), 0.0), 3.0)) : vColor.a;
+        float a = water ? mix(vColor.a, 1.0, 0.35 * pow(1.0 - max(dot(-V, n), 0.0), 3.0)) : 1.0;
         fragColor = vec4(col, a) * ColorModulator;
         return;
     }
@@ -163,5 +175,5 @@ void main() {
     float d = length(vPos.xz + Offset.xz) / Radius;
     float fog = max(smoothstep(0.62, 1.0, d), smoothstep(MapFogStart, MapFogEnd, vDist));
     col = mix(col, MapFogColor, fog);
-    fragColor = vec4(col, vColor.a) * ColorModulator;
+    fragColor = vec4(col, water ? vColor.a : 1.0) * ColorModulator;
 }

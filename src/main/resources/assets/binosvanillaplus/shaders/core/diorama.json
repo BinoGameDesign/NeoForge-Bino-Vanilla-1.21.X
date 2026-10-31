@@ -8,6 +8,7 @@
     "fragment": "binosvanillaplus:diorama",
     "attributes": [
         "Position",
+        "UV0",
         "Color",
         "Normal"
     ],
@@ -270,6 +271,9 @@
         }
     ],
     "samplers": [
+        {
+            "name": "Sampler0"
+        },
         {
             "name": "ShadowMap"
         }

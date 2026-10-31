@@ -45,13 +45,13 @@ public class MapClientEvents {
     @SubscribeEvent
     public static void registerShaders(RegisterShadersEvent event) throws IOException {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
-                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "diorama"), DefaultVertexFormat.POSITION_COLOR_NORMAL),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "diorama"), DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL),
                 s -> DioramaRenderer.shader = s);
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_sky"), DefaultVertexFormat.POSITION),
                 s -> DioramaRenderer.skyShader = s);
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
-                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_depth"), DefaultVertexFormat.POSITION_COLOR_NORMAL),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_depth"), DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL),
                 s -> WorldMap3D.depthShader = s);
     }
 
@@ -63,6 +63,15 @@ public class MapClientEvents {
         MapOptions.ensureLoaded();
         if (MapOptions.deathPoint && mc.player != null)
             MapWaypoints.setDeathPoint(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ());
+    }
+
+    // ao recarregar texturas (F3+T, pacote de recursos), as texturas guardadas dos blocos ficam velhas: limpa tudo
+    @SubscribeEvent
+    public static void registerReload(net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) rm -> {
+            BlockLooks.clear();
+            WorldMap3D.clearAll();
+        });
     }
 
     @SubscribeEvent

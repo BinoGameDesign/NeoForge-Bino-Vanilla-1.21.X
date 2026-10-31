@@ -33,6 +33,11 @@ public class MinimapHud {
     static final int[] RC = new int[N * N];
     static final int[][] RTOP = new int[N * N][MAXR], RBOT = new int[N * N][MAXR], RCOL = new int[N * N][MAXR], RSIDE = new int[N * N][MAXR];
     static final boolean[] RGROUND = new boolean[N * N];
+    // texturas: estado do bloco de cada camada e a cor do bioma; RFILL = bloco logo abaixo do chao (terra, pedra...)
+    static final BlockState[][] RST = new BlockState[N * N][MAXR];
+    static final int[][] RTINT = new int[N * N][MAXR];
+    static final BlockState[] RFILL = new BlockState[N * N];
+    static final int[] RFTINT = new int[N * N];
 
     private static boolean cave = false;       // com historese, para nao piscar entre modos
 
@@ -70,6 +75,7 @@ public class MinimapHud {
                 int i = (dz + R) * N + (dx + R);
                 RC[i] = 0;
                 RGROUND[i] = false;
+                RFILL[i] = null;
                 int wx = px + dx, wz = pz + dz;
                 LevelChunk ch = lvl.getChunkSource().getChunkNow(wx >> 4, wz >> 4);
                 if (ch == null) continue;
@@ -79,7 +85,8 @@ public class MinimapHud {
                 int limit = Math.max(minY, y - 56);
                 int runs = 0;
                 Object curKey = null;
-                int curTop = 0, curCol = 0, curSide = 0;
+                int curTop = 0, curCol = 0, curSide = 0, curTint = 0xFFFFFF;
+                BlockState curState = null;
                 boolean curCanopy = false;
 
                 for (; y >= limit && runs < MAXR; y--) {
@@ -90,14 +97,21 @@ public class MinimapHud {
                     Object key = air ? null : (fluid ? fs.getType() : st);
 
                     if (curKey != null && key != curKey) {
-                        RTOP[i][runs] = curTop; RBOT[i][runs] = y + 1; RCOL[i][runs] = curCol; RSIDE[i][runs] = curSide; runs++;
+                        RTOP[i][runs] = curTop; RBOT[i][runs] = y + 1; RCOL[i][runs] = curCol; RSIDE[i][runs] = curSide;
+                        RST[i][runs] = curState; RTINT[i][runs] = curTint; runs++;
                         curKey = null;
-                        if (!curCanopy) { RGROUND[i] = true; break; }
+                        if (!curCanopy) {
+                            RGROUND[i] = true;
+                            if (!air && !fluid) { RFILL[i] = st; RFTINT[i] = BlockLooks.tint(st, lvl, pos); }
+                            break;
+                        }
                     }
                     if (key != null && curKey == null && runs < MAXR) {
                         curKey = key; curTop = y;
                         curCol = BlockLooks.top(st, lvl, pos);
                         curSide = BlockLooks.side(st, lvl, pos);
+                        curState = fluid ? fs.createLegacyBlock() : st;
+                        curTint = BlockLooks.tint(curState, lvl, pos);
                         if (fluid) {   // agua escurece com a profundidade
                             int d = 0, yy = y;
                             while (yy > minY && d < 12 && ch.getBlockState(pos.set(wx, yy, wz)).getFluidState().isSource()) { yy--; d++; }
@@ -111,7 +125,8 @@ public class MinimapHud {
                     }
                 }
                 if (curKey != null && runs < MAXR) {
-                    RTOP[i][runs] = curTop; RBOT[i][runs] = Math.max(minY, y + 1); RCOL[i][runs] = curCol; RSIDE[i][runs] = curSide; runs++;
+                    RTOP[i][runs] = curTop; RBOT[i][runs] = Math.max(minY, y + 1); RCOL[i][runs] = curCol; RSIDE[i][runs] = curSide;
+                    RST[i][runs] = curState; RTINT[i][runs] = curTint; runs++;
                     if (!curCanopy) RGROUND[i] = true;
                 }
                 RC[i] = runs;
