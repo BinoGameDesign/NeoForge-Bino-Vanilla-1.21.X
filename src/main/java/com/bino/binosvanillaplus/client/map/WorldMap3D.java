@@ -235,6 +235,7 @@ public class WorldMap3D {
                 BlockState dState = state(c.sDeep());
                 BlockLooks.Layer[] dSide = dState != null ? BlockLooks.layers(dState, false) : fSide;
                 if (gUp.length > 0) { MapTex.top(b, gUp, c.tGround(), x, sTop - 64, z, ones, 255); quads++; }
+                else quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (sem textura: mapas antigos)
                 BlockState pState = state(c.sPlant());
                 if (pState != null && !c.water()) {   // grama/flor em cima do chao
                     MapTex.cross(bp, BlockLooks.layers(pState, true), c.tPlant(), x, sTop - 64, z, 0.85f);
@@ -243,7 +244,6 @@ public class WorldMap3D {
                 // protecao: coluna com folha/tronco no topo mas sem copa detectada nao vira "pilar" ate o chao
                 boolean treeTop = !c.canopy() && tState != null
                         && (tState.is(net.minecraft.tags.BlockTags.LEAVES) || tState.is(net.minecraft.tags.BlockTags.LOGS));
-                else quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (ou do terreno sem copa)
                 if (c.water()) {                                 // agua: quadrado translucido na superficie; mais fundo = mais opaco
                     int depth = Math.max(1, c.top() - c.ground());
                     int alpha = Math.min(215, 120 + depth * 12);
