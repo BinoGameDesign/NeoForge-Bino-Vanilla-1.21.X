@@ -214,10 +214,10 @@ public class MinimapHud {
         float ts = smallScale(mc);
         String day = WorldMapScreen.dayTime(mc.level.getDayTime());
         float dw = mc.font.width(day) * ts;
-        MapUi.text(g, mc.font, day, x0 + BOX / 2f - dw / 2f, y0 - 4 - 9 * ts, ts, 0xFFFFFFFF, true);
+        com.bino.binosvanillaplus.client.ui.BinoUi.text(g, mc.font, day, x0 + BOX / 2f - dw / 2f, y0 - 4 - 9 * ts, ts, 0xFFFFFFFF, true);
         String pos = p.getBlockX() + ", " + p.getBlockY() + ", " + p.getBlockZ();
         float pw = mc.font.width(pos) * ts;
-        MapUi.text(g, mc.font, pos, x0 + BOX / 2f - pw / 2f + 4, y0 + BOX - 3 - 8 * ts, ts, 0xFFFFFFFF, true);
+        com.bino.binosvanillaplus.client.ui.BinoUi.text(g, mc.font, pos, x0 + BOX / 2f - pw / 2f + 4, y0 + BOX - 3 - 8 * ts, ts, 0xFFFFFFFF, true);
 
         // icone do mapa no canto de baixo a direita, um pouco inclinado
         g.pose().pushPose();

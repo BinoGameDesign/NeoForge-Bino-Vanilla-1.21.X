@@ -1,82 +1,44 @@
 package com.bino.binosvanillaplus.client.map;
 
-import com.mojang.math.Axis;
+import com.bino.binosvanillaplus.client.ui.*;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// Mapa-mundi (layout do Figma "World Map"): o mapa 3D e' a propria janela. Arrastar = mover, roda = zoom, botao direito = menu de marcacoes,
-// clique esquerdo numa marcacao = editar. M ou Esc = fechar.
-public class WorldMapScreen extends Screen {
+// Mapa-mundi (Figma "World Map"): o mapa 3D e' a propria janela.
+// UX: zoom e "centralizar" suaves, menu de contexto animado (botao direito), painel de ajuda que sobe com fade,
+// marcacao sob o mouse cresce, avisos ("Coordenadas copiadas"). Arrastar = mover, botao direito arrastar = girar,
+// roda = zoom, clique numa marcacao = editar, M ou Esc = fechar. Atalhos: C centraliza, H ajuda.
+public class WorldMapScreen extends BinoScreen {
     private record Mark(int x, int z, String label) {}
-    private record MenuItem(String label, Runnable action) {}
 
-    private int mapX, mapY, mapW, mapH;    // area do mapa (o mapa e' a propria janela, sem moldura)
+    private int mapX, mapY, mapW, mapH;
     private double cx, cz;
-    private double zoom = 1.0;
     private final List<Mark> marks = new ArrayList<>();
     private long lastMarkScan = -1000;
-    private final boolean mode3D = true;   // o mapa-mundi e' sempre 3D
     private boolean rDown, rMoved;
     private double rStartX, rStartY;
-    private boolean help = false;          // painel "Help" aberto
-    private MapUi.FlatButton helpClose;
-
-    // menu de contexto
-    private final List<MenuItem> menu = new ArrayList<>();
-    private int menuX, menuY, menuW;
-    private static final int MENU_ROW = 13, MENU_HEAD = 14;
-
-    public WorldMapScreen() {
-        super(Component.literal("World Map"));
-        MapOptions.ensureLoaded();
-        LocalPlayer p = Minecraft.getInstance().player;
-        if (p != null) { cx = p.getX(); cz = p.getZ(); }
-    }
-
-    @Override
-    protected void init() {
-        mapW = Math.max(280, Math.min(width - 24, (int) (width * 0.735)));
-        mapH = Math.max(180, Math.min(height - 34, (int) (height * 0.77)));
-        mapX = (width - mapW) / 2;
-        mapY = (height - mapH) / 2 + 4;
-
-        addRenderableWidget(MapUi.closeButton(mapX + mapW - 8, mapY - 6, 13, this::onClose));
-        int by = mapY + mapH - 12, bx = mapX + mapW - 10 - 4 * 24 + 5;
-        addRenderableWidget(new MapUi.FlatButton(bx, by, 19, 19, "", MapUi.Style.LIGHT,
-                () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this))).icon(MapUi.tex("waypoints"), 17))
-                .setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Marcações")));
-        addRenderableWidget(new MapUi.FlatButton(bx + 24, by, 19, 19, "", MapUi.Style.LIGHT,
-                () -> Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).icon(MapUi.tex("options"), 17))
-                .setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Opções")));
-        addRenderableWidget(new MapUi.FlatButton(bx + 48, by, 19, 19, "", MapUi.Style.LIGHT, () -> {
-            LocalPlayer p = Minecraft.getInstance().player;
-            if (p != null) { cx = p.getX(); cz = p.getZ(); }
-        }).icon(MapUi.tex("center"), 17))
-                .setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Centralizar no jogador")));
-        addRenderableWidget(new MapUi.FlatButton(bx + 72, by, 19, 19, "?", MapUi.Style.LIGHT, () -> help = !help))
-                .setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Ajuda")));
-        int[] hr = helpRect();
-        helpClose = addRenderableWidget(MapUi.closeButton(hr[0] + hr[2] - 7, hr[1] - 5, 13, () -> help = false));
-        helpClose.visible = false;
-    }
-
-    // painel de ajuda: {x, y, w, h}
-    private int[] helpRect() {
-        int hw = Math.min(266, mapW - 24), hh = 104;
-        return new int[]{mapX + mapW - hw - 10, mapY + mapH - hh - 22, hw, hh};
-    }
+    private boolean help = false;
+    private BinoUi.Button helpClose;
+    private final PopupMenu menu = new PopupMenu("Menu");
+    private final Tween helpT = new Tween(0f, 55f);
+    private float distTarget = WorldMap3D.dist;
+    private final Tween centerX = new Tween(0f, 70f), centerZ = new Tween(0f, 70f);
+    private boolean centering = false;
+    private MapWaypoints.Waypoint lastHover;
+    private final Tween hoverGrow = new Tween(0f, 40f);
 
     private static final String[] HELP = {
             "Para mover a tela: arraste com o botão esquerdo para os cantos.",
@@ -84,24 +46,66 @@ public class WorldMapScreen extends Screen {
             "Para dar zoom: suba ou desça a roda do mouse.",
             "Para acessar o menu: aperte o botão direito."};
 
+    public WorldMapScreen() {
+        super("World Map", null);
+        MapOptions.ensureLoaded();
+        LocalPlayer p = Minecraft.getInstance().player;
+        if (p != null) { cx = p.getX(); cz = p.getZ(); }
+    }
+
+    @Override
+    protected int[] panelBounds() { return new int[]{mapX, mapY, mapW, mapH}; }
+
+    @Override
+    protected boolean animateScale() { return false; }   // o mapa 3D usa viewport proprio
+
+    @Override
+    protected void build() {
+        mapW = Math.max(280, Math.min(width - 24, (int) (width * 0.735)));
+        mapH = Math.max(180, Math.min(height - 34, (int) (height * 0.77)));
+        mapX = (width - mapW) / 2;
+        mapY = (height - mapH) / 2 + 4;
+
+        addRenderableWidget(BinoUi.closeButton(mapX + mapW - 8, mapY - 6, 13, this::onClose));
+        int by = mapY + mapH - 12, bx = mapX + mapW - 10 - 4 * 24 + 5;
+        addRenderableWidget(new BinoUi.Button(bx, by, 19, 19, "", BinoUi.Style.LIGHT,
+                () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this))).icon(BinoUi.tex("map/waypoints"), 17).tooltip("Marcações"));
+        addRenderableWidget(new BinoUi.Button(bx + 24, by, 19, 19, "", BinoUi.Style.LIGHT,
+                () -> Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).icon(BinoUi.tex("map/options"), 17).tooltip("Opções"));
+        addRenderableWidget(new BinoUi.Button(bx + 48, by, 19, 19, "", BinoUi.Style.LIGHT, this::centerOnPlayer)
+                .icon(BinoUi.tex("map/center"), 17).tooltip("Centralizar no jogador (C)"));
+        addRenderableWidget(new BinoUi.Button(bx + 72, by, 19, 19, "?", BinoUi.Style.LIGHT, () -> help = !help).tooltip("Ajuda (H)"));
+        int[] hr = helpRect();
+        helpClose = addRenderableWidget(BinoUi.closeButton(hr[0] + hr[2] - 7, hr[1] - 5, 13, () -> help = false));
+        helpClose.visible = false;
+    }
+
+    private void centerOnPlayer() {
+        LocalPlayer p = Minecraft.getInstance().player;
+        if (p != null) animateTo(p.getX(), p.getZ());
+    }
+
+    // desliza a camera ate (x, z)
+    private void animateTo(double x, double z) {
+        centerX.snap((float) cx).to((float) x);
+        centerZ.snap((float) cz).to((float) z);
+        centering = true;
+    }
+
+    private int[] helpRect() {
+        int hw = Math.min(266, mapW - 24), hh = 104;
+        return new int[]{mapX + mapW - hw - 10, mapY + mapH - hh - 22, hw, hh};
+    }
+
     // ---------------------------------------------------------------- coordenadas
 
-    private double toWorldX(double sx) { return cx + (sx - (mapX + mapW / 2.0)) / zoom; }
-    private double toWorldZ(double sy) { return cz + (sy - (mapY + mapH / 2.0)) / zoom; }
-    private float toScreenX(double wx) { return (float) (mapX + mapW / 2.0 + (wx - cx) * zoom); }
-    private float toScreenY(double wz) { return (float) (mapY + mapH / 2.0 + (wz - cz) * zoom); }
-    // posição na tela de um ponto do mundo (2D ou 3D); [2] == 0 -> fora/atrás da câmera
+    // posicao na tela de um ponto do mundo; [2] == 0 -> atras da camera
     private float[] screenOf(double wx, double wy, double wz) {
-        if (!mode3D) return new float[]{toScreenX(wx), toScreenY(wz), 1f};
         return DioramaRenderer.projectWith(WorldMap3D.view, WorldMap3D.proj, (float) (wx - cx), (float) (wy - WorldMap3D.targetY),
                 (float) (wz - cz), mapX, mapY, mapW, mapH);
     }
 
-    // coordenadas de mundo sob o cursor (null se o cursor não está sobre terreno explorado, no 3D)
-    private int[] pickWorld(double mx, double my) {
-        if (!mode3D) return new int[]{(int) Math.floor(toWorldX(mx)), (int) Math.floor(toWorldZ(my))};
-        return WorldMap3D.pick(mx, my, mapX, mapY, mapW, mapH, cx, cz);
-    }
+    private int[] pickWorld(double mx, double my) { return WorldMap3D.pick(mx, my, mapX, mapY, mapW, mapH, cx, cz); }
 
     private boolean inMap(double mx, double my) { return mx >= mapX && mx < mapX + mapW && my >= mapY && my < mapY + mapH; }
 
@@ -132,46 +136,54 @@ public class WorldMapScreen extends Screen {
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
             if (w.hidden) continue;
             float[] s = screenOf(w.x + 0.5, w.y, w.z + 0.5);
-            if (s[2] != 0f && Math.abs(mx - s[0]) <= 6 && Math.abs(my - s[1]) <= 6) return w;
+            if (s[2] != 0f && Math.abs(mx - s[0]) <= 7 && Math.abs(my - s[1]) <= 7) return w;
         }
         return null;
     }
 
     // ---------------------------------------------------------------- desenho
 
-    // vazio de propósito: o Screen.render do vanilla chamaria isto DEPOIS de eu desenhar o mapa (e aplica blur); o fundo é desenhado em render()
     @Override
-    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-    }
-
-    @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
+    protected void renderPanel(GuiGraphics g, int mx, int my, float pt) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null && mc.level.getGameTime() - lastMarkScan > 20) { scanMarks(); lastMarkScan = mc.level.getGameTime(); }
+        // animacoes da camera
+        WorldMap3D.dist += (distTarget - WorldMap3D.dist) * 0.25f;
+        if (centering) {
+            cx = centerX.get(); cz = centerZ.get();
+            if (Math.abs(centerX.target() - cx) < 0.05 && Math.abs(centerZ.target() - cz) < 0.05) centering = false;
+        }
 
-        g.fill(0, 0, width, height, 0x60000000);   // escurece o jogo atras do mapa
         g.fill(mapX, mapY, mapX + mapW, mapY + mapH, 0xFF0B0F14);
-
         LocalPlayer pl = mc.player;
         if (DioramaRenderer.ready()) WorldMap3D.render(g, mapX, mapY, mapW, mapH, cx, cz, pl);
         else g.drawCenteredString(font, "Shader do mapa indisponível", mapX + mapW / 2, mapY + mapH / 2, 0xFFFF8888);
 
         g.enableScissor(mapX, mapY, mapX + mapW, mapY + mapH);
-        MapWaypoints.Waypoint hover = menu.isEmpty() && !help ? waypointAt(mx, my) : null;
+        boolean free = !menu.isOpen() && !help;
+        MapWaypoints.Waypoint hover = free ? waypointAt(mx, my) : null;
+        if (hover != lastHover) { hoverGrow.snap(0f); lastHover = hover; }
+        float grow = hoverGrow.get(hover != null ? 1f : 0f);
         if (MapOptions.worldPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
                 if (w.hidden) continue;
                 float[] s = screenOf(w.x + 0.5, w.y, w.z + 0.5);
                 if (s[2] == 0f) continue;
                 int sx = (int) s[0], sy = (int) s[1];
-                g.fill(sx - 7, sy - 7, sx + 8, sy + 8, w == hover ? 0xFFFFFFFF : 0xFF000000);
-                WaypointIcons.badge(g, w.icon(), sx - 6, sy - 6, 13, w.color);
+                float k = w == hover ? 1f + 0.35f * Ease.outBack(grow) : 1f;
+                g.pose().pushPose();
+                g.pose().translate(sx, sy, 0);
+                g.pose().scale(k, k, 1f);
+                g.fill(-7, -7, 8, 8, w == hover ? 0xFFFFFFFF : 0xFF000000);
+                WaypointIcons.badge(g, w.icon(), -6, -6, 13, w.color);
+                g.pose().popPose();
                 if (MapOptions.worldLabels) {
                     String label = w.name;
                     if (MapOptions.showDistance && pl != null)
                         label += " (" + (int) Math.sqrt(pl.distanceToSqr(w.x + 0.5, w.y, w.z + 0.5)) + " m)";
-                    g.fill(sx + 9, sy - 6, sx + 13 + font.width(label), sy + 6, 0x80000000);
-                    g.drawString(font, label, sx + 11, sy - 4, 0xFFFFFFFF, false);
+                    int lx = sx + (int) (9 * k);
+                    g.fill(lx, sy - 6, lx + 4 + font.width(label), sy + 6, w == hover ? 0xB0000000 : 0x80000000);
+                    g.drawString(font, label, lx + 2, sy - 4, 0xFFFFFFFF, false);
                 }
             }
         }
@@ -195,16 +207,17 @@ public class WorldMapScreen extends Screen {
             g.drawString(font, day, mapX + 4, ty, 0xFFFFFFFF, false);
             g.drawString(font, pos, mapX + 4 + w1 + 18, ty, 0xFFFFFFFF, false);
         }
-
         helpClose.visible = help;
-        super.render(g, mx, my, pt);
-        MapUi.title(g, font, "World Map", mapX + mapW / 2, mapY - 7);
-
-        if (help) drawHelp(g);
         if (hover != null) {
-            g.renderTooltip(font, Component.literal(hover.name + " (" + hover.x + ", " + hover.y + ", " + hover.z + ")  [" + hover.setName() + "]"), mx, my);
+            setTooltipForNextRenderPass(Component.literal(hover.name + " (" + hover.x + ", " + hover.y + ", " + hover.z + ")  [" + hover.setName() + "]"));
         }
-        drawMenu(g, mx, my);
+    }
+
+    @Override
+    protected void renderOverlay(GuiGraphics g, int mx, int my, float pt) {
+        BinoUi.title(g, font, "World Map", mapX + mapW / 2, mapY - 7);
+        drawHelp(g);
+        menu.render(g, mx, my);
     }
 
     // "Day 0, 10:00 AM" (o dia do Minecraft comeca as 6:00)
@@ -217,27 +230,35 @@ public class WorldMapScreen extends Screen {
         return "Day " + day + ", " + h12 + ":" + (m < 10 ? "0" : "") + m + " " + ampm;
     }
 
+    // painel de ajuda: sobe 8 px e aparece com fade
     private void drawHelp(GuiGraphics g) {
+        float v = helpT.get(help ? 1f : 0f);
+        if (v < 0.01f) return;
         int[] r = helpRect();
         g.pose().pushPose();
-        g.pose().translate(0, 0, 200);
-        MapUi.round(g, r[0], r[1], r[2], r[3], MapUi.MENU_BG);
-        MapUi.titleLeft(g, font, "Help", r[0] + 12, r[1] - 7);
+        g.pose().translate(0, (1f - Ease.outCubic(v)) * 8f, 200);
+        g.flush();
+        float[] prev = RenderSystem.getShaderColor().clone();
+        RenderSystem.setShaderColor(prev[0], prev[1], prev[2], prev[3] * v);
+        g.fill(r[0] + 2, r[1] + 2, r[0] + r[2] + 2, r[1] + r[3] + 2, 0x40000000);
+        BinoUi.round(g, r[0], r[1], r[2], r[3], BinoUi.MENU_BG);
+        BinoUi.titleLeft(g, font, "Help", r[0] + 12, r[1] - 7);
         int y = r[1] + 14;
         for (String line : HELP) {
-            for (net.minecraft.util.FormattedCharSequence seq : font.split(Component.literal(line), r[2] - 18)) {
+            for (FormattedCharSequence seq : font.split(Component.literal(line), r[2] - 18)) {
                 g.drawString(font, seq, r[0] + 8, y, 0xFFFFFFFF, false);
                 y += 10;
             }
             y += 4;
         }
+        g.flush();
+        RenderSystem.setShaderColor(prev[0], prev[1], prev[2], prev[3]);
         g.pose().popPose();
     }
 
     // ---------------------------------------------------------------- menu de contexto
 
     private void openMenu(double mx, double my) {
-        menu.clear();
         MapWaypoints.Waypoint w = waypointAt(mx, my);
         int[] at = pickWorld(mx, my);
         if (w == null && at == null) return;
@@ -245,29 +266,35 @@ public class WorldMapScreen extends Screen {
         int h = ExploredMap.heightAt(wx, wz);
         int wy = h == ExploredMap.UNKNOWN ? 64 : h + 1;
         Minecraft mc = Minecraft.getInstance();
+        List<PopupMenu.Item> items = new ArrayList<>();
         if (w != null) {
-            menu.add(new MenuItem("Editar marcação", () -> mc.setScreen(new WaypointEditScreen(this, w, w.x, w.y, w.z))));
-            menu.add(new MenuItem(w.hidden ? "Mostrar" : "Ocultar", () -> { w.hidden = !w.hidden; MapWaypoints.save(); }));
-            menu.add(new MenuItem("Excluir", () -> MapWaypoints.remove(w)));
-            menu.add(new MenuItem("Copiar coordenadas", () -> mc.keyboardHandler.setClipboard(w.x + " " + w.y + " " + w.z)));
-            if (canTeleport()) menu.add(new MenuItem("Teleportar", () -> teleport(w.x, w.y, w.z)));
+            items.add(PopupMenu.Item.of("Editar marcação", () -> mc.setScreen(new WaypointEditScreen(this, w, w.x, w.y, w.z))));
+            items.add(PopupMenu.Item.of(w.hidden ? "Mostrar" : "Ocultar", () -> { w.hidden = !w.hidden; MapWaypoints.save(); }));
+            items.add(PopupMenu.Item.of("Excluir", () -> {
+                MapWaypoints.remove(w);
+                Toasts.show("\"" + w.name + "\" excluída", "Desfazer", () -> MapWaypoints.add(w));
+            }));
+            items.add(PopupMenu.Item.of("Copiar coordenadas", () -> copy(w.x, w.y, w.z)));
+            items.add(PopupMenu.Item.of("Centralizar aqui", () -> animateTo(w.x + 0.5, w.z + 0.5)));
+            if (canTeleport()) items.add(PopupMenu.Item.of("Teleportar", () -> teleport(w.x, w.y, w.z)));
         } else {
-            menu.add(new MenuItem("Criar marcação aqui", () -> mc.setScreen(new WaypointEditScreen(this, null, wx, wy, wz))));
-            menu.add(new MenuItem("Marcação rápida aqui", () -> MapWaypoints.add(wx, wy, wz)));
-            menu.add(new MenuItem("Copiar coordenadas", () -> mc.keyboardHandler.setClipboard(wx + " " + wy + " " + wz)));
-            menu.add(new MenuItem("Centralizar aqui", () -> { cx = wx; cz = wz; }));
-            if (canTeleport()) menu.add(new MenuItem("Teleportar", () -> teleport(wx, wy, wz)));
+            items.add(PopupMenu.Item.of("Criar marcação aqui", () -> mc.setScreen(new WaypointEditScreen(this, null, wx, wy, wz))));
+            items.add(PopupMenu.Item.of("Marcação rápida aqui", () -> {
+                MapWaypoints.Waypoint nw = MapWaypoints.create(wx, wy, wz);
+                MapWaypoints.add(nw);
+                Toasts.show("\"" + nw.name + "\" criada", "Desfazer", () -> MapWaypoints.remove(nw));
+            }));
+            items.add(PopupMenu.Item.of("Copiar coordenadas", () -> copy(wx, wy, wz)));
+            items.add(PopupMenu.Item.of("Centralizar aqui", () -> animateTo(wx + 0.5, wz + 0.5)));
+            if (canTeleport()) items.add(PopupMenu.Item.of("Teleportar", () -> teleport(wx, wy, wz)));
         }
-        int widest = 0;
-        for (MenuItem it : menu) widest = Math.max(widest, font.width(it.label()));
-        menuW = Math.max(widest + 16, 70);
-        menuX = (int) Math.max(2, Math.min(mx, width - menuW - 2));
-        menuY = (int) Math.max(10, Math.min(my, height - menuHeight() - 2));
+        menu.open((int) mx, (int) my, items, 0, width, height);
     }
 
-    private int menuHeight() { return MENU_HEAD + menu.size() * MENU_ROW + 5; }
-
-    private int menuRowY(int i) { return menuY + MENU_HEAD + i * MENU_ROW; }
+    private void copy(int x, int y, int z) {
+        Minecraft.getInstance().keyboardHandler.setClipboard(x + " " + y + " " + z);
+        Toasts.show("Coordenadas copiadas: " + x + " " + y + " " + z);
+    }
 
     // teleporte so aparece no modo criativo
     private static boolean canTeleport() {
@@ -277,42 +304,16 @@ public class WorldMapScreen extends Screen {
 
     private void teleport(int x, int y, int z) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && mc.player.connection != null) mc.player.connection.sendCommand("tp @s " + x + " " + y + " " + z);   // exige permissao de operador
-        onClose();
-    }
-
-    private void drawMenu(GuiGraphics g, int mx, int my) {
-        if (menu.isEmpty()) return;
-        g.pose().pushPose();
-        g.pose().translate(0, 0, 400);
-        MapUi.round(g, menuX, menuY, menuW, menuHeight(), MapUi.MENU_BG);
-        MapUi.titleLeft(g, font, "Menu", menuX + 10, menuY - 7);
-        for (int i = 0; i < menu.size(); i++) {
-            int y = menuRowY(i);
-            boolean over = mx >= menuX && mx < menuX + menuW && my >= y && my < y + MENU_ROW;
-            if (over) g.fill(menuX + 2, y, menuX + menuW - 2, y + MENU_ROW, 0x30FFFFFF);
-            g.drawString(font, menu.get(i).label(), menuX + 7, y + 3, 0xFFFFFFFF, false);
-        }
-        g.pose().popPose();
+        if (mc.player != null && mc.player.connection != null) mc.player.connection.sendCommand("tp @s " + x + " " + y + " " + z);
+        closeTo(null);
     }
 
     // ---------------------------------------------------------------- entrada
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
-        if (!menu.isEmpty()) {
-            for (int i = 0; i < menu.size(); i++) {
-                int y = menuRowY(i);
-                if (mx >= menuX && mx < menuX + menuW && my >= y && my < y + MENU_ROW) {
-                    Runnable r = menu.get(i).action();
-                    menu.clear();
-                    r.run();
-                    return true;
-                }
-            }
-            menu.clear();
-            return true;
-        }
+        if (isClosing()) return true;
+        if (menu.mouseClicked(mx, my)) return true;
         if (super.mouseClicked(mx, my, button)) return true;
         if (help) {   // clicar no painel de ajuda nao mexe no mapa; clicar fora fecha
             int[] r = helpRect();
@@ -324,6 +325,7 @@ public class WorldMapScreen extends Screen {
         if (button == 0) {
             MapWaypoints.Waypoint w = waypointAt(mx, my);
             if (w != null) {
+                UiSound.click();
                 Minecraft.getInstance().setScreen(new WaypointEditScreen(this, w, w.x, w.y, w.z));
                 return true;
             }
@@ -333,22 +335,18 @@ public class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
-        if (!menu.isEmpty()) return super.mouseDragged(mx, my, button, dx, dy);
+        if (menu.isOpen()) return true;
         if (button == 0) {
-            if (!mode3D) {
-                cx -= dx / zoom;
-                cz -= dy / zoom;
-            } else {
-                double k = WorldMap3D.dist / Math.max(1, mapH) * 0.93;
-                double sy = Math.sin(WorldMap3D.yaw), cyw = Math.cos(WorldMap3D.yaw);
-                cx += (sy * dy - cyw * dx) * k;      // frente = (sin, -cos), direita = (cos, sin)
-                cz += (-cyw * dy - sy * dx) * k;
-            }
+            centering = false;
+            double k = WorldMap3D.dist / Math.max(1, mapH) * 0.93;
+            double sy = Math.sin(WorldMap3D.yaw), cyw = Math.cos(WorldMap3D.yaw);
+            cx += (sy * dy - cyw * dx) * k;      // frente = (sin, -cos), direita = (cos, sin)
+            cz += (-cyw * dy - sy * dx) * k;
             return true;
         }
         if (button == 1 && rDown) {
             if (Math.abs(mx - rStartX) + Math.abs(my - rStartY) > 4) rMoved = true;
-            if (mode3D && rMoved) {
+            if (rMoved) {
                 WorldMap3D.yaw += dx * 0.01;
                 WorldMap3D.pitch = (float) Math.max(0.25, Math.min(1.45, WorldMap3D.pitch + dy * 0.008));
             }
@@ -369,9 +367,9 @@ public class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+        if (menu.isOpen()) return true;
         if (sy != 0) {
-            if (mode3D) WorldMap3D.dist = (float) Math.max(18, Math.min(700, WorldMap3D.dist * (sy > 0 ? 0.85 : 1.18)));
-            else zoom = Math.max(0.25, Math.min(10.0, zoom * (sy > 0 ? 1.25 : 0.8)));
+            distTarget = (float) Math.max(18, Math.min(700, distTarget * (sy > 0 ? 0.82 : 1.22)));
             return true;
         }
         return super.mouseScrolled(mx, my, sx, sy);
@@ -379,10 +377,11 @@ public class WorldMapScreen extends Screen {
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (menu.keyPressed(key)) return true;
+        if (key == GLFW.GLFW_KEY_ESCAPE && help) { help = false; return true; }
         if (MapClientEvents.OPEN_MAP.matches(key, scan)) { onClose(); return true; }
+        if (key == GLFW.GLFW_KEY_C) { centerOnPlayer(); return true; }
+        if (key == GLFW.GLFW_KEY_H) { help = !help; return true; }
         return super.keyPressed(key, scan, mods);
     }
-
-    @Override
-    public boolean isPauseScreen() { return false; }
 }

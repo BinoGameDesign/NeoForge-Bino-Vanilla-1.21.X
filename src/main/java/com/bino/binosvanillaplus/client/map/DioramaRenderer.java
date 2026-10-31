@@ -284,6 +284,7 @@ public class DioramaRenderer {
     static class GlState {
         Matrix4f oldProj;
         int vw, vx, vy, vh;
+        float[] prevColor;
     }
 
     static GlState begin(GuiGraphics g, int x0, int y0, int w, int h, Matrix4f projection) {
@@ -291,11 +292,14 @@ public class DioramaRenderer {
     }
 
     static GlState begin(GuiGraphics g, int x0, int y0, int w, int h, Matrix4f projection, float alpha) {
+        float[] prev = RenderSystem.getShaderColor().clone();   // respeita o fade da tela (BinoScreen)
+        alpha *= prev[3];
         curAlpha = alpha;
         Minecraft mc = Minecraft.getInstance();
         Window win = mc.getWindow();
         double sc = win.getGuiScale();
         GlState s = new GlState();
+        s.prevColor = prev;
         s.vx = (int) (x0 * sc); s.vw = (int) (w * sc); s.vh = (int) (h * sc); s.vy = (int) (win.getHeight() - (y0 + h) * sc);
         g.flush();
         s.oldProj = new Matrix4f(RenderSystem.getProjectionMatrix());
@@ -318,7 +322,8 @@ public class DioramaRenderer {
         RenderSystem.enableCull();
         RenderSystem.viewport(0, 0, win.getWidth(), win.getHeight());
         RenderSystem.setProjectionMatrix(s.oldProj, VertexSorting.ORTHOGRAPHIC_Z);
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        float[] pc = s.prevColor == null ? new float[]{1f, 1f, 1f, 1f} : s.prevColor;
+        RenderSystem.setShaderColor(pc[0], pc[1], pc[2], pc[3]);
         g.disableScissor();
     }
 

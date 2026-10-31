@@ -47,7 +47,7 @@ public class WaypointBeacons {
             int x = (int) (sx - bw / 2f), y = (int) (sy - bh / 2f);
             g.fill(x, y, x + bw, y + bh, 0x80303030);
             WaypointIcons.badge(g, w.icon(), x + 1, y + 1, icon, w.color);
-            MapUi.text(g, mc.font, label, x + icon + 4, y + 1 + (icon - 8 * ts) / 2f, ts, 0xFFFFFFFF, false);
+            com.bino.binosvanillaplus.client.ui.BinoUi.text(g, mc.font, label, x + icon + 4, y + 1 + (icon - 8 * ts) / 2f, ts, 0xFFFFFFFF, false);
         }
     }
 
