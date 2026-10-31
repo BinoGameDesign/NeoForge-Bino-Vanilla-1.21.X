@@ -21,9 +21,9 @@
         { "name": "SunDir", "type": "float", "count": 3, "values": [ 0.45, 0.85, 0.30 ] },
         { "name": "DayLight", "type": "float", "count": 1, "values": [ 1.0 ] },
         { "name": "Exposure", "type": "float", "count": 1, "values": [ 1.0 ] },
-        { "name": "FogColor", "type": "float", "count": 3, "values": [ 0.75, 0.85, 1.0 ] },
-        { "name": "FogStart", "type": "float", "count": 1, "values": [ 100000.0 ] },
-        { "name": "FogEnd", "type": "float", "count": 1, "values": [ 100001.0 ] },
+        { "name": "MapFogColor", "type": "float", "count": 3, "values": [ 0.75, 0.85, 1.0 ] },
+        { "name": "MapFogStart", "type": "float", "count": 1, "values": [ 100000.0 ] },
+        { "name": "MapFogEnd", "type": "float", "count": 1, "values": [ 100001.0 ] },
         { "name": "Offset", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] }
     ]
 }

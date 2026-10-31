@@ -10,7 +10,7 @@ in vec2 ndc;
 uniform mat4 InvProjView;
 uniform vec4 ColorModulator;
 uniform vec3 SkyColor;
-uniform vec3 FogColor;
+uniform vec3 MapFogColor;
 uniform vec3 SunDir;
 uniform float DayLight;
 uniform vec3 CamPos;      // posicao da camera no mundo
@@ -40,8 +40,8 @@ void main() {
 
     float up = dir.y;
     vec3 col;
-    if (up >= 0.0) col = mix(FogColor, SkyColor, smoothstep(0.0, 0.40, up));
-    else col = FogColor;   // igual a neblina do terreno: a borda do mapa some sem emenda
+    if (up >= 0.0) col = mix(MapFogColor, SkyColor, smoothstep(0.0, 0.40, up));
+    else col = MapFogColor;   // igual a neblina do terreno: a borda do mapa some sem emenda
 
     // sol (ou lua, a noite: SunDir aponta para ela) - nucleo pequeno + halo largo
     float sd = max(dot(dir, normalize(SunDir)), 0.0);
@@ -58,7 +58,7 @@ void main() {
             float n = vnoise(cell * 0.21) * 0.68 + vnoise(cell * 0.53 + 17.0) * 0.32;
             float c = smoothstep(0.54, 0.58, n);
             float fade = 1.0 - smoothstep(120.0, 520.0, t);
-            vec3 cloudCol = mix(FogColor, vec3(1.0), 0.70) * (0.50 + 0.50 * DayLight);
+            vec3 cloudCol = mix(MapFogColor, vec3(1.0), 0.70) * (0.50 + 0.50 * DayLight);
             col = mix(col, cloudCol, c * 0.85 * fade);
         }
     }

@@ -42,7 +42,7 @@ public class DioramaRenderer {
         float time = mc.level == null ? 0f : (mc.level.getGameTime() + mc.getTimer().getGameTimeDeltaPartialTick(false)) / 20f;
         skyShader.safeGetUniform("InvProjView").set(new Matrix4f(projection).mul(view).invert());
         skyShader.safeGetUniform("SkyColor").set(sky[0], sky[1], sky[2]);
-        skyShader.safeGetUniform("FogColor").set(fog[0], fog[1], fog[2]);
+        skyShader.safeGetUniform("MapFogColor").set(fog[0], fog[1], fog[2]);
         skyShader.safeGetUniform("SunDir").set(Sun.dx, Sun.dy, Sun.dz);
         skyShader.safeGetUniform("DayLight").set(Sun.day);
         skyShader.safeGetUniform("CamPos").set((float) (cam.x + rx), (float) (cam.y + ry), (float) (cam.z + rz));
@@ -62,9 +62,9 @@ public class DioramaRenderer {
         if (shader == null) return;
         float dens = Math.max(0.05f, MapAtmosphere.provider.fogDensity());
         float[] fog = MapAtmosphere.provider.fogColor();
-        shader.safeGetUniform("FogColor").set(fog[0], fog[1], fog[2]);
-        shader.safeGetUniform("FogStart").set(start / dens);
-        shader.safeGetUniform("FogEnd").set(end / dens);
+        shader.safeGetUniform("MapFogColor").set(fog[0], fog[1], fog[2]);
+        shader.safeGetUniform("MapFogStart").set(start / dens);
+        shader.safeGetUniform("MapFogEnd").set(end / dens);
         shader.safeGetUniform("Offset").set(ox, 0f, oz);
     }
 

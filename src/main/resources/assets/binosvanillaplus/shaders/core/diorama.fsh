@@ -18,9 +18,9 @@ uniform float Detail;
 uniform vec3 SunDir;      // direcao do sol (ou da lua a noite), em coordenadas do mundo
 uniform float DayLight;   // 1 = dia, ~0.45 = noite
 uniform float Exposure;
-uniform vec3 FogColor;    // cor da neblina (a mesma do ceu do mapa / do jogo)
-uniform float FogStart;   // neblina pela distancia da camera (mapa-mundi)
-uniform float FogEnd;
+uniform vec3 MapFogColor;    // cor da neblina (a mesma do ceu do mapa / do jogo)
+uniform float MapFogStart;   // neblina pela distancia da camera (mapa-mundi)
+uniform float MapFogEnd;
 uniform vec3 Offset;      // origem da malha em relacao ao centro do mapa (neblina circular do minimapa)   // 1.0 minimapa; menor no mapa-mundi (tela grande estoura mais facil)
 
 out vec4 fragColor;
@@ -73,10 +73,10 @@ void main() {
     col = max(mix(vec3(luma), col, 1.15), 0.0);
     col = mix(col, 0.80 + 0.20 * tanh((col - 0.80) / 0.20), step(0.80, col));
 
-    // neblina: circular nas bordas do minimapa (Radius) e pela distancia no mapa-mundi (FogStart..FogEnd)
+    // neblina: circular nas bordas do minimapa (Radius) e pela distancia no mapa-mundi (MapFogStart..MapFogEnd)
     float d = length(vPos.xz + Offset.xz) / Radius;
-    float fog = max(smoothstep(0.62, 1.0, d), smoothstep(FogStart, FogEnd, vDist));
-    col = mix(col, FogColor, fog);
+    float fog = max(smoothstep(0.62, 1.0, d), smoothstep(MapFogStart, MapFogEnd, vDist));
+    col = mix(col, MapFogColor, fog);
 
     fragColor = vec4(col, vColor.a) * ColorModulator;
 }
