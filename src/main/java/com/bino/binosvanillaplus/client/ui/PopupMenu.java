@@ -106,7 +106,7 @@ public class PopupMenu {
 
         for (int i = 0; i < items.size(); i++) {
             Item it = items.get(i);
-            int col = it.action() == null ? 0xFF7A7A7A : it.checked() ? BinoUi.ACCENT : 0xFFFFFFFF;
+            int col = it.action() == null ? 0xFF7A7A7A : it.checked() ? BinoUi.ACCENT : 0xFFBDBDBD;
             g.drawString(font, it.label(), x + PAD_X + (i == target ? 1 : 0), rowY(i) + 3, col, false);
         }
         g.flush();

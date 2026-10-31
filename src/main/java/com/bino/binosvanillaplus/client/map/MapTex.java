@@ -35,7 +35,8 @@ public final class MapTex {
             TextureAtlasSprite s = l.sprite();
             float yy = y + li * 0.003f;
             int a = layerAlpha(li, baseAlpha);
-            float u0 = s.getU0(), u1 = s.getU1(), v0 = s.getV0(), v1 = s.getV1();
+            float iu = (s.getU1() - s.getU0()) / 32f, iv = (s.getV1() - s.getV0()) / 32f;   // meio pixel para dentro: sem listras nas emendas
+            float u0 = s.getU0() + iu, u1 = s.getU1() - iu, v0 = s.getV0() + iv, v1 = s.getV1() - iv;
             b.addVertex(x, yy, z).setUv(u0, v0).setColor(color(l, tint, f[0], a)).setNormal(0, 1, 0);
             b.addVertex(x + 1, yy, z).setUv(u1, v0).setColor(color(l, tint, f[1], a)).setNormal(0, 1, 0);
             b.addVertex(x + 1, yy, z + 1).setUv(u1, v1).setColor(color(l, tint, f[2], a)).setNormal(0, 1, 0);
@@ -51,7 +52,8 @@ public final class MapTex {
             TextureAtlasSprite s = l.sprite();
             float o = li * 0.003f;
             int a = layerAlpha(li, baseAlpha);
-            float u0 = s.getU0(), u1 = s.getU1(), v0 = s.getV0(), v1 = s.getV1();
+            float iu = (s.getU1() - s.getU0()) / 32f, iv = (s.getV1() - s.getV0()) / 32f;   // meio pixel para dentro: sem listras nas emendas
+            float u0 = s.getU0() + iu, u1 = s.getU1() - iu, v0 = s.getV0() + iv, v1 = s.getV1() - iv;
             float vb = v0 + (v1 - v0) * Math.min(1f, y1 - y0);
             int ct = color(l, tint, fTop, a), cb = color(l, tint, fBot, a);
             if (d[0] == 1) quad(b, x + 1 + o, y1, z, x + 1 + o, y1, z + 1, x + 1 + o, y0, z + 1, x + 1 + o, y0, z, u0, u1, v0, vb, ct, cb, 1, 0, 0);
@@ -66,10 +68,11 @@ public final class MapTex {
         if (ls.length == 0) return;
         BlockLooks.Layer l = ls[0];
         TextureAtlasSprite s = l.sprite();
-        float u0 = s.getU0(), uw = (s.getU1() - s.getU0()) * (x1 - x0), v0 = s.getV0();
+        float iu = (s.getU1() - s.getU0()) / 32f, iv = (s.getV1() - s.getV0()) / 32f;
+        float u0 = s.getU0() + iu, uw = (s.getU1() - s.getU0() - 2 * iu) * (x1 - x0), v0 = s.getV0() + iv;
         for (float y = y1; y > y0 + 0.001f; y -= 1f) {
             float ya = Math.max(y0, y - 1f);
-            float vb = v0 + (s.getV1() - v0) * (y - ya);
+            float vb = v0 + (s.getV1() - iv - v0) * (y - ya);
             int ct = color(l, tint, fTop, 255), cb = color(l, tint, fBot, 255);
             quad(b, x1, y, z0, x1, y, z1, x1, ya, z1, x1, ya, z0, u0, u0 + uw, v0, vb, ct, cb, 1, 0, 0);
             quad(b, x0, y, z1, x0, y, z0, x0, ya, z0, x0, ya, z1, u0, u0 + uw, v0, vb, ct, cb, -1, 0, 0);

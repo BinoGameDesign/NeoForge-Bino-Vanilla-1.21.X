@@ -30,7 +30,7 @@ public final class BinoUi {
     public static final int DARK_BTN = 0xFF484A49;   // botoes pequenos escuros (linhas de lista)
     public static final int DARK_BTN_HOVER = 0xFF626563;
     public static final int MENU_BG = 0xD81E211F;    // menus e paineis flutuantes
-    public static final int ACCENT = 0xFFFEC400;     // amarelo de destaque (selecao)
+    public static final int ACCENT = 0xFFFFFFFF;     // destaque (selecao, foco): branco
     public static final int TEXT = 0xFFFFFFFF;
     public static final int TEXT_DIM = 0xFF8A8A8A;
 

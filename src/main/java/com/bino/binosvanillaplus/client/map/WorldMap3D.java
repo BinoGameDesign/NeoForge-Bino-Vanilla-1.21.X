@@ -186,7 +186,7 @@ public class WorldMap3D {
 
     // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida
     private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water, boolean fringe,
-                       int sTop, int sGround, int sTrunk, int sFill, int tTop, int tGround) {}
+                       int sTop, int sGround, int sTrunk, int sFill, int tTop, int tGround, int sDeep) {}
 
     private static Col col(int wx, int wz) {
         ExploredMap.Tile t = ExploredMap.tile(wx >> 4, wz >> 4);
@@ -196,7 +196,7 @@ public class WorldMap3D {
         boolean canopy = (t.canopy[i] & 1) != 0;
         boolean water = (t.canopy[i] & 4) != 0;
         return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water, (t.canopy[i] & 8) != 0,
-                t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i]);
+                t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i], t.sDeep[i]);
     }
 
     private static BlockState state(int id) { return id == 0 ? null : Block.stateById(id); }
@@ -223,6 +223,8 @@ public class WorldMap3D {
                 BlockState gState = state(c.sGround()), tState = state(c.sTop()), fState = state(c.sFill());
                 BlockLooks.Layer[] gUp = BlockLooks.layers(gState, true), gSide = BlockLooks.layers(gState, false);
                 BlockLooks.Layer[] fSide = fState != null ? BlockLooks.layers(fState, false) : gSide;
+                BlockState dState = state(c.sDeep());
+                BlockLooks.Layer[] dSide = dState != null ? BlockLooks.layers(dState, false) : fSide;
                 if (gUp.length > 0) { MapTex.top(b, gUp, c.tGround(), x, sTop - 64, z, ones, 255); quads++; }
                 else quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (ou do terreno sem copa)
                 if (c.water()) {                                 // agua: quadrado translucido na superficie; mais fundo = mais opaco
@@ -245,7 +247,8 @@ public class WorldMap3D {
                             float depth = Math.min(1f, (sTop - yTop) / 8f);
                             float fT = 0.95f - 0.30f * depth, fB = 0.95f - 0.30f * Math.min(1f, depth + 0.125f);
                             boolean first = yTop == sTop;
-                            MapTex.side(b, first ? gSide : fSide, first ? c.tGround() : 0xFFFFFF, d, x, z, yBot - 64, yTop - 64, fT, fB, 255);
+                            BlockLooks.Layer[] seg = first ? gSide : (sTop - yTop < 3 ? fSide : dSide);   // topo, 3 de terra, depois pedra
+                            MapTex.side(b, seg, first ? c.tGround() : 0xFFFFFF, d, x, z, yBot - 64, yTop - 64, fT, fB, 255);
                             quads++;
                             if (yBot == nS) break;
                         }

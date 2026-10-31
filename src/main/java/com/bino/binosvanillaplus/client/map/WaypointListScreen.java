@@ -158,7 +158,7 @@ public class WaypointListScreen extends BinoScreen {
             hlY.to(ty);
         }
         float ha = hlA.get(target >= 0 ? 1f : 0f);
-        if (ha > 0.01f) g.fill(listX, (int) hlY.get(), listX + listW, (int) hlY.get() + ROW, Ease.alpha(selected >= 0 && hov < 0 ? 0x22FEC400 : 0x16FFFFFF, ha));
+        if (ha > 0.01f) g.fill(listX, (int) hlY.get(), listX + listW, (int) hlY.get() + ROW, Ease.alpha(selected >= 0 && hov < 0 ? 0x22FFFFFF : 0x16FFFFFF, ha));
 
         int first = Math.max(0, (int) (off / ROW)), last = Math.min(rows.size() - 1, (int) ((off + listH) / ROW));
         for (int i = first; i <= last; i++) {

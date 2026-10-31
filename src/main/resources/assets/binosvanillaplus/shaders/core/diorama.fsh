@@ -132,11 +132,12 @@ void main() {
         float ndl = max(dot(n, L), 0.0);
         float sh = ndl > 0.0 ? shadowAt(ndl) : 0.0;
         // luz do sol/lua (lua bem mais fraca)
-        float lightPow = mix(1.55, 0.32, Night) * smoothstep(-0.02, 0.10, L.y);
+        float lightPow = mix(1.30, 0.32, Night) * smoothstep(-0.02, 0.10, L.y);
         vec3 direct = lightCol * ndl * sh * lightPow;
         // luz do ceu: mais forte em cima, azulada; mais fraca a noite
-        vec3 skyAmb = mix(SkyAmbient, vec3(0.62, 0.74, 1.0), 0.35);
-        vec3 ambient = skyAmb * (0.38 + 0.30 * (0.5 + 0.5 * n.y)) * mix(1.0, 0.30, Night);
+        // luz do ceu: menos azul (sombras azuladas demais deixavam laterais "azuis")
+        vec3 skyAmb = mix(SkyAmbient, vec3(0.80, 0.85, 0.95), 0.55);
+        vec3 ambient = skyAmb * (0.30 + 0.24 * (0.5 + 0.5 * n.y)) * mix(1.0, 0.30, Night);
         // luz rebatida do chao nas laterais (quente)
         ambient += vec3(0.42, 0.36, 0.26) * 0.16 * (1.0 - abs(n.y)) * (1.0 - Night) * (0.4 + 0.6 * h);
         // partes baixas (vales, encostas) um pouco mais escuras
@@ -153,12 +154,12 @@ void main() {
             col += lightCol * spec * mix(3.0, 0.8, Night);
         }
 
-        col *= Exposure * 1.35;
+        col *= Exposure * 1.12;
         col = filmic(col);
         // vibracao: satura mais as cores pouco saturadas
         float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
         float sat = max(max(col.r, col.g), col.b) - min(min(col.r, col.g), col.b);
-        col = clamp(mix(vec3(luma), col, 1.0 + 0.30 * (1.0 - sat)), 0.0, 1.0);
+        col = clamp(mix(vec3(luma), col, 1.22 + 0.30 * (1.0 - sat)), 0.0, 1.0);
 
         // neblina com dispersao: olhando para o sol a neblina fica dourada
         float mie = pow(max(dot(V, normalize(SunVis)), 0.0), 6.0) * (1.0 - Night);

@@ -40,6 +40,7 @@ public final class ExploredMap {
         // texturas: id do estado do bloco (Block.getId) do topo, do chao, do tronco e do bloco abaixo do chao; tintas do bioma (RGB)
         public final int[] sTop = new int[256], sGround = new int[256], sTrunk = new int[256], sFill = new int[256];
         public final int[] tTop = new int[256], tGround = new int[256];
+        public final int[] sDeep = new int[256];      // bloco 4 abaixo do chao (penhascos: pedra embaixo da terra)
         long lastScan;
         public int version;                 // sobe a cada nova leitura (invalida malhas 3D em cache)
         boolean texDirty = true;
@@ -183,6 +184,7 @@ public final class ExploredMap {
                 t.sTrunk[idx] = 0;
                 BlockState below = chunk.getBlockState(pos.set(wx, top - 1, wz));
                 t.sFill[idx] = below.isAir() || !below.getFluidState().isEmpty() ? 0 : Block.getId(below);
+                t.sDeep[idx] = deepId(chunk, pos, wx, top - 4, wz);
                 t.h[idx] = (short) top;
                 t.canopy[idx] = 0;
                 t.tcol[idx] = 0;
@@ -202,10 +204,17 @@ public final class ExploredMap {
                     t.tGround[idx] = BlockLooks.tint(bed, level, pos);
                     BlockState under = chunk.getBlockState(pos.set(wx, waterBed - 1, wz));
                     t.sFill[idx] = under.isAir() || !under.getFluidState().isEmpty() ? 0 : Block.getId(under);
+        t.sDeep[idx] = deepId(chunk, pos, wx, y - 4, wz);
+                    t.sDeep[idx] = deepId(chunk, pos, wx, waterBed - 4, wz);
                 }
                 if (st.getFluidState().isEmpty() && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) scanCanopy(level, chunk, t, idx, wx, wz, top, minY, pos);
             }
         }
+    }
+
+    private static int deepId(LevelChunk chunk, BlockPos.MutableBlockPos pos, int wx, int y, int wz) {
+        BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
+        return s.isAir() || !s.getFluidState().isEmpty() ? 0 : Block.getId(s);
     }
 
     // arvore: descobre onde estao as folhas, se ha tronco e onde fica o chao embaixo da copa
@@ -215,7 +224,8 @@ public final class ExploredMap {
         boolean trunk = false;
         while (y > minY) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
-            if (s.is(BlockTags.LEAVES)) lowestLeaf = y;
+            // so a copa de cima conta como folhas: depois que o tronco comeca, folhas mais embaixo (arbustos) nao esticam a copa ate o chao
+            if (s.is(BlockTags.LEAVES)) { if (!trunk) lowestLeaf = y; }
             else if (s.is(BlockTags.LOGS)) { if (!trunk) { trunk = true; trunkCol = BlockLooks.side(s, level, pos); t.sTrunk[idx] = Block.getId(s); } }
             else break;
             y--;
@@ -285,7 +295,7 @@ public final class ExploredMap {
         try {
             Files.createDirectories(worldDir());
             try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file()))))) {
-                out.writeInt(5);
+                out.writeInt(6);
                 out.writeInt(TILES.size());
                 for (Map.Entry<Long, Tile> e : TILES.entrySet()) {
                     out.writeInt((int) (long) e.getKey());
@@ -300,7 +310,7 @@ public final class ExploredMap {
                         out.writeInt(tt.gcol[k]);
                         out.writeInt(tt.tcol[k]);
                         out.writeInt(tt.sTop[k]); out.writeInt(tt.sGround[k]); out.writeInt(tt.sTrunk[k]); out.writeInt(tt.sFill[k]);
-                        out.writeInt(tt.tTop[k]); out.writeInt(tt.tGround[k]);
+                        out.writeInt(tt.tTop[k]); out.writeInt(tt.tGround[k]); out.writeInt(tt.sDeep[k]);
                     }
                 }
             }
@@ -314,7 +324,7 @@ public final class ExploredMap {
         if (!Files.exists(f)) return;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
             int ver = in.readInt();
-            if (ver != 4 && ver != 5) return;   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
+            if (ver < 4 || ver > 6) return;   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
             int n = in.readInt();
             for (int i = 0; i < n; i++) {
                 int cx = in.readInt(), cz = in.readInt();
@@ -328,6 +338,7 @@ public final class ExploredMap {
                         if (ver >= 5) {
                             t.sTop[k] = in.readInt(); t.sGround[k] = in.readInt(); t.sTrunk[k] = in.readInt(); t.sFill[k] = in.readInt();
                             t.tTop[k] = in.readInt(); t.tGround[k] = in.readInt();
+                            if (ver >= 6) t.sDeep[k] = in.readInt();
                         }
                     }
                 } else {

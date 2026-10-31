@@ -68,7 +68,7 @@ public final class Toasts {
                 int ax = x + 8 + font.width(t.text) + font.width("   ");
                 t.ax0 = ax; t.ax1 = ax + font.width(t.action);
                 boolean over = mx >= t.ax0 && mx < t.ax1 && my >= y && my < y + h;
-                int ac = Ease.alpha(over ? 0xFFFFE066 : BinoUi.ACCENT, vis);
+                int ac = Ease.alpha(over ? 0xFFD6D6D6 : BinoUi.ACCENT, vis);
                 g.drawString(font, t.action, ax, (int) y + 4, ac, false);
                 g.fill(ax, (int) y + 13, t.ax1, (int) y + 14, ac);
             }
