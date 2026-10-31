@@ -212,8 +212,51 @@ public final class ExploredMap {
                     t.sPlant[idx] = 0;
                 }
                 if (st.getFluidState().isEmpty() && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) scanCanopy(level, chunk, t, idx, wx, wz, top, minY, pos);
+                else if (st.getFluidState().isEmpty() && waterBed == Integer.MIN_VALUE) overhang(level, chunk, t, idx, wx, wz, top, minY, pos);
             }
         }
+    }
+
+    // teto de caverna / beirada (entrada lateral de caverna): o topo e' uma "laje" fina com ar embaixo.
+    // Vira uma coluna de duas partes (como a copa das arvores): a laje em cima (bit 16) e o chao da caverna embaixo,
+    // para a entrada da caverna aparecer aberta em vez de uma parede ate o chao.
+    private static void overhang(ClientLevel level, LevelChunk chunk, Tile t, int idx, int wx, int wz, int top, int minY,
+                                 BlockPos.MutableBlockPos pos) {
+        int y = top - 1, k = 1;
+        while (k < 10 && y > minY) {
+            BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
+            if (s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty()) break;
+            y--; k++;
+        }
+        if (k >= 10) return;                                              // terreno macico: coluna normal
+        BlockState a2 = chunk.getBlockState(pos.set(wx, y - 1, wz));
+        if (!(a2.isAir() || BlockLooks.invisible(a2) || a2.getCollisionShape(level, pos).isEmpty())) return;   // vao de 1 bloco: ignora
+        int roofBottom = y + 1;
+        int limit = Math.max(minY, y - 48);
+        while (y > limit) {
+            BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
+            if (!s.getFluidState().isEmpty()) break;
+            boolean empty = s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty();
+            if (!empty) {
+                BlockState b = chunk.getBlockState(pos.set(wx, y - 1, wz));
+                if (!b.isAir() && (!b.getFluidState().isEmpty() || !b.getCollisionShape(level, pos).isEmpty())) break;
+            }
+            y--;
+        }
+        if (y <= limit) return;
+        BlockState ground = chunk.getBlockState(pos.set(wx, y, wz));
+        int gc = BlockLooks.top(ground, level, pos);
+        t.canopy[idx] = (byte) (1 | 16);
+        t.gh[idx] = (short) y;
+        t.cb[idx] = (short) roofBottom;
+        t.gcol[idx] = 0xFF000000 | ((gc & 0xFF) << 16) | (gc & 0xFF00) | ((gc >> 16) & 0xFF);
+        t.sGround[idx] = Block.getId(ground);
+        t.tGround[idx] = BlockLooks.tint(ground, level, pos);
+        BlockState under = chunk.getBlockState(pos.set(wx, y - 1, wz));
+        t.sFill[idx] = under.isAir() || !under.getFluidState().isEmpty() ? 0 : Block.getId(under);
+        t.sDeep[idx] = deepId(chunk, pos, wx, y - 4, wz);
+        t.sTrunk[idx] = 0;
+        plant(level, chunk, t, idx, pos, wx, y + 1, wz);
     }
 
     // grama alta, flores, samambaias... (sem colisao) logo acima do chao

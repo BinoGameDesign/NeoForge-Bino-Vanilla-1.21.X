@@ -183,7 +183,7 @@ void main() {
 
     // neblina: circular nas bordas do minimapa (Radius) e pela distancia (FogStart..FogEnd)
     float d = length(vPos.xz + Offset.xz) / Radius;
-    float fog = max(smoothstep(0.62, 1.0, d), smoothstep(MapFogStart, MapFogEnd, vDist));
+    float fog = max(smoothstep(0.80, 1.0, d), smoothstep(MapFogStart, MapFogEnd, vDist));
     col = mix(col, MapFogColor, fog);
     fragColor = vec4(col, water ? vColor.a : 1.0) * ColorModulator;
 }

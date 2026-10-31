@@ -136,6 +136,30 @@ public class MinimapHud {
                     RST[i][runs] = curState; RTINT[i][runs] = curTint; runs++;
                     if (!curCanopy) RGROUND[i] = true;
                 }
+                // garantia: se nao achou chao (arvore enorme, colmeias, cavernas), procura mais embaixo e poe o chao
+                // na ultima camada - nunca fica buraco mostrando o ceu
+                if (!RGROUND[i]) {
+                    int gy = y, glim = Math.max(minY, y - 64);
+                    for (; gy > glim; gy--) {
+                        BlockState gs = ch.getBlockState(pos.set(wx, gy, wz));
+                        if (!gs.getFluidState().isEmpty()) break;
+                        boolean empty = gs.isAir() || BlockLooks.invisible(gs) || gs.getCollisionShape(lvl, pos).isEmpty();
+                        if (!empty && !gs.is(BlockTags.LEAVES) && !gs.is(BlockTags.LOGS) && solidBelow(ch, lvl, below, wx, gy, wz)) break;
+                    }
+                    if (gy > glim) {
+                        BlockState gs = ch.getBlockState(pos.set(wx, gy, wz));
+                        int slot = Math.min(runs, MAXR - 1);
+                        RTOP[i][slot] = gy; RBOT[i][slot] = gy;
+                        RCOL[i][slot] = BlockLooks.top(gs, lvl, pos); RSIDE[i][slot] = BlockLooks.side(gs, lvl, pos);
+                        BlockState gst = gs.getFluidState().isEmpty() ? gs : gs.getFluidState().createLegacyBlock();
+                        RST[i][slot] = gst; RTINT[i][slot] = BlockLooks.tint(gst, lvl, pos);
+                        if (!gs.getFluidState().isEmpty()) RCOL[i][slot] = (170 << 24) | (RCOL[i][slot] & 0xFFFFFF);
+                        RGROUND[i] = true;
+                        runs = slot + 1;
+                        BlockState fb = ch.getBlockState(pos.set(wx, gy - 1, wz));
+                        if (!fb.isAir() && fb.getFluidState().isEmpty()) { RFILL[i] = fb; RFTINT[i] = BlockLooks.tint(fb, lvl, pos); }
+                    }
+                }
                 RC[i] = runs;
                 if (RGROUND[i] && runs > 0) RBOT[i][runs - 1] = RTOP[i][runs - 1];
             }
@@ -182,7 +206,7 @@ public class MinimapHud {
         if (!DioramaRenderer.ready()) return;
 
         float dist = DISTS[Math.max(0, Math.min(DISTS.length - 1, MapOptions.minimapZoom))];
-        DioramaRenderer.draw(g, p, x0, y0, BOX, dist, Math.min(R - 1.5f, dist * 0.70f));
+        DioramaRenderer.draw(g, p, x0, y0, BOX, dist, R - 1f);   // neblina so na borda da malha (alcance todo visivel)
 
         float cxm = x0 + BOX / 2f, cym = y0 + BOX / 2f;
 

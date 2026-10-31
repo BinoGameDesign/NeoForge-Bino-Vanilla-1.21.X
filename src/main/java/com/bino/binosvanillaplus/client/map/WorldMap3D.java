@@ -193,7 +193,7 @@ public class WorldMap3D {
 
     // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida
     private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water, boolean fringe,
-                       int sTop, int sGround, int sTrunk, int sFill, int tTop, int tGround, int sDeep, int sPlant, int tPlant) {}
+                       int sTop, int sGround, int sTrunk, int sFill, int tTop, int tGround, int sDeep, int sPlant, int tPlant, boolean overhang) {}
 
     private static Col col(int wx, int wz) {
         ExploredMap.Tile t = ExploredMap.tile(wx >> 4, wz >> 4);
@@ -203,7 +203,7 @@ public class WorldMap3D {
         boolean canopy = (t.canopy[i] & 1) != 0;
         boolean water = (t.canopy[i] & 4) != 0;
         return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water, (t.canopy[i] & 8) != 0,
-                t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i], t.sDeep[i], t.sPlant[i], t.tPlant[i]);
+                t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i], t.sDeep[i], t.sPlant[i], t.tPlant[i], (t.canopy[i] & 16) != 0);
     }
 
     private static BlockState state(int id) { return id == 0 ? null : Block.stateById(id); }
@@ -301,10 +301,15 @@ public class WorldMap3D {
                         }
                         int lc = DioramaRenderer.scale(argb(c.topCol()), 0.80f);
                         BlockLooks.Layer[] leafSide = BlockLooks.layers(tState, false);
+                        // teto de caverna: bloco do topo com a lateral dele, embaixo terra (se for grama/terra) ou o mesmo bloco
+                        boolean roofDirt = c.overhang() && tState != null && tState.is(net.minecraft.tags.BlockTags.DIRT);
+                        BlockLooks.Layer[] roofBelow = roofDirt ? BlockLooks.layers(net.minecraft.world.level.block.Blocks.DIRT.defaultBlockState(), false) : leafSide;
                         for (int s = 0; s < cnt; s += 2) {
                             if (leafSide.length > 0) {
                                 for (int yTop = sp[s + 1]; yTop > sp[s]; yTop--) {
-                                    MapTex.side(b, leafSide, c.tTop(), d, x, z, yTop - 1 - 64, yTop - 64, 0.92f, 0.82f, 255);
+                                    boolean firstRoof = !c.overhang() || yTop == c.top() + 1;
+                                    MapTex.side(b, firstRoof ? leafSide : roofBelow, firstRoof || !roofDirt ? c.tTop() : 0xFFFFFF,
+                                            d, x, z, yTop - 1 - 64, yTop - 64, c.overhang() ? 0.95f : 0.92f, c.overhang() ? 0.85f : 0.82f, 255);
                                     quads++;
                                 }
                             } else {
@@ -362,7 +367,7 @@ public class WorldMap3D {
         Col c = col(wx, wz);
         if (c == null) return "(nao explorado)";
         return "topo " + name(c.sTop()) + " y" + c.top() + " | chao " + name(c.sGround()) + " y" + c.ground()
-                + (c.canopy() ? " | copa desde y" + c.cb() + (c.trunk() ? " +tronco " + name(c.sTrunk()) : "") : "")
+                + (c.overhang() ? " | teto de caverna" : "") + (c.canopy() ? " | copa desde y" + c.cb() + (c.trunk() ? " +tronco " + name(c.sTrunk()) : "") : "")
                 + (c.water() ? " | agua" : "") + " | baixo " + name(c.sFill()) + "/" + name(c.sDeep()) + " | planta " + name(c.sPlant());
     }
 
