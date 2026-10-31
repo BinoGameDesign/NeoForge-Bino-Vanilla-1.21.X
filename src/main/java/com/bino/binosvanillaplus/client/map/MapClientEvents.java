@@ -62,6 +62,7 @@ public class MapClientEvents {
     @SubscribeEvent
     public static void registerLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(MinimapHud.ID, MinimapHud::render);
+        event.registerAboveAll(WaypointBeacons.LABELS_ID, WaypointBeacons::renderLabels);
     }
 
     @SubscribeEvent

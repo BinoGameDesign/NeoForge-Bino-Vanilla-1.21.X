@@ -30,7 +30,7 @@ public class MapWaypoints {
     }
 
     public static final int[] PALETTE = {
-            0xFFE04040, 0xFFF08030, 0xFFF0D030, 0xFF80D040, 0xFF40C060, 0xFF40C0C0, 0xFF40A0F0, 0xFF4060E0,
+            0xFFE04040, 0xFFF08030, 0xFFFEC400, 0xFF80D040, 0xFF40C060, 0xFF40C0C0, 0xFF40A0F0, 0xFF4060E0,
             0xFF9060E0, 0xFFD060D0, 0xFFF080A0, 0xFFFFFFFF, 0xFFB0B0B0, 0xFF707070, 0xFF303030, 0xFF8B5A2B};
 
     private static final List<Waypoint> LIST = new ArrayList<>();

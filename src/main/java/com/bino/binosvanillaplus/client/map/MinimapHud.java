@@ -26,7 +26,7 @@ public class MinimapHud {
     static final int R = 20;                   // raio da malha, em blocos
     private static final int BOX = 76;         // tamanho da caixa em pixels
     private static final float[] DISTS = {22f, 30f, 42f};   // distancia da camera por nivel de zoom (teclas de zoom)
-    private static final int MARGIN_X = 6, MARGIN_Y = 6;
+    private static final int MARGIN_X = 9, MARGIN_Y = 9;
     private static final int SLICE = 4;        // altura do corte (acima dos pes) em cavernas
 
     static final int N = 2 * R + 1, MAXR = 4;
@@ -131,6 +131,12 @@ public class MinimapHud {
         return false;
     }
 
+    // escala do texto pequeno do HUD: ~14 px reais de altura qualquer que seja a escala da interface
+    static float smallScale(Minecraft mc) {
+        double gs = mc.getWindow().getGuiScale();
+        return (float) Math.max(0.5, Math.min(1.0, 2.0 / gs));
+    }
+
     // ------------------------------------------------------------------ desenho
 
     public static void render(GuiGraphics g, DeltaTracker dt) {
@@ -141,8 +147,8 @@ public class MinimapHud {
 
         int a = (int) (255 * MapOptions.minimapOpacity / 100f) << 24;
         int x0 = g.guiWidth() - BOX - MARGIN_X, y0 = g.guiHeight() - BOX - MARGIN_Y;
-        g.fill(x0 - 2, y0 - 2, x0 + BOX + 2, y0 + BOX + 2, a | 0x1B1B1B);
-        g.fill(x0 - 1, y0 - 1, x0 + BOX + 1, y0 + BOX + 1, a | 0x6E6E6E);
+        g.fill(x0 - 2, y0 - 2, x0 + BOX + 2, y0 + BOX + 2, a | 0x2E302F);   // moldura cinza escura (Figma)
+        g.fill(x0 - 1, y0 - 1, x0 + BOX + 1, y0 + BOX + 1, a | 0x4A4D4B);
         g.fill(x0, y0, x0 + BOX, y0 + BOX, a | 0x0B0F14);
         if (!DioramaRenderer.ready()) return;
 
@@ -187,16 +193,37 @@ public class MinimapHud {
                 }
                 int sx = (int) (cxm + ox), sy = (int) (cym + oy);
                 g.fill(sx - 6, sy - 6, sx + 6, sy + 6, edge ? 0xFFCCCCCC : 0xFF000000);
-                g.fill(sx - 5, sy - 5, sx + 5, sy + 5, w.color);
-                WaypointIcons.draw(g, w.icon(), sx - 5, sy - 5, 10);
+                WaypointIcons.badge(g, w.icon(), sx - 5, sy - 5, 10, w.color);
             }
         }
         double yaw = Math.toRadians(p.getYRot());
         float nr = (float) Math.sin(yaw), nf = (float) -Math.cos(yaw);
         int nx = (int) (x0 + BOX / 2 + nr * (BOX / 2 - 7)), ny = (int) (y0 + BOX / 2 - nf * (BOX / 2 - 7) * 0.9f);
+        // "N" um pouco maior, branco com contorno preto
+        g.pose().pushPose();
+        g.pose().translate(nx, ny, 0);
+        g.pose().scale(1.3f, 1.3f, 1f);
+        int nw = mc.font.width("N");
         for (int[] o : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1}, {-1, 1}, {1, -1}})
-            g.drawCenteredString(mc.font, "N", nx + o[0], ny - 4 + o[1], 0xFF000000);   // contorno preto
-        g.drawCenteredString(mc.font, "N", nx, ny - 4, 0xFFFFFFFF);
+            g.drawString(mc.font, "N", -nw / 2 + o[0], -4 + o[1], 0xFF000000, false);
+        g.drawString(mc.font, "N", -nw / 2, -4, 0xFFFFFFFF, false);
+        g.pose().popPose();
         if (cave) g.drawString(mc.font, "\u2193", x0 + 3, y0 + 3, 0xFFFFD84A, true);   // seta: modo corte de caverna
+
+        // texto pequeno (tamanho fixo na tela, como no Figma): dia/hora em cima, coordenadas dentro embaixo
+        float ts = smallScale(mc);
+        String day = WorldMapScreen.dayTime(mc.level.getDayTime());
+        float dw = mc.font.width(day) * ts;
+        MapUi.text(g, mc.font, day, x0 + BOX / 2f - dw / 2f, y0 - 4 - 9 * ts, ts, 0xFFFFFFFF, true);
+        String pos = p.getBlockX() + ", " + p.getBlockY() + ", " + p.getBlockZ();
+        float pw = mc.font.width(pos) * ts;
+        MapUi.text(g, mc.font, pos, x0 + BOX / 2f - pw / 2f + 4, y0 + BOX - 3 - 8 * ts, ts, 0xFFFFFFFF, true);
+
+        // icone do mapa no canto de baixo a direita, um pouco inclinado
+        g.pose().pushPose();
+        g.pose().translate(x0 + BOX - 5, y0 + BOX - 5, 150);
+        g.pose().mulPose(com.mojang.math.Axis.ZP.rotationDegrees(-18f));
+        g.renderItem(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FILLED_MAP), -8, -8);
+        g.pose().popPose();
     }
 }
