@@ -81,6 +81,19 @@ public final class MapTex {
         }
     }
 
+    // planta (grama, flor) como dois planos cruzados em X, de y ate y+h; pixels transparentes sao descartados
+    static void cross(BufferBuilder b, BlockLooks.Layer[] ls, int tint, float x, float y, float z, float h) {
+        if (ls.length == 0) return;
+        BlockLooks.Layer l = ls[0];
+        TextureAtlasSprite s = l.sprite();
+        float iu = (s.getU1() - s.getU0()) / 32f, iv = (s.getV1() - s.getV0()) / 32f;
+        float u0 = s.getU0() + iu, u1 = s.getU1() - iu, v0 = s.getV0() + iv, v1 = s.getV1() - iv;
+        int ct = color(l, tint, 1.0f, 254), cb = color(l, tint, 0.80f, 254);
+        float a = 0.15f, c = 0.85f;
+        quad(b, x + a, y + h, z + a, x + c, y + h, z + c, x + c, y, z + c, x + a, y, z + a, u0, u1, v0, v1, ct, cb, 0, 1, 0);
+        quad(b, x + a, y + h, z + c, x + c, y + h, z + a, x + c, y, z + a, x + a, y, z + c, u0, u1, v0, v1, ct, cb, 0, 1, 0);
+    }
+
     private static void quad(BufferBuilder b, float ax, float ay, float az, float bx, float by, float bz,
                              float cx, float cy, float cz, float dx, float dy, float dz,
                              float u0, float u1, float v0, float vb, int ct, int cb, float nx, float ny, float nz) {

@@ -28,11 +28,11 @@ public class WorldMap3D {
     public static Matrix4f view = new Matrix4f(), proj = new Matrix4f();
     public static double targetY = 64;                  // altura do alvo (suavizada)
 
-    private static class ChunkMesh { VertexBuffer vb, wvb; int version = -1; boolean has, hasW; }
+    private static class ChunkMesh { VertexBuffer vb, wvb, pvb; int version = -1; boolean has, hasW, hasP; }
     private static final Map<Long, ChunkMesh> MESHES = new HashMap<>();
 
     public static void clearAll() {
-        for (ChunkMesh m : MESHES.values()) { if (m.vb != null) m.vb.close(); if (m.wvb != null) m.wvb.close(); }
+        for (ChunkMesh m : MESHES.values()) { if (m.vb != null) m.vb.close(); if (m.wvb != null) m.wvb.close(); if (m.pvb != null) m.pvb.close(); }
         MESHES.clear();
     }
 
@@ -68,7 +68,7 @@ public class WorldMap3D {
                 ChunkMesh m = MESHES.get(key);
                 if (m == null) { m = new ChunkMesh(); MESHES.put(key, m); }
                 if (m.version != t.version && built < BUILD_PER_FRAME) { build(m, t, cx, cz); built++; }
-                if (m.has || m.hasW) vis.add(new long[]{cx, cz, dx * dx + dz * dz});
+                if (m.has || m.hasW || m.hasP) vis.add(new long[]{cx, cz, dx * dx + dz * dz});
             }
         }
 
@@ -105,6 +105,13 @@ public class WorldMap3D {
             ChunkMesh m = MESHES.get(ExploredMap.key((int) c[0], (int) c[1]));
             if (m == null || !m.has) continue;
             drawChunk(m.vb, (int) c[0], (int) c[1], tx, tz);
+        }
+        VertexBuffer.unbind();
+
+        for (long[] c : vis) {   // plantas
+            ChunkMesh m = MESHES.get(ExploredMap.key((int) c[0], (int) c[1]));
+            if (m == null || !m.hasP || c[2] > 144) continue;   // so perto (ate ~12 chunks): longe vira so ruido
+            drawChunk(m.pvb, (int) c[0], (int) c[1], tx, tz);
         }
         VertexBuffer.unbind();
 
@@ -186,7 +193,7 @@ public class WorldMap3D {
 
     // dados de uma coluna (de qualquer chunk explorado), ou null se desconhecida
     private record Col(int top, int ground, int cb, boolean canopy, boolean trunk, int topCol, int gcol, int tcol, boolean water, boolean fringe,
-                       int sTop, int sGround, int sTrunk, int sFill, int tTop, int tGround, int sDeep) {}
+                       int sTop, int sGround, int sTrunk, int sFill, int tTop, int tGround, int sDeep, int sPlant, int tPlant) {}
 
     private static Col col(int wx, int wz) {
         ExploredMap.Tile t = ExploredMap.tile(wx >> 4, wz >> 4);
@@ -196,7 +203,7 @@ public class WorldMap3D {
         boolean canopy = (t.canopy[i] & 1) != 0;
         boolean water = (t.canopy[i] & 4) != 0;
         return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water, (t.canopy[i] & 8) != 0,
-                t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i], t.sDeep[i]);
+                t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i], t.sDeep[i], t.sPlant[i], t.tPlant[i]);
     }
 
     private static BlockState state(int id) { return id == 0 ? null : Block.stateById(id); }
@@ -207,6 +214,8 @@ public class WorldMap3D {
         m.version = t.version;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, MapTex.FMT);
         BufferBuilder bw = new BufferBuilder(WBUF, VertexFormat.Mode.QUADS, MapTex.FMT);
+        BufferBuilder bp = new BufferBuilder(PBUF, VertexFormat.Mode.QUADS, MapTex.FMT);   // plantas (fora do passo de sombra)
+        int plantQuads = 0;
         float[] ones = {1f, 1f, 1f, 1f};
         int waterQuads = 0;
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
@@ -226,6 +235,14 @@ public class WorldMap3D {
                 BlockState dState = state(c.sDeep());
                 BlockLooks.Layer[] dSide = dState != null ? BlockLooks.layers(dState, false) : fSide;
                 if (gUp.length > 0) { MapTex.top(b, gUp, c.tGround(), x, sTop - 64, z, ones, 255); quads++; }
+                BlockState pState = state(c.sPlant());
+                if (pState != null && !c.water()) {   // grama/flor em cima do chao
+                    MapTex.cross(bp, BlockLooks.layers(pState, true), c.tPlant(), x, sTop - 64, z, 0.85f);
+                    plantQuads += 2;
+                }
+                // protecao: coluna com folha/tronco no topo mas sem copa detectada nao vira "pilar" ate o chao
+                boolean treeTop = !c.canopy() && tState != null
+                        && (tState.is(net.minecraft.tags.BlockTags.LEAVES) || tState.is(net.minecraft.tags.BlockTags.LOGS));
                 else quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (ou do terreno sem copa)
                 if (c.water()) {                                 // agua: quadrado translucido na superficie; mais fundo = mais opaco
                     int depth = Math.max(1, c.top() - c.ground());
@@ -242,6 +259,7 @@ public class WorldMap3D {
                     if (nS < sTop && gSide.length > 0) {         // lateral do chao, 1 bloco por vez (bloco do topo, depois o de baixo)
                         int segs = 0;
                         for (int yTop = sTop; yTop > nS; yTop--) {
+                            if (treeTop && yTop < sTop) break;
                             int yBot = yTop - 1;
                             if (++segs > 20) { yBot = nS; }       // penhasco muito alto: o resto vira um quadrado so
                             float depth = Math.min(1f, (sTop - yTop) / 8f);
@@ -318,6 +336,12 @@ public class WorldMap3D {
         if (md != null && quads > 0) { m.vb.upload(md); m.has = true; } else m.has = false;
         VertexBuffer.unbind();
 
+        MeshData mp = bp.build();
+        if (m.pvb == null) m.pvb = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        m.pvb.bind();
+        if (mp != null && plantQuads > 0) { m.pvb.upload(mp); m.hasP = true; } else { m.hasP = false; if (mp != null) mp.close(); }
+        VertexBuffer.unbind();
+
         MeshData mw = bw.build();
         if (m.wvb == null) m.wvb = new VertexBuffer(VertexBuffer.Usage.STATIC);
         m.wvb.bind();
@@ -326,6 +350,21 @@ public class WorldMap3D {
     }
 
     private static final ByteBufferBuilder WBUF = new ByteBufferBuilder(1 << 16);
+    private static final ByteBufferBuilder PBUF = new ByteBufferBuilder(1 << 16);
+
+    // diagnostico (Shift sobre o mapa): o que foi lido nessa coluna
+    public static String describe(int wx, int wz) {
+        Col c = col(wx, wz);
+        if (c == null) return "(nao explorado)";
+        return "topo " + name(c.sTop()) + " y" + c.top() + " | chao " + name(c.sGround()) + " y" + c.ground()
+                + (c.canopy() ? " | copa desde y" + c.cb() + (c.trunk() ? " +tronco " + name(c.sTrunk()) : "") : "")
+                + (c.water() ? " | agua" : "") + " | baixo " + name(c.sFill()) + "/" + name(c.sDeep()) + " | planta " + name(c.sPlant());
+    }
+
+    private static String name(int id) {
+        BlockState s = state(id);
+        return s == null ? "-" : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).getPath();
+    }
 
     private static int face(BufferBuilder b, int x, float y, int z, int col) {
         DioramaRenderer.quadC(b, x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1, col, col, col, col, 0, 1, 0);

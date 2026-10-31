@@ -203,6 +203,10 @@ public class WorldMapScreen extends BinoScreen {
             g.drawString(font, day, mapX + 4, ty, 0xFFFFFFFF, false);
             g.drawString(font, pos, mapX + 4 + w1 + 18, ty, 0xFFFFFFFF, false);
         }
+        if (hover == null && hasShiftDown() && inMap(mx, my)) {   // diagnostico: Shift mostra o que foi lido na coluna
+            int[] at = pickWorld(mx, my);
+            if (at != null) setTooltipForNextRenderPass(Component.literal(at[0] + ", " + at[1] + ": " + WorldMap3D.describe(at[0], at[1])));
+        }
         if (hover != null) {
             setTooltipForNextRenderPass(Component.literal(hover.name + " (" + hover.x + ", " + hover.y + ", " + hover.z + ")  [" + hover.setName() + "]"));
         }
