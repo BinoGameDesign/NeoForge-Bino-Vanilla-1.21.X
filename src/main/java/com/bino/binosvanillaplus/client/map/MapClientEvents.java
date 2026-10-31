@@ -47,6 +47,9 @@ public class MapClientEvents {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "diorama"), DefaultVertexFormat.POSITION_COLOR_NORMAL),
                 s -> DioramaRenderer.shader = s);
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_sky"), DefaultVertexFormat.POSITION),
+                s -> DioramaRenderer.skyShader = s);
     }
 
     // ponto de morte automatico

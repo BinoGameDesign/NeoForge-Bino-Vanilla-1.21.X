@@ -14,6 +14,59 @@ import org.joml.Vector4f;
 // num VertexBuffer e e' desenhada com o shader proprio "diorama" (perspectiva + depth buffer).
 public class DioramaRenderer {
     public static ShaderInstance shader;          // preenchido por MapClientEvents (RegisterShadersEvent)
+    public static ShaderInstance skyShader;       // ceu dos mapas (map_sky)
+    private static VertexBuffer skyQuad;
+
+    // ------------------------------------------------------------------ ceu + neblina
+
+    // desenha o ceu (degrade, sol, nuvens) atras de tudo. (rx,ry,rz) = ponto do mundo que esta na origem da 'view'
+    static void drawSky(Matrix4f view, Matrix4f projection, double rx, double ry, double rz) {
+        if (skyShader == null) return;
+        if (skyQuad == null) {
+            BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+            b.addVertex(-1f, -1f, 0f);
+            b.addVertex(1f, -1f, 0f);
+            b.addVertex(1f, 1f, 0f);
+            b.addVertex(-1f, 1f, 0f);
+            MeshData md = b.build();
+            skyQuad = new VertexBuffer(VertexBuffer.Usage.STATIC);
+            skyQuad.bind();
+            if (md != null) skyQuad.upload(md);
+            VertexBuffer.unbind();
+        }
+        Minecraft mc = Minecraft.getInstance();
+        MapAtmosphere.Provider atm = MapAtmosphere.provider;
+        float[] sky = atm.skyColor(), fog = atm.fogColor();
+        org.joml.Vector3f cam = new Matrix4f(view).invert().transformPosition(new org.joml.Vector3f());
+        float cloud = atm.cloudHeight();
+        float time = mc.level == null ? 0f : (mc.level.getGameTime() + mc.getTimer().getGameTimeDeltaPartialTick(false)) / 20f;
+        skyShader.safeGetUniform("InvProjView").set(new Matrix4f(projection).mul(view).invert());
+        skyShader.safeGetUniform("SkyColor").set(sky[0], sky[1], sky[2]);
+        skyShader.safeGetUniform("FogColor").set(fog[0], fog[1], fog[2]);
+        skyShader.safeGetUniform("SunDir").set(Sun.dx, Sun.dy, Sun.dz);
+        skyShader.safeGetUniform("DayLight").set(Sun.day);
+        skyShader.safeGetUniform("CamPos").set((float) (cam.x + rx), (float) (cam.y + ry), (float) (cam.z + rz));
+        skyShader.safeGetUniform("CloudY").set(Float.isNaN(cloud) ? -10000f : cloud);
+        skyShader.safeGetUniform("Time").set(time);
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        skyQuad.bind();
+        skyQuad.drawWithShader(new Matrix4f(), new Matrix4f(), skyShader);
+        VertexBuffer.unbind();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
+    }
+
+    // neblina do terreno: start/end pela distancia da camera; (ox, oz) = origem da malha em relacao ao centro (neblina circular)
+    static void applyFog(float start, float end, float ox, float oz) {
+        if (shader == null) return;
+        float dens = Math.max(0.05f, MapAtmosphere.provider.fogDensity());
+        float[] fog = MapAtmosphere.provider.fogColor();
+        shader.safeGetUniform("FogColor").set(fog[0], fog[1], fog[2]);
+        shader.safeGetUniform("FogStart").set(start / dens);
+        shader.safeGetUniform("FogEnd").set(end / dens);
+        shader.safeGetUniform("Offset").set(ox, 0f, oz);
+    }
 
     private static final float TILT = (float) Math.toRadians(52);
     private static final float FOV = (float) Math.toRadians(45);
@@ -335,12 +388,15 @@ public class DioramaRenderer {
         view = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).rotateY(yaw + (float) Math.PI);
         proj = new Matrix4f().perspective(FOV, 1f, 0.1f, 400f);
         GlState st = begin(g, x0, y0, box, box, proj, MapOptions.minimapOpacity / 100f);
+        drawSky(view, proj, p.getX(), p.getY(), p.getZ());
+        float dens = Math.max(0.05f, MapAtmosphere.provider.fogDensity());
+        applyFog(1.0e5f, 1.0e5f + 1f, (float) (ox0 - p.getX()), (float) (oz0 - p.getZ()));
 
         if (hasTerrain) {
             Matrix4f mv = new Matrix4f(view).translate((float) (ox0 - p.getX()), (float) (oy0 - p.getY()), (float) (oz0 - p.getZ()));
             Sun.applyUniforms();
             shader.safeGetUniform("Exposure").set(1.0f);
-            shader.safeGetUniform("Radius").set(fadeRadius);
+            shader.safeGetUniform("Radius").set(fadeRadius / dens);
             shader.safeGetUniform("Detail").set(1f);
             // Origin = canto da malha no mundo, para a textura procedural ficar presa aos blocos
             shader.safeGetUniform("Origin").set((float) ox0, (float) oy0, (float) oz0);
@@ -352,7 +408,7 @@ public class DioramaRenderer {
             Matrix4f mv = new Matrix4f(view).translate((float) (ox0 - p.getX()), (float) (oy0 - p.getY()), (float) (oz0 - p.getZ()));
             Sun.applyUniforms();
             shader.safeGetUniform("Exposure").set(1.0f);
-            shader.safeGetUniform("Radius").set(fadeRadius);
+            shader.safeGetUniform("Radius").set(fadeRadius / dens);
             shader.safeGetUniform("Detail").set(1f);
             shader.safeGetUniform("Origin").set((float) ox0, (float) oy0, (float) oz0);
             RenderSystem.depthMask(false);

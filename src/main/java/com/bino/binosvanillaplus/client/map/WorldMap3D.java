@@ -48,6 +48,8 @@ public class WorldMap3D {
         Sun.applyUniforms();
         DioramaRenderer.shader.safeGetUniform("Exposure").set(0.80f);   // mapa-mundi: menos luz (tela grande estourava)
         DioramaRenderer.shader.safeGetUniform("Radius").set(1.0e6f);
+        DioramaRenderer.drawSky(view, proj, tx, targetY, tz);
+        DioramaRenderer.applyFog(dist + VIEW_CHUNKS * 16 * 0.35f, dist + VIEW_CHUNKS * 16 * 0.95f, 0f, 0f);
         DioramaRenderer.shader.safeGetUniform("Detail").set(1f);
         for (int dz = -VIEW_CHUNKS; dz <= VIEW_CHUNKS; dz++) {
             for (int dx = -VIEW_CHUNKS; dx <= VIEW_CHUNKS; dx++) {
