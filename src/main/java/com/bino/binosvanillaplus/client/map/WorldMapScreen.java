@@ -172,6 +172,11 @@ public class WorldMapScreen extends BinoScreen {
                 MobIcons.draw(g, m, s[0], s[1], 6.4f);   // 20% menor
             }
         }
+        // pings (Alt + clique)
+        for (Pings.Ping pg : Pings.active()) {
+            float[] s = screenOf(pg.pos().getX() + 0.5, pg.pos().getY() + 1.0, pg.pos().getZ() + 0.5);
+            if (s[2] != 0f) Pings.drawMarker(g, s[0], s[1], pg.color(), Pings.age(pg), 1f);
+        }
         if (MapOptions.worldPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
                 if (w.hidden) continue;

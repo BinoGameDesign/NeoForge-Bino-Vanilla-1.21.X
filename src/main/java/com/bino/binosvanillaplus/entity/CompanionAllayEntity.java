@@ -68,6 +68,9 @@ public class CompanionAllayEntity extends Allay {
     private double lastOwnerX, lastOwnerZ;                 // posição anterior do dono (detecta movimento)
     private int farTicks;                                  // tempo longe do dono sem chegar perto
     private BlockPos lightPos = null;                      // onde está o bloco de luz invisível
+    private BlockPos taskPos = null;                       // bloco que o dono pediu para apertar (Alt + botão direito)
+    private net.minecraft.core.Direction taskFace = net.minecraft.core.Direction.UP;
+    private int taskTicks = 0;
 
     public CompanionAllayEntity(EntityType<? extends Allay> type, Level level) {
         super(type, level);
@@ -98,6 +101,33 @@ public class CompanionAllayEntity extends Allay {
         this.anchorYaw = owner.getYRot();
         this.lastOwnerX = owner.getX();
         this.lastOwnerZ = owner.getZ();
+    }
+
+    // ---------- Tarefa: ir até um bloco (botão, alavanca, porta...) e acioná-lo ----------
+
+    public void startTask(BlockPos pos, net.minecraft.core.Direction face) {
+        this.taskPos = pos.immutable();
+        this.taskFace = face;
+        this.taskTicks = 0;
+        this.level().playSound(null, getX(), getY(), getZ(), SoundEvents.ALLAY_ITEM_TAKEN, SoundSource.NEUTRAL, 0.6f, 1.4f);
+    }
+
+    // ponto um pouco à frente da face clicada (para o pet não entrar no bloco)
+    private Vec3 taskGoal() {
+        Vec3 c = Vec3.atCenterOf(this.taskPos);
+        return c.add(this.taskFace.getStepX() * 0.85, this.taskFace.getStepY() * 0.85 - 0.3, this.taskFace.getStepZ() * 0.85);
+    }
+
+    private void doTask(ServerLevel server, Player owner) {
+        BlockState st = server.getBlockState(this.taskPos);
+        if (PetInteractables.allowed(st)) {
+            Vec3 hit = Vec3.atCenterOf(this.taskPos).add(this.taskFace.getStepX() * 0.5, this.taskFace.getStepY() * 0.5, this.taskFace.getStepZ() * 0.5);
+            st.useWithoutItem(server, owner, new net.minecraft.world.phys.BlockHitResult(hit, this.taskFace, this.taskPos, false));
+            this.swing(InteractionHand.MAIN_HAND);
+            server.playSound(null, getX(), getY(), getZ(), SoundEvents.ALLAY_AMBIENT_WITH_ITEM, SoundSource.NEUTRAL, 0.7f, 1.5f);
+            server.sendParticles(ParticleTypes.HAPPY_VILLAGER, hit.x, hit.y, hit.z, 4, 0.15, 0.15, 0.15, 0.0);
+        }
+        this.taskPos = null;
     }
 
     // ---------- Posição de descanso: atrás e à direita da direção de referência ----------
@@ -215,11 +245,18 @@ public class CompanionAllayEntity extends Allay {
         Vec3 slot = slot(owner);
 
         boolean carrying = !this.carriedStacks.isEmpty() || this.carriedXp > 0;
-        Vec3 target = carrying ? null : findTarget(server, owner);
+        // tarefa pedida pelo dono (aperta botao/alavanca) tem prioridade sobre buscar drops
+        if (this.taskPos != null && (++this.taskTicks > 200 || this.taskPos.distSqr(owner.blockPosition()) > 40 * 40)) this.taskPos = null;
+        boolean tasking = this.taskPos != null && !carrying;
+        Vec3 target = carrying || tasking ? null : findTarget(server, owner);
 
         Vec3 goal;
         double maxSpeed;
-        if (carrying) {
+        if (tasking) {
+            goal = taskGoal();
+            maxSpeed = FETCH_MAX_SPEED;
+            if (this.distanceToSqr(goal) < 0.5) doTask(server, owner);
+        } else if (carrying) {
             // Levando coisas até o jogador
             goal = owner.position().add(0, 1.3, 0);
             maxSpeed = FETCH_MAX_SPEED;
@@ -236,7 +273,7 @@ public class CompanionAllayEntity extends Allay {
         }
 
         // Teletransporte se o jogador se afastou muito
-        boolean busy = carrying || target != null;
+        boolean busy = carrying || target != null || tasking;
         this.entityData.set(DATA_BUSY, busy);      // avisa o cliente (sincronizado)
         double dist = this.distanceTo(owner);
         this.farTicks = (!busy && dist > 6.0) ? this.farTicks + 1 : 0;
@@ -248,7 +285,7 @@ public class CompanionAllayEntity extends Allay {
         }
 
         steerTo(goal, maxSpeed);
-        faceCamera(owner, target);   // antes: faceCamera(owner, carrying);
+        faceCamera(owner, tasking ? Vec3.atCenterOf(this.taskPos == null ? this.blockPosition() : this.taskPos) : target);
         updateLight(server);
 
         // A cada 1 segundo: guarda o nome dado com a etiqueta (ignora o nome padrão traduzido)

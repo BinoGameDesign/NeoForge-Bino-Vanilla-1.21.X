@@ -226,6 +226,14 @@ public class MinimapHud {
             }
         }
 
+        // pings (Alt + clique): losango pulsando por 5 s
+        for (Pings.Ping pg : Pings.active()) {
+            float[] s = DioramaRenderer.project((float) (pg.pos().getX() + 0.5 - p.getX()), (float) (pg.pos().getY() + 1 - p.getY()),
+                    (float) (pg.pos().getZ() + 0.5 - p.getZ()), x0, y0, BOX);
+            if (s[2] == 0f || s[0] < x0 + 4 || s[0] > x0 + BOX - 4 || s[1] < y0 + 4 || s[1] > y0 + BOX - 4) continue;
+            Pings.drawMarker(g, s[0], s[1], pg.color(), Pings.age(pg), 0.8f);
+        }
+
         // marcacoes: icone pequeno acima do feixe de luz; fora da area, preso a borda
         if (MapOptions.minimapPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {

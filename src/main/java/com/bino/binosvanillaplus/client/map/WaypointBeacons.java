@@ -22,6 +22,16 @@ public class WaypointBeacons {
     public static final net.minecraft.resources.ResourceLocation LABELS_ID =
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "waypoint_labels");
 
+    // ponto do mundo -> tela (interface); null se atras da camera
+    static float[] toScreen(double x, double y, double z, int gw, int gh) {
+        if (!haveMatrices) return null;
+        org.joml.Vector4f v = new org.joml.Vector4f((float) (x - CAM.x), (float) (y - CAM.y), (float) (z - CAM.z), 1f);
+        VIEW.transform(v);
+        PROJ.transform(v);
+        if (v.w <= 0.05f) return null;
+        return new float[]{(v.x / v.w * 0.5f + 0.5f) * gw, (0.5f - v.y / v.w * 0.5f) * gh};
+    }
+
     // rotulo de cada marcacao na tela ("House (40 m)" com o icone), na direcao dela no mundo
     public static void renderLabels(net.minecraft.client.gui.GuiGraphics g, net.minecraft.client.DeltaTracker dt) {
         Minecraft mc = Minecraft.getInstance();

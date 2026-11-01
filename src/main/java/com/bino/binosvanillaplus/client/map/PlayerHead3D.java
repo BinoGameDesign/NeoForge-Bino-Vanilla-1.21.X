@@ -17,7 +17,28 @@ import org.joml.Matrix4f;
 public final class PlayerHead3D {
     private PlayerHead3D() {}
 
-    private static VertexBuffer mesh;
+    private static VertexBuffer mesh, hull;
+
+    // casca branca um pouco maior: desenhando so as faces de TRAS dela, sobra uma borda branca so na silhueta
+    private static VertexBuffer hull() {
+        if (hull != null) return hull;
+        BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        float h = 0.62f;
+        float[][][] faces = {
+                {{-h, h, h}, {-h, -h, h}, {h, -h, h}, {h, h, h}},
+                {{h, h, -h}, {h, -h, -h}, {-h, -h, -h}, {-h, h, -h}},
+                {{-h, h, -h}, {-h, -h, -h}, {-h, -h, h}, {-h, h, h}},
+                {{h, h, h}, {h, -h, h}, {h, -h, -h}, {h, h, -h}},
+                {{-h, h, -h}, {-h, h, h}, {h, h, h}, {h, h, -h}},
+                {{-h, -h, h}, {-h, -h, -h}, {h, -h, -h}, {h, -h, h}}};
+        for (float[][] f : faces) for (float[] v : f) b.addVertex(v[0], v[1], v[2]).setColor(255, 255, 255, 255);
+        MeshData md = b.build();
+        hull = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        hull.bind();
+        if (md != null) hull.upload(md);
+        VertexBuffer.unbind();
+        return hull;
+    }
 
     // faces com o "rosto" da skin (64x64). u0..u1 sempre da esquerda para a direita de quem olha a face de fora.
     private static void cube(BufferBuilder b, float h, int ou) {
@@ -67,10 +88,22 @@ public final class PlayerHead3D {
         float yaw = (float) Math.toRadians(p.getYHeadRot());
         float pitch = (float) Math.toRadians(Math.max(-60f, Math.min(60f, p.getXRot())));
         Matrix4f m = new Matrix4f(mv).rotateY(-yaw).rotateX(pitch).scale(size);
-        RenderSystem.setShaderTexture(0, p.getSkin().texture());
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
+        // 1) contorno: faces de tras da casca branca (as da frente sao descartadas)
+        ShaderInstance pc = GameRenderer.getPositionColorShader();
+        if (pc != null) {
+            RenderSystem.enableCull();
+            org.lwjgl.opengl.GL11.glCullFace(org.lwjgl.opengl.GL11.GL_FRONT);
+            VertexBuffer hb = hull();
+            hb.bind();
+            hb.drawWithShader(m, proj, pc);
+            VertexBuffer.unbind();
+            org.lwjgl.opengl.GL11.glCullFace(org.lwjgl.opengl.GL11.GL_BACK);
+        }
+        // 2) a cabeca com a skin por cima
+        RenderSystem.setShaderTexture(0, p.getSkin().texture());
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();

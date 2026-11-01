@@ -35,6 +35,14 @@ public class CompanionAllayManager {
         return pet != null && pet.isAlive();
     }
 
+    // O pet vivo do jogador nesta dimensão (ou null)
+    public static CompanionAllayEntity getPet(ServerPlayer player) {
+        UUID id = PETS.get(player.getUUID());
+        if (id == null) return null;
+        Entity pet = player.serverLevel().getEntity(id);
+        return pet instanceof CompanionAllayEntity c && c.isAlive() ? c : null;
+    }
+
     // Cria o pet se o jogador ainda não tem um vivo nesta dimensão
     public static void ensurePet(ServerPlayer player) {
         if (!player.isAlive() || hasPet(player)) return;

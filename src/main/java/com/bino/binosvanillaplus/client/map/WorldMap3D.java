@@ -143,7 +143,7 @@ public class WorldMap3D {
         // cabeca 3D do jogador com a skin, virada para onde ele olha (sempre visivel, por cima do terreno)
         if (player != null) {
             RenderSystem.clear(256, Minecraft.ON_OSX);
-            float size = Math.max(1.2f, dist / 55f);
+            float size = Math.max(1.6f, dist / 42f);   // ~30% maior
             Matrix4f hmv = new Matrix4f(view)
                     .translate((float) (player.getX() - tx), (float) (player.getY() - targetY + 1.0 + size * 0.6f), (float) (player.getZ() - tz));
             PlayerHead3D.draw(hmv, proj, player, size);

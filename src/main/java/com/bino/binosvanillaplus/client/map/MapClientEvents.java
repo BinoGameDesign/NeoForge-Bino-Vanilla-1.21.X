@@ -88,6 +88,7 @@ public class MapClientEvents {
     public static void registerLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(MinimapHud.ID, MinimapHud::render);
         event.registerAboveAll(WaypointBeacons.LABELS_ID, WaypointBeacons::renderLabels);
+        event.registerAboveAll(Pings.HUD_ID, Pings::renderHud);
         // avisos (Toasts) tambem aparecem no jogo, depois que uma tela fecha
         event.registerAboveAll(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "toasts"), (g, dt) -> {
             if (Minecraft.getInstance().screen == null)
