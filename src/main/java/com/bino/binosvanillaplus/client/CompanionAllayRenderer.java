@@ -22,6 +22,8 @@ public class CompanionAllayRenderer extends AllayRenderer {
 
     public CompanionAllayRenderer(EntityRendererProvider.Context context) {
         super(context);
+        // modelo com as animacoes extras do pet (carinho, apertar bloco, pegar e entregar itens)
+        this.model = new CompanionAllayModel(context.bakeLayer(net.minecraft.client.model.geom.ModelLayers.ALLAY));
     }
 
     @Override

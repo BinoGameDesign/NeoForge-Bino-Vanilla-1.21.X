@@ -132,7 +132,7 @@ public class WorldMapScreen extends BinoScreen {
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
             if (w.hidden) continue;
             float[] s = screenOf(w.x + 0.5, w.y, w.z + 0.5);
-            if (s[2] != 0f && Math.abs(mx - s[0]) <= 5 && Math.abs(my - s[1]) <= 5) return w;
+            if (s[2] != 0f && Math.abs(mx - s[0]) <= 4 && Math.abs(my - s[1]) <= 4) return w;
         }
         return null;
     }
@@ -183,7 +183,7 @@ public class WorldMapScreen extends BinoScreen {
                 float[] s = screenOf(w.x + 0.5, w.y, w.z + 0.5);
                 if (s[2] == 0f) continue;
                 int sx = (int) s[0], sy = (int) s[1];
-                float k = w == hover ? 1f + 0.35f * Ease.outBack(grow) : 1f;
+                float k = (w == hover ? 1f + 0.35f * Ease.outBack(grow) : 1f) * 0.8f;   // marcacao 20% menor
                 g.pose().pushPose();
                 g.pose().translate(sx, sy, 0);
                 g.pose().scale(k, k, 1f);
@@ -194,7 +194,7 @@ public class WorldMapScreen extends BinoScreen {
                     String label = w.name;
                     if (MapOptions.showDistance && pl != null)
                         label += " (" + (int) Math.sqrt(pl.distanceToSqr(w.x + 0.5, w.y, w.z + 0.5)) + " m)";
-                    int lx = sx + (int) (7 * k);
+                    int lx = sx + (int) (7 * k) + 1;
                     g.fill(lx, sy - 6, lx + 4 + font.width(label), sy + 6, w == hover ? 0xB0000000 : 0x80000000);
                     g.drawString(font, label, lx + 2, sy - 4, 0xFFFFFFFF, false);
                 }

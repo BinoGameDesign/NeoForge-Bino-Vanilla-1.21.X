@@ -71,6 +71,27 @@ public class CompanionAllayEntity extends Allay {
     private BlockPos taskPos = null;                       // bloco que o dono pediu para apertar (Alt + botão direito)
     private net.minecraft.core.Direction taskFace = net.minecraft.core.Direction.UP;
     private int taskTicks = 0;
+    private int pressTimer = -1;                           // chegou: espera a animação de apertar antes de acionar
+
+    // ---------- Animações extras (o servidor avisa o cliente por "evento de entidade") ----------
+    public static final byte EV_PET = 70, EV_PRESS = 71, EV_COLLECT = 72, EV_DELIVER = 73;
+    // no cliente: em que tickCount cada animação começou (-1000 = nunca)
+    public final int[] animStart = {-1000, -1000, -1000, -1000};
+
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id >= EV_PET && id <= EV_DELIVER) {
+            this.animStart[id - EV_PET] = this.tickCount;
+            return;
+        }
+        super.handleEntityEvent(id);
+    }
+
+    // 0..1 do andamento da animação (ou -1 se não está tocando)
+    public float animProgress(int index, float partialTick, float lengthTicks) {
+        float t = (this.tickCount - this.animStart[index] + partialTick) / lengthTicks;
+        return t >= 0f && t <= 1f ? t : -1f;
+    }
 
     public CompanionAllayEntity(EntityType<? extends Allay> type, Level level) {
         super(type, level);
@@ -109,6 +130,7 @@ public class CompanionAllayEntity extends Allay {
         this.taskPos = pos.immutable();
         this.taskFace = face;
         this.taskTicks = 0;
+        this.pressTimer = -1;
         this.level().playSound(null, getX(), getY(), getZ(), SoundEvents.ALLAY_ITEM_TAKEN, SoundSource.NEUTRAL, 0.6f, 1.4f);
     }
 
@@ -188,6 +210,7 @@ public class CompanionAllayEntity extends Allay {
                 // Barulhinho fofo (tom mais agudo que o normal do Allay). Troque o som aqui se quiser outro.
                 server.playSound(null, getX(), getY(), getZ(),
                         SoundEvents.ALLAY_AMBIENT_WITHOUT_ITEM, SoundSource.NEUTRAL, 1.0f, 1.6f);
+                server.broadcastEntityEvent(this, EV_PET);   // animação de carinho
 
                 // Corações rosa: 7 partículas espalhadas ao redor do pet (como no breed)
                 server.sendParticles(ModParticles.PINK_HEART.get(), getX(), getY() + 0.5, getZ(),
@@ -255,7 +278,13 @@ public class CompanionAllayEntity extends Allay {
         if (tasking) {
             goal = taskGoal();
             maxSpeed = FETCH_MAX_SPEED;
-            if (this.distanceToSqr(goal) < 0.5) doTask(server, owner);
+            if (this.pressTimer < 0 && this.distanceToSqr(goal) < 0.5) {
+                this.pressTimer = 6;                                  // a mão vai no bloco no meio da animação
+                server.broadcastEntityEvent(this, EV_PRESS);
+            } else if (this.pressTimer > 0 && --this.pressTimer == 0) {
+                doTask(server, owner);
+                this.pressTimer = -1;
+            }
         } else if (carrying) {
             // Levando coisas até o jogador
             goal = owner.position().add(0, 1.3, 0);
@@ -393,6 +422,7 @@ public class CompanionAllayEntity extends Allay {
         }
 
         // Mostra o primeiro item na mão do Allay
+        if (!this.carriedStacks.isEmpty() || this.carriedXp > 0) server.broadcastEntityEvent(this, EV_COLLECT);   // animação de pegar
         if (!this.carriedStacks.isEmpty()) {
             this.setItemInHand(InteractionHand.MAIN_HAND, this.carriedStacks.get(0).copy());
         }
@@ -400,6 +430,7 @@ public class CompanionAllayEntity extends Allay {
 
     // Entrega tudo de uma vez: itens no inventário (o que não couber cai ao lado) e XP em esferas
     private void deliver(Player owner) {
+        this.level().broadcastEntityEvent(this, EV_DELIVER);   // animação de entregar
         boolean overflow = false;
         for (ItemStack stack : this.carriedStacks) {
             ItemStack rest = stack.copy();
