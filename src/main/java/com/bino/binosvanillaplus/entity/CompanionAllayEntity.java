@@ -71,6 +71,8 @@ public class CompanionAllayEntity extends Allay {
     private BlockPos taskPos = null;                       // bloco que o dono pediu para apertar (Alt + botão direito)
     private net.minecraft.core.Direction taskFace = net.minecraft.core.Direction.UP;
     private int taskTicks = 0;
+    private int settle = 0;                               // pausa curta depois de entregar/apertar, antes de voltar
+    private int returnRamp = 99;                           // 0..35: acelera aos poucos na volta (99 = ja normal)
     private int pressTimer = -1;                           // chegou: espera a animação de apertar antes de acionar
 
     // ---------- Animações extras (o servidor avisa o cliente por "evento de entidade") ----------
@@ -150,6 +152,7 @@ public class CompanionAllayEntity extends Allay {
             server.sendParticles(ParticleTypes.HAPPY_VILLAGER, hit.x, hit.y, hit.z, 4, 0.15, 0.15, 0.15, 0.0);
         }
         this.taskPos = null;
+        this.settle = 10;
     }
 
     // ---------- Posição de descanso: atrás e à direita da direção de referência ----------
@@ -275,6 +278,7 @@ public class CompanionAllayEntity extends Allay {
 
         Vec3 goal;
         double maxSpeed;
+        double smooth = 0.2;      // quanto a velocidade acompanha o alvo (menor = mais suave)
         if (tasking) {
             goal = taskGoal();
             maxSpeed = FETCH_MAX_SPEED;
@@ -296,9 +300,22 @@ public class CompanionAllayEntity extends Allay {
             maxSpeed = FETCH_MAX_SPEED;
             if (this.distanceToSqr(goal) < 1.5) collectCluster(server, owner, target);
         } else {
-            // Parado ao lado do jogador, flutuando com uma oscilação leve
-            goal = slot.add(0, Math.sin(this.tickCount * 0.08) * 0.06, 0);
-            maxSpeed = FOLLOW_MAX_SPEED;
+            if (this.settle > 0) {
+                // acabou de entregar/apertar: fica um instante no lugar, flutuando, antes de voltar
+                this.settle--;
+                this.returnRamp = 0;
+                goal = this.position().add(0, Math.sin(this.tickCount * 0.15) * 0.04, 0);
+                maxSpeed = FOLLOW_MAX_SPEED;
+                smooth = 0.12;
+            } else {
+                // Volta ao lado do jogador acelerando e freando suavemente, flutuando com uma oscilação leve
+                goal = slot.add(0, Math.sin(this.tickCount * 0.08) * 0.06, 0);
+                double e = Math.min(1.0, this.returnRamp / 35.0);
+                this.returnRamp++;
+                e = e * e * (3.0 - 2.0 * e);
+                maxSpeed = FOLLOW_MAX_SPEED * (0.2 + 0.8 * e);
+                smooth = 0.06 + 0.14 * e;
+            }
         }
 
         // Teletransporte se o jogador se afastou muito
@@ -313,7 +330,7 @@ public class CompanionAllayEntity extends Allay {
             return;
         }
 
-        steerTo(goal, maxSpeed);
+        steerTo(goal, maxSpeed, smooth);
         faceCamera(owner, tasking ? Vec3.atCenterOf(this.taskPos == null ? this.blockPosition() : this.taskPos) : target);
         updateLight(server);
 
@@ -325,11 +342,11 @@ public class CompanionAllayEntity extends Allay {
     }
 
     // Aproxima o pet do destino de forma suave: freia perto do alvo, então não fica orbitando
-    private void steerTo(Vec3 goal, double maxSpeed) {
+    private void steerTo(Vec3 goal, double maxSpeed, double smooth) {
         Vec3 offset = goal.subtract(this.position());
         double dist = offset.length();
         Vec3 desired = dist < 0.05 ? Vec3.ZERO : offset.scale(Math.min(maxSpeed, dist * 0.15) / dist);
-        this.setDeltaMovement(this.getDeltaMovement().lerp(desired, 0.2));
+        this.setDeltaMovement(this.getDeltaMovement().lerp(desired, smooth));
     }
 
     // Indo buscar: olha para o item (de costas para o jogador). Voltando com itens: olha para o jogador.
@@ -461,6 +478,7 @@ public class CompanionAllayEntity extends Allay {
 
         this.carriedStacks.clear();
         this.carriedXp = 0;
+        this.settle = 12;                                                  // 0,6 s no lugar antes de voltar
         this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);   // mão vazia de novo
     }
 

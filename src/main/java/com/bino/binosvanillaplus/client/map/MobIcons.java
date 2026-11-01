@@ -26,6 +26,10 @@ public final class MobIcons {
 
     private static final Map<EntityType<?>, Face> FACES = new IdentityHashMap<>();
     private static final Map<ResourceLocation, Integer> TEX_H = new HashMap<>();   // altura em pixels do modelo
+    // texturas ORIGINAIS do jogo (ignora pacotes de textura, que tiram os olhos dos mobs): origem -> copia registrada
+    private static final Map<ResourceLocation, ResourceLocation> VANILLA = new HashMap<>();
+    private static final Map<ResourceLocation, int[]> VANILLA_DIM = new HashMap<>();   // copia -> {largura, altura}
+    private static final ResourceLocation NONE = ResourceLocation.fromNamespaceAndPath("binosvanillaplus", "none");
 
     private static void face(Face f, EntityType<?>... types) { for (EntityType<?> t : types) FACES.put(t, f); }
 
@@ -67,7 +71,7 @@ public final class MobIcons {
 
     private static void drawBase(GuiGraphics g, Entity e, int cx, int cy, int size) {
         Face f = FACES.get(e.getType());
-        ResourceLocation tex = f == null ? null : texture(e);
+        ResourceLocation tex = f == null ? null : original(texture(e));
         if (f == null || tex == null) { dot(g, e, cx, cy); return; }
         int texH = texHeight(tex, f.modelW);
         int w = size, h = Math.max(2, Math.round(size * f.h / (float) f.w));
@@ -76,13 +80,45 @@ public final class MobIcons {
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xFFFFFFFF);   // contorno branco
         g.blit(tex, x, y, w, h, f.u, f.v, f.w, f.h, f.modelW, texH);
         if (f.hat) g.blit(tex, x, y, w, h, f.u + 32, f.v, f.w, f.h, f.modelW, texH);   // camada de cima (capacete/chapeu da skin)
-        if (f.overlay != null) g.blit(f.overlay, x, y, w, h, f.u, f.v, f.w, f.h, f.modelW, texHeight(f.overlay, f.modelW));
+        if (f.overlay != null) {
+            ResourceLocation ov = original(f.overlay);
+            g.blit(ov, x, y, w, h, f.u, f.v, f.w, f.h, f.modelW, texHeight(ov, f.modelW));
+        }
     }
 
     private static void dot(GuiGraphics g, Entity e, int cx, int cy) {
         int col = e instanceof Enemy ? 0xFFFF3B30 : 0xFF8FD8FF;
         g.fill(cx - 2, cy - 2, cx + 3, cy + 3, 0xFFFFFFFF);
         g.fill(cx - 1, cy - 1, cx + 2, cy + 2, col);
+    }
+
+    // Mesma textura, mas lida do pacote ORIGINAL do jogo (com os olhos). Se o pacote original nao tem esse arquivo
+    // (variante de outro mod/pack), usa a atual.
+    @Nullable
+    private static ResourceLocation original(@Nullable ResourceLocation tex) {
+        if (tex == null) return null;
+        ResourceLocation got = VANILLA.get(tex);
+        if (got == null) {
+            got = NONE;
+            try {
+                Minecraft mc = Minecraft.getInstance();
+                var sup = mc.getVanillaPackResources().getResource(net.minecraft.server.packs.PackType.CLIENT_RESOURCES, tex);
+                if (sup != null) {
+                    try (InputStream in = sup.get()) {
+                        com.mojang.blaze3d.platform.NativeImage img = com.mojang.blaze3d.platform.NativeImage.read(in);
+                        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("binosvanillaplus",
+                                "mobicon/" + tex.getNamespace() + "/" + tex.getPath().replace(".png", ""));
+                        VANILLA_DIM.put(id, new int[]{img.getWidth(), img.getHeight()});
+                        mc.getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(img));
+                        got = id;
+                    }
+                }
+            } catch (Throwable t) {
+                got = NONE;
+            }
+            VANILLA.put(tex, got);
+        }
+        return got == NONE ? tex : got;
     }
 
     @SuppressWarnings("unchecked")
@@ -99,6 +135,8 @@ public final class MobIcons {
     // altura da textura em "pixels do modelo": le so o cabecalho do PNG (largura/altura) uma vez
     private static int texHeight(ResourceLocation tex, int modelW) {
         return TEX_H.computeIfAbsent(tex, k -> {
+            int[] d = VANILLA_DIM.get(k);
+            if (d != null) return Math.max(1, Math.round(modelW * d[1] / (float) d[0]));
             try {
                 Optional<net.minecraft.server.packs.resources.Resource> res = Minecraft.getInstance().getResourceManager().getResource(k);
                 if (res.isPresent()) {
@@ -141,5 +179,12 @@ public final class MobIcons {
     }
 
     // texturas podem mudar com pacote de textura
-    public static void clearCache() { TEX_H.clear(); }
+    public static void clearCache() {
+        TEX_H.clear();
+        for (ResourceLocation id : VANILLA_DIM.keySet()) {
+            try { Minecraft.getInstance().getTextureManager().release(id); } catch (Throwable ignored) {}
+        }
+        VANILLA.clear();
+        VANILLA_DIM.clear();
+    }
 }
