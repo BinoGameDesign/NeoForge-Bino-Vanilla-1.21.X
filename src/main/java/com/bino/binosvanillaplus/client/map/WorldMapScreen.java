@@ -166,11 +166,16 @@ public class WorldMapScreen extends BinoScreen {
                     mc.level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, pl.getBoundingBox().inflate(160)));
             mobs.sort((a1, b1) -> Double.compare(b1.distanceToSqr(pl), a1.distanceToSqr(pl)));
             for (net.minecraft.world.entity.Mob m : mobs) {
-                if (!m.isAlive() || m.isInvisible() || MinimapHud.isPet(m, pl)) continue;
+                if (!m.isAlive() || m.isInvisible() || MinimapHud.isPet(m, pl) || !MobIcons.onSurface(m)) continue;
                 float[] s = screenOf(m.getX(), m.getY() + 0.6, m.getZ());
                 if (s[2] == 0f) continue;
                 MobIcons.draw(g, m, s[0], s[1], 6.4f);   // 20% menor
             }
+        }
+        // rosto da skin do jogador logo acima da setinha
+        if (pl != null) {
+            float[] ps = screenOf(pl.getX(), pl.getY() + 1.0, pl.getZ());
+            if (ps[2] != 0f) MobIcons.drawPlayer(g, pl, ps[0], ps[1] - 11f, 9f);
         }
         if (MapOptions.worldPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {

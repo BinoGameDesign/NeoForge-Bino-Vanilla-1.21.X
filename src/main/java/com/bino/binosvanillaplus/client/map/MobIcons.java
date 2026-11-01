@@ -117,6 +117,29 @@ public final class MobIcons {
         });
     }
 
+    // mob na superficie (ceu aberto ou sob arvores), e nao em caverna/subsolo
+    public static boolean onSurface(Entity e) {
+        net.minecraft.world.level.Level lvl = e.level();
+        net.minecraft.core.BlockPos bp = net.minecraft.core.BlockPos.containing(e.getX(), e.getEyeY(), e.getZ());
+        if (!lvl.hasChunkAt(bp)) return false;
+        if (lvl.getBrightness(net.minecraft.world.level.LightLayer.SKY, bp) >= 10) return true;
+        return bp.getY() >= lvl.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, bp.getX(), bp.getZ()) - 1;
+    }
+
+    // rosto da skin do jogador (com a camada de cima), borda branca para destacar dos mobs
+    public static void drawPlayer(GuiGraphics g, net.minecraft.client.player.AbstractClientPlayer p, float cx, float cy, float size) {
+        ResourceLocation skin = p.getSkin().texture();
+        g.pose().pushPose();
+        g.pose().translate(cx, cy, 0);
+        g.pose().scale(size / 8f, size / 8f, 1f);
+        g.fill(-5, -5, 5, 5, 0xFF000000);
+        g.fill(-5, -5, 5, -4, 0xFFFFFFFF); g.fill(-5, 4, 5, 5, 0xFFFFFFFF);
+        g.fill(-5, -4, -4, 4, 0xFFFFFFFF); g.fill(4, -4, 5, 4, 0xFFFFFFFF);
+        g.blit(skin, -4, -4, 8, 8, 8, 8, 8, 8, 64, 64);
+        g.blit(skin, -4, -4, 8, 8, 40, 8, 8, 8, 64, 64);
+        g.pose().popPose();
+    }
+
     // texturas podem mudar com pacote de textura
     public static void clearCache() { TEX_H.clear(); }
 }

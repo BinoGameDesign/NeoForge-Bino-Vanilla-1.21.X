@@ -218,6 +218,8 @@ public class MinimapHud {
             mobs.sort((a1, b1) -> Double.compare(b1.distanceToSqr(p), a1.distanceToSqr(p)));
             for (Mob m : mobs) {
                 if (!m.isAlive() || m.isInvisible() || isPet(m, p)) continue;
+                // so os da superficie; no modo caverna, os que estao perto da altura do jogador
+                if (cave ? Math.abs(m.getY() - p.getY()) > 10 : !MobIcons.onSurface(m)) continue;
                 float[] s = DioramaRenderer.project((float) (m.getX() - p.getX()), (float) (m.getY() - p.getY()) + 0.6f, (float) (m.getZ() - p.getZ()), x0, y0, BOX);
                 if (s[2] == 0f || s[0] < x0 + 5 || s[0] > x0 + BOX - 5 || s[1] < y0 + 5 || s[1] > y0 + BOX - 5) continue;
                 MobIcons.draw(g, m, s[0], s[1], 5.6f);   // 20% menor
