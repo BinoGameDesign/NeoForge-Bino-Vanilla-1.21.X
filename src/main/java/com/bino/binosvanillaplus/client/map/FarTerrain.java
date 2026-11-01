@@ -32,7 +32,29 @@ public class FarTerrain {
     static boolean active(Minecraft mc) {
         MapOptions.ensureLoaded();
         return mc.level != null && MapOptions.farChunks > mc.options.getEffectiveRenderDistance()
-                && !mc.level.dimensionType().hasCeiling() && DioramaRenderer.ready();
+                && !mc.level.dimensionType().hasCeiling() && DioramaRenderer.ready() && !externalTakesOver();
+    }
+
+    // Com shaderpack (Iris: Complementary etc.) ou com o Distant Horizons instalado, a distancia extra se desliga sozinha:
+    // o shaderpack assume o desenho do mundo inteiro e so sabe sombrear o terreno distante do DH (o Complementary tem
+    // programas proprios para o DH). Assim nada fica quebrado e o DH + Complementary cuidam da distancia.
+    private static long lastCheck = -1;
+    private static boolean takenOver = false;
+
+    static boolean externalTakesOver() {
+        long now = net.minecraft.Util.getMillis();
+        if (now - lastCheck < 1000) return takenOver;
+        lastCheck = now;
+        boolean dh = net.neoforged.fml.ModList.get().isLoaded("distanthorizons");
+        boolean pack = false;
+        try {   // API do Iris por reflexao (o mod nao depende do Iris)
+            Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            Object inst = api.getMethod("getInstance").invoke(null);
+            pack = (Boolean) api.getMethod("isShaderPackInUse").invoke(inst);
+        } catch (Throwable ignored) {
+        }
+        takenOver = dh || pack;
+        return takenOver;
     }
 
     @SubscribeEvent

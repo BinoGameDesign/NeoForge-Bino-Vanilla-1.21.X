@@ -59,6 +59,7 @@ public class MapOptionsScreen extends BinoScreen {
     }
 
     private static String farText() {
+        if (FarTerrain.externalTakesOver()) return "Distância extra: pelo shader/Distant Horizons";
         return "Distância extra: " + (MapOptions.farChunks == 0 ? "Desligado" : MapOptions.farChunks + " chunks");
     }
 
