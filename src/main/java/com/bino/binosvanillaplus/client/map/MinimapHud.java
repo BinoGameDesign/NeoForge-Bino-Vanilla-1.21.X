@@ -170,7 +170,7 @@ public class MinimapHud {
     }
 
     // pet do jogador (companheiro do mod ou qualquer animal domado dele) nao aparece como ponto
-    private static boolean isPet(Mob m, LocalPlayer p) {
+    static boolean isPet(Mob m, LocalPlayer p) {
         if (m instanceof com.bino.binosvanillaplus.entity.CompanionAllayEntity) return true;
         if (m instanceof net.minecraft.world.entity.OwnableEntity oe) {
             java.util.UUID id = oe.getOwnerUUID();
@@ -212,16 +212,15 @@ public class MinimapHud {
 
         float cxm = x0 + BOX / 2f, cym = y0 + BOX / 2f;
 
-        // mobs: hostis em vermelho, amigaveis em azul claro
+        // mobs: rostinho 2D de cada um (MobIcons); os mais perto ficam por cima
         if (MapOptions.showMobs) {
-            for (Mob m : mc.level.getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(R))) {
+            java.util.List<Mob> mobs = new java.util.ArrayList<>(mc.level.getEntitiesOfClass(Mob.class, p.getBoundingBox().inflate(R)));
+            mobs.sort((a1, b1) -> Double.compare(b1.distanceToSqr(p), a1.distanceToSqr(p)));
+            for (Mob m : mobs) {
                 if (!m.isAlive() || m.isInvisible() || isPet(m, p)) continue;
                 float[] s = DioramaRenderer.project((float) (m.getX() - p.getX()), (float) (m.getY() - p.getY()) + 0.6f, (float) (m.getZ() - p.getZ()), x0, y0, BOX);
-                if (s[2] == 0f || s[0] < x0 + 4 || s[0] > x0 + BOX - 4 || s[1] < y0 + 4 || s[1] > y0 + BOX - 4) continue;
-                int col = m instanceof Enemy ? 0xFFFF3B30 : 0xFF8FD8FF;
-                int sx = (int) s[0], sy = (int) s[1];
-                g.fill(sx - 2, sy - 2, sx + 3, sy + 3, 0xFF000000);
-                g.fill(sx - 1, sy - 1, sx + 2, sy + 2, col);
+                if (s[2] == 0f || s[0] < x0 + 5 || s[0] > x0 + BOX - 5 || s[1] < y0 + 5 || s[1] > y0 + BOX - 5) continue;
+                MobIcons.draw(g, m, (int) s[0], (int) s[1], 7);
             }
         }
 
@@ -231,7 +230,7 @@ public class MinimapHud {
                 if (w.hidden) continue;
                 float dx = (float) (w.x + 0.5 - p.getX()), dy = (float) (w.y - p.getY()), dz = (float) (w.z + 0.5 - p.getZ());
                 float[] s = DioramaRenderer.project(dx, dy + 5f, dz, x0, y0, BOX);
-                float lim = BOX / 2f - 7f;
+                float lim = BOX / 2f - 5f;
                 float ox = s[0] - cxm, oy = s[1] - cym;
                 boolean far = dx * dx + dz * dz > (R - 2) * (R - 2);
                 boolean edge = far || s[2] == 0f || Math.abs(ox) > lim || Math.abs(oy) > lim;
@@ -247,17 +246,18 @@ public class MinimapHud {
                     else { ox *= lim / m; oy *= lim / m; }
                 }
                 int sx = (int) (cxm + ox), sy = (int) (cym + oy);
-                g.fill(sx - 6, sy - 6, sx + 6, sy + 6, edge ? 0xFFCCCCCC : 0xFF000000);
-                WaypointIcons.badge(g, w.icon(), sx - 5, sy - 5, 10, w.color);
+                // ~35% menor que antes
+                g.fill(sx - 4, sy - 4, sx + 5, sy + 5, edge ? 0xFFCCCCCC : 0xFF000000);
+                WaypointIcons.badge(g, w.icon(), sx - 3, sy - 3, 7, w.color);
             }
         }
         double yaw = Math.toRadians(p.getYRot());
         float nr = (float) Math.sin(yaw), nf = (float) -Math.cos(yaw);
-        int nx = (int) (x0 + BOX / 2 + nr * (BOX / 2 - 7)), ny = (int) (y0 + BOX / 2 - nf * (BOX / 2 - 7) * 0.9f);
-        // "N" um pouco maior, branco com contorno preto
+        int nx = (int) (x0 + BOX / 2 + nr * (BOX / 2 - 5)), ny = (int) (y0 + BOX / 2 - nf * (BOX / 2 - 5) * 0.9f);
+        // "N" branco com contorno preto (~35% menor que antes)
         g.pose().pushPose();
         g.pose().translate(nx, ny, 0);
-        g.pose().scale(1.3f, 1.3f, 1f);
+        g.pose().scale(0.85f, 0.85f, 1f);
         int nw = mc.font.width("N");
         for (int[] o : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1}, {-1, 1}, {1, -1}})
             g.drawString(mc.font, "N", -nw / 2 + o[0], -4 + o[1], 0xFF000000, false);

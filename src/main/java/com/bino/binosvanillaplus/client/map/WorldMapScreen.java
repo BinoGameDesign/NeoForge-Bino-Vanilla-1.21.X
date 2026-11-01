@@ -160,6 +160,18 @@ public class WorldMapScreen extends BinoScreen {
         MapWaypoints.Waypoint hover = free ? waypointAt(mx, my) : null;
         if (hover != lastHover) { hoverGrow.snap(0f); lastHover = hover; }
         float grow = hoverGrow.get(hover != null ? 1f : 0f);
+        // mobs por perto (os que o jogo tem carregados): rostinho 2D de cada um
+        if (MapOptions.showMobs && pl != null && mc.level != null) {
+            java.util.List<net.minecraft.world.entity.Mob> mobs = new java.util.ArrayList<>(
+                    mc.level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, pl.getBoundingBox().inflate(160)));
+            mobs.sort((a1, b1) -> Double.compare(b1.distanceToSqr(pl), a1.distanceToSqr(pl)));
+            for (net.minecraft.world.entity.Mob m : mobs) {
+                if (!m.isAlive() || m.isInvisible() || MinimapHud.isPet(m, pl)) continue;
+                float[] s = screenOf(m.getX(), m.getY() + 0.6, m.getZ());
+                if (s[2] == 0f) continue;
+                MobIcons.draw(g, m, (int) s[0], (int) s[1], 8);
+            }
+        }
         if (MapOptions.worldPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
                 if (w.hidden) continue;
