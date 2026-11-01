@@ -66,7 +66,12 @@ public final class AtmosphereFog {
         public float[] fogColor() {
             if (!colorOn() || !AtmosphereState.valid()) return MapAtmosphere.VANILLA.fogColor();
             AtmosphereState.composeIfStale(Minecraft.getInstance());
-            return AtmosphereState.surfaceFog.clone();
+            float[] f = AtmosphereState.surfaceFog.clone();
+            // a noite no mapa vira "luar": azul legivel em vez de quase preto
+            float n = AtmosphereState.night * 0.75f;
+            float[] moon = {0.17f, 0.22f, 0.36f};
+            for (int i = 0; i < 3; i++) f[i] = Math.max(f[i], f[i] + (moon[i] - f[i]) * n);
+            return f;
         }
 
         @Override

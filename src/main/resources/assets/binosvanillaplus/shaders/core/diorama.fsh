@@ -150,12 +150,13 @@ void main() {
         float ndl = max(dot(n, L), 0.0);
         float sh = ndl > 0.0 ? shadowAt(ndl) : 0.0;
         // luz do sol/lua (lua bem mais fraca)
-        float lightPow = mix(1.12, 0.30, Night) * smoothstep(-0.02, 0.10, L.y);
+        float lightPow = mix(1.12, 0.62, Night) * smoothstep(-0.02, 0.10, L.y);   // luar forte o bastante para ler o mapa
         vec3 direct = lightCol * ndl * sh * lightPow;
         // luz do ceu: mais forte em cima, azulada; mais fraca a noite
         // luz do ceu: menos azul (sombras azuladas demais deixavam laterais "azuis")
         vec3 skyAmb = mix(SkyAmbient, vec3(0.80, 0.85, 0.95), 0.55);
-        vec3 ambient = skyAmb * (0.25 + 0.20 * (0.5 + 0.5 * n.y)) * mix(1.0, 0.30, Night);
+        skyAmb = mix(skyAmb, vec3(0.50, 0.60, 0.92), Night * 0.75);   // noite: ambiente azul de luar (antes ficava preto)
+        vec3 ambient = skyAmb * (0.25 + 0.20 * (0.5 + 0.5 * n.y)) * mix(1.0, 0.80, Night);
         // luz rebatida do chao nas laterais (quente)
         ambient += vec3(0.42, 0.36, 0.26) * 0.16 * (1.0 - abs(n.y)) * (1.0 - Night) * (0.4 + 0.6 * h);
         // partes baixas (vales, encostas) um pouco mais escuras
@@ -165,7 +166,7 @@ void main() {
         if (water) {
             float facing = max(dot(-V, n), 0.0);
             float fres = pow(1.0 - facing, 4.0);
-            vec3 refl = mix(MapFogColor, SkyAmbient, 0.6) * mix(1.0, 0.25, Night);
+            vec3 refl = mix(MapFogColor, SkyAmbient, 0.6) * mix(1.0, 0.70, Night);
             col = mix(col, refl, 0.15 + 0.55 * fres);
             vec3 r = reflect(V, n);
             float spec = pow(max(dot(r, L), 0.0), 140.0) * sh;

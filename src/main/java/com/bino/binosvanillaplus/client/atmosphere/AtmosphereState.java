@@ -44,6 +44,7 @@ public final class AtmosphereState {
     // superficie (sem caverna, sem direcao do olhar): usada pelo minimapa e pelo mapa-mundi
     public static final float[] surfaceFog = {0.62f, 0.78f, 0.94f};
     public static float surfaceDensity = 1f;
+    public static float night = 0f;                                   // 0 dia .. 1 noite (para os mapas clarearem)
 
     public static boolean valid() { return valid; }
 
@@ -201,6 +202,7 @@ public final class AtmosphereState {
             morning = sunX > 0f ? smooth(-0.15f, 0.05f, sunY) * (1f - smooth(0.25f, 0.55f, sunY)) : 0f;
         }
         sunDir[0] = sunX; sunDir[1] = sunY; sunDir[2] = 0f;
+        night = timed ? 1f - dayF : 0f;
 
         float rain = timed ? lvl.getRainLevel(pt) : 0f, thunder = timed ? lvl.getThunderLevel(pt) : 0f;
         float precip = 1f;

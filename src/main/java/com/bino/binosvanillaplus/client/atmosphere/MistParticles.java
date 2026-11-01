@@ -20,6 +20,8 @@ public final class MistParticles {
     private MistParticles() {}
 
     private static ClientLevel lastLevel;
+    private static float lightX, lightY;   // direcao da luz no plano X-Y (o sol anda leste-oeste)
+    private static final float[] accent = new float[3];
 
     public static void tick(Minecraft mc) {
         ClientLevel lvl = mc.level;
@@ -36,9 +38,12 @@ public final class MistParticles {
 
         // hora / clima
         float dayF = 1f, morning = 0f, rain = 0f;
+        lightX = 0f; lightY = 0f;
         if (!dims) {
             double ang = lvl.getTimeOfDay(1f) * Math.PI * 2.0;
             float sunX = (float) -Math.sin(ang), sunY = (float) Math.cos(ang);
+            // luz principal (sol de dia, lua de noite): o Complementary faz sombra nas particulas
+            if (sunY > -0.05f) { lightX = sunX; lightY = sunY; } else { lightX = -sunX; lightY = -sunY; }
             dayF = AtmosphereState.smooth(-0.12f, 0.22f, sunY);
             morning = sunX > 0f ? AtmosphereState.smooth(-0.15f, 0.05f, sunY) * (1f - AtmosphereState.smooth(0.25f, 0.55f, sunY)) : 0f;
             rain = lvl.getRainLevel(1f);
@@ -51,26 +56,27 @@ public final class MistParticles {
         float[] src = inCave ? AtmosphereState.caveC : AtmosphereState.surfC;
         float mistD = src[AtmosphereState.MIST_D], haze = src[AtmosphereState.HAZE];
         int target;
-        if (inCave) target = (int) (Math.min(70f, mistD / 0.006f * 30f + haze / 0.010f * 22f) * budget);
-        else target = (int) (Math.min(220f, mistD / 0.0035f * 42f * (1f + 1.5f * morning + 0.4f * (1f - dayF) + 0.9f * rain)) * budget);
+        if (inCave) target = (int) (Math.min(90f, mistD / 0.006f * 40f + haze / 0.010f * 30f) * budget);
+        else target = (int) (Math.min(280f, mistD / 0.0035f * 60f * (1f + 1.5f * morning + 0.4f * (1f - dayF) + 0.9f * rain)) * budget);
         if (MistParticle.alive >= target) return;
 
-        // cor (albedo): matiz da nevoa do lugar, clareada se for muito escura (a luz do mundo/shader escurece depois)
+        // cor (albedo): matiz da nevoa do lugar bem SATURADO (sensacao de magia); cada fiapo puxa um pouco para a
+        // cor de destaque do bioma (a cor do ar dele, ainda mais saturada) -> nevoa com variacao de tom
         float r = src[AtmosphereState.MIST], g = src[AtmosphereState.MIST + 1], b = src[AtmosphereState.MIST + 2];
         if (rain > 0.01f && !inCave) {
             float l = AtmosphereState.lum(r, g, b);
-            r = AtmosphereState.lerp(r, l, rain * 0.6f); g = AtmosphereState.lerp(g, l, rain * 0.6f); b = AtmosphereState.lerp(b, l, rain * 0.6f);
+            r = AtmosphereState.lerp(r, l, rain * 0.5f); g = AtmosphereState.lerp(g, l, rain * 0.5f); b = AtmosphereState.lerp(b, l, rain * 0.5f);
         }
-        float mx = Math.max(r, Math.max(g, b));
-        if (mx > 1e-3f) {
-            float k = Math.max(0.45f, Math.min(1f, mx)) / mx;
-            r *= k; g *= k; b *= k;
-        }
+        float[] c = saturate(r, g, b, 2.6f - rain * 1.2f);
+        float[] a = inCave ? saturate(src[AtmosphereState.MIST], src[AtmosphereState.MIST + 1], src[AtmosphereState.MIST + 2], 3.2f)
+                : saturate(src[AtmosphereState.DAY], src[AtmosphereState.DAY + 1], src[AtmosphereState.DAY + 2], 3.0f - rain * 1.5f);
+        r = c[0]; g = c[1]; b = c[2];
+        accent[0] = a[0]; accent[1] = a[1]; accent[2] = a[2];
 
         double windA = (lvl.getGameTime() % 96000L) / 96000.0 * Math.PI * 2.0;
         double wx = Math.cos(windA) * 0.018, wz = Math.sin(windA) * 0.018;
 
-        int tries = Math.min(8, target - MistParticle.alive);
+        int tries = Math.min(14, target - MistParticle.alive);   // varios sao recusados (sombra, bloco, altura)
         for (int i = 0; i < tries; i++) {
             if (inCave) spawnCave(mc, lvl, rnd, cam, r, g, b, wx * 0.3, wz * 0.3);
             else if (dims) spawnLayer(mc, lvl, rnd, cam, src, r, g, b, wx, wz, true);
@@ -100,11 +106,13 @@ public final class MistParticles {
         BlockPos p = BlockPos.containing(x, y, z);
         if (lvl.getBlockState(p).isSolidRender(lvl, p)) return;
         if (!dims && lvl.getBrightness(LightLayer.SKY, p) < 8) return;   // nao nasce dentro de caverna/casa
+        if (!dims && inShadow(lvl, x + 0.5, y, z + 0.5)) return;          // na sombra viraria uma mancha escura
         float size = (3.2f + rnd.nextFloat() * 4.5f) * (float) (0.75 + rad / 90.0);
-        float alpha = 0.07f + 0.11f * Math.min(1f, w) + rnd.nextFloat() * 0.03f;
+        float alpha = boost(0.12f + 0.16f * Math.min(1f, w) + rnd.nextFloat() * 0.05f, r, g, b);
         int life = 180 + rnd.nextInt(200);
+        float t = rnd.nextFloat() * 0.6f;
         mc.particleEngine.add(new MistParticle(lvl, x + rnd.nextDouble(), y, z + rnd.nextDouble(), size, alpha,
-                r, g, b, wx * (0.6 + 0.4 * rnd.nextDouble()), 0.0015 * rnd.nextDouble(), wz * (0.6 + 0.4 * rnd.nextDouble()), life));
+                lerp(r, accent[0], t), lerp(g, accent[1], t), lerp(b, accent[2], t), wx * (0.6 + 0.4 * rnd.nextDouble()), 0.0015 * rnd.nextDouble(), wz * (0.6 + 0.4 * rnd.nextDouble()), life));
     }
 
     // caverna: em galerias escuras perto do jogador, rente ao chao
@@ -118,9 +126,47 @@ public final class MistParticles {
         if (down >= 10) return;   // sem chao perto (abismo): pula
         double y = p.getY() + 0.3 + rnd.nextDouble() * 1.8;
         float size = 2.4f + rnd.nextFloat() * 3.2f;
-        float alpha = 0.08f + rnd.nextFloat() * 0.07f;
+        float alpha = boost(0.12f + rnd.nextFloat() * 0.10f, r, g, b);
         int life = 200 + rnd.nextInt(200);
+        float t = rnd.nextFloat() * 0.5f;
         mc.particleEngine.add(new MistParticle(lvl, p.getX() + rnd.nextDouble(), y, p.getZ() + rnd.nextDouble(), size, alpha,
-                r, g, b, wx * rnd.nextDouble(), 0.0008 * rnd.nextDouble(), wz * rnd.nextDouble(), life));
+                lerp(r, accent[0], t), lerp(g, accent[1], t), lerp(b, accent[2], t), wx * rnd.nextDouble(), 0.0008 * rnd.nextDouble(), wz * rnd.nextDouble(), life));
+    }
+
+    // satura em volta da luminancia e garante brilho minimo (a luz do mundo/shader escurece depois)
+    private static float[] saturate(float r, float g, float b, float k) {
+        float l = AtmosphereState.lum(r, g, b);
+        float[] c = {l + (r - l) * k, l + (g - l) * k, l + (b - l) * k};
+        float mx = 0f;
+        for (int i = 0; i < 3; i++) { c[i] = Math.max(0f, c[i]); mx = Math.max(mx, c[i]); }
+        if (mx > 1e-3f) {
+            float s = Math.max(0.55f, Math.min(1f, mx)) / mx;
+            for (int i = 0; i < 3; i++) c[i] = Math.min(1f, c[i] * s);
+        }
+        return c;
+    }
+
+    // o Complementary corta pela metade o alpha de particulas escuras (trata como fumaca): compensa
+    private static float boost(float alpha, float r, float g, float b) {
+        if (FarTerrain.irisPack() && r * r + g * g + b * b < 1f) alpha *= 1.8f;
+        return Math.min(0.42f, alpha);
+    }
+
+    private static float lerp(float a, float b, float t) { return a + (b - a) * t; }
+
+    // anda na direcao da luz (sol/lua) procurando bloco que faca sombra: arvores, morros, penhascos
+    private static boolean inShadow(ClientLevel lvl, double x, double y, double z) {
+        if (lightY < 0.06f) return false;   // luz rasante: tudo fica na sombra, nao filtra
+        float len = (float) Math.sqrt(lightX * lightX + lightY * lightY);
+        double sx = lightX / len, sy = lightY / len;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        for (int i = 2; i <= 40; i += 2) {
+            p.set(x + sx * i, y + sy * i, z);
+            if (p.getY() > lvl.getMaxBuildHeight()) return false;
+            if (!lvl.hasChunkAt(p)) return false;
+            net.minecraft.world.level.block.state.BlockState st = lvl.getBlockState(p);
+            if (!st.isAir() && (st.isSolidRender(lvl, p) || st.getBlock() instanceof net.minecraft.world.level.block.LeavesBlock)) return true;
+        }
+        return false;
     }
 }
