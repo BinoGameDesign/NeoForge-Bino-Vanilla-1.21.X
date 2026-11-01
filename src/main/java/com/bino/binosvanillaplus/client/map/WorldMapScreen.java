@@ -172,11 +172,6 @@ public class WorldMapScreen extends BinoScreen {
                 MobIcons.draw(g, m, s[0], s[1], 6.4f);   // 20% menor
             }
         }
-        // rosto da skin do jogador logo acima da setinha
-        if (pl != null) {
-            float[] ps = screenOf(pl.getX(), pl.getY() + 1.0, pl.getZ());
-            if (ps[2] != 0f) MobIcons.drawPlayer(g, pl, ps[0], ps[1] - 11f, 9f);
-        }
         if (MapOptions.worldPins) {
             for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
                 if (w.hidden) continue;

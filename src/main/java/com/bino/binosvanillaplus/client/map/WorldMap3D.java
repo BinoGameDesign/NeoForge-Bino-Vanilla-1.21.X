@@ -140,15 +140,13 @@ public class WorldMap3D {
 
         DioramaRenderer.drawBeams(view, proj, tx, targetY, tz, MapOptions.worldPins, Math.max(0.8f, dist / 80f), Math.max(60f, dist * 1.2f));
 
-        // ponteiro do jogador (sempre visivel)
+        // cabeca 3D do jogador com a skin, virada para onde ele olha (sempre visivel, por cima do terreno)
         if (player != null) {
             RenderSystem.clear(256, Minecraft.ON_OSX);
-            float s = dist / 130f;   // ponteiro menor
-            Matrix4f pmv = new Matrix4f(view)
-                    .translate((float) (player.getX() - tx), (float) (player.getY() - targetY + 1.0), (float) (player.getZ() - tz))
-                    .rotateY((float) (Math.PI - Math.toRadians(player.getYRot())))
-                    .scale(s);
-            DioramaRenderer.drawPointer(pmv, proj);
+            float size = Math.max(1.2f, dist / 55f);
+            Matrix4f hmv = new Matrix4f(view)
+                    .translate((float) (player.getX() - tx), (float) (player.getY() - targetY + 1.0 + size * 0.6f), (float) (player.getZ() - tz));
+            PlayerHead3D.draw(hmv, proj, player, size);
         }
         DioramaRenderer.end(g, st);
     }
