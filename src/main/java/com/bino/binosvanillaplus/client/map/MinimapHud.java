@@ -220,7 +220,7 @@ public class MinimapHud {
                 if (!m.isAlive() || m.isInvisible() || isPet(m, p)) continue;
                 float[] s = DioramaRenderer.project((float) (m.getX() - p.getX()), (float) (m.getY() - p.getY()) + 0.6f, (float) (m.getZ() - p.getZ()), x0, y0, BOX);
                 if (s[2] == 0f || s[0] < x0 + 5 || s[0] > x0 + BOX - 5 || s[1] < y0 + 5 || s[1] > y0 + BOX - 5) continue;
-                MobIcons.draw(g, m, (int) s[0], (int) s[1], 7);
+                MobIcons.draw(g, m, s[0], s[1], 5.6f);   // 20% menor
             }
         }
 

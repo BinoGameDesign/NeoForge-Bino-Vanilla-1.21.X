@@ -169,7 +169,7 @@ public class WorldMapScreen extends BinoScreen {
                 if (!m.isAlive() || m.isInvisible() || MinimapHud.isPet(m, pl)) continue;
                 float[] s = screenOf(m.getX(), m.getY() + 0.6, m.getZ());
                 if (s[2] == 0f) continue;
-                MobIcons.draw(g, m, (int) s[0], (int) s[1], 8);
+                MobIcons.draw(g, m, s[0], s[1], 6.4f);   // 20% menor
             }
         }
         if (MapOptions.worldPins) {

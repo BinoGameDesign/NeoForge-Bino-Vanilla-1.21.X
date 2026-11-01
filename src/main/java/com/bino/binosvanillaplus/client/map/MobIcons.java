@@ -55,8 +55,17 @@ public final class MobIcons {
         face(new Face(7, 7, 7, 7, 128, false, null), EntityType.POLAR_BEAR);
     }
 
-    // desenha o icone centrado em (cx, cy); size = lado do rosto em pixels de interface (sem a borda)
-    public static void draw(GuiGraphics g, Entity e, int cx, int cy, int size) {
+    // desenha o icone centrado em (cx, cy); size = lado do rosto em pixels de interface (aceita fracao: usa escala)
+    public static void draw(GuiGraphics g, Entity e, float cx, float cy, float size) {
+        final int base = 10;   // desenha em 10 px e encolhe: tamanhos quebrados ficam certinhos
+        g.pose().pushPose();
+        g.pose().translate(cx, cy, 0);
+        g.pose().scale(size / base, size / base, 1f);
+        drawBase(g, e, 0, 0, base);
+        g.pose().popPose();
+    }
+
+    private static void drawBase(GuiGraphics g, Entity e, int cx, int cy, int size) {
         Face f = FACES.get(e.getType());
         ResourceLocation tex = f == null ? null : texture(e);
         if (f == null || tex == null) { dot(g, e, cx, cy); return; }
