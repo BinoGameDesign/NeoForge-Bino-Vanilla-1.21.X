@@ -30,7 +30,15 @@ public class PopupMenu {
     private static final int ROW = 13, PAD_X = 7;
     private static final int OPEN_MS = 140, CLOSE_MS = 90;
 
+    private float scale = 1f;                  // tamanho do menu inteiro (0.7 = 30% menor)
+
     public PopupMenu(@Nullable String title) { this.title = title; }
+
+    public PopupMenu scale(float s) { this.scale = s; return this; }
+
+    // mouse (tela) -> coordenadas internas do menu (sem a escala)
+    private double lx(double mx) { return x + (mx - x) / scale; }
+    private double ly(double my) { return y + (my - y) / scale; }
 
     private int head() { return title == null ? 2 : 14; }
 
@@ -52,8 +60,8 @@ public class PopupMenu {
         int widest = title == null ? 0 : font.width(title) * 2 + 8;
         for (Item it : items) widest = Math.max(widest, font.width(it.label()));
         w = Math.max(minWidth, widest + PAD_X * 2 + 2);
-        x = Math.max(2, Math.min(ax, screenW - w - 2));
-        y = Math.max(title == null ? 2 : 10, Math.min(ay, screenH - height() - 2));
+        x = Math.max(2, Math.min(ax, screenW - (int) Math.ceil(w * scale) - 2));
+        y = Math.max(title == null ? 2 : (int) Math.ceil(10 * scale), Math.min(ay, screenH - (int) Math.ceil(height() * scale) - 2));
         originX = ax; originY = ay;
         openedAt = Ease.now();
         closedAt = -1;
@@ -68,7 +76,8 @@ public class PopupMenu {
 
     private int rowY(int i) { return y + head() + i * ROW; }
 
-    private int indexAt(double mx, double my) {
+    private int indexAt(double mxs, double mys) {
+        double mx = lx(mxs), my = ly(mys);
         if (mx < x || mx >= x + w) return -1;
         for (int i = 0; i < items.size(); i++) if (my >= rowY(i) && my < rowY(i) + ROW) return i;
         return -1;
@@ -85,6 +94,9 @@ public class PopupMenu {
         g.pose().translate(originX, originY, 0);
         g.pose().scale(s, s, 1f);
         g.pose().translate(-originX, -originY, 0);
+        g.pose().translate(x, y, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.pose().translate(-x, -y, 0);
         g.flush();
         float[] prev = RenderSystem.getShaderColor().clone();
         RenderSystem.setShaderColor(prev[0], prev[1], prev[2], prev[3] * vis);
@@ -156,5 +168,8 @@ public class PopupMenu {
         return false;
     }
 
-    public boolean contains(double mx, double my) { return isOpen() && mx >= x && mx < x + w && my >= y && my < y + height(); }
+    public boolean contains(double mxs, double mys) {
+        double mx = lx(mxs), my = ly(mys);
+        return isOpen() && mx >= x && mx < x + w && my >= y && my < y + height();
+    }
 }
