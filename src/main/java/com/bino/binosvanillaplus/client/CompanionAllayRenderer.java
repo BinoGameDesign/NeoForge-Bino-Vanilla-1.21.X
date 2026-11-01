@@ -6,8 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
+import net.minecraft.client.renderer.entity.AllayRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.world.entity.animal.allay.Allay;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -17,25 +16,22 @@ import net.minecraft.world.item.DyeColor;
 // Igual ao desenho original do Allay, mas usa a textura pintada quando o pet foi tingido.
 // Em volta dele: um brilho (aura) na COR do pet. Usa o tipo de desenho "olhos" do jogo (aditivo e sempre aceso),
 // que o Complementary trata como emissivo -> brilha de verdade com shader.
-public class CompanionAllayRenderer extends MobRenderer<CompanionAllayEntity, CompanionAllayModel> {
+public class CompanionAllayRenderer extends AllayRenderer {
     private static final ResourceLocation GLOW = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID,
             "textures/entity/companion_allay/glow.png");
-    private static final ResourceLocation ALLAY = ResourceLocation.withDefaultNamespace("textures/entity/allay/allay.png");
 
-    // NAO herda de AllayRenderer de proposito: assim o EMF/ETF (Fresh Animations) nao reconhece o pet como um
-    // Allay do jogo e nao poe o modelo do pack por cima do nosso (isso duplicava o pet).
+    // Modelo e animacoes: os do proprio Allay do jogo (assim o EMF/Fresh Animations tambem anima o pet)
     public CompanionAllayRenderer(EntityRendererProvider.Context context) {
-        super(context, new CompanionAllayModel(context.bakeLayer(net.minecraft.client.model.geom.ModelLayers.ALLAY)), 0.4f);
-        this.addLayer(new ItemInHandLayer<>(this, context.getItemInHandRenderer()));
+        super(context);
     }
 
     @Override
-    public ResourceLocation getTextureLocation(CompanionAllayEntity pet) {
-        return pet.getColorIndex() >= 0 ? AllayColorTextures.get(pet.getColorIndex()) : ALLAY;
+    public ResourceLocation getTextureLocation(Allay allay) {
+        if (allay instanceof CompanionAllayEntity pet && pet.getColorIndex() >= 0) {
+            return AllayColorTextures.get(pet.getColorIndex());   // textura recolorida
+        }
+        return super.getTextureLocation(allay);                   // textura original (azul)
     }
-
-    @Override
-    protected int getBlockLightLevel(CompanionAllayEntity pet, net.minecraft.core.BlockPos pos) { return 15; }
 
     // cor da luz do pet (RGB): a do corante, ou o azul do Allay
     public static int lightColor(CompanionAllayEntity pet) {
@@ -51,10 +47,9 @@ public class CompanionAllayRenderer extends MobRenderer<CompanionAllayEntity, Co
     }
 
     @Override
-    public void render(CompanionAllayEntity pet, float yaw, float pt, PoseStack ps, MultiBufferSource buf, int light) {
-        super.render(pet, yaw, pt, ps, buf, light);
-        Allay allay = pet;
-        if (allay.isInvisible()) return;
+    public void render(Allay allay, float yaw, float pt, PoseStack ps, MultiBufferSource buf, int light) {
+        super.render(allay, yaw, pt, ps, buf, light);
+        if (!(allay instanceof CompanionAllayEntity pet) || allay.isInvisible()) return;
         int c = lightColor(pet);
         float pulse = 0.85f + 0.15f * (float) Math.sin((allay.tickCount + pt) * 0.12f);
         int r = (int) (((c >> 16) & 255) * 0.55f * pulse), g = (int) (((c >> 8) & 255) * 0.55f * pulse), b = (int) ((c & 255) * 0.55f * pulse);
