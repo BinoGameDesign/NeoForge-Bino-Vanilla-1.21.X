@@ -1,0 +1,18 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "1",
+        "dstrgb": "1-srcalpha"
+    },
+    "vertex": "binosvanillaplus:map_sky",
+    "fragment": "binosvanillaplus:atmos_blend",
+    "attributes": [
+        "Position"
+    ],
+    "samplers": [
+        {
+            "name": "FogTex"
+        }
+    ],
+    "uniforms": []
+}

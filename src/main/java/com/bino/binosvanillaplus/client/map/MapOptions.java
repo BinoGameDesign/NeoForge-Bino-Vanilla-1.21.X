@@ -22,6 +22,7 @@ public class MapOptions {
     public static boolean worldMap3D = true;       // mapa-mundi em 3D (false = 2D)
     public static boolean worldBeams = true;       // feixe de luz das marcacoes no mundo (como um beacon)
     public static int farChunks = 32;              // distancia extra (terreno ja explorado alem da render distance); 0 = desligado
+    public static int atmosphere = 2;              // neblina do ambiente: 0 = desligada, 1 = so cor por bioma, 2 = cor + nevoa em camadas
 
     private static boolean loaded = false;
 
@@ -29,6 +30,7 @@ public class MapOptions {
         boolean minimapPins = true, worldPins = true, worldLabels = true, showMobs = true,
                 chunkGrid = false, deathPoint = true, showDistance = true, worldMap3D = true, worldBeams = true;
         int farChunks = 32;
+        int atmosphere = 2;
         int minimapZoom = 1;
         int minimapOpacity = 80;
     }
@@ -48,6 +50,7 @@ public class MapOptions {
             chunkGrid = d.chunkGrid; deathPoint = d.deathPoint; showDistance = d.showDistance;
             minimapZoom = Math.max(0, Math.min(2, d.minimapZoom)); worldMap3D = d.worldMap3D; worldBeams = d.worldBeams;
             farChunks = Math.max(0, Math.min(64, d.farChunks));
+            atmosphere = Math.max(0, Math.min(2, d.atmosphere));
         } catch (Exception ignored) {
         }
     }
@@ -57,6 +60,7 @@ public class MapOptions {
         d.minimapPins = minimapPins; d.worldPins = worldPins; d.worldLabels = worldLabels; d.showMobs = showMobs; d.minimapOpacity = minimapOpacity;
         d.chunkGrid = chunkGrid; d.deathPoint = deathPoint; d.showDistance = showDistance;
         d.minimapZoom = minimapZoom; d.worldMap3D = worldMap3D; d.worldBeams = worldBeams; d.farChunks = farChunks;
+        d.atmosphere = atmosphere;
         try {
             Files.createDirectories(file().getParent());
             try (Writer w = Files.newBufferedWriter(file())) { new Gson().toJson(d, w); }

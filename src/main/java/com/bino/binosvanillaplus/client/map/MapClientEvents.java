@@ -53,6 +53,13 @@ public class MapClientEvents {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_depth"), DefaultVertexFormat.BLOCK),
                 s -> WorldMap3D.depthShader = s);
+        // neblina do ambiente em camadas (client/atmosphere)
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "atmos_fog"), DefaultVertexFormat.POSITION),
+                s -> com.bino.binosvanillaplus.client.atmosphere.AtmosphereFog.fogShader = s);
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "atmos_blend"), DefaultVertexFormat.POSITION),
+                s -> com.bino.binosvanillaplus.client.atmosphere.AtmosphereFog.blendShader = s);
     }
 
     // ponto de morte automatico
