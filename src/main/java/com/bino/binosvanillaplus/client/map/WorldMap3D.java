@@ -331,7 +331,11 @@ public class WorldMap3D {
                     else quads += face(b, x, c.top() + 1 - 64, z, argb(c.topCol()));                 // topo da copa
                     BlockLooks.Layer[] logSide = BlockLooks.layers(state(c.sTrunk()), false);
                     if (c.trunk() && c.cb() > sTop && logSide.length > 0) {
-                        MapTex.post(b, logSide, 0xFFFFFF, x + 0.30f, x + 0.70f, z + 0.30f, z + 0.70f, sTop - 64, c.cb() - 64, 1.0f, 0.80f);
+                        // tronco grosso (selva, carvalho escuro, pinheiro gigante: 2x2): o tronco encosta no vizinho que tambem e' tronco
+                        Col tw = col(wx - 1, wz), te = col(wx + 1, wz), tn = col(wx, wz - 1), ts = col(wx, wz + 1);
+                        float px0 = tw != null && tw.trunk() ? x : x + 0.30f, px1 = te != null && te.trunk() ? x + 1 : x + 0.70f;
+                        float pz0 = tn != null && tn.trunk() ? z : z + 0.30f, pz1 = ts != null && ts.trunk() ? z + 1 : z + 0.70f;
+                        MapTex.post(b, logSide, 0xFFFFFF, px0, px1, pz0, pz1, sTop - 64, c.cb() - 64, 1.0f, 0.80f);
                         quads += 4;
                     } else if (c.trunk() && c.cb() > sTop) {                                        // tronco: caixa fina
                         float lo = sTop - 64, hi = c.cb() - 64;
