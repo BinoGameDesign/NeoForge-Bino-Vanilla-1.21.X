@@ -36,6 +36,16 @@ public class MapOptionsScreen extends BinoScreen {
         toggle(y, "Distância ao lado do nome", () -> MapOptions.showDistance, v -> MapOptions.showDistance = v); y += rowH;
         toggle(y, "Mobs no minimapa", () -> MapOptions.showMobs, v -> MapOptions.showMobs = v); y += rowH;
         toggle(y, "Marcar local da morte", () -> MapOptions.deathPoint, v -> MapOptions.deathPoint = v); y += rowH;
+        BinoUi.Button[] far = new BinoUi.Button[1];
+        far[0] = addRenderableWidget(new BinoUi.Button(L + 13, y, W - 26, rowH - 3, farText(), BinoUi.Style.LIGHT, () -> {
+            int[] steps = {0, 16, 32, 48, 64};
+            int cur = 0;
+            for (int i = 0; i < steps.length; i++) if (steps[i] == MapOptions.farChunks) cur = i;
+            MapOptions.farChunks = steps[(cur + 1) % steps.length];
+            far[0].setLabel(farText());
+            MapOptions.save();
+        }).tooltip("Mostra ao longe o terreno que voce ja explorou, alem da distancia de renderizacao"));
+        y += rowH;
         BinoUi.Button[] op = new BinoUi.Button[1];
         op[0] = addRenderableWidget(new BinoUi.Button(L + 13, y, W - 26, rowH - 3, opacityText(), BinoUi.Style.LIGHT, () -> {
             int[] steps = {40, 60, 80, 100};
@@ -46,6 +56,10 @@ public class MapOptionsScreen extends BinoScreen {
             MapOptions.save();
         }));
         addRenderableWidget(new BinoUi.Button(L + W - 25, T + H - 9, 19, 19, "ok", BinoUi.Style.LIGHT, this::onClose));
+    }
+
+    private static String farText() {
+        return "Distância extra: " + (MapOptions.farChunks == 0 ? "Desligado" : MapOptions.farChunks + " chunks");
     }
 
     private static String opacityText() { return "Opacidade do minimapa: " + MapOptions.minimapOpacity + "%"; }

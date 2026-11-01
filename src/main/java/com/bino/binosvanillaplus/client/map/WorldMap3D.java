@@ -28,7 +28,18 @@ public class WorldMap3D {
     public static Matrix4f view = new Matrix4f(), proj = new Matrix4f();
     public static double targetY = 64;                  // altura do alvo (suavizada)
 
-    private static class ChunkMesh { VertexBuffer vb, wvb, pvb; int version = -1; boolean has, hasW, hasP; }
+    static class ChunkMesh { VertexBuffer vb, wvb, pvb; int version = -1; boolean has, hasW, hasP; }
+
+    // malha do chunk explorado (cria/atualiza se der; 'budget[0]' = quantas ainda pode montar neste quadro). Usada tambem pela distancia extra.
+    static ChunkMesh mesh(int cx, int cz, int[] budget) {
+        ExploredMap.Tile t = ExploredMap.tile(cx, cz);
+        if (t == null) return null;
+        long key = ExploredMap.key(cx, cz);
+        ChunkMesh m = MESHES.get(key);
+        if (m == null) { m = new ChunkMesh(); MESHES.put(key, m); }
+        if (m.version != t.version && budget[0] > 0) { build(m, t, cx, cz); budget[0]--; }
+        return m;
+    }
     private static final Map<Long, ChunkMesh> MESHES = new HashMap<>();
 
     public static void clearAll() {

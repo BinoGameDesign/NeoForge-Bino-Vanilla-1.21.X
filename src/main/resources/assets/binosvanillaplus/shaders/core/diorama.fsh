@@ -135,6 +135,15 @@ void main() {
         float luma = dot(col, vec3(0.299, 0.587, 0.114));
         col = max(mix(vec3(luma), col, 1.15), 0.0);
         col = mix(col, 0.80 + 0.20 * tanh((col - 0.80) / 0.20), step(0.80, col));
+    } else if (Quality > 1.5) {
+        // ---------------- distancia extra (no mundo): sombreado das faces como o do jogo, para emendar com o terreno real
+        float face = n.y > 0.5 ? 1.0 : (n.y < -0.5 ? 0.5 : (abs(n.x) > 0.5 ? 0.6 : 0.8));
+        float dayB = mix(0.22, 1.0, clamp((DayLight - 0.55) / 0.45, 0.0, 1.0));
+        col = base * face * dayB;
+        float fogD = smoothstep(MapFogStart, MapFogEnd, vDist);
+        col = mix(col, MapFogColor, fogD);
+        fragColor = vec4(col, water ? vColor.a : 1.0) * ColorModulator;
+        return;
     } else {
         // ---------------- mapa-mundi (qualidade)
         vec3 V = normalize(vRel - CamRel);            // da camera para o ponto

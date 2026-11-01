@@ -56,8 +56,9 @@ public final class ExploredMap {
 
     public static final int UNKNOWN = Integer.MIN_VALUE;
     public static final short NONE = Short.MIN_VALUE;
-    private static final int SCAN_RADIUS = 7;          // em chunks
-    private static final int PER_RUN_BUDGET = 8;       // chunks lidos por rodada
+    private static final int PER_RUN_BUDGET = 12;      // chunks lidos por rodada
+    // le todos os chunks carregados (a render distance inteira): os mesmos dados alimentam minimapa, mapa-mundi e a distancia extra
+    private static int scanRadius() { return Math.max(7, Math.min(32, Minecraft.getInstance().options.getEffectiveRenderDistance())); }
     private static final Map<Long, Tile> TILES = new HashMap<>();
     private static String curWorld = null, curDim = null;
     private static long lastSave = 0;
@@ -119,7 +120,8 @@ public final class ExploredMap {
         discover(level, p);
 
         int pcx = p.getBlockX() >> 4, pcz = p.getBlockZ() >> 4, budget = PER_RUN_BUDGET;
-        for (int d = 0; d <= SCAN_RADIUS && budget > 0; d++) {
+        int scanR = scanRadius();
+        for (int d = 0; d <= scanR && budget > 0; d++) {
             for (int dx = -d; dx <= d && budget > 0; dx++) {
                 for (int dz = -d; dz <= d && budget > 0; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != d) continue;
