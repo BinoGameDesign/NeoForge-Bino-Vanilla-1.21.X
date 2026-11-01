@@ -20,13 +20,13 @@ public final class AtmosphereState {
     private AtmosphereState() {}
 
     // componentes misturaveis de uma aparencia
-    private static final int DAY = 0, NIGHT = 3, MIST = 6, SKY = 9, SKY_S = 12, HAZE = 13, MIST_D = 14, MIST_H = 15,
+    static final int DAY = 0, NIGHT = 3, MIST = 6, SKY = 9, SKY_S = 12, HAZE = 13, MIST_D = 14, MIST_H = 15,
             BASE = 16, START = 17, N = 18;
 
-    private static final float[] surfT = new float[N], surfC = new float[N];
-    private static final float[] caveT = new float[N], caveC = new float[N];
-    private static float caveFT = 0f, caveF = 0f;
-    private static boolean dimMode = false;      // Nether/End: aparencia direto do bioma, sem caverna nem hora
+    static final float[] surfT = new float[N], surfC = new float[N];
+    static final float[] caveT = new float[N], caveC = new float[N];
+    static float caveFT = 0f, caveF = 0f;
+    static boolean dimMode = false;      // Nether/End: aparencia direto do bioma, sem caverna nem hora
     private static boolean valid = false;
     private static ClientLevel lastLevel;
     private static double lastX, lastZ;
@@ -46,6 +46,10 @@ public final class AtmosphereState {
     public static float surfaceDensity = 1f;
 
     public static boolean valid() { return valid; }
+
+    // ---- para as particulas de nevoa (MistParticles)
+    static float caveNow() { return caveF; }
+    static boolean dims() { return dimMode; }
 
     // ---------------------------------------------------------------- tick
     public static void tick(Minecraft mc) {
@@ -290,7 +294,7 @@ public final class AtmosphereState {
     // troca so o MATIZ do ceu do jogo para o do bioma (o brilho continua o do jogo: noite, chuva etc.)
     public static Vec3 tintSky(Vec3 v) {
         if (!valid || dimMode) return v;
-        float s = surfC[SKY_S] * (1f - caveF);
+        float s = Math.min(0.9f, surfC[SKY_S] * 1.25f) * (1f - caveF);
         if (s < 0.01f) return v;
         float sr = surfC[SKY], sg = surfC[SKY + 1], sb = surfC[SKY + 2];
         float lv = lum((float) v.x, (float) v.y, (float) v.z), ls = Math.max(1e-3f, lum(sr, sg, sb));

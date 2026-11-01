@@ -80,6 +80,7 @@ public final class AtmosphereFog {
     public static void onTick(ClientTickEvent.Post event) {
         if (MapAtmosphere.provider == MapAtmosphere.VANILLA) MapAtmosphere.provider = MAP_PROVIDER;
         AtmosphereState.tick(Minecraft.getInstance());
+        MistParticles.tick(Minecraft.getInstance());
     }
 
     private static boolean skip(Camera cam) {

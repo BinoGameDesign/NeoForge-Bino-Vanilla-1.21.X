@@ -41,6 +41,8 @@ public final class FogLook {
         public FogLook build() {
             if (night < 0) night = mixRgb(0x0A0E1C, scaleRgb(day, 0.10f), 0.35f);
             if (mist < 0) mist = mixRgb(day, 0xFFFFFF, 0.45f);
+            // todo bioma tinge o ceu (o Complementary monta ceu e neblina a partir da cor do ceu do jogo)
+            if (sky < 0) { sky = day; skyStrength = 0.4f; }
             return new FogLook(this);
         }
     }

@@ -60,6 +60,9 @@ public class MapClientEvents {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "atmos_blend"), DefaultVertexFormat.POSITION),
                 s -> com.bino.binosvanillaplus.client.atmosphere.AtmosphereFog.blendShader = s);
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "mist_particle"), DefaultVertexFormat.PARTICLE),
+                s -> com.bino.binosvanillaplus.client.atmosphere.MistParticle.shader = s);
     }
 
     // ponto de morte automatico
