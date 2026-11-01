@@ -94,6 +94,19 @@ public final class MapTex {
         quad(b, x + a, y + h, z + c, x + c, y + h, z + a, x + c, y, z + a, x + a, y, z + c, u0, u1, v0, v1, ct, cb, 0, 1, 0);
     }
 
+    // planta deitada (petalas): um quadrado logo acima do chao
+    static void flat(BufferBuilder b, BlockLooks.Layer[] ls, int tint, float x, float y, float z) {
+        if (ls.length == 0) return;
+        float[] f = {1f, 1f, 1f, 1f};
+        BlockLooks.Layer[] one = {ls[0]};
+        float yy = y + 0.04f;
+        BlockLooks.Layer l = ls[0];
+        TextureAtlasSprite s = l.sprite();
+        float iu = (s.getU1() - s.getU0()) / 32f, iv = (s.getV1() - s.getV0()) / 32f;
+        int c = color(l, tint, 1f, 254);
+        quad(b, x, yy, z, x + 1, yy, z, x + 1, yy, z + 1, x, yy, z + 1, s.getU0() + iu, s.getU1() - iu, s.getV0() + iv, s.getV1() - iv, c, c, 0, 1, 0);
+    }
+
     private static void quad(BufferBuilder b, float ax, float ay, float az, float bx, float by, float bz,
                              float cx, float cy, float cz, float dx, float dy, float dz,
                              float u0, float u1, float v0, float vb, int ct, int cb, float nx, float ny, float nz) {

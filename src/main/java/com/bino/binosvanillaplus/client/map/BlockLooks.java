@@ -25,7 +25,7 @@ public class BlockLooks {
     private static final Map<BlockState, Look> CACHE = new HashMap<>();
 
     // limpa o cache (chamar ao recarregar recursos)
-    public static void clear() { CACHE.clear(); LAYERS.clear(); }
+    public static void clear() { CACHE.clear(); LAYERS.clear(); FLAT.clear(); }
 
     // ------------------------------------------------------------------ texturas de verdade (atlas de blocos)
 
@@ -121,6 +121,40 @@ public class BlockLooks {
 
     private static int scaleRgb(int c, float f) {
         return 0xFF000000 | (Math.min(255, (int) (((c >> 16) & 0xFF) * f)) << 16) | (Math.min(255, (int) (((c >> 8) & 0xFF) * f)) << 8) | Math.min(255, (int) ((c & 0xFF) * f));
+    }
+
+    // "vazio" para achar a superficie: ar, invisivel, sem colisao (grama alta, flores, tochas, cipos) ou muito fino
+    // (vitoria-regia, tapetes). Excecao: camada de neve conta como superficie (neve tem que aparecer branca no mapa).
+    // Liquidos NAO contam como vazio.
+    public static boolean empty(BlockState st, net.minecraft.world.level.BlockGetter level, BlockPos pos) {
+        if (st.isAir() || invisible(st)) return true;
+        if (!st.getFluidState().isEmpty()) return false;
+        if (st.is(net.minecraft.world.level.block.Blocks.SNOW)) return false;
+        net.minecraft.world.phys.shapes.VoxelShape sh = st.getCollisionShape(level, pos);
+        return sh.isEmpty() || sh.max(Direction.Axis.Y) <= 0.15;
+    }
+
+    // planta "deitada" (petalas, folhinhas no chao): modelo com faces para cima, nao em X
+    private static final Map<BlockState, Boolean> FLAT = new HashMap<>();
+
+    public static boolean flatPlant(BlockState st) {
+        Boolean b = FLAT.get(st);
+        if (b == null) { b = flatPlant0(st); FLAT.put(st, b); }
+        return b;
+    }
+
+    private static boolean flatPlant0(BlockState st) {
+        try {
+            BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModelShaper().getBlockModel(st);
+            List<BakedQuad> up = model.getQuads(st, Direction.UP, RandomSource.create(42L));
+            List<BakedQuad> any = model.getQuads(st, null, RandomSource.create(42L));
+            if (up != null && !up.isEmpty()) return true;
+            if (any == null) return false;
+            for (BakedQuad q : any) if (q.getDirection() == Direction.UP) return true;
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // blocos que nao aparecem no jogo (luz invisivel - usada pelo pet -, barreira, vazio de estrutura...) contam como ar no mapa

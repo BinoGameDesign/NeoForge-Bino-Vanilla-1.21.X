@@ -163,7 +163,7 @@ public final class ExploredMap {
                 }
                 int top = y - 1;
                 BlockState st = chunk.getBlockState(pos.set(wx, top, wz));
-                while (top > minY && (st.isAir() || BlockLooks.invisible(st) || st.getCollisionShape(level, pos).isEmpty()) && st.getFluidState().isEmpty()) {   // ignora ar, grama alta, flores, tochas...
+                while (top > minY && BlockLooks.empty(st, level, pos)) {   // ignora ar, grama alta, flores, tochas, vitoria-regia, tapetes...
                     top--;
                     st = chunk.getBlockState(pos.set(wx, top, wz));
                 }
@@ -172,8 +172,8 @@ public final class ExploredMap {
                 int argb, waterBed = Integer.MIN_VALUE, bedArgb = 0;
                 if (!st.getFluidState().isEmpty() && st.getFluidState().is(FluidTags.WATER)) {
                     int d = 0, yy = top;
-                    while (yy > minY && d < 14 && chunk.getBlockState(pos.set(wx, yy, wz)).getFluidState().is(FluidTags.WATER)) { yy--; d++; }
-                    argb = shade(BlockLooks.top(st, level, pos.set(wx, top, wz)), Math.max(0.60f, 1.05f - d * 0.03f));
+                    while (yy > minY && d < 64 && chunk.getBlockState(pos.set(wx, yy, wz)).getFluidState().is(FluidTags.WATER)) { yy--; d++; }   // oceano fundo: ate 64
+                    argb = shade(BlockLooks.top(st, level, pos.set(wx, top, wz)), Math.max(0.60f, 1.05f - Math.min(d, 14) * 0.03f));
                     waterBed = yy;
                     bedArgb = BlockLooks.top(chunk.getBlockState(pos.set(wx, yy, wz)), level, pos);
                 } else {
@@ -219,7 +219,7 @@ public final class ExploredMap {
                     t.sPlant[idx] = 0;
                 }
                 if (st.getFluidState().isEmpty() && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS))) scanCanopy(level, chunk, t, idx, wx, wz, top, minY, pos);
-                else if (st.getFluidState().isEmpty() && waterBed == Integer.MIN_VALUE) overhang(level, chunk, t, idx, wx, wz, top, minY, pos);
+                else if (!ceiling && st.getFluidState().isEmpty() && waterBed == Integer.MIN_VALUE) overhang(level, chunk, t, idx, wx, wz, top, minY, pos);
             }
         }
     }
@@ -232,18 +232,18 @@ public final class ExploredMap {
         int y = top - 1, k = 1;
         while (k < 10 && y > minY) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
-            if (s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty()) break;
+            if (BlockLooks.empty(s, level, pos)) break;
             y--; k++;
         }
         if (k >= 10) return;                                              // terreno macico: coluna normal
         BlockState a2 = chunk.getBlockState(pos.set(wx, y - 1, wz));
-        if (!(a2.isAir() || BlockLooks.invisible(a2) || a2.getCollisionShape(level, pos).isEmpty())) return;   // vao de 1 bloco: ignora
+        if (!BlockLooks.empty(a2, level, pos)) return;   // vao de 1 bloco: ignora
         int roofBottom = y + 1;
         int limit = Math.max(minY, y - 48);
         while (y > limit) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
             if (!s.getFluidState().isEmpty()) break;
-            boolean empty = s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty();
+            boolean empty = BlockLooks.empty(s, level, pos);
             if (!empty) {
                 BlockState b = chunk.getBlockState(pos.set(wx, y - 1, wz));
                 if (!b.isAir() && (!b.getFluidState().isEmpty() || !b.getCollisionShape(level, pos).isEmpty())) break;
@@ -374,7 +374,7 @@ public final class ExploredMap {
         while (y > limit) {
             BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
             if (!s.getFluidState().isEmpty()) break;                         // agua: e' o chao
-            boolean empty = s.isAir() || BlockLooks.invisible(s) || s.getCollisionShape(level, pos).isEmpty();
+            boolean empty = BlockLooks.empty(s, level, pos);
             if (!empty && !s.is(BlockTags.LEAVES) && !s.is(BlockTags.LOGS)) {
                 BlockState b = chunk.getBlockState(pos.set(wx, y - 1, wz));
                 boolean solid = !b.isAir() && (!b.getFluidState().isEmpty() || !b.getCollisionShape(level, pos).isEmpty());

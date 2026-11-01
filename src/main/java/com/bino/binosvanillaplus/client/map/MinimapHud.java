@@ -95,7 +95,7 @@ public class MinimapHud {
                     BlockState st = ch.getBlockState(pos.set(wx, y, wz));
                     FluidState fs = st.getFluidState();
                     boolean fluid = !fs.isEmpty();
-                    boolean air = st.isAir() || BlockLooks.invisible(st) || (!fluid && st.getCollisionShape(lvl, pos).isEmpty());   // ignora grama alta, flores, tochas...
+                    boolean air = !fluid && BlockLooks.empty(st, lvl, pos);   // ignora grama alta, flores, tochas, vitoria-regia, tapetes (neve conta)
                     Object key = air ? null : (fluid ? fs.getType() : st);
                     // arvores grandes (galhos, cachos de folhas, colmeias em varias alturas) gastavam todas as camadas e o chao
                     // sumia (aparecia o ceu por baixo): a ultima camada fica reservada para o chao de verdade
@@ -145,7 +145,7 @@ public class MinimapHud {
                     for (; gy > glim; gy--) {
                         BlockState gs = ch.getBlockState(pos.set(wx, gy, wz));
                         if (!gs.getFluidState().isEmpty()) break;
-                        boolean empty = gs.isAir() || BlockLooks.invisible(gs) || gs.getCollisionShape(lvl, pos).isEmpty();
+                        boolean empty = BlockLooks.empty(gs, lvl, pos);
                         if (!empty && !gs.is(BlockTags.LEAVES) && !gs.is(BlockTags.LOGS) && solidBelow(ch, lvl, below, wx, gy, wz)) break;
                     }
                     if (gy > glim) {

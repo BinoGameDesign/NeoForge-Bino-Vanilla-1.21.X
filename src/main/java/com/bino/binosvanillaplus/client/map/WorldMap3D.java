@@ -249,7 +249,8 @@ public class WorldMap3D {
                 else quads += face(b, x, sTop - 64, z, topArgb);     // topo do chao (sem textura: mapas antigos)
                 BlockState pState = state(c.sPlant());
                 if (pState != null && !c.water()) {   // grama/flor em cima do chao
-                    MapTex.cross(bp, BlockLooks.layers(pState, true), c.tPlant(), x, sTop - 64, z, 0.85f);
+                    if (BlockLooks.flatPlant(pState)) MapTex.flat(bp, BlockLooks.layers(pState, true), c.tPlant(), x, sTop - 64, z);
+                    else MapTex.cross(bp, BlockLooks.layers(pState, true), c.tPlant(), x, sTop - 64, z, 0.85f);
                     plantQuads += 2;
                 }
                 // protecao: coluna com folha/tronco no topo mas sem copa detectada nao vira "pilar" ate o chao
