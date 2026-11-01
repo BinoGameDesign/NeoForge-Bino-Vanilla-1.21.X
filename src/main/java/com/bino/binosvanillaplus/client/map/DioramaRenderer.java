@@ -91,7 +91,7 @@ public class DioramaRenderer {
         if (shader == null) return;
         BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, MapTex.FMT);
         BufferBuilder bw = new BufferBuilder(WBUF, VertexFormat.Mode.QUADS, MapTex.FMT);
-        int[] sp = new int[32], tmp = new int[32];
+        int[] sp = new int[64], tmp = new int[64];
         final int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         final int[][] corner = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
         float[] f4 = new float[4];
@@ -229,7 +229,7 @@ public class DioramaRenderer {
             if (b <= lo || a >= hi) { tmp[out++] = lo; tmp[out++] = hi; continue; }
             if (lo < a) { tmp[out++] = lo; tmp[out++] = a; }
             if (b < hi) { tmp[out++] = b; tmp[out++] = hi; }
-            if (out > 28) break;
+            if (out > tmp.length - 4) break;
         }
         System.arraycopy(tmp, 0, sp, 0, out);
         return out;

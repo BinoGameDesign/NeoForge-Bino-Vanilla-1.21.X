@@ -29,7 +29,7 @@ public class MinimapHud {
     private static final int MARGIN_X = 9, MARGIN_Y = 9;
     private static final int SLICE = 4;        // altura do corte (acima dos pes) em cavernas
 
-    static final int N = 2 * R + 1, MAXR = 4;
+    static final int N = 2 * R + 1, MAXR = 8;   // ate 8 camadas por coluna (arvores grandes: folhas, galhos, cachos, tronco + chao)
     static final int[] RC = new int[N * N];
     static final int[][] RTOP = new int[N * N][MAXR], RBOT = new int[N * N][MAXR], RCOL = new int[N * N][MAXR], RSIDE = new int[N * N][MAXR];
     static final boolean[] RGROUND = new boolean[N * N];
