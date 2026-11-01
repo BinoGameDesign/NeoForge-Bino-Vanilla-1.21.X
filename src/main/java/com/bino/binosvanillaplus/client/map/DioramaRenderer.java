@@ -130,6 +130,25 @@ public class DioramaRenderer {
                         }
                         f4[k] = ao;
                     }
+                    // agua: cada canto vira a media do tom das aguas vizinhas no mesmo nivel -> raso/fundo em degrade
+                    // (antes cada bloco tinha um tom so e a borda raso/fundo ficava serrilhada)
+                    if (wat) {
+                        float own = Math.max(1e-3f, lumOf(col));
+                        for (int k = 0; k < 4; k++) {
+                            float sum = own;
+                            int cnt = 1;
+                            int[][] nb = {{corner[k][0], 0}, {0, corner[k][1]}, {corner[k][0], corner[k][1]}};
+                            for (int[] o : nb) {
+                                int nx = dx + o[0], nz = dz + o[1];
+                                if (Math.abs(nx) > R || Math.abs(nz) > R) continue;
+                                int ni = (nz + R) * N + (nx + R);
+                                if (RC[ni] == 0 || (RCOL[ni][0] >>> 24) == 255 || RTOP[ni][0] != RTOP[i][r]) continue;
+                                sum += lumOf(RCOL[ni][0]);
+                                cnt++;
+                            }
+                            f4[k] *= Math.max(0.6f, Math.min(1.6f, sum / cnt / own));
+                        }
+                    }
                     if (upL.length > 0) {
                         MapTex.top(bb, upL, wTint, dx, y, dz, f4, alpha);
                     } else {
@@ -144,6 +163,8 @@ public class DioramaRenderer {
                     int nx = dx + d[0], nz = dz + d[1];
                     boolean inside = Math.abs(nx) <= R && Math.abs(nz) <= R;
                     int ni = inside ? (nz + R) * N + (nx + R) : -1;
+                    // agua nao desenha parede na borda do minimapa (eram as "listras" verticais no horizonte)
+                    if (wat && (ni < 0 || RC[ni] == 0)) continue;
                     if (ni < 0 || RC[ni] == 0) {
                         cnt = subtract(sp, cnt, tmp, Integer.MIN_VALUE, top - 8);
                     } else {
@@ -233,6 +254,10 @@ public class DioramaRenderer {
         }
         System.arraycopy(tmp, 0, sp, 0, out);
         return out;
+    }
+
+    private static float lumOf(int c) {
+        return (((c >> 16) & 255) * 0.2126f + ((c >> 8) & 255) * 0.7152f + (c & 255) * 0.0722f) / 255f;
     }
 
     static int scale(int argb, float f) {

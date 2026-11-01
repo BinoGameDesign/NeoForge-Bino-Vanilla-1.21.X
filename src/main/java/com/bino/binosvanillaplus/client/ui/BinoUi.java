@@ -61,6 +61,11 @@ public final class BinoUi {
         text(g, font, text, cx - font.width(text), y, 2f, TEXT, false);
     }
 
+    // titulo com escala propria (ex.: 1.4 no mapa-mundi)
+    public static void title(GuiGraphics g, Font font, String text, int cx, int y, float scale) {
+        text(g, font, text, cx - font.width(text) * scale / 2f, y, scale, TEXT, false);
+    }
+
     public static void titleLeft(GuiGraphics g, Font font, String text, int x, int y) {
         text(g, font, text, x, y, 2f, TEXT, false);
     }

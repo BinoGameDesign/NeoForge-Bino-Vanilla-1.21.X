@@ -25,14 +25,17 @@ public class MistParticle extends SingleQuadParticle {
     public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "textures/particle/mist.png");
     public static ShaderInstance shader;   // sem shaderpack: shader proprio (o do jogo corta alpha < 0.1 e a nevoa e' mais fina que isso)
 
-    // Desenho: textura propria, sem escrever profundidade (fiapos se sobrepoem sem "recorte"), mistura normal.
+    // Desenho: textura propria, sem escrever profundidade (fiapos se sobrepoem sem "recorte"), mistura aditiva.
     // Com shaderpack usa o shader de particula do jogo, que o Iris troca pelo do pack.
     public static final ParticleRenderType SHEET = new ParticleRenderType() {
         @Override
         public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
             RenderSystem.depthMask(false);
             RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
+            // SOMA de luz (aditivo): a nevoa so clareia, nunca escurece -> sem "bolhas" escuras contra o ceu ou na sombra,
+            // e brilha de leve sobre o que esta atras (sensacao de magia)
+            RenderSystem.blendFunc(com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
+                    com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE);
             RenderSystem.setShaderTexture(0, TEXTURE);
             if (FarTerrain.irisPack() || shader == null) RenderSystem.setShader(GameRenderer::getParticleShader);
             else RenderSystem.setShader(() -> shader);
@@ -68,8 +71,8 @@ public class MistParticle extends SingleQuadParticle {
         int k = random.nextInt(4);           // 4 variacoes na textura (2x2)
         this.u0 = (k & 1) * 0.5f;
         this.v0 = (k >> 1) * 0.5f;
-        this.roll = this.oRoll = random.nextFloat() * (float) (Math.PI * 2);
-        this.spin = (random.nextFloat() - 0.5f) * 0.004f;
+        this.roll = this.oRoll = (random.nextFloat() - 0.5f) * 0.3f;   // fiapos deitados (textura esticada na horizontal)
+        this.spin = (random.nextFloat() - 0.5f) * 0.0008f;
         setSize(size, size);                 // caixa do tamanho do fiapo (para nao sumir na borda da tela)
         alive++;
     }

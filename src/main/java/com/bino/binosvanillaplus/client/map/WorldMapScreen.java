@@ -65,15 +65,17 @@ public class WorldMapScreen extends BinoScreen {
         mapX = (width - mapW) / 2;
         mapY = (height - mapH) / 2 + 4;
 
-        addRenderableWidget(BinoUi.closeButton(mapX + mapW - 8, mapY - 6, 13, this::onClose));
-        int by = mapY + mapH - 12, bx = mapX + mapW - 10 - 4 * 24 + 5;
-        addRenderableWidget(new BinoUi.Button(bx, by, 19, 19, "", BinoUi.Style.LIGHT,
-                () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this))).icon(BinoUi.tex("map/waypoints"), 11).tooltip("Marcações"));
-        addRenderableWidget(new BinoUi.Button(bx + 24, by, 19, 19, "", BinoUi.Style.LIGHT,
-                () -> Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).icon(BinoUi.tex("map/options"), 11).tooltip("Opções"));
-        addRenderableWidget(new BinoUi.Button(bx + 48, by, 19, 19, "", BinoUi.Style.LIGHT, this::centerOnPlayer)
-                .icon(BinoUi.tex("map/center"), 11).tooltip("Centralizar no jogador (C)"));
-        addRenderableWidget(new BinoUi.Button(bx + 72, by, 19, 19, "?", BinoUi.Style.LIGHT, () -> help = !help).tooltip("Ajuda (H)"));
+        // interface ~30% menor que antes (botoes 14 px, icones 8 px)
+        addRenderableWidget(BinoUi.closeButton(mapX + mapW - 6, mapY - 5, 10, this::onClose));
+        int bs = 14, gap = 17;
+        int by = mapY + mapH - bs - 4, bx = mapX + mapW - 6 - 3 * gap - bs;
+        addRenderableWidget(new BinoUi.Button(bx, by, bs, bs, "", BinoUi.Style.LIGHT,
+                () -> Minecraft.getInstance().setScreen(new WaypointListScreen(this))).icon(BinoUi.tex("map/waypoints"), 8).tooltip("Marcações"));
+        addRenderableWidget(new BinoUi.Button(bx + gap, by, bs, bs, "", BinoUi.Style.LIGHT,
+                () -> Minecraft.getInstance().setScreen(new MapOptionsScreen(this))).icon(BinoUi.tex("map/options"), 8).tooltip("Opções"));
+        addRenderableWidget(new BinoUi.Button(bx + 2 * gap, by, bs, bs, "", BinoUi.Style.LIGHT, this::centerOnPlayer)
+                .icon(BinoUi.tex("map/center"), 8).tooltip("Centralizar no jogador (C)"));
+        addRenderableWidget(new BinoUi.Button(bx + 3 * gap, by, bs, bs, "?", BinoUi.Style.LIGHT, () -> help = !help).tooltip("Ajuda (H)"));
     }
 
     private void centerOnPlayer() {
@@ -132,7 +134,7 @@ public class WorldMapScreen extends BinoScreen {
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
             if (w.hidden) continue;
             float[] s = screenOf(w.x + 0.5, w.y, w.z + 0.5);
-            if (s[2] != 0f && Math.abs(mx - s[0]) <= 7 && Math.abs(my - s[1]) <= 7) return w;
+            if (s[2] != 0f && Math.abs(mx - s[0]) <= 5 && Math.abs(my - s[1]) <= 5) return w;
         }
         return null;
     }
@@ -170,16 +172,17 @@ public class WorldMapScreen extends BinoScreen {
                 g.pose().pushPose();
                 g.pose().translate(sx, sy, 0);
                 g.pose().scale(k, k, 1f);
-                g.fill(-7, -7, 8, 8, w == hover ? 0xFFFFFFFF : 0xFF000000);
-                WaypointIcons.badge(g, w.icon(), -6, -6, 13, w.color);
+                g.fill(-5, -5, 6, 6, w == hover ? 0xFFFFFFFF : 0xFF000000);
+                WaypointIcons.badge(g, w.icon(), -4, -4, 9, w.color);
                 g.pose().popPose();
                 if (MapOptions.worldLabels) {
                     String label = w.name;
                     if (MapOptions.showDistance && pl != null)
                         label += " (" + (int) Math.sqrt(pl.distanceToSqr(w.x + 0.5, w.y, w.z + 0.5)) + " m)";
-                    int lx = sx + (int) (9 * k);
-                    g.fill(lx, sy - 6, lx + 4 + font.width(label), sy + 6, w == hover ? 0xB0000000 : 0x80000000);
-                    g.drawString(font, label, lx + 2, sy - 4, 0xFFFFFFFF, false);
+                    int lx = sx + (int) (7 * k);
+                    float ts = 0.75f;
+                    g.fill(lx, sy - 5, lx + 3 + (int) Math.ceil(font.width(label) * ts), sy + 5, w == hover ? 0xB0000000 : 0x80000000);
+                    BinoUi.text(g, font, label, lx + 2, sy - 3, ts, 0xFFFFFFFF, false);
                 }
             }
         }
@@ -196,12 +199,13 @@ public class WorldMapScreen extends BinoScreen {
         if (mc.level != null && pl != null) {
             String day = dayTime(mc.level.getDayTime());
             String pos = "X: " + pl.getBlockX() + "  Y: " + pl.getBlockY() + "  Z: " + pl.getBlockZ();
-            int ty = mapY + mapH - 13;
-            int w1 = font.width(day), w2 = font.width(pos);
-            g.fill(mapX, ty - 3, mapX + 4 + w1 + 6, ty + 11, 0x66000000);
-            g.fill(mapX + 4 + w1 + 14, ty - 3, mapX + 4 + w1 + 14 + w2 + 8, ty + 11, 0x66000000);
-            g.drawString(font, day, mapX + 4, ty, 0xFFFFFFFF, false);
-            g.drawString(font, pos, mapX + 4 + w1 + 18, ty, 0xFFFFFFFF, false);
+            float ts = 0.75f;
+            int ty = mapY + mapH - 10;
+            int w1 = (int) Math.ceil(font.width(day) * ts), w2 = (int) Math.ceil(font.width(pos) * ts);
+            g.fill(mapX, ty - 3, mapX + 3 + w1 + 4, ty + 9, 0x66000000);
+            g.fill(mapX + 3 + w1 + 10, ty - 3, mapX + 3 + w1 + 10 + w2 + 6, ty + 9, 0x66000000);
+            BinoUi.text(g, font, day, mapX + 3, ty, ts, 0xFFFFFFFF, false);
+            BinoUi.text(g, font, pos, mapX + 3 + w1 + 13, ty, ts, 0xFFFFFFFF, false);
         }
         if (hover == null && hasShiftDown() && inMap(mx, my)) {   // diagnostico: Shift mostra o que foi lido na coluna
             int[] at = pickWorld(mx, my);
@@ -214,7 +218,7 @@ public class WorldMapScreen extends BinoScreen {
 
     @Override
     protected void renderOverlay(GuiGraphics g, int mx, int my, float pt) {
-        BinoUi.title(g, font, "World Map", mapX + mapW / 2, mapY - 7);
+        BinoUi.title(g, font, "World Map", mapX + mapW / 2, mapY - 5, 1.4f);
         drawHelp(g);
         menu.render(g, mx, my);
     }

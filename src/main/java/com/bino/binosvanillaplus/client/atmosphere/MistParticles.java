@@ -107,8 +107,8 @@ public final class MistParticles {
         if (lvl.getBlockState(p).isSolidRender(lvl, p)) return;
         if (!dims && lvl.getBrightness(LightLayer.SKY, p) < 8) return;   // nao nasce dentro de caverna/casa
         if (!dims && inShadow(lvl, x + 0.5, y, z + 0.5)) return;          // na sombra viraria uma mancha escura
-        float size = (3.2f + rnd.nextFloat() * 4.5f) * (float) (0.75 + rad / 90.0);
-        float alpha = boost(0.12f + 0.16f * Math.min(1f, w) + rnd.nextFloat() * 0.05f, r, g, b);
+        float size = (4.5f + rnd.nextFloat() * 6.0f) * (float) (0.75 + rad / 90.0);
+        float alpha = boost(0.09f + 0.13f * Math.min(1f, w) + rnd.nextFloat() * 0.04f, r, g, b);
         int life = 180 + rnd.nextInt(200);
         float t = rnd.nextFloat() * 0.6f;
         mc.particleEngine.add(new MistParticle(lvl, x + rnd.nextDouble(), y, z + rnd.nextDouble(), size, alpha,
@@ -125,8 +125,8 @@ public final class MistParticles {
         while (down < 10 && lvl.getBlockState(p.below()).isAir()) { p.move(0, -1, 0); down++; }
         if (down >= 10) return;   // sem chao perto (abismo): pula
         double y = p.getY() + 0.3 + rnd.nextDouble() * 1.8;
-        float size = 2.4f + rnd.nextFloat() * 3.2f;
-        float alpha = boost(0.12f + rnd.nextFloat() * 0.10f, r, g, b);
+        float size = 3.4f + rnd.nextFloat() * 4.0f;
+        float alpha = boost(0.10f + rnd.nextFloat() * 0.08f, r, g, b);
         int life = 200 + rnd.nextInt(200);
         float t = rnd.nextFloat() * 0.5f;
         mc.particleEngine.add(new MistParticle(lvl, p.getX() + rnd.nextDouble(), y, p.getZ() + rnd.nextDouble(), size, alpha,
@@ -149,7 +149,7 @@ public final class MistParticles {
     // o Complementary corta pela metade o alpha de particulas escuras (trata como fumaca): compensa
     private static float boost(float alpha, float r, float g, float b) {
         if (FarTerrain.irisPack() && r * r + g * g + b * b < 1f) alpha *= 1.8f;
-        return Math.min(0.42f, alpha);
+        return Math.min(0.34f, alpha);
     }
 
     private static float lerp(float a, float b, float t) { return a + (b - a) * t; }
