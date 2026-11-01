@@ -7,7 +7,6 @@ import com.bino.binosvanillaplus.entity.CompanionAllayEntity;
 import com.bino.binosvanillaplus.entity.PetInteractables;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,8 +51,7 @@ public class ModNetwork {
         if (last != null && now - last < 6) return;   // no maximo ~3 pings por segundo
         LAST_PING.put(sp.getUUID(), now);
         if (p.pos().distSqr(sp.blockPosition()) > 300.0 * 300.0) return;
-        float hue = (sp.getUUID().hashCode() & 0xFFFF) / 65536f;   // cada jogador com a sua cor
-        int color = Mth.hsvToRgb(hue, 0.6f, 1f) & 0xFFFFFF;
+        int color = 0xFFFFFF;   // ping branco
         PacketDistributor.sendToPlayersInDimension(sp.serverLevel(), new PingBroadcastPayload(p.pos(), sp.getName().getString(), color));
     }
 

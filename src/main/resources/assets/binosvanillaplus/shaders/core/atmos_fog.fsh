@@ -20,6 +20,9 @@ uniform vec4 AtmLayer;     // x densidade da nevoa baixa, y base (Y), z altura, 
 uniform float AtmHazeH;    // altura em que a nevoa alta afina (enorme = igual em toda altura)
 uniform float AtmMistFar;  // ate onde integrar a nevoa baixa
 uniform float AtmTime;     // segundos
+uniform vec3 AtmLightPos;  // luz colorida do pet (relativa a camera)
+uniform vec3 AtmLightCol;  // cor * intensidade (0 = sem luz)
+uniform float AtmLightR;   // raio da luz em blocos
 
 out vec4 fragColor;
 
@@ -68,6 +71,14 @@ void main() {
     }
     float jit = ign(gl_FragCoord.xy);
 
+    // luz colorida do pet: soma um brilho da cor dele nas superficies em volta (sem shaderpack a luz do jogo e' branca)
+    vec3 glow = vec3(0.0);
+    if (!sky && dot(AtmLightCol, AtmLightCol) > 0.0) {
+        vec3 pp = dir * dist;
+        float ld = length(pp - AtmLightPos) / AtmLightR;
+        glow = AtmLightCol * pow(clamp(1.0 - ld, 0.0, 1.0), 2.2);
+    }
+
     // nevoa alta
     float L = max(dist - AtmHaze.y, 0.0);
     float tauH = AtmHaze.x * L * heightFactor(dir.y * L, AtmHazeH);
@@ -99,7 +110,7 @@ void main() {
     float tau = tauH + tauM;
     float a = min(1.0 - exp(-tau), AtmHaze.z);
     if (a < 0.002) {
-        fragColor = vec4(0.0);
+        fragColor = vec4(glow, 0.0);
         return;
     }
     vec3 col = (AtmFog * tauH + AtmMist * tauM) / max(tau, 1e-6);
@@ -107,5 +118,5 @@ void main() {
     float mu = max(dot(dir, normalize(AtmSunDir)), 0.0);
     col += AtmSunCol * (pow(mu, 10.0) * 0.55 + pow(mu, 3.0) * 0.16);
     col = clamp(col + (jit - 0.5) / 255.0, 0.0, 1.0);
-    fragColor = vec4(col * a, a);
+    fragColor = vec4(col * a + glow * (1.0 - a), a);
 }

@@ -140,14 +140,28 @@ public class WorldMap3D {
 
         DioramaRenderer.drawBeams(view, proj, tx, targetY, tz, MapOptions.worldPins, Math.max(0.8f, dist / 80f), Math.max(60f, dist * 1.2f));
 
-        // cabeca 3D do jogador com a skin, virada para onde ele olha (sempre visivel, por cima do terreno)
-        if (player != null) {
-            RenderSystem.clear(256, Minecraft.ON_OSX);
-            float size = Math.max(1.6f, dist / 42f);   // ~30% maior
-            Matrix4f hmv = new Matrix4f(view)
-                    .translate((float) (player.getX() - tx), (float) (player.getY() - targetY + 1.0 + size * 0.6f), (float) (player.getZ() - tz));
-            PlayerHead3D.draw(hmv, proj, player, size);
-        }
+        lastTx = tx;
+        lastTz = tz;
+        DioramaRenderer.end(g, st);
+    }
+
+    private static double lastTx, lastTz;
+
+    // aresta da cabeca do jogador em blocos (acompanha o zoom)
+    static float headSize() { return Math.max(1.6f, dist / 42f); }
+
+    // centro da cabeca (Y do mundo)
+    static double headCenterY(LocalPlayer p) { return p.getY() + 1.0 + headSize() * 0.6f; }
+
+    // cabeca 3D do jogador com a skin, virada para onde ele olha. Desenhada DEPOIS dos icones 2D (mobs, marcacoes),
+    // sempre na frente deles e do terreno.
+    public static void renderHead(GuiGraphics g, int x0, int y0, int w, int h, LocalPlayer player) {
+        if (player == null || DioramaRenderer.shader == null) return;
+        DioramaRenderer.GlState st = DioramaRenderer.begin(g, x0, y0, w, h, proj);
+        float size = headSize();
+        Matrix4f hmv = new Matrix4f(view)
+                .translate((float) (player.getX() - lastTx), (float) (headCenterY(player) - targetY), (float) (player.getZ() - lastTz));
+        PlayerHead3D.draw(hmv, proj, player, size);
         DioramaRenderer.end(g, st);
     }
 

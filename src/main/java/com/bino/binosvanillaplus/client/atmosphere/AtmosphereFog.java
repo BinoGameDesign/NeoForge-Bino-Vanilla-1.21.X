@@ -207,6 +207,28 @@ public final class AtmosphereFog {
         sh.safeGetUniform("AtmHazeH").set(flat ? 1.0e5f : 260f);
         sh.safeGetUniform("AtmMistFar").set(Math.min(rd * 1.05f, 384f));
         sh.safeGetUniform("AtmTime").set(time);
+        // luz colorida do pet (o mais perto do jogador): brilho da cor dele, mais forte a noite e em caverna
+        float lr = 0f, lg = 0f, lb = 0f, lx = 0f, ly = 0f, lz = 0f;
+        if (mc.player != null) {
+            com.bino.binosvanillaplus.entity.CompanionAllayEntity best = null;
+            double bd = 24 * 24;
+            for (com.bino.binosvanillaplus.entity.CompanionAllayEntity pet : mc.level.getEntitiesOfClass(
+                    com.bino.binosvanillaplus.entity.CompanionAllayEntity.class, mc.player.getBoundingBox().inflate(24))) {
+                double d = pet.distanceToSqr(mc.player);
+                if (d < bd && !pet.isInvisible()) { bd = d; best = pet; }
+            }
+            if (best != null) {
+                float pt = mc.getTimer().getGameTimeDeltaPartialTick(false);
+                Vec3 pp = best.getPosition(pt);
+                lx = (float) (pp.x - cam.x); ly = (float) (pp.y + 0.35 - cam.y); lz = (float) (pp.z - cam.z);
+                int c = com.bino.binosvanillaplus.client.CompanionAllayRenderer.lightColor(best);
+                float k = 0.10f + 0.30f * Math.max(AtmosphereState.night, AtmosphereState.cave);
+                lr = ((c >> 16) & 255) / 255f * k; lg = ((c >> 8) & 255) / 255f * k; lb = (c & 255) / 255f * k;
+            }
+        }
+        sh.safeGetUniform("AtmLightPos").set(lx, ly, lz);
+        sh.safeGetUniform("AtmLightCol").set(lr, lg, lb);
+        sh.safeGetUniform("AtmLightR").set(7f);
 
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);

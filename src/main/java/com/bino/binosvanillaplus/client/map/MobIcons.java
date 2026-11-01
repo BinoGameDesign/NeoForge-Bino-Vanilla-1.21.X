@@ -73,7 +73,7 @@ public final class MobIcons {
         int w = size, h = Math.max(2, Math.round(size * f.h / (float) f.w));
         if (h > size) { h = size; w = Math.max(2, Math.round(size * f.w / (float) f.h)); }
         int x = cx - w / 2, y = cy - h / 2;
-        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xFF000000);   // contorno
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xFFFFFFFF);   // contorno branco
         g.blit(tex, x, y, w, h, f.u, f.v, f.w, f.h, f.modelW, texH);
         if (f.hat) g.blit(tex, x, y, w, h, f.u + 32, f.v, f.w, f.h, f.modelW, texH);   // camada de cima (capacete/chapeu da skin)
         if (f.overlay != null) g.blit(f.overlay, x, y, w, h, f.u, f.v, f.w, f.h, f.modelW, texHeight(f.overlay, f.modelW));
@@ -81,7 +81,7 @@ public final class MobIcons {
 
     private static void dot(GuiGraphics g, Entity e, int cx, int cy) {
         int col = e instanceof Enemy ? 0xFFFF3B30 : 0xFF8FD8FF;
-        g.fill(cx - 2, cy - 2, cx + 3, cy + 3, 0xFF000000);
+        g.fill(cx - 2, cy - 2, cx + 3, cy + 3, 0xFFFFFFFF);
         g.fill(cx - 1, cy - 1, cx + 2, cy + 2, col);
     }
 

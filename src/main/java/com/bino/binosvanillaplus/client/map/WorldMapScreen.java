@@ -187,7 +187,7 @@ public class WorldMapScreen extends BinoScreen {
                 g.pose().pushPose();
                 g.pose().translate(sx, sy, 0);
                 g.pose().scale(k, k, 1f);
-                g.fill(-5, -5, 6, 6, w == hover ? 0xFFFFFFFF : 0xFF000000);   // marcacoes ~30% menores
+                g.fill(-5, -5, 6, 6, w == hover ? 0xFFFFE27A : 0xFFFFFFFF);   // contorno branco (amarelo no hover)
                 WaypointIcons.badge(g, w.icon(), -4, -4, 9, w.color);
                 g.pose().popPose();
                 if (MapOptions.worldLabels) {
@@ -208,6 +208,19 @@ public class WorldMapScreen extends BinoScreen {
             g.drawString(font, m.label(), (int) s[0] + 7, (int) s[1] - 4, 0xFFFFC0C0, true);
         }
         g.disableScissor();
+        // cabeca 3D do jogador por cima de todos os icones, com o nick acima
+        if (pl != null && DioramaRenderer.ready()) {
+            WorldMap3D.renderHead(g, mapX, mapY, mapW, mapH, pl);
+            float[] ns = screenOf(pl.getX(), WorldMap3D.headCenterY(pl) + WorldMap3D.headSize() * 0.75f, pl.getZ());
+            if (ns[2] != 0f && inMap((int) ns[0], (int) ns[1])) {
+                String nick = pl.getName().getString();
+                float ts = 0.75f;
+                float tw = font.width(nick) * ts;
+                int nx = (int) (ns[0] - tw / 2f), ny = (int) ns[1] - 9;
+                g.fill(nx - 2, ny - 1, nx + (int) Math.ceil(tw) + 2, ny + 7, 0x90000000);
+                BinoUi.text(g, font, nick, nx, ny, ts, 0xFFFFFFFF, false);
+            }
+        }
 
         // barra de baixo: dia/hora e coordenadas do jogador
         if (mc.level != null && pl != null) {
@@ -297,6 +310,7 @@ public class WorldMapScreen extends BinoScreen {
             items.add(PopupMenu.Item.of("Criar marcação aqui", () -> mc.setScreen(new WaypointEditScreen(this, null, wx, wy, wz))));
             items.add(PopupMenu.Item.of("Marcação rápida aqui", () -> {
                 MapWaypoints.Waypoint nw = MapWaypoints.create(wx, wy, wz);
+                nw.quick = true;   // some quando o jogador chegar nela
                 MapWaypoints.add(nw);
                 Toasts.show("\"" + nw.name + "\" criada", "Desfazer", () -> MapWaypoints.remove(nw));
             }));

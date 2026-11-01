@@ -102,6 +102,7 @@ public class MapClientEvents {
         ExploredMap.tick(mc);
         if (mc.player != null && mc.level != null && mc.player.tickCount % 3 == 0 && com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player))
             MinimapHud.sample(mc);
+        if (mc.player != null && mc.player.tickCount % 5 == 0) MapWaypoints.checkQuickReached(mc.player);
         while (ZOOM_IN.consumeClick()) { MapOptions.ensureLoaded(); MapOptions.minimapZoom = Math.max(0, MapOptions.minimapZoom - 1); MapOptions.save(); }
         while (ZOOM_OUT.consumeClick()) { MapOptions.ensureLoaded(); MapOptions.minimapZoom = Math.min(2, MapOptions.minimapZoom + 1); MapOptions.save(); }
         while (ADD_WAYPOINT.consumeClick()) {

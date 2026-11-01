@@ -111,7 +111,7 @@ public final class Pings {
         }
         // losango (quadrado girado 45 graus) com contorno preto
         g.pose().mulPose(com.mojang.math.Axis.ZP.rotationDegrees(45f));
-        g.fill(-3, -3, 4, 4, a);
+        g.fill(-3, -3, 4, 4, a | 0x2A2A2A);              // contorno escuro (o ping e' branco)
         g.fill(-2, -2, 3, 3, a | (color & 0xFFFFFF));
         g.pose().popPose();
     }

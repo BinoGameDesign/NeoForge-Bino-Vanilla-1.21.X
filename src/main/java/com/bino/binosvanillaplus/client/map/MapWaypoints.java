@@ -23,6 +23,8 @@ public class MapWaypoints {
         public String symbol;      // id do icone (casa, mina, perigo...), ver WaypointIcons
         public String set;         // grupo (ex.: "Casa", "Minas")
         public boolean hidden;     // oculto = nao aparece em nenhum mapa
+        public boolean quick;      // marcacao rapida: some sozinha quando o jogador chega nela
+        transient boolean armed;   // o jogador ja se afastou dela (para nao sumir na hora em que foi criada perto)
 
         public String icon() { return WaypointIcons.valid(symbol); }
 
@@ -83,6 +85,23 @@ public class MapWaypoints {
     public static void remove(Waypoint w) {
         LIST.remove(w);
         save();
+    }
+
+    // marcacoes rapidas: apaga quando o jogador chega (a ate 3 blocos), depois de ter se afastado pelo menos 8
+    static void checkQuickReached(net.minecraft.world.entity.player.Player p) {
+        Waypoint reached = null;
+        for (Waypoint w : LIST) {
+            if (!w.quick) continue;
+            double dx = w.x + 0.5 - p.getX(), dz = w.z + 0.5 - p.getZ(), dy = w.y - p.getY();
+            double d2 = dx * dx + dz * dz;
+            if (d2 > 8 * 8) w.armed = true;
+            else if (w.armed && d2 < 3 * 3 && Math.abs(dy) < 5) { reached = w; break; }
+        }
+        if (reached == null) return;
+        Waypoint w = reached;
+        remove(w);
+        com.bino.binosvanillaplus.client.ui.UiSound.click();
+        com.bino.binosvanillaplus.client.ui.Toasts.show("\"" + w.name + "\" alcançada", "Desfazer", () -> add(w));
     }
 
     // ponto de morte: so existe um, o mais recente

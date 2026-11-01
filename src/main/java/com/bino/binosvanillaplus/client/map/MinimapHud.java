@@ -257,7 +257,7 @@ public class MinimapHud {
                 }
                 int sx = (int) (cxm + ox), sy = (int) (cym + oy);
                 // ~35% menor que antes
-                g.fill(sx - 4, sy - 4, sx + 5, sy + 5, edge ? 0xFFCCCCCC : 0xFF000000);
+                g.fill(sx - 4, sy - 4, sx + 5, sy + 5, 0xFFFFFFFF);   // contorno branco
                 WaypointIcons.badge(g, w.icon(), sx - 3, sy - 3, 7, w.color);
             }
         }
