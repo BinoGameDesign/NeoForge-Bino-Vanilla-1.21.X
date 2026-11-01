@@ -246,10 +246,10 @@ public class DioramaRenderer {
     static void quadC(BufferBuilder b, float ax, float ay, float az, float bx, float by, float bz,
                       float cx, float cy, float cz, float dx, float dy, float dz,
                       int c0, int c1, int c2, int c3, float nx, float ny, float nz) {
-        b.addVertex(ax, ay, az).setUv(-1f, -1f).setColor(c0).setNormal(nx, ny, nz);
-        b.addVertex(bx, by, bz).setUv(-1f, -1f).setColor(c1).setNormal(nx, ny, nz);
-        b.addVertex(cx, cy, cz).setUv(-1f, -1f).setColor(c2).setNormal(nx, ny, nz);
-        b.addVertex(dx, dy, dz).setUv(-1f, -1f).setColor(c3).setNormal(nx, ny, nz);
+        b.addVertex(ax, ay, az).setUv(-1f, -1f).setColor(c0).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
+        b.addVertex(bx, by, bz).setUv(-1f, -1f).setColor(c1).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
+        b.addVertex(cx, cy, cz).setUv(-1f, -1f).setColor(c2).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
+        b.addVertex(dx, dy, dz).setUv(-1f, -1f).setColor(c3).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
     }
 
     // ------------------------------------------------------------------ ponteiro do jogador (seta plana, aponta -Z)
@@ -280,19 +280,19 @@ public class DioramaRenderer {
             float nx = c[1] - a[1], nz = -(c[0] - a[0]);
             float len = (float) Math.sqrt(nx * nx + nz * nz);
             nx /= len; nz /= len;
-            b.addVertex(a[0], y1, a[1]).setUv(-1f, -1f).setColor(sideHi).setNormal(nx, 0, nz);
-            b.addVertex(a[0], y0, a[1]).setUv(-1f, -1f).setColor(sideLo).setNormal(nx, 0, nz);
-            b.addVertex(c[0], y0, c[1]).setUv(-1f, -1f).setColor(sideLo).setNormal(nx, 0, nz);
-            b.addVertex(a[0], y1, a[1]).setUv(-1f, -1f).setColor(sideHi).setNormal(nx, 0, nz);
-            b.addVertex(c[0], y0, c[1]).setUv(-1f, -1f).setColor(sideLo).setNormal(nx, 0, nz);
-            b.addVertex(c[0], y1, c[1]).setUv(-1f, -1f).setColor(sideHi).setNormal(nx, 0, nz);
+            b.addVertex(a[0], y1, a[1]).setUv(-1f, -1f).setColor(sideHi).setLight(MapTex.LIGHT).setNormal(nx, 0, nz);
+            b.addVertex(a[0], y0, a[1]).setUv(-1f, -1f).setColor(sideLo).setLight(MapTex.LIGHT).setNormal(nx, 0, nz);
+            b.addVertex(c[0], y0, c[1]).setUv(-1f, -1f).setColor(sideLo).setLight(MapTex.LIGHT).setNormal(nx, 0, nz);
+            b.addVertex(a[0], y1, a[1]).setUv(-1f, -1f).setColor(sideHi).setLight(MapTex.LIGHT).setNormal(nx, 0, nz);
+            b.addVertex(c[0], y0, c[1]).setUv(-1f, -1f).setColor(sideLo).setLight(MapTex.LIGHT).setNormal(nx, 0, nz);
+            b.addVertex(c[0], y1, c[1]).setUv(-1f, -1f).setColor(sideHi).setLight(MapTex.LIGHT).setNormal(nx, 0, nz);
         }
     }
 
     private static void tri(BufferBuilder b, float[] p1, float[] p2, float[] p3, float y, int col) {
-        b.addVertex(p1[0], y, p1[1]).setUv(-1f, -1f).setColor(col).setNormal(0, 1, 0);
-        b.addVertex(p2[0], y, p2[1]).setUv(-1f, -1f).setColor(col).setNormal(0, 1, 0);
-        b.addVertex(p3[0], y, p3[1]).setUv(-1f, -1f).setColor(col).setNormal(0, 1, 0);
+        b.addVertex(p1[0], y, p1[1]).setUv(-1f, -1f).setColor(col).setLight(MapTex.LIGHT).setNormal(0, 1, 0);
+        b.addVertex(p2[0], y, p2[1]).setUv(-1f, -1f).setColor(col).setLight(MapTex.LIGHT).setNormal(0, 1, 0);
+        b.addVertex(p3[0], y, p3[1]).setUv(-1f, -1f).setColor(col).setLight(MapTex.LIGHT).setNormal(0, 1, 0);
     }
 
     // desenha o ponteiro com uma matriz modelview qualquer

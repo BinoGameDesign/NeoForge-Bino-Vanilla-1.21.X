@@ -8,8 +8,9 @@
     "fragment": "binosvanillaplus:map_depth",
     "attributes": [
         "Position",
-        "UV0",
         "Color",
+        "UV0",
+        "UV2",
         "Normal"
     ],
     "uniforms": [

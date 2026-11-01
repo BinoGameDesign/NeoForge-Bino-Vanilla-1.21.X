@@ -45,13 +45,13 @@ public class MapClientEvents {
     @SubscribeEvent
     public static void registerShaders(RegisterShadersEvent event) throws IOException {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
-                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "diorama"), DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "diorama"), DefaultVertexFormat.BLOCK),
                 s -> DioramaRenderer.shader = s);
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_sky"), DefaultVertexFormat.POSITION),
                 s -> DioramaRenderer.skyShader = s);
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
-                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_depth"), DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_depth"), DefaultVertexFormat.BLOCK),
                 s -> WorldMap3D.depthShader = s);
     }
 

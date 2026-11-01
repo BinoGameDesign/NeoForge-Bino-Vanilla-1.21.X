@@ -8,8 +8,9 @@
     "fragment": "binosvanillaplus:diorama",
     "attributes": [
         "Position",
-        "UV0",
         "Color",
+        "UV0",
+        "UV2",
         "Normal"
     ],
     "uniforms": [

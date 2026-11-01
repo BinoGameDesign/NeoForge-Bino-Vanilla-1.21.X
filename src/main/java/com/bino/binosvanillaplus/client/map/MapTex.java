@@ -14,7 +14,11 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 public final class MapTex {
     private MapTex() {}
 
-    public static final VertexFormat FMT = DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL;
+    // formato de bloco do jogo (posicao, cor, textura, luz, normal): as MESMAS malhas servem para o minimapa, o mapa-mundi
+    // e a distancia extra no mundo - inclusive desenhadas pelos shaders de terreno do jogo / do shaderpack (Iris)
+    public static final VertexFormat FMT = DefaultVertexFormat.BLOCK;
+    // luz do ceu cheia, sem luz de bloco (senao o shaderpack acenderia tudo como tocha)
+    public static final int LIGHT = 15 << 20;
 
     static int color(BlockLooks.Layer l, int tint, float f, int alpha) {
         int base = l.tintIndex() >= 0 ? tint : 0xFFFFFF;
@@ -37,10 +41,10 @@ public final class MapTex {
             int a = layerAlpha(li, baseAlpha);
             float iu = (s.getU1() - s.getU0()) / 32f, iv = (s.getV1() - s.getV0()) / 32f;   // meio pixel para dentro: sem listras nas emendas
             float u0 = s.getU0() + iu, u1 = s.getU1() - iu, v0 = s.getV0() + iv, v1 = s.getV1() - iv;
-            b.addVertex(x, yy, z).setUv(u0, v0).setColor(color(l, tint, f[0], a)).setNormal(0, 1, 0);
-            b.addVertex(x + 1, yy, z).setUv(u1, v0).setColor(color(l, tint, f[1], a)).setNormal(0, 1, 0);
-            b.addVertex(x + 1, yy, z + 1).setUv(u1, v1).setColor(color(l, tint, f[2], a)).setNormal(0, 1, 0);
-            b.addVertex(x, yy, z + 1).setUv(u0, v1).setColor(color(l, tint, f[3], a)).setNormal(0, 1, 0);
+            b.addVertex(x, yy, z).setUv(u0, v0).setColor(color(l, tint, f[0], a)).setLight(MapTex.LIGHT).setNormal(0, 1, 0);
+            b.addVertex(x + 1, yy, z).setUv(u1, v0).setColor(color(l, tint, f[1], a)).setLight(MapTex.LIGHT).setNormal(0, 1, 0);
+            b.addVertex(x + 1, yy, z + 1).setUv(u1, v1).setColor(color(l, tint, f[2], a)).setLight(MapTex.LIGHT).setNormal(0, 1, 0);
+            b.addVertex(x, yy, z + 1).setUv(u0, v1).setColor(color(l, tint, f[3], a)).setLight(MapTex.LIGHT).setNormal(0, 1, 0);
         }
     }
 
@@ -110,9 +114,9 @@ public final class MapTex {
     private static void quad(BufferBuilder b, float ax, float ay, float az, float bx, float by, float bz,
                              float cx, float cy, float cz, float dx, float dy, float dz,
                              float u0, float u1, float v0, float vb, int ct, int cb, float nx, float ny, float nz) {
-        b.addVertex(ax, ay, az).setUv(u0, v0).setColor(ct).setNormal(nx, ny, nz);
-        b.addVertex(bx, by, bz).setUv(u1, v0).setColor(ct).setNormal(nx, ny, nz);
-        b.addVertex(cx, cy, cz).setUv(u1, vb).setColor(cb).setNormal(nx, ny, nz);
-        b.addVertex(dx, dy, dz).setUv(u0, vb).setColor(cb).setNormal(nx, ny, nz);
+        b.addVertex(ax, ay, az).setUv(u0, v0).setColor(ct).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
+        b.addVertex(bx, by, bz).setUv(u1, v0).setColor(ct).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
+        b.addVertex(cx, cy, cz).setUv(u1, vb).setColor(cb).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
+        b.addVertex(dx, dy, dz).setUv(u0, vb).setColor(cb).setLight(MapTex.LIGHT).setNormal(nx, ny, nz);
     }
 }

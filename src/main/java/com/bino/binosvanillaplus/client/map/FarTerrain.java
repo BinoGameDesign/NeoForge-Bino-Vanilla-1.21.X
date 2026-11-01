@@ -41,11 +41,25 @@ public class FarTerrain {
     private static long lastCheck = -1;
     private static boolean takenOver = false;
 
+    // so o Distant Horizons instalado desliga a distancia extra (os dois desenhariam a mesma coisa)
     static boolean externalTakesOver() {
+        refresh();
+        return takenOver;
+    }
+
+    private static boolean irisPack = false;
+
+    // shaderpack do Iris (Complementary etc.) em uso?
+    static boolean irisPack() {
+        refresh();
+        return irisPack;
+    }
+
+    private static void refresh() {
         long now = net.minecraft.Util.getMillis();
-        if (now - lastCheck < 1000) return takenOver;
+        if (now - lastCheck < 1000) return;
         lastCheck = now;
-        boolean dh = net.neoforged.fml.ModList.get().isLoaded("distanthorizons");
+        takenOver = net.neoforged.fml.ModList.get().isLoaded("distanthorizons");
         boolean pack = false;
         try {   // API do Iris por reflexao (o mod nao depende do Iris)
             Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
@@ -53,15 +67,19 @@ public class FarTerrain {
             pack = (Boolean) api.getMethod("isShaderPackInUse").invoke(inst);
         } catch (Throwable ignored) {
         }
-        takenOver = dh || pack;
-        return takenOver;
+        irisPack = pack;
     }
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
         Minecraft mc = Minecraft.getInstance();
         if (!active(mc)) return;
+        if (irisPack()) {   // com shaderpack: o terreno distante passa pelos shaders do pack (luz, agua, neblina do Complementary)
+            if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_ENTITIES) drawWithGameShaders(event, mc, false);
+            else if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) drawWithGameShaders(event, mc, true);
+            return;
+        }
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
         ShaderInstance sh = DioramaRenderer.shader;
         int rd = mc.options.getEffectiveRenderDistance();
         int far = MapOptions.farChunks;
@@ -127,6 +145,46 @@ public class FarTerrain {
         RenderSystem.enableCull();
     }
 
+    // Caminho com shaderpack (Iris): desenha as malhas com os shaders de TERRENO do jogo (cutout para blocos, translucent
+    // para agua). Com shaderpack ligado, o Iris troca esses shaders pelos programas do pack (gbuffers_terrain / gbuffers_water),
+    // entao o terreno distante recebe a luz, a agua e a neblina do Complementary. Usa a mesma projecao do jogo, entao o
+    // alcance fica limitado ao "fundo" da camera do jogo (4x a render distance).
+    private static void drawWithGameShaders(RenderLevelStageEvent event, Minecraft mc, boolean water) {
+        int rd = mc.options.getEffectiveRenderDistance();
+        int far = Math.min(MapOptions.farChunks, rd * 4 - 1);
+        Vec3 cam = event.getCamera().getPosition();
+        Matrix4f view = new Matrix4f(event.getModelViewMatrix());
+        Matrix4f proj = new Matrix4f(event.getProjectionMatrix());
+        Frustum frustum = event.getFrustum();
+        net.minecraft.client.renderer.RenderType type = water ? net.minecraft.client.renderer.RenderType.translucent()
+                : net.minecraft.client.renderer.RenderType.cutoutMipped();
+        type.setupRenderState();
+        ShaderInstance sh = RenderSystem.getShader();
+        if (sh == null) { type.clearRenderState(); return; }
+        if (sh.CHUNK_OFFSET != null) sh.CHUNK_OFFSET.set(0f, 0f, 0f);
+        int ccx = (int) Math.floor(cam.x / 16), ccz = (int) Math.floor(cam.z / 16);
+        int[] budget = {water ? 0 : BUILD_PER_FRAME};
+        for (int dz = -far; dz <= far; dz++) {
+            for (int dx = -far; dx <= far; dx++) {
+                int d2 = dx * dx + dz * dz;
+                if (d2 > far * far) continue;
+                int cx = ccx + dx, cz = ccz + dz;
+                if (d2 <= (rd - 1) * (rd - 1) && mc.level.getChunkSource().getChunkNow(cx, cz) != null) continue;
+                if (ExploredMap.tile(cx, cz) == null) continue;
+                if (frustum != null && !frustum.isVisible(new AABB(cx * 16, mc.level.getMinBuildHeight(), cz * 16, cx * 16 + 16, mc.level.getMaxBuildHeight(), cz * 16 + 16))) continue;
+                WorldMap3D.ChunkMesh m = WorldMap3D.mesh(cx, cz, budget);
+                if (m == null) continue;
+                VertexBuffer vb = water ? (m.hasW ? m.wvb : null) : (m.has ? m.vb : null);
+                if (vb == null) continue;
+                Matrix4f mv = new Matrix4f(view).translate((float) (cx * 16 - cam.x), (float) (64 - cam.y), (float) (cz * 16 - cam.z));
+                vb.bind();
+                vb.drawWithShader(mv, proj, sh);
+            }
+        }
+        VertexBuffer.unbind();
+        type.clearRenderState();
+    }
+
     private static void draw(VertexBuffer vb, ShaderInstance sh, Matrix4f view, Matrix4f proj, int cx, int cz, Vec3 cam) {
         float ox = (float) (cx * 16 - cam.x), oy = (float) (64 - cam.y), oz = (float) (cz * 16 - cam.z);
         sh.safeGetUniform("Origin").set((float) (cx * 16), 64f, (float) (cz * 16));
@@ -139,7 +197,7 @@ public class FarTerrain {
     @SubscribeEvent
     public static void onFog(ViewportEvent.RenderFog event) {
         Minecraft mc = Minecraft.getInstance();
-        if (!active(mc)) return;
+        if (!active(mc) || irisPack()) return;
         if (event.getMode() != FogRenderer.FogMode.FOG_TERRAIN || event.getType() != FogType.NONE) return;
         float farBlocks = MapOptions.farChunks * 16f;
         event.setNearPlaneDistance(farBlocks * 0.62f);
