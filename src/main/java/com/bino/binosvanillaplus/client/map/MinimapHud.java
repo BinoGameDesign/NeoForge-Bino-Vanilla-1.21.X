@@ -84,6 +84,7 @@ public class MinimapHud {
                 int y = cave ? Math.min(slice, lvl.getMaxBuildHeight() - 1)
                              : ch.getHeight(Heightmap.Types.WORLD_SURFACE, wx & 15, wz & 15);   // LevelChunk.getHeight ja devolve o bloco mais alto (nao o ar acima)
                 int limit = Math.max(minY, y - 56);
+                int known = ExploredMap.discoveredFloor(wx, wz);   // chao que o jogador ja descobriu nessa coluna (ou UNKNOWN)
                 int runs = 0;
                 Object curKey = null;
                 int curTop = 0, curCol = 0, curSide = 0, curTint = 0xFFFFFF;
@@ -99,14 +100,15 @@ public class MinimapHud {
                     // arvores grandes (galhos, cachos de folhas, colmeias em varias alturas) gastavam todas as camadas e o chao
                     // sumia (aparecia o ceu por baixo): a ultima camada fica reservada para o chao de verdade
                     if (key != null && curKey == null && runs >= MAXR - 1 && !fluid
-                            && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS) || !solidBelow(ch, lvl, below, wx, y, wz))) key = null;
+                            && (st.is(BlockTags.LEAVES) || st.is(BlockTags.LOGS) || !solidBelow(ch, lvl, below, wx, y, wz)
+                                || (known != ExploredMap.UNKNOWN && y > known))) key = null;
 
                     if (curKey != null && key != curKey) {
                         RTOP[i][runs] = curTop; RBOT[i][runs] = y + 1; RCOL[i][runs] = curCol; RSIDE[i][runs] = curSide;
                         RST[i][runs] = curState; RTINT[i][runs] = curTint; runs++;
                         curKey = null;
                         // bloco "flutuando" (colmeia, galho, beirada com ar embaixo): nao e' o chao, continua descendo
-                        boolean floating = key == null && !fluid;
+                        boolean floating = (key == null && !fluid) || (known != ExploredMap.UNKNOWN && curTop > known);
                         if (!curCanopy && !floating) {
                             RGROUND[i] = true;
                             if (!air && !fluid) { RFILL[i] = st; RFTINT[i] = BlockLooks.tint(st, lvl, pos); }
@@ -139,7 +141,7 @@ public class MinimapHud {
                 // garantia: se nao achou chao (arvore enorme, colmeias, cavernas), procura mais embaixo e poe o chao
                 // na ultima camada - nunca fica buraco mostrando o ceu
                 if (!RGROUND[i]) {
-                    int gy = y, glim = Math.max(minY, y - 64);
+                    int gy = known != ExploredMap.UNKNOWN ? Math.min(y, known) : y, glim = Math.max(minY, gy - 64);
                     for (; gy > glim; gy--) {
                         BlockState gs = ch.getBlockState(pos.set(wx, gy, wz));
                         if (!gs.getFluidState().isEmpty()) break;

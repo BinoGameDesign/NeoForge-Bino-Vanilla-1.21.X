@@ -42,6 +42,11 @@ public final class ExploredMap {
         public final int[] tTop = new int[256], tGround = new int[256];
         public final int[] sDeep = new int[256];      // bloco 4 abaixo do chao (penhascos: pedra embaixo da terra)
         public final int[] sPlant = new int[256], tPlant = new int[256];   // planta em cima do chao (grama, flores...) + tinta
+        // chao DESCOBERTO pelo jogador: onde ele andou (ou chegou perto) embaixo de arvores e em entradas de caverna.
+        // Tem prioridade sobre o que a leitura automatica acha. NONE = nunca descoberto.
+        public final short[] vFloor = new short[256], vRoof = new short[256];
+        public final int[] vState = new int[256], vTint = new int[256], vFill = new int[256];
+        Tile() { java.util.Arrays.fill(vFloor, NONE); java.util.Arrays.fill(vRoof, NONE); }
         long lastScan;
         public int version;                 // sobe a cada nova leitura (invalida malhas 3D em cache)
         boolean texDirty = true;
@@ -50,6 +55,7 @@ public final class ExploredMap {
     }
 
     public static final int UNKNOWN = Integer.MIN_VALUE;
+    public static final short NONE = Short.MIN_VALUE;
     private static final int SCAN_RADIUS = 7;          // em chunks
     private static final int PER_RUN_BUDGET = 8;       // chunks lidos por rodada
     private static final Map<Long, Tile> TILES = new HashMap<>();
@@ -110,6 +116,7 @@ public final class ExploredMap {
         long now = level.getGameTime();
         if (now - lastSave > 20 * 180) { save(); lastSave = now; }
         if (p.tickCount % 5 != 0) return;
+        discover(level, p);
 
         int pcx = p.getBlockX() >> 4, pcz = p.getBlockZ() >> 4, budget = PER_RUN_BUDGET;
         for (int d = 0; d <= SCAN_RADIUS && budget > 0; d++) {
@@ -259,6 +266,75 @@ public final class ExploredMap {
         plant(level, chunk, t, idx, pos, wx, y + 1, wz);
     }
 
+    // ----------------------------------------------------------- chao descoberto pelo jogador
+
+    private static final int DISCOVER_RADIUS = 5;
+
+    // em volta do jogador, acha o piso "andavel" perto da altura dele (bloco solido com 2 de espaco livre em cima).
+    // Se esse piso estiver embaixo de alguma coisa (copa de arvore, teto fino de caverna), grava como chao descoberto.
+    private static void discover(ClientLevel level, LocalPlayer p) {
+        int px = p.getBlockX(), py = p.getBlockY(), pz = p.getBlockZ();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dz = -DISCOVER_RADIUS; dz <= DISCOVER_RADIUS; dz++) {
+            for (int dx = -DISCOVER_RADIUS; dx <= DISCOVER_RADIUS; dx++) {
+                if (dx * dx + dz * dz > DISCOVER_RADIUS * DISCOVER_RADIUS) continue;
+                int wx = px + dx, wz = pz + dz;
+                Tile t = TILES.get(key(wx >> 4, wz >> 4));
+                LevelChunk ch = level.getChunkSource().getChunkNow(wx >> 4, wz >> 4);
+                if (t == null || ch == null) continue;
+                int i = (wz & 15) * 16 + (wx & 15);
+                if (t.abgr[i] == 0) continue;
+                int top = t.h[i];
+                // piso andavel perto da altura do jogador
+                int floor = Integer.MIN_VALUE;
+                for (int y = py + 1; y >= py - 3; y--) {
+                    if (walkable(ch, level, pos, wx, y, wz)) { floor = y; break; }
+                }
+                if (floor == Integer.MIN_VALUE || floor >= top) continue;           // ceu aberto: nada a descobrir
+                // o que tem em cima: primeiro bloco solido acima do piso
+                int roof = Integer.MIN_VALUE;
+                for (int y = floor + 3; y <= top; y++) {
+                    BlockState s = ch.getBlockState(pos.set(wx, y, wz));
+                    if (!passable(s, level, pos)) { roof = y; break; }
+                }
+                if (roof == Integer.MIN_VALUE) continue;
+                BlockState roofState = ch.getBlockState(pos.set(wx, roof, wz));
+                boolean tree = roofState.is(BlockTags.LEAVES) || roofState.is(BlockTags.LOGS);
+                if (!tree && top - roof > 12) continue;                          // tunel fundo: nao mexe no mapa de cima
+                if (t.vFloor[i] == floor && t.vRoof[i] == roof) continue;        // nada mudou
+                BlockState fs = ch.getBlockState(pos.set(wx, floor, wz));
+                t.vFloor[i] = (short) floor;
+                t.vRoof[i] = (short) roof;
+                t.vState[i] = Block.getId(fs);
+                t.vTint[i] = BlockLooks.tint(fs, level, pos);
+                BlockState under = ch.getBlockState(pos.set(wx, floor - 1, wz));
+                t.vFill[i] = under.isAir() || !under.getFluidState().isEmpty() ? 0 : Block.getId(under);
+                t.version++;                                                     // remonta a malha do mapa-mundi
+            }
+        }
+    }
+
+    private static boolean passable(BlockState s, ClientLevel level, BlockPos pos) {
+        return s.isAir() || BlockLooks.invisible(s) || (s.getFluidState().isEmpty() && s.getCollisionShape(level, pos).isEmpty());
+    }
+
+    private static boolean walkable(LevelChunk ch, ClientLevel level, BlockPos.MutableBlockPos pos, int x, int y, int z) {
+        BlockState s = ch.getBlockState(pos.set(x, y, z));
+        if (passable(s, level, pos) || s.is(BlockTags.LEAVES) || !s.getFluidState().isEmpty()) return false;
+        BlockState a1 = ch.getBlockState(pos.set(x, y + 1, z));
+        if (!passable(a1, level, pos)) return false;
+        BlockState a2 = ch.getBlockState(pos.set(x, y + 2, z));
+        return passable(a2, level, pos);
+    }
+
+    // chao descoberto na coluna (ou UNKNOWN)
+    public static int discoveredFloor(int x, int z) {
+        Tile t = TILES.get(key(x >> 4, z >> 4));
+        if (t == null) return UNKNOWN;
+        int i = (z & 15) * 16 + (x & 15);
+        return t.vFloor[i] == NONE ? UNKNOWN : t.vFloor[i];
+    }
+
     // grama alta, flores, samambaias... (sem colisao) logo acima do chao
     private static void plant(ClientLevel level, LevelChunk chunk, Tile t, int idx, BlockPos.MutableBlockPos pos, int wx, int y, int wz) {
         BlockState s = chunk.getBlockState(pos.set(wx, y, wz));
@@ -365,7 +441,7 @@ public final class ExploredMap {
         try {
             Files.createDirectories(worldDir());
             try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file()))))) {
-                out.writeInt(8);
+                out.writeInt(9);
                 out.writeInt(TILES.size());
                 for (Map.Entry<Long, Tile> e : TILES.entrySet()) {
                     out.writeInt((int) (long) e.getKey());
@@ -382,6 +458,8 @@ public final class ExploredMap {
                         out.writeInt(tt.sTop[k]); out.writeInt(tt.sGround[k]); out.writeInt(tt.sTrunk[k]); out.writeInt(tt.sFill[k]);
                         out.writeInt(tt.tTop[k]); out.writeInt(tt.tGround[k]); out.writeInt(tt.sDeep[k]);
                         out.writeInt(tt.sPlant[k]); out.writeInt(tt.tPlant[k]);
+                        out.writeShort(tt.vFloor[k]); out.writeShort(tt.vRoof[k]);
+                        out.writeInt(tt.vState[k]); out.writeInt(tt.vTint[k]); out.writeInt(tt.vFill[k]);
                     }
                 }
             }
@@ -395,7 +473,7 @@ public final class ExploredMap {
         if (!Files.exists(f)) return;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
             int ver = in.readInt();
-            if (ver != 8) return;   // versoes antigas tinham arvores lidas errado (pilares): o mapa se refaz   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
+            if (ver != 8 && ver != 9) return;   // versoes antigas tinham arvores lidas errado (pilares): o mapa se refaz   // formatos antigos eram lidos 1 bloco abaixo da superficie (terra no lugar da grama): descartados, o mapa se refaz
             int n = in.readInt();
             for (int i = 0; i < n; i++) {
                 int cx = in.readInt(), cz = in.readInt();
@@ -411,6 +489,10 @@ public final class ExploredMap {
                             t.tTop[k] = in.readInt(); t.tGround[k] = in.readInt();
                             if (ver >= 6) t.sDeep[k] = in.readInt();
                             if (ver >= 7) { t.sPlant[k] = in.readInt(); t.tPlant[k] = in.readInt(); }
+                            if (ver >= 9) {
+                                t.vFloor[k] = in.readShort(); t.vRoof[k] = in.readShort();
+                                t.vState[k] = in.readInt(); t.vTint[k] = in.readInt(); t.vFill[k] = in.readInt();
+                            }
                         }
                     }
                 } else {

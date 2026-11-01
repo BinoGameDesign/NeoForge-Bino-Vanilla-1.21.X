@@ -202,6 +202,12 @@ public class WorldMap3D {
         if (t.abgr[i] == 0) return null;
         boolean canopy = (t.canopy[i] & 1) != 0;
         boolean water = (t.canopy[i] & 4) != 0;
+        if (t.vFloor[i] != ExploredMap.NONE && !water && t.vFloor[i] < t.h[i]) {
+            // chao descoberto pelo jogador (embaixo da arvore / dentro da entrada da caverna): vale mais que a leitura automatica
+            boolean tree = canopy && (t.canopy[i] & 16) == 0;
+            return new Col(t.h[i], t.vFloor[i], t.vRoof[i], true, tree && (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], false, false,
+                    t.sTop[i], t.vState[i], t.sTrunk[i], t.vFill[i], t.tTop[i], t.vTint[i], t.vFill[i], t.sPlant[i], t.tPlant[i], !tree);
+        }
         return new Col(t.h[i], canopy || water ? t.gh[i] : t.h[i], t.cb[i], canopy, (t.canopy[i] & 2) != 0, t.abgr[i], t.gcol[i], t.tcol[i], water, (t.canopy[i] & 8) != 0,
                 t.sTop[i], t.sGround[i], t.sTrunk[i], t.sFill[i], t.tTop[i], t.tGround[i], t.sDeep[i], t.sPlant[i], t.tPlant[i], (t.canopy[i] & 16) != 0);
     }
@@ -367,6 +373,7 @@ public class WorldMap3D {
         Col c = col(wx, wz);
         if (c == null) return "(nao explorado)";
         return "topo " + name(c.sTop()) + " y" + c.top() + " | chao " + name(c.sGround()) + " y" + c.ground()
+                + (ExploredMap.discoveredFloor(wx, wz) != ExploredMap.UNKNOWN ? " | chao descoberto" : "")
                 + (c.overhang() ? " | teto de caverna" : "") + (c.canopy() ? " | copa desde y" + c.cb() + (c.trunk() ? " +tronco " + name(c.sTrunk()) : "") : "")
                 + (c.water() ? " | agua" : "") + " | baixo " + name(c.sFill()) + "/" + name(c.sDeep()) + " | planta " + name(c.sPlant());
     }
