@@ -45,7 +45,7 @@ public class ModClientEvents {
                 context -> new ThrownItemRenderer<>(context, 1.0f, true));
 
         // Renderizador do Allay (modelo e animação vanilla), mas com a textura trocada conforme a cor do pet
-        event.<Allay>registerEntityRenderer(ModEntities.COMPANION_ALLAY.get(), CompanionAllayRenderer::new);
+        event.registerEntityRenderer(ModEntities.COMPANION_ALLAY.get(), CompanionAllayRenderer::new);
     }
 
     // Ensina o jogo a desenhar o coração rosa: usa o comportamento do coração normal (sobe e some)
