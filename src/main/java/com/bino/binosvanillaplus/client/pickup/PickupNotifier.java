@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -17,16 +16,13 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 // Avisos de itens coletados (no estilo do Pick Up Notifier): "+3 Pedregulho" com o icone, empilhados logo ACIMA do
-// "Day N, hh:mm" do minimapa. Itens que o jogador nunca tinha tido ganham "NEW" no canto superior direito do aviso.
+// "Day N, hh:mm" do minimapa. Todo item recolhido ganha "NEW" no canto superior direito do aviso, ate o jogador abrir o inventario.
 // Detecta pelo aumento da quantidade no inventario; ignora mudancas com um inventario/bau aberto (mexer nos itens) e os
 // primeiros segundos depois de entrar no mundo/renascer (o inventario ainda esta chegando do servidor).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
@@ -57,8 +53,6 @@ public final class PickupNotifier {
     private static Map<Item, Integer> before = new HashMap<>();
     private static LocalPlayer lastPlayer;
     private static int settle = 0;
-    private static final Set<String> SEEN = new HashSet<>();
-    private static UUID seenOwner;
 
     // ---------------------------------------------------------------- deteccao
 
@@ -85,17 +79,16 @@ public final class PickupNotifier {
             settle = 40;
             before = snapshot(p.getInventory());
             NOTES.clear();
-            loadSeen(p.getUUID());
             return;
         }
         Map<Item, Integer> now = snapshot(p.getInventory());
         if (settle > 0) {                      // inventario ainda chegando: so atualiza a base e conta como ja visto
             settle--;
             before = now;
-            for (Item it : now.keySet()) markSeen(it);
             return;
         }
         boolean quiet = mc.screen instanceof AbstractContainerScreen<?>;   // mexendo em itens: nao e coleta
+        if (quiet) for (Note n : NOTES) n.isNew = false;                    // abriu o inventario: o NEW some
         if (!quiet) {
             for (Map.Entry<Item, Integer> e : now.entrySet()) {
                 int delta = e.getValue() - before.getOrDefault(e.getKey(), 0);
@@ -103,11 +96,10 @@ public final class PickupNotifier {
             }
         }
         before = now;
-        for (Item it : now.keySet()) markSeen(it);   // tambem marca o que veio com a tela aberta
     }
 
     private static void notify(Item item, int delta) {
-        boolean isNew = !SEEN.contains(key(item));
+        boolean isNew = true;   // NEW ate o jogador abrir o inventario
         for (Note n : NOTES) {
             if (n.item == item && System.currentTimeMillis() - n.last < LIFE_MS - OUT_MS) {   // mesmo item: soma no mesmo aviso
                 n.count += delta;
@@ -118,34 +110,6 @@ public final class PickupNotifier {
         }
         NOTES.add(new Note(item, delta, isNew));
         while (NOTES.size() > MAX_ROWS) NOTES.remove(0);
-    }
-
-    // ---------------------------------------------------------------- "ja vi este item" (salvo por jogador)
-
-    private static String key(Item it) { return BuiltInRegistries.ITEM.getKey(it).toString(); }
-
-    private static Path file(UUID id) { return FMLPaths.GAMEDIR.get().resolve("binos_map").resolve("seen_items_" + id + ".txt"); }
-
-    private static void loadSeen(UUID id) {
-        if (id.equals(seenOwner)) return;
-        seenOwner = id;
-        SEEN.clear();
-        try {
-            Path f = file(id);
-            if (Files.exists(f)) SEEN.addAll(Files.readAllLines(f));
-        } catch (Exception ignored) {
-        }
-    }
-
-    private static void markSeen(Item it) {
-        if (SEEN.add(key(it))) {
-            try {
-                Path f = file(seenOwner);
-                Files.createDirectories(f.getParent());
-                Files.writeString(f, key(it) + "\n", java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-            } catch (Exception ignored) {
-            }
-        }
     }
 
     // ---------------------------------------------------------------- desenho
