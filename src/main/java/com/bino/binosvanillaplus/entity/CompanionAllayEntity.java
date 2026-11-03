@@ -184,6 +184,8 @@ public class CompanionAllayEntity extends Allay {
 
     // ---------- Imunidades e interação ----------
 
+    public UUID getOwnerId() { return ownerId; }
+
     @Override public boolean isAttackable() { return false; }            // golpes do jogador não o atingem
     @Override public boolean canBeHitByProjectile() { return false; }    // flechas, tridentes etc. atravessam
     @Override public boolean isPushable() { return false; }

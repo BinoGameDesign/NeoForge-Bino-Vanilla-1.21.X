@@ -131,6 +131,15 @@ public class ModBlocks {
                     .noOcclusion()
                     .sound(SoundType.CHAIN)));
 
+    // Parede da Dimensao Portatil (chao, paredes e teto da sala): cimento branco, inquebravel, ilumina a sala. Sem item.
+    public static final DeferredBlock<Block> POCKET_WALL = BLOCKS.register("pocket_wall",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(-1.0f, 3600000.0f)
+                    .sound(SoundType.STONE)
+                    .noLootTable()
+                    .lightLevel(state -> 15)
+                    .pushReaction(PushReaction.BLOCK)));
+
     // Porta Dimensional: sem item proprio (quem cria e a Chave Dimensional) e sem drops
     public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.DimensionalDoorBlock> DIMENSIONAL_DOOR =
             BLOCKS.register("dimensional_door",

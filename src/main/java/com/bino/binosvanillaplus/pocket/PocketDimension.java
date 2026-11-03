@@ -20,7 +20,7 @@ public final class PocketDimension {
             ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "pocket"));
 
     public static final int CELL = 128;       // distancia entre as salas (cabe sala de ate 120 blocos)
-    public static final int FLOOR_Y = 64;     // altura do chao
+    public static final int FLOOR_Y = 64;     // 1o bloco LIVRE da sala; o chao inquebravel fica em FLOOR_Y - 1
     public static final int BASE_HALF = 4;    // nivel 0 = 9x9 (meia-largura 4)
 
     public static int halfFor(int level) { return BASE_HALF + level; }
@@ -36,6 +36,6 @@ public final class PocketDimension {
 
     // onde o jogador aparece ao entrar: logo em frente a porta de saida (que fica na parede do fundo, ao norte)
     public static Vec3 entrance(int index, int level) {
-        return new Vec3(centerX(index) + 0.5, FLOOR_Y + 1, -halfFor(level) + 1.5);
+        return new Vec3(centerX(index) + 0.5, FLOOR_Y, -halfFor(level) + 1.5);
     }
 }

@@ -94,12 +94,14 @@ neoForge {
             // "SCAN": For mods scan.
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            // (desligado para abrir mais rapido: o marcador REGISTRIES imprime cada item de cada registro)
+            // systemProperty 'forge.logging.markers', 'REGISTRIES'
 
             // Recommended logging level for the console
             // You can set various levels here.
             // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            logLevel = org.slf4j.event.Level.DEBUG
+            // DEBUG enche o console do IntelliJ de linhas e deixa a abertura bem mais lenta; INFO e suficiente
+            logLevel = org.slf4j.event.Level.INFO
         }
     }
 

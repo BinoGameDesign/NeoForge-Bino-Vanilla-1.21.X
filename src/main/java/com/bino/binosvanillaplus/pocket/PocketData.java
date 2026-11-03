@@ -26,7 +26,8 @@ public class PocketData extends SavedData {
         public final UUID owner;
         public final int index;
         public int level = 0;
-        public int builtLevel = -1;                  // nivel com que a sala foi construida (-1 = ainda nao)
+        public int builtLevel = -1;
+        public int fmt = 0;                          // formato da sala: 0 = antigo (chao de concreto, paredes de barreira), 1 = atual                  // nivel com que a sala foi construida (-1 = ainda nao)
         @Nullable public ResourceKey<Level> doorDim; // porta de fora (null = sem porta: ninguem entra)
         @Nullable public BlockPos doorPos;           // metade de baixo da porta
 
@@ -99,6 +100,7 @@ public class PocketData extends SavedData {
             t.putInt("index", p.index);
             t.putInt("level", p.level);
             t.putInt("built", p.builtLevel);
+            t.putInt("fmt", p.fmt);
             if (p.doorDim != null && p.doorPos != null) {
                 t.putString("doorDim", p.doorDim.location().toString());
                 t.putLong("doorPos", p.doorPos.asLong());
@@ -130,6 +132,7 @@ public class PocketData extends SavedData {
             Plot p = new Plot(t.getUUID("owner"), t.getInt("index"));
             p.level = t.getInt("level");
             p.builtLevel = t.contains("built") ? t.getInt("built") : -1;
+            p.fmt = t.getInt("fmt");
             if (t.contains("doorDim") && t.contains("doorPos")) {
                 p.doorDim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(t.getString("doorDim")));
                 p.doorPos = BlockPos.of(t.getLong("doorPos"));

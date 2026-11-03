@@ -133,5 +133,6 @@
   "message.binosvanillaplus.pocket_expired": "O pedido de visita expirou.",
   "message.binosvanillaplus.pocket_visitor_in": "%s entrou na sua dimensão.",
   "message.binosvanillaplus.pocket_door_broken": "A porta foi quebrada! Você voltou ao mundo.",
-  "message.binosvanillaplus.pocket_owner_left": "O dono saiu do jogo. Você voltou ao mundo."
+  "message.binosvanillaplus.pocket_owner_left": "O dono saiu do jogo. Você voltou ao mundo.",
+  "block.binosvanillaplus.pocket_wall": "Parede Dimensional"
 }

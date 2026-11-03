@@ -25,6 +25,8 @@ public class CompanionAllayManager {
     private static final Map<UUID, List<TrackedXp>> XP = new HashMap<>();        // jogador -> XP pendente
     private static final Map<UUID, String> NAMES = new HashMap<>();              // jogador -> nome do pet
     private static final Map<UUID, Integer> COLORS = new HashMap<>();             // jogador -> cor do pet
+    private static final Map<UUID, Long> LAST_SPAWN = new HashMap<>();            // jogador -> tick do ultimo nascimento
+    private static final Map<UUID, net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>> LAST_DIM = new HashMap<>();
     private static final Set<UUID> FULL_NOTIFIED = new HashSet<>();
     private static final Set<UUID> FRONT_CAMERA = new HashSet<>();   // jogadores em câmera frontal
 
@@ -48,6 +50,20 @@ public class CompanionAllayManager {
         if (!player.isAlive() || hasPet(player)) return;
 
         ServerLevel level = player.serverLevel();
+        // Ao chegar numa dimensao/chunk ainda carregando, o pet recem-criado pode nao ser achado por 1-2 s e o
+        // gerenciador criaria outro (pet duplicado). Espera 3 s antes de criar de novo na mesma dimensao.
+        long now = level.getGameTime();
+        Long last = LAST_SPAWN.get(player.getUUID());
+        if (last != null && level.dimension().equals(LAST_DIM.get(player.getUUID())) && now - last >= 0 && now - last < 60) return;
+
+        // garante que nao sobra pet antigo deste jogador em nenhuma dimensao
+        List<CompanionAllayEntity> stale = new ArrayList<>();
+        for (ServerLevel l : player.server.getAllLevels()) {
+            for (Entity e : l.getAllEntities()) {
+                if (e instanceof CompanionAllayEntity c && player.getUUID().equals(c.getOwnerId())) stale.add(c);
+            }
+        }
+        for (CompanionAllayEntity c : stale) c.discard();
         CompanionAllayEntity pet = ModEntities.COMPANION_ALLAY.get().create(level);
         if (pet == null) return;
 
@@ -66,10 +82,14 @@ public class CompanionAllayManager {
 
         level.addFreshEntity(pet);
         PETS.put(player.getUUID(), pet.getUUID());
+        LAST_SPAWN.put(player.getUUID(), now);
+        LAST_DIM.put(player.getUUID(), level.dimension());
     }
 
     // Remove o pet (quando o jogador sai do jogo). XP pendente é entregue ao jogador.
     public static void removePet(ServerPlayer player) {
+        LAST_SPAWN.remove(player.getUUID());
+        LAST_DIM.remove(player.getUUID());
         UUID id = PETS.remove(player.getUUID());
         if (id != null) {
             Entity pet = player.serverLevel().getEntity(id);
@@ -142,6 +162,8 @@ public class CompanionAllayManager {
 
     public static void clearAll() {
         PETS.clear();
+        LAST_SPAWN.clear();
+        LAST_DIM.clear();
         DROPS.clear();
         XP.clear();
         NAMES.clear();

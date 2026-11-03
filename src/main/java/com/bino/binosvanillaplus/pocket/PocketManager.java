@@ -258,7 +258,7 @@ public final class PocketManager {
         }
         // visitante so fica enquanto o dono estiver conectado
         if (!plot.owner.equals(p.getUUID()) && player(server, plot.owner) == null) { exit(p, "owner_left"); return; }
-        PocketRooms.placeExit(pocket, plot);        // repoe a porta de saida se algo a tirou
+        if (PocketRooms.ensure(pocket, plot)) data.setDirty();   // repoe a porta de saida e cresce a sala se a chave subiu de nivel
     }
 
     @SubscribeEvent
