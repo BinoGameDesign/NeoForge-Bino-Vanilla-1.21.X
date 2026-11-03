@@ -179,8 +179,14 @@ public class MinimapHud {
         return false;
     }
 
+    // canto direito e altura logo ACIMA do "Day N, hh:mm" do minimapa (onde empilham as notificacoes de itens)
+    public static int[] notifyAnchor(int guiW, int guiH, Minecraft mc) {
+        float ts = smallScale(mc);
+        return new int[]{guiW - MARGIN_X, (int) (guiH - BOX - MARGIN_Y - 4 - 9 * ts - 4)};
+    }
+
     // escala do texto pequeno do HUD: ~14 px reais de altura qualquer que seja a escala da interface
-    static float smallScale(Minecraft mc) {
+    public static float smallScale(Minecraft mc) {
         double gs = mc.getWindow().getGuiScale();
         return (float) Math.max(0.5, Math.min(1.0, 2.0 / gs));
     }

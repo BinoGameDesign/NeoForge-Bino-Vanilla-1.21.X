@@ -464,8 +464,10 @@ public class DioramaRenderer {
         drawBeams(view, proj, p.getX(), p.getY(), p.getZ(), MapOptions.minimapPins, 0.6f, 40f);
         // ponteiro do jogador por cima de tudo, deitado no plano do terreno, sempre apontando "para cima" no mapa
         RenderSystem.clear(256, Minecraft.ON_OSX);
-        Matrix4f pmv = new Matrix4f().translate(0, 0, -dist).rotateX(TILT).scale(dist / 30f * 0.55f);
-        drawPointer(pmv, proj);
+        // (a seta foi trocada pela mesma cabeca 3D do mapa-mundi, com a skin e o contorno branco)
+        float hs = Math.max(1.5f, dist / 30f);
+        Matrix4f hmv = new Matrix4f(view).translate(0f, 1.0f + hs * 0.6f, 0f);
+        PlayerHead3D.draw(hmv, proj, p, hs);
         end(g, st);
     }
 

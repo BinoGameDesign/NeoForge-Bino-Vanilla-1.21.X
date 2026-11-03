@@ -148,7 +148,7 @@ public class WorldMap3D {
     private static double lastTx, lastTz;
 
     // aresta da cabeca do jogador em blocos (acompanha o zoom)
-    static float headSize() { return Math.max(1.6f, dist / 42f); }
+    static float headSize() { return Math.max(2.0f, dist / 33f); }   // +25%
 
     // centro da cabeca (Y do mundo)
     static double headCenterY(LocalPlayer p) { return p.getY() + 1.0 + headSize() * 0.6f; }
