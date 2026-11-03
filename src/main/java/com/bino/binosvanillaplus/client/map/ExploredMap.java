@@ -85,6 +85,7 @@ public final class ExploredMap {
     }
 
     public static String currentDim() { return curDim; }
+    public static String currentWorld() { return curWorld; }
 
     // ----------------------------------------------------------- ciclo de vida
 

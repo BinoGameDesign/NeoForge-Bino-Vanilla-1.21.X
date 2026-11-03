@@ -16,7 +16,7 @@ public final class PocketRooms {
     private PocketRooms() {}
 
     private static final int FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;   // sem avisar vizinhos
-    private static final int FORMAT = 2;
+    private static final int FORMAT = 3;
 
     // garante sala no tamanho certo e a porta de saida no lugar
     // devolve true se construiu/ampliou (o chamador deve marcar os dados como alterados)
@@ -36,7 +36,9 @@ public final class PocketRooms {
         // a porta de saida do tamanho/formato antigo sai (a nova nasce na parede nova)
         if (plot.builtLevel >= 0) {
             int oldY = plot.fmt == 1 ? floor : floor + 1;   // formato 1 tinha a porta rente ao chao; os outros um bloco acima
-            BlockPos old = new BlockPos(cx, oldY, -PocketDimension.halfFor(plot.builtLevel));
+            int oldZ = plot.fmt >= 3 ? -PocketDimension.halfFor(plot.builtLevel) - 1   // formato 3: embutida no plano da parede
+                    : -PocketDimension.halfFor(plot.builtLevel);
+            BlockPos old = new BlockPos(cx, oldY, oldZ);
             if (pocket.getBlockState(old).getBlock() instanceof DimensionalDoorBlock) {
                 pocket.setBlock(old.above(), Blocks.AIR.defaultBlockState(), FLAGS);
                 pocket.setBlock(old, Blocks.AIR.defaultBlockState(), FLAGS);
@@ -70,24 +72,24 @@ public final class PocketRooms {
         plot.fmt = FORMAT;
     }
 
-    // porta de saida: na parede do fundo (norte), UM bloco acima da camada livre do chao (para o jogador montar o chao
-    // dele por baixo), apoiada num bloco de parede; virada para dentro da sala
+    // porta de saida: EMBUTIDA na parede do fundo (norte), como a porta de uma casa: ocupa o lugar de dois blocos da
+    // propria parede (acima da camada livre do chao, onde o jogador monta o chao dele). Nada sai para fora da sala.
     public static void placeExit(ServerLevel pocket, PocketData.Plot plot) {
         BlockPos lower = exitPos(plot);
-        BlockState cur = pocket.getBlockState(lower);
-        if (cur.getBlock() instanceof DimensionalDoorBlock
+        if (pocket.getBlockState(lower).getBlock() instanceof DimensionalDoorBlock
                 && pocket.getBlockState(lower.above()).getBlock() instanceof DimensionalDoorBlock) return;
-        // apoio inquebravel debaixo da porta: ela fica um bloco acima da camada livre do chao
-        BlockPos base = lower.below();
-        BlockState b = pocket.getBlockState(base);
-        if (b.isAir() || b.is(Blocks.BARRIER) || b.is(Blocks.WHITE_CONCRETE)) {
-            pocket.setBlock(base, ModBlocks.POCKET_WALL.get().defaultBlockState(), FLAGS);
+        // abre o vao na parede (so tira parede/ar/barreira; nunca construcao do jogador)
+        for (BlockPos q : new BlockPos[]{lower, lower.above()}) {
+            BlockState b = pocket.getBlockState(q);
+            if (b.isAir() || b.is(Blocks.BARRIER) || b.is(ModBlocks.POCKET_WALL.get())) {
+                pocket.setBlock(q, Blocks.AIR.defaultBlockState(), FLAGS);
+            }
         }
         DimensionalDoorBlock.placeAt(pocket, lower, Direction.SOUTH);
     }
 
     public static BlockPos exitPos(PocketData.Plot plot) {
         return new BlockPos(PocketDimension.centerX(plot.index), PocketDimension.FLOOR_Y + 1,
-                -PocketDimension.halfFor(plot.level));
+                -PocketDimension.halfFor(plot.level) - 1);   // plano da parede do fundo
     }
 }

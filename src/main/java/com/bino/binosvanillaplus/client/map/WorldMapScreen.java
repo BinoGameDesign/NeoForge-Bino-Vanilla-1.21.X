@@ -172,6 +172,12 @@ public class WorldMapScreen extends BinoScreen {
                 MobIcons.draw(g, m, s[0], s[1], 6.4f);   // 20% menor
             }
         }
+        // regioes nomeadas: contorno branco entre elas e o nome por cima de cada uma
+        if (MapOptions.worldLabels) {
+            double rr = Math.min(WorldMap3D.dist * 3.2, 900);
+            com.bino.binosvanillaplus.client.regions.RegionOverlay.edges(g, this::screenOf, cx, cz, rr, WorldMap3D.targetY, 1.4f, 0xE8FFFFFF, 3000);
+            com.bino.binosvanillaplus.client.regions.RegionOverlay.labels(g, font, this::screenOf, cx, cz, rr, WorldMap3D.targetY, mapX, mapY, mapW, mapH);
+        }
         // pings (Alt + clique)
         for (Pings.Ping pg : Pings.active()) {
             float[] s = screenOf(pg.pos().getX() + 0.5, pg.pos().getY() + 1.0, pg.pos().getZ() + 0.5);

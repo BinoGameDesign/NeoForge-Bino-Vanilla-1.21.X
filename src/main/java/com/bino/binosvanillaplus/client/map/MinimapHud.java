@@ -232,6 +232,14 @@ public class MinimapHud {
             }
         }
 
+        // contorno branco entre as regioes (bioma) dentro do alcance do minimapa
+        com.bino.binosvanillaplus.client.regions.RegionOverlay.edges(g,
+                (wx, wy, wz) -> {
+                    float[] s = DioramaRenderer.project((float) (wx - p.getX()), (float) (wy - p.getY()), (float) (wz - p.getZ()), x0, y0, BOX);
+                    if (s[0] < x0 + 3 || s[0] > x0 + BOX - 3 || s[1] < y0 + 3 || s[1] > y0 + BOX - 3) s[2] = 0f;   // fora da moldura
+                    return s;
+                }, p.getX(), p.getZ(), R - 2, p.getY(), 0.9f, 0xD8FFFFFF, 400);
+
         // pings (Alt + clique): losango pulsando por 5 s
         for (Pings.Ping pg : Pings.active()) {
             float[] s = DioramaRenderer.project((float) (pg.pos().getX() + 0.5 - p.getX()), (float) (pg.pos().getY() + 1 - p.getY()),

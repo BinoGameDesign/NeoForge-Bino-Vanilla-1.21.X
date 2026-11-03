@@ -72,7 +72,7 @@ public final class PickupNotifier {
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
-        if (p == null || mc.level == null) { lastPlayer = null; NOTES.clear(); return; }
+        if (p == null || mc.level == null) { lastPlayer = null; NOTES.clear(); InventoryNewLabels.clear(); return; }
 
         if (p != lastPlayer) {                 // entrou no mundo / renasceu / trocou de dimensao: recomeca em silencio
             lastPlayer = p;
@@ -100,6 +100,7 @@ public final class PickupNotifier {
 
     private static void notify(Item item, int delta) {
         boolean isNew = true;   // NEW ate o jogador abrir o inventario
+        InventoryNewLabels.mark(item);   // e o "new" dentro do inventario
         for (Note n : NOTES) {
             if (n.item == item && System.currentTimeMillis() - n.last < LIFE_MS - OUT_MS) {   // mesmo item: soma no mesmo aviso
                 n.count += delta;
