@@ -7,6 +7,12 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 
 public class ModTags {
+    public static class Items {
+        // minerios aceitos no upgrade da Chave Dimensional (editavel por datapack)
+        public static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item> KEY_ORES = TagKey.create(Registries.ITEM,
+                ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "dimensional_key_ores"));
+    }
+
     public static class Blocks {
         public static final TagKey<Block> NEEDS_RUBI_TOOL = createTag("needs_rubi_tool");
         public static final TagKey<Block> INCORRECT_FOR_RUBI_TOOL = createTag("incorrect_for_rubi_tool");

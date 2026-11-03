@@ -16,6 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ClientLevelSkyMixin {
     @Inject(method = "getSkyColor", at = @At("RETURN"), cancellable = true)
     private void binosvanillaplus$tintSky(Vec3 pos, float partialTick, CallbackInfoReturnable<Vec3> cir) {
+        // Dimensao Portatil: ceu branco (o Iris passa esta cor ao shaderpack)
+        if (((ClientLevel) (Object) this).dimension().equals(com.bino.binosvanillaplus.pocket.PocketDimension.LEVEL)) {
+            cir.setReturnValue(new Vec3(1.0, 1.0, 1.0));
+            return;
+        }
         if (MapOptions.atmosphere < 1) return;
         Vec3 v = cir.getReturnValue();
         Vec3 t = AtmosphereState.tintSky(v);

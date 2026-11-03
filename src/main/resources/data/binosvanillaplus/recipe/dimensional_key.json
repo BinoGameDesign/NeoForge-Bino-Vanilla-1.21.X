@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "E": {
+      "item": "minecraft:ender_eye"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    }
+  },
+  "pattern": [
+    " A ",
+    "AEA",
+    " G "
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosvanillaplus:dimensional_key"
+  }
+}

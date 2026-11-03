@@ -170,6 +170,10 @@ public class ModItems {
     public static final DeferredItem<ClimbingHookItem> CLIMBING_HOOK = ITEMS.register("climbing_hook",
             () -> new ClimbingHookItem(new Item.Properties().stacksTo(1)));
 
+    // Chave Dimensional (cria a Porta Dimensional)
+    public static final DeferredItem<DimensionalKeyItem> DIMENSIONAL_KEY = ITEMS.register("dimensional_key",
+            () -> new DimensionalKeyItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

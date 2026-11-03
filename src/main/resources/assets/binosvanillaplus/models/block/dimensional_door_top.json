@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/template_door_top_left",
+  "textures": {
+    "top": "binosvanillaplus:block/dimensional_door_top"
+  }
+}

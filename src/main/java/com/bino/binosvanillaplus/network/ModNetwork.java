@@ -38,6 +38,13 @@ public class ModNetwork {
         registrar.playToClient(PingBroadcastPayload.TYPE, PingBroadcastPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.map.Pings.receive(payload)));
 
+        // Dimensao Portatil: pedido de visita (servidor -> dono) e resposta do dono (dono -> servidor)
+        registrar.playToClient(PocketVisitRequestPayload.TYPE, PocketVisitRequestPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.pocket.PocketVisitScreen.receive(payload)));
+        registrar.playToServer(PocketVisitReplyPayload.TYPE, PocketVisitReplyPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        com.bino.binosvanillaplus.pocket.PocketManager.reply((ServerPlayer) context.player(), payload.visitor(), payload.accept())));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));

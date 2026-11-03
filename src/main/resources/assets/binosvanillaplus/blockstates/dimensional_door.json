@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=east,half=lower": {
+      "model": "binosvanillaplus:block/dimensional_door_bottom"
+    },
+    "facing=east,half=upper": {
+      "model": "binosvanillaplus:block/dimensional_door_top"
+    },
+    "facing=south,half=lower": {
+      "model": "binosvanillaplus:block/dimensional_door_bottom",
+      "y": 90
+    },
+    "facing=south,half=upper": {
+      "model": "binosvanillaplus:block/dimensional_door_top",
+      "y": 90
+    },
+    "facing=west,half=lower": {
+      "model": "binosvanillaplus:block/dimensional_door_bottom",
+      "y": 180
+    },
+    "facing=west,half=upper": {
+      "model": "binosvanillaplus:block/dimensional_door_top",
+      "y": 180
+    },
+    "facing=north,half=lower": {
+      "model": "binosvanillaplus:block/dimensional_door_bottom",
+      "y": 270
+    },
+    "facing=north,half=upper": {
+      "model": "binosvanillaplus:block/dimensional_door_top",
+      "y": 270
+    }
+  }
+}

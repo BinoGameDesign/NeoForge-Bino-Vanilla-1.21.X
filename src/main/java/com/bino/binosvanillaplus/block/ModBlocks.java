@@ -131,6 +131,16 @@ public class ModBlocks {
                     .noOcclusion()
                     .sound(SoundType.CHAIN)));
 
+    // Porta Dimensional: sem item proprio (quem cria e a Chave Dimensional) e sem drops
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.DimensionalDoorBlock> DIMENSIONAL_DOOR =
+            BLOCKS.register("dimensional_door",
+                    () -> new com.bino.binosvanillaplus.block.custom.DimensionalDoorBlock(BlockBehaviour.Properties.of()
+                            .strength(3.0f, 6.0f)
+                            .sound(SoundType.WOOD)
+                            .noOcclusion()
+                            .noLootTable()
+                            .pushReaction(PushReaction.BLOCK)));
+
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);
         registerBlockItem(name, toReturn);

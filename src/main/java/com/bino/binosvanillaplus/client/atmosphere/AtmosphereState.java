@@ -56,6 +56,8 @@ public final class AtmosphereState {
     public static void tick(Minecraft mc) {
         ClientLevel lvl = mc.level;
         if (lvl == null || mc.player == null) { valid = false; lastLevel = null; return; }
+        // Dimensao Portatil: ambiente todo branco, sem neblina por bioma
+        if (lvl.dimension().equals(com.bino.binosvanillaplus.pocket.PocketDimension.LEVEL)) { valid = false; lastLevel = lvl; return; }
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
         if (!mc.gameRenderer.getMainCamera().isInitialized()) cam = mc.player.getEyePosition();
         boolean snap = !valid || lvl != lastLevel || Math.abs(cam.x - lastX) > 48 || Math.abs(cam.z - lastZ) > 48;

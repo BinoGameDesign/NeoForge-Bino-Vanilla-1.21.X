@@ -23,6 +23,20 @@ public class ModDataComponents {
                     .networkSynchronized(ByteBufCodecs.VAR_INT)
                     .build());
 
+    // Chave Dimensional: nivel (upgrades recebidos) e minerios ja usados (nao podem repetir)
+    public static final Supplier<DataComponentType<Integer>> KEY_LEVEL = COMPONENTS.register("key_level",
+            () -> DataComponentType.<Integer>builder()
+                    .persistent(ExtraCodecs.NON_NEGATIVE_INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT)
+                    .build());
+
+    public static final Supplier<DataComponentType<java.util.List<net.minecraft.resources.ResourceLocation>>> KEY_ORES =
+            COMPONENTS.register("key_ores",
+                    () -> DataComponentType.<java.util.List<net.minecraft.resources.ResourceLocation>>builder()
+                            .persistent(net.minecraft.resources.ResourceLocation.CODEC.listOf())
+                            .networkSynchronized(net.minecraft.resources.ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list()))
+                            .build());
+
     public static void register(IEventBus eventBus) {
         COMPONENTS.register(eventBus);
     }
