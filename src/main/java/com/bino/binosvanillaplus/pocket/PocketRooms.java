@@ -16,7 +16,7 @@ public final class PocketRooms {
     private PocketRooms() {}
 
     private static final int FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;   // sem avisar vizinhos
-    private static final int FORMAT = 1;
+    private static final int FORMAT = 2;
 
     // garante sala no tamanho certo e a porta de saida no lugar
     // devolve true se construiu/ampliou (o chamador deve marcar os dados como alterados)
@@ -35,7 +35,7 @@ public final class PocketRooms {
 
         // a porta de saida do tamanho/formato antigo sai (a nova nasce na parede nova)
         if (plot.builtLevel >= 0) {
-            int oldY = plot.fmt < 1 ? floor + 1 : floor;
+            int oldY = plot.fmt == 1 ? floor : floor + 1;   // formato 1 tinha a porta rente ao chao; os outros um bloco acima
             BlockPos old = new BlockPos(cx, oldY, -PocketDimension.halfFor(plot.builtLevel));
             if (pocket.getBlockState(old).getBlock() instanceof DimensionalDoorBlock) {
                 pocket.setBlock(old.above(), Blocks.AIR.defaultBlockState(), FLAGS);
@@ -70,17 +70,24 @@ public final class PocketRooms {
         plot.fmt = FORMAT;
     }
 
-    // porta de saida: na parede do fundo (norte), em cima do chao, virada para dentro da sala
+    // porta de saida: na parede do fundo (norte), UM bloco acima da camada livre do chao (para o jogador montar o chao
+    // dele por baixo), apoiada num bloco de parede; virada para dentro da sala
     public static void placeExit(ServerLevel pocket, PocketData.Plot plot) {
         BlockPos lower = exitPos(plot);
         BlockState cur = pocket.getBlockState(lower);
         if (cur.getBlock() instanceof DimensionalDoorBlock
                 && pocket.getBlockState(lower.above()).getBlock() instanceof DimensionalDoorBlock) return;
+        // apoio inquebravel debaixo da porta: ela fica um bloco acima da camada livre do chao
+        BlockPos base = lower.below();
+        BlockState b = pocket.getBlockState(base);
+        if (b.isAir() || b.is(Blocks.BARRIER) || b.is(Blocks.WHITE_CONCRETE)) {
+            pocket.setBlock(base, ModBlocks.POCKET_WALL.get().defaultBlockState(), FLAGS);
+        }
         DimensionalDoorBlock.placeAt(pocket, lower, Direction.SOUTH);
     }
 
     public static BlockPos exitPos(PocketData.Plot plot) {
-        return new BlockPos(PocketDimension.centerX(plot.index), PocketDimension.FLOOR_Y,
+        return new BlockPos(PocketDimension.centerX(plot.index), PocketDimension.FLOOR_Y + 1,
                 -PocketDimension.halfFor(plot.level));
     }
 }

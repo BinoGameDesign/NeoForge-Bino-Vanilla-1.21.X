@@ -36,6 +36,6 @@ public final class PocketDimension {
 
     // onde o jogador aparece ao entrar: logo em frente a porta de saida (que fica na parede do fundo, ao norte)
     public static Vec3 entrance(int index, int level) {
-        return new Vec3(centerX(index) + 0.5, FLOOR_Y, -halfFor(level) + 1.5);
+        return new Vec3(centerX(index) + 0.5, FLOOR_Y + 1, -halfFor(level) + 1.5);   // cai 1 bloco; nunca nasce dentro do chao do jogador
     }
 }
