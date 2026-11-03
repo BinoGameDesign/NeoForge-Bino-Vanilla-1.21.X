@@ -175,7 +175,6 @@ public class WorldMapScreen extends BinoScreen {
         // regioes nomeadas: contorno branco entre elas e o nome por cima de cada uma
         if (MapOptions.worldLabels) {
             double rr = Math.min(WorldMap3D.dist * 3.2, 900);
-            com.bino.binosvanillaplus.client.regions.RegionOverlay.edges(g, this::screenOf, cx, cz, rr, WorldMap3D.targetY, 1.4f, 0xE8FFFFFF, 3000);
             com.bino.binosvanillaplus.client.regions.RegionOverlay.labels(g, font, this::screenOf, cx, cz, rr, WorldMap3D.targetY, mapX, mapY, mapW, mapH);
         }
         // pings (Alt + clique)

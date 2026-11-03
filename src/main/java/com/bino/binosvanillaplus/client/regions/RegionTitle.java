@@ -57,10 +57,10 @@ public final class RegionTitle {
         float vis = in * (1f - out);
         if (vis < 0.02f) return;
 
-        float scale = 1.7f;
+        float scale = 1.2f;
         int tw = mc.font.width(text);
         float x = 20 - (1f - in) * 16f;               // desliza da esquerda
-        float y = g.guiHeight() - 64;
+        float y = g.guiHeight() - 96;
         int a = Math.max(4, (int) (255 * vis));
         // linha fina em cima do nome, crescendo
         int lineW = (int) (tw * scale * Math.min(1f, in * 1.2f)) + 6;

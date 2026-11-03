@@ -63,7 +63,8 @@ public final class RegionOverlay {
             if (dx * dx + dz * dz > r2) continue;
             float[] s = pr.project(l.x(), surfaceY(l.x(), l.z(), fallbackY) + 3, l.z());
             if (s[2] == 0f) continue;
-            int w = font.width(l.name()) + 8, h = 12;
+            float k = 0.7f;
+            int w = (int) (font.width(l.name()) * k) + 6, h = 9;
             int x = (int) s[0] - w / 2, y = (int) s[1] - h / 2;
             if (x < mapX || y < mapY || x + w > mapX + mapW || y + h > mapY + mapH) continue;
             boolean clash = false;
@@ -73,7 +74,11 @@ public final class RegionOverlay {
             if (clash) continue;
             taken.add(new int[]{x, y, w, h});
             g.fill(x, y, x + w, y + h, 0x70000000);
-            g.drawString(font, l.name(), x + 4, y + 2, 0xFFFFFFFF, true);
+            g.pose().pushPose();
+            g.pose().translate(x + 3, y + 1.5f, 0);
+            g.pose().scale(k, k, 1f);
+            g.drawString(font, l.name(), 0, 0, 0xFFFFFFFF, true);
+            g.pose().popPose();
             shown++;
         }
     }

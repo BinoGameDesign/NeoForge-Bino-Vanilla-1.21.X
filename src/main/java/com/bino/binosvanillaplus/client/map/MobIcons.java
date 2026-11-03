@@ -65,7 +65,11 @@ public final class MobIcons {
         g.pose().pushPose();
         g.pose().translate(cx, cy, 0);
         g.pose().scale(size / base, size / base, 1f);
+        g.flush();
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f, 1f, 1f, 0.75f);   // 75% de opacidade
         drawBase(g, e, 0, 0, base);
+        g.flush();
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         g.pose().popPose();
     }
 
