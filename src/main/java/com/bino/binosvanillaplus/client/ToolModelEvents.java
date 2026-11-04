@@ -16,7 +16,7 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 public class ToolModelEvents {
 
     private static final List<String> TOOLS = List.of("rubi_sword", "rubi_pickaxe", "rubi_shovel", "rubi_axe", "rubi_hoe", "cyalume_stick", "climbing_hook",
-            "flashlight", "dynamite", "detonator");
+            "flashlight", "dynamite", "detonator", "explorer_whistle", "explorer_sonar");
 
     private static ResourceLocation id(String path) {
         return ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, path);

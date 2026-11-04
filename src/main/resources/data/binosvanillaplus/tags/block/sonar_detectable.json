@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "#c:ores",
+    {"id": "minecraft:ancient_debris", "required": false},
+    "minecraft:bone_block"
+  ]
+}

@@ -180,6 +180,12 @@ public class ModItems {
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.DetonatorItem> DETONATOR = ITEMS.register("detonator",
             () -> new com.bino.binosvanillaplus.item.custom.DetonatorItem(new Item.Properties().stacksTo(1)));
 
+    // Apito de explorador e Sonar de exploracao
+    public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorerWhistleItem> EXPLORER_WHISTLE = ITEMS.register("explorer_whistle",
+            () -> new com.bino.binosvanillaplus.item.custom.ExplorerWhistleItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorerSonarItem> EXPLORER_SONAR = ITEMS.register("explorer_sonar",
+            () -> new com.bino.binosvanillaplus.item.custom.ExplorerSonarItem(new Item.Properties().stacksTo(1)));
+
     // Item do tumulo: so existe para servir de icone no mapa (nao aparece no criativo, nao se crafta)
     public static final DeferredItem<net.minecraft.world.item.BlockItem> GRAVE = ITEMS.register("grave",
             () -> new net.minecraft.world.item.BlockItem(com.bino.binosvanillaplus.block.ModBlocks.GRAVE.get(), new Item.Properties()));

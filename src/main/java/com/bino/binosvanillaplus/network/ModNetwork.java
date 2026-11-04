@@ -53,6 +53,10 @@ public class ModNetwork {
         registrar.playToServer(HelmetLampTogglePayload.TYPE, HelmetLampTogglePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> toggleHelmetLamp((ServerPlayer) context.player())));
 
+        // apito: silhueta de quem apitou
+        registrar.playToClient(WhistleSignalPayload.TYPE, WhistleSignalPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.gear.WhistleSignals.receive(payload)));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));

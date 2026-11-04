@@ -22,7 +22,7 @@ public class WaypointBeacons {
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "waypoint_labels");
 
     // ponto do mundo -> tela (interface); null se atras da camera
-    static float[] toScreen(double x, double y, double z, int gw, int gh) {
+    public static float[] toScreen(double x, double y, double z, int gw, int gh) {
         if (!haveMatrices) return null;
         org.joml.Vector4f v = new org.joml.Vector4f((float) (x - CAM.x), (float) (y - CAM.y), (float) (z - CAM.z), 1f);
         VIEW.transform(v);

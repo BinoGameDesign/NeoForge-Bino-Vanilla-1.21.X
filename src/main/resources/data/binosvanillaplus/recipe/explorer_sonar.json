@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": {"item": "minecraft:amethyst_shard"},
+    "C": {"item": "minecraft:copper_ingot"},
+    "M": {"item": "minecraft:compass"},
+    "R": {"item": "minecraft:redstone"}
+  },
+  "pattern": [" A ", "CMC", "CRC"],
+  "result": {"count": 1, "id": "binosvanillaplus:explorer_sonar"}
+}

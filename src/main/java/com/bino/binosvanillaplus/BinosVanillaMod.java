@@ -50,6 +50,7 @@ public class BinosVanillaMod {
         com.bino.binosvanillaplus.item.ModDataComponents.register(modEventBus);   // nível de forja dos itens
         com.bino.binosvanillaplus.menu.ModMenuTypes.register(modEventBus);   // janelas (menu da Mesa de Lapidação)
         com.bino.binosvanillaplus.recipe.ModRecipes.register(modEventBus);   // receita de upgrade da Chave Dimensional
+        com.bino.binosvanillaplus.sound.ModSounds.register(modEventBus);   // sons (apito, sonar, camera)
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
         com.bino.binosvanillaplus.block.entity.ModBlockEntities.register(modEventBus);   // dono da corda solta

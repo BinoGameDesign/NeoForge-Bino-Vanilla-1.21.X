@@ -166,5 +166,13 @@
   "item.binosvanillaplus.detonator": "Detonador",
   "tooltip.binosvanillaplus.detonator": "Botão direito: explode as suas dinamites (até 64 blocos). Não quebra minérios.",
   "message.binosvanillaplus.detonator.none": "Nenhuma dinamite sua por perto.",
-  "message.binosvanillaplus.detonator.fire": "Detonando %s dinamite(s)!"
+  "message.binosvanillaplus.detonator.fire": "Detonando %s dinamite(s)!",
+  "item.binosvanillaplus.explorer_whistle": "Apito de Explorador",
+  "tooltip.binosvanillaplus.explorer_whistle": "Botão direito: apita. Quem ouvir vê sua silhueta por alguns segundos. Atrai monstros e assusta animais.",
+  "item.binosvanillaplus.explorer_sonar": "Sonar de Exploração",
+  "tooltip.binosvanillaplus.explorer_sonar": "Botão direito: pulso que revela minérios, fósseis e criaturas por perto (recarga de 12 s).",
+  "message.binosvanillaplus.sonar.result": "Sonar: %s veio(s)/fóssil(eis), %s criatura(s)",
+  "subtitles.binosvanillaplus.whistle": "Apito",
+  "subtitles.binosvanillaplus.sonar_ping": "Pulso do sonar",
+  "subtitles.binosvanillaplus.camera_shutter": "Obturador da câmera"
 }

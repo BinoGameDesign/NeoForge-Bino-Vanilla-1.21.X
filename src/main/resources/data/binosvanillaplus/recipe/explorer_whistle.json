@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "minecraft:copper_ingot"},
+    {"item": "minecraft:copper_ingot"},
+    {"item": "minecraft:iron_nugget"},
+    {"item": "minecraft:string"}
+  ],
+  "result": {"count": 1, "id": "binosvanillaplus:explorer_whistle"}
+}

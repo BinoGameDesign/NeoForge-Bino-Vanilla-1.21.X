@@ -1,0 +1,5 @@
+{
+  "whistle": {"sounds": [{"name": "binosvanillaplus:whistle", "attenuation_distance": 16}], "subtitle": "subtitles.binosvanillaplus.whistle"},
+  "sonar_ping": {"sounds": ["binosvanillaplus:sonar_ping"], "subtitle": "subtitles.binosvanillaplus.sonar_ping"},
+  "camera_shutter": {"sounds": ["binosvanillaplus:camera_shutter"], "subtitle": "subtitles.binosvanillaplus.camera_shutter"}
+}
