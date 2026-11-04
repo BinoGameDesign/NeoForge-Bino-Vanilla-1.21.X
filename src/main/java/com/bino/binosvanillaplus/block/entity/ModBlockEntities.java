@@ -22,6 +22,9 @@ public class ModBlockEntities {
     public static final Supplier<BlockEntityType<DynamiteBlockEntity>> DYNAMITE = BLOCK_ENTITIES.register("dynamite",
             () -> BlockEntityType.Builder.of(DynamiteBlockEntity::new, ModBlocks.DYNAMITE.get()).build(null));
 
+    public static final Supplier<BlockEntityType<CameraTripodBlockEntity>> CAMERA_TRIPOD = BLOCK_ENTITIES.register("camera_tripod",
+            () -> BlockEntityType.Builder.of(CameraTripodBlockEntity::new, ModBlocks.CAMERA_TRIPOD.get()).build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

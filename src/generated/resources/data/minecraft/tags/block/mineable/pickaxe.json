@@ -10,6 +10,10 @@
     "binosvanillaplus:jade_deepslate_ore",
     "binosvanillaplus:jade_block",
     "binosvanillaplus:forge_ore",
-    "binosvanillaplus:philosopher_block"
+    "binosvanillaplus:philosopher_block",
+    "binosvanillaplus:fossil_skull",
+    "binosvanillaplus:fossil_vertebra",
+    "binosvanillaplus:fossil_rib",
+    "binosvanillaplus:fossil_limb"
   ]
 }

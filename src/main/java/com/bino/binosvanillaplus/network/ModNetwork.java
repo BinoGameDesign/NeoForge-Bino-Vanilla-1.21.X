@@ -57,6 +57,20 @@ public class ModNetwork {
         registrar.playToClient(WhistleSignalPayload.TYPE, WhistleSignalPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.gear.WhistleSignals.receive(payload)));
 
+        // camera, tripe e diario de exploracao
+        registrar.playToServer(PhotoUploadPayload.TYPE, PhotoUploadPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.journal.Journal.onPhoto((ServerPlayer) context.player(), payload)));
+        registrar.playToServer(DiaryRequestPayload.TYPE, DiaryRequestPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    ServerPlayer sp = (ServerPlayer) context.player();
+                    if (payload.develop() >= 0) com.bino.binosvanillaplus.journal.Journal.develop(sp, payload.develop());
+                    com.bino.binosvanillaplus.journal.Journal.sendDiary(sp);
+                }));
+        registrar.playToClient(DiaryDataPayload.TYPE, DiaryDataPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.journal.DiaryScreen.receive(payload)));
+        registrar.playToClient(TripodShotPayload.TYPE, TripodShotPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.journal.PhotoCapture.tripod(payload)));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));

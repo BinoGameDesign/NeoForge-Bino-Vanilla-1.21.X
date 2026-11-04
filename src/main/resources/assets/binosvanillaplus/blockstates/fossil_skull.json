@@ -1,0 +1,20 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "binosvanillaplus:block/fossil_skull",
+   "y": 0
+  },
+  "facing=east": {
+   "model": "binosvanillaplus:block/fossil_skull",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "binosvanillaplus:block/fossil_skull",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "binosvanillaplus:block/fossil_skull",
+   "y": 270
+  }
+ }
+}

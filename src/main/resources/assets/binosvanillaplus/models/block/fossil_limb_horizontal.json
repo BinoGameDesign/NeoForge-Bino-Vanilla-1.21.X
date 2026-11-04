@@ -1,0 +1,7 @@
+{
+ "parent": "minecraft:block/cube_column_horizontal",
+ "textures": {
+  "side": "binosvanillaplus:block/fossil_limb",
+  "end": "binosvanillaplus:block/fossil_limb_top"
+ }
+}

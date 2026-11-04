@@ -186,6 +186,14 @@ public class ModItems {
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorerSonarItem> EXPLORER_SONAR = ITEMS.register("explorer_sonar",
             () -> new com.bino.binosvanillaplus.item.custom.ExplorerSonarItem(new Item.Properties().stacksTo(1)));
 
+    // Camera, Diario de Exploracao e Foto revelada
+    public static final DeferredItem<com.bino.binosvanillaplus.item.custom.CameraItem> CAMERA = ITEMS.register("camera",
+            () -> new com.bino.binosvanillaplus.item.custom.CameraItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem> EXPLORATION_DIARY = ITEMS.register("exploration_diary",
+            () -> new com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<com.bino.binosvanillaplus.item.custom.PhotoItem> PHOTO = ITEMS.register("photo",
+            () -> new com.bino.binosvanillaplus.item.custom.PhotoItem(new Item.Properties().stacksTo(1)));
+
     // Item do tumulo: so existe para servir de icone no mapa (nao aparece no criativo, nao se crafta)
     public static final DeferredItem<net.minecraft.world.item.BlockItem> GRAVE = ITEMS.register("grave",
             () -> new net.minecraft.world.item.BlockItem(com.bino.binosvanillaplus.block.ModBlocks.GRAVE.get(), new Item.Properties()));

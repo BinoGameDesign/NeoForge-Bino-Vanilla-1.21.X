@@ -1,0 +1,16 @@
+{
+ "variants": {
+  "axis=y": {
+   "model": "binosvanillaplus:block/fossil_rib"
+  },
+  "axis=z": {
+   "model": "binosvanillaplus:block/fossil_rib_horizontal",
+   "x": 90
+  },
+  "axis=x": {
+   "model": "binosvanillaplus:block/fossil_rib_horizontal",
+   "x": 90,
+   "y": 90
+  }
+ }
+}

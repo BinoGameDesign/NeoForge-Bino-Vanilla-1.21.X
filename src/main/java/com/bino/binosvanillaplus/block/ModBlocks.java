@@ -138,6 +138,26 @@ public class ModBlocks {
                     .sound(SoundType.GRASS)
                     .pushReaction(PushReaction.DESTROY)));
 
+    // Tripe da camera (timer de foto)
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.CameraTripodBlock> CAMERA_TRIPOD = registerBlock("camera_tripod",
+            () -> new com.bino.binosvanillaplus.block.custom.CameraTripodBlock(BlockBehaviour.Properties.of()
+                    .strength(0.8f).noOcclusion().sound(SoundType.WOOD).pushReaction(PushReaction.DESTROY)));
+
+    // Ossos fossilizados (gerados no mundo em fosseis gigantes; tambem servem de decoracao)
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.FossilBoneBlock> FOSSIL_VERTEBRA = registerBlock("fossil_vertebra",
+            () -> new com.bino.binosvanillaplus.block.custom.FossilBoneBlock("vertebra", fossil()));
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.FossilBoneBlock> FOSSIL_RIB = registerBlock("fossil_rib",
+            () -> new com.bino.binosvanillaplus.block.custom.FossilBoneBlock("rib", fossil()));
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.FossilBoneBlock> FOSSIL_LIMB = registerBlock("fossil_limb",
+            () -> new com.bino.binosvanillaplus.block.custom.FossilBoneBlock("limb", fossil()));
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.FossilSkullBlock> FOSSIL_SKULL = registerBlock("fossil_skull",
+            () -> new com.bino.binosvanillaplus.block.custom.FossilSkullBlock(fossil()));
+
+    private static BlockBehaviour.Properties fossil() {
+        return BlockBehaviour.Properties.of().strength(2.0f, 3.0f).requiresCorrectToolForDrops()
+                .sound(SoundType.BONE_BLOCK).instrument(net.minecraft.world.level.block.state.properties.NoteBlockInstrument.XYLOPHONE);
+    }
+
     // Corda e gancho: SEM BlockItem automatico (os itens sao registrados a mao em ModItems)
     public static final DeferredBlock<RopeBlock> ROPE = BLOCKS.register("rope",
             () -> new RopeBlock(BlockBehaviour.Properties.of()

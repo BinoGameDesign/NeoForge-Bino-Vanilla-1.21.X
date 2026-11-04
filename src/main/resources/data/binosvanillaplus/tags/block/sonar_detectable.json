@@ -2,7 +2,14 @@
   "replace": false,
   "values": [
     "#c:ores",
-    {"id": "minecraft:ancient_debris", "required": false},
-    "minecraft:bone_block"
+    {
+      "id": "minecraft:ancient_debris",
+      "required": false
+    },
+    "minecraft:bone_block",
+    "binosvanillaplus:fossil_skull",
+    "binosvanillaplus:fossil_vertebra",
+    "binosvanillaplus:fossil_rib",
+    "binosvanillaplus:fossil_limb"
   ]
 }

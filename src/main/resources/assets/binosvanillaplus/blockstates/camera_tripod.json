@@ -1,0 +1,36 @@
+{
+ "variants": {
+  "facing=north,has_camera=false": {
+   "model": "binosvanillaplus:block/camera_tripod",
+   "y": 0
+  },
+  "facing=north,has_camera=true": {
+   "model": "binosvanillaplus:block/camera_tripod_camera",
+   "y": 0
+  },
+  "facing=east,has_camera=false": {
+   "model": "binosvanillaplus:block/camera_tripod",
+   "y": 90
+  },
+  "facing=east,has_camera=true": {
+   "model": "binosvanillaplus:block/camera_tripod_camera",
+   "y": 90
+  },
+  "facing=south,has_camera=false": {
+   "model": "binosvanillaplus:block/camera_tripod",
+   "y": 180
+  },
+  "facing=south,has_camera=true": {
+   "model": "binosvanillaplus:block/camera_tripod_camera",
+   "y": 180
+  },
+  "facing=west,has_camera=false": {
+   "model": "binosvanillaplus:block/camera_tripod",
+   "y": 270
+  },
+  "facing=west,has_camera=true": {
+   "model": "binosvanillaplus:block/camera_tripod_camera",
+   "y": 270
+  }
+ }
+}

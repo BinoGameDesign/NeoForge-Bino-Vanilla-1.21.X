@@ -23,6 +23,12 @@ public class ModBlockTagProvider extends BlockTagsProvider {
 
     @Override
     protected void addTags(HolderLookup.Provider provider) {
+        // Ossos fossilizados (picareta) e tripe da camera (machado)
+        tag(BlockTags.MINEABLE_WITH_PICKAXE)
+                .add(ModBlocks.FOSSIL_SKULL.get()).add(ModBlocks.FOSSIL_VERTEBRA.get())
+                .add(ModBlocks.FOSSIL_RIB.get()).add(ModBlocks.FOSSIL_LIMB.get());
+        tag(BlockTags.MINEABLE_WITH_AXE).add(ModBlocks.CAMERA_TRIPOD.get());
+
         tag(BlockTags.MINEABLE_WITH_PICKAXE)
                 .add(ModBlocks.RUBI_ORE.get())
                 .add(ModBlocks.RUBI_DEEPSLATE_ORE.get())

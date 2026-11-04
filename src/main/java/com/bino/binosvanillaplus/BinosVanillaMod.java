@@ -53,6 +53,7 @@ public class BinosVanillaMod {
         com.bino.binosvanillaplus.sound.ModSounds.register(modEventBus);   // sons (apito, sonar, camera)
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
+        com.bino.binosvanillaplus.worldgen.ModFeatures.register(modEventBus);   // fosseis gerados no mundo
         com.bino.binosvanillaplus.block.entity.ModBlockEntities.register(modEventBus);   // dono da corda solta
 
         // Durabilidade x1.25 das ferramentas de diamante (evento do barramento do mod)

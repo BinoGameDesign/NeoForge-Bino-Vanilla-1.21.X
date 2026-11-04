@@ -74,6 +74,13 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.DETONATOR);
                         output.accept(ModItems.EXPLORER_WHISTLE);
                         output.accept(ModItems.EXPLORER_SONAR);
+                        output.accept(ModItems.CAMERA);
+                        output.accept(com.bino.binosvanillaplus.block.ModBlocks.CAMERA_TRIPOD);
+                        output.accept(ModItems.EXPLORATION_DIARY);
+                        output.accept(com.bino.binosvanillaplus.block.ModBlocks.FOSSIL_SKULL);
+                        output.accept(com.bino.binosvanillaplus.block.ModBlocks.FOSSIL_VERTEBRA);
+                        output.accept(com.bino.binosvanillaplus.block.ModBlocks.FOSSIL_RIB);
+                        output.accept(com.bino.binosvanillaplus.block.ModBlocks.FOSSIL_LIMB);
                     }).build());
 
     public static final Supplier<CreativeModeTab> MINING_BLOCK_TAB = CREATIVE_MODE_TAB.register("mining_blocks_tab",

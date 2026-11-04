@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/orientable",
+ "textures": {
+  "front": "binosvanillaplus:block/fossil_skull_front",
+  "side": "binosvanillaplus:block/fossil_skull",
+  "top": "binosvanillaplus:block/fossil_skull"
+ }
+}
