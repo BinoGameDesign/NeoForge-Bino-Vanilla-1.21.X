@@ -125,6 +125,19 @@ public class ModBlocks {
                     .lightLevel(s -> 5)
                     .sound(SoundType.STONE)));
 
+    // Luz invisivel da Lanterna (se apaga sozinha quando a lanterna deixa de apontar para ela). Sem item.
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.FlashlightLightBlock> FLASHLIGHT_LIGHT = BLOCKS.register("flashlight_light",
+            () -> new com.bino.binosvanillaplus.block.custom.FlashlightLightBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.LIGHT)
+                    .noLootTable()));
+
+    // Dinamite (explode pelo Detonador, fogo ou redstone; nao quebra minerios)
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.DynamiteBlock> DYNAMITE = registerBlock("dynamite",
+            () -> new com.bino.binosvanillaplus.block.custom.DynamiteBlock(BlockBehaviour.Properties.of()
+                    .instabreak()
+                    .noOcclusion()
+                    .sound(SoundType.GRASS)
+                    .pushReaction(PushReaction.DESTROY)));
+
     // Corda e gancho: SEM BlockItem automatico (os itens sao registrados a mao em ModItems)
     public static final DeferredBlock<RopeBlock> ROPE = BLOCKS.register("rope",
             () -> new RopeBlock(BlockBehaviour.Properties.of()

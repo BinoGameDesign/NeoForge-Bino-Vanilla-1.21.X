@@ -1,0 +1,10 @@
+{
+ "variants": {
+  "lit=false": {
+   "model": "binosvanillaplus:block/dynamite"
+  },
+  "lit=true": {
+   "model": "binosvanillaplus:block/dynamite"
+  }
+ }
+}

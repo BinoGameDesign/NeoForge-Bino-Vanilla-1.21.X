@@ -16,5 +16,8 @@ public class ModRecipes {
     public static final Supplier<RecipeSerializer<KeyUpgradeRecipe>> KEY_UPGRADE = SERIALIZERS.register("key_upgrade",
             () -> new SimpleCraftingRecipeSerializer<>(KeyUpgradeRecipe::new));
 
+    public static final Supplier<RecipeSerializer<HelmetLampRecipe>> HELMET_LAMP = SERIALIZERS.register("helmet_lamp",
+            () -> new SimpleCraftingRecipeSerializer<>(HelmetLampRecipe::new));
+
     public static void register(IEventBus eventBus) { SERIALIZERS.register(eventBus); }
 }

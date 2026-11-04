@@ -37,6 +37,12 @@ public class ModDataComponents {
                             .networkSynchronized(net.minecraft.resources.ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list()))
                             .build());
 
+    // Lanterna: ligada/desligada (na lanterna e no capacete com lanterna) e se o capacete tem a lanterna acoplada
+    public static final Supplier<DataComponentType<Boolean>> FLASHLIGHT_ON = COMPONENTS.register("flashlight_on",
+            () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
+    public static final Supplier<DataComponentType<Boolean>> HELMET_LAMP = COMPONENTS.register("helmet_lamp",
+            () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
+
     public static void register(IEventBus eventBus) {
         COMPONENTS.register(eventBus);
     }

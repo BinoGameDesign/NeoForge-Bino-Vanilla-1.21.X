@@ -19,6 +19,9 @@ public class ModBlockEntities {
     public static final Supplier<BlockEntityType<GraveBlockEntity>> GRAVE = BLOCK_ENTITIES.register("grave",
             () -> BlockEntityType.Builder.of(GraveBlockEntity::new, ModBlocks.GRAVE.get()).build(null));
 
+    public static final Supplier<BlockEntityType<DynamiteBlockEntity>> DYNAMITE = BLOCK_ENTITIES.register("dynamite",
+            () -> BlockEntityType.Builder.of(DynamiteBlockEntity::new, ModBlocks.DYNAMITE.get()).build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

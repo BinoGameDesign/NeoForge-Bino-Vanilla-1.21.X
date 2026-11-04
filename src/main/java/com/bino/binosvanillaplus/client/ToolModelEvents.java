@@ -15,7 +15,8 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public class ToolModelEvents {
 
-    private static final List<String> TOOLS = List.of("rubi_sword", "rubi_pickaxe", "rubi_shovel", "rubi_axe", "rubi_hoe", "cyalume_stick", "climbing_hook");
+    private static final List<String> TOOLS = List.of("rubi_sword", "rubi_pickaxe", "rubi_shovel", "rubi_axe", "rubi_hoe", "cyalume_stick", "climbing_hook",
+            "flashlight", "dynamite", "detonator");
 
     private static ResourceLocation id(String path) {
         return ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, path);

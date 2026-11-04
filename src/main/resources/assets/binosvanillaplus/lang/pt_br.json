@@ -153,5 +153,18 @@
   "gui.binosvanillaplus.spirit.take_xp": "Pegar XP",
   "gui.binosvanillaplus.spirit.dissipate": "Dissipar",
   "gui.binosvanillaplus.spirit.xp": "XP: %s",
-  "entity.binosvanillaplus.grave_allay": "Allay Fantasma"
+  "entity.binosvanillaplus.grave_allay": "Allay Fantasma",
+  "item.binosvanillaplus.flashlight": "Lanterna",
+  "tooltip.binosvanillaplus.flashlight.on": "Ligada",
+  "tooltip.binosvanillaplus.flashlight.off": "Desligada",
+  "tooltip.binosvanillaplus.flashlight.use": "Botão direito: liga/desliga. Capacete + Lanterna na bancada: lanterna no capacete (tecla K).",
+  "tooltip.binosvanillaplus.helmet_lamp": "Lanterna acoplada (tecla K liga/desliga)",
+  "key.binosvanillaplus.helmet_lamp": "Lanterna do capacete",
+  "message.binosvanillaplus.helmet_lamp.none": "Seu capacete não tem lanterna (capacete + lanterna na bancada).",
+  "block.binosvanillaplus.flashlight_light": "Luz da lanterna",
+  "block.binosvanillaplus.dynamite": "Dinamite",
+  "item.binosvanillaplus.detonator": "Detonador",
+  "tooltip.binosvanillaplus.detonator": "Botão direito: explode as suas dinamites (até 64 blocos). Não quebra minérios.",
+  "message.binosvanillaplus.detonator.none": "Nenhuma dinamite sua por perto.",
+  "message.binosvanillaplus.detonator.fire": "Detonando %s dinamite(s)!"
 }

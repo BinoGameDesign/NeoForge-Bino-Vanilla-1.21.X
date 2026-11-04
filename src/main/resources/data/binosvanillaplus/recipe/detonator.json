@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "L": {"item": "minecraft:lever"},
+    "I": {"item": "minecraft:iron_ingot"},
+    "R": {"item": "minecraft:redstone"},
+    "C": {"item": "minecraft:copper_ingot"}
+  },
+  "pattern": [" L ", "IRI", "ICI"],
+  "result": {"count": 1, "id": "binosvanillaplus:detonator"}
+}

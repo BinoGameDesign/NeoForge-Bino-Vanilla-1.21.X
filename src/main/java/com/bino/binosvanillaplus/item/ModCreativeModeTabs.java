@@ -69,6 +69,9 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.RAW_SAPPHIRE);
                         output.accept(ModItems.RAW_JADE);
                         output.accept(ModItems.DIMENSIONAL_KEY);
+                        output.accept(ModItems.FLASHLIGHT);
+                        output.accept(com.bino.binosvanillaplus.block.ModBlocks.DYNAMITE);
+                        output.accept(ModItems.DETONATOR);
                     }).build());
 
     public static final Supplier<CreativeModeTab> MINING_BLOCK_TAB = CREATIVE_MODE_TAB.register("mining_blocks_tab",

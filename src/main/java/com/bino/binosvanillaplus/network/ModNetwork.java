@@ -49,9 +49,26 @@ public class ModNetwork {
         registrar.playToClient(GraveMarkPayload.TYPE, GraveMarkPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.map.MapWaypoints.onGraveMark(payload)));
 
+        // lanterna do capacete (tecla)
+        registrar.playToServer(HelmetLampTogglePayload.TYPE, HelmetLampTogglePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> toggleHelmetLamp((ServerPlayer) context.player())));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));
+    }
+
+    private static void toggleHelmetLamp(ServerPlayer sp) {
+        net.minecraft.world.item.ItemStack head = sp.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
+        if (!head.getOrDefault(com.bino.binosvanillaplus.item.ModDataComponents.HELMET_LAMP.get(), false)) {
+            sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.binosvanillaplus.helmet_lamp.none"), true);
+            return;
+        }
+        boolean on = !head.getOrDefault(com.bino.binosvanillaplus.item.ModDataComponents.FLASHLIGHT_ON.get(), false);
+        head.set(com.bino.binosvanillaplus.item.ModDataComponents.FLASHLIGHT_ON.get(), on);
+        sp.serverLevel().playSound(null, sp.getX(), sp.getEyeY(), sp.getZ(),
+                on ? net.minecraft.sounds.SoundEvents.STONE_BUTTON_CLICK_ON : net.minecraft.sounds.SoundEvents.STONE_BUTTON_CLICK_OFF,
+                net.minecraft.sounds.SoundSource.PLAYERS, 0.6f, on ? 1.6f : 1.3f);
     }
 
     private static final Map<UUID, Long> LAST_PING = new HashMap<>();
