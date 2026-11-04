@@ -69,6 +69,11 @@ public class FarTerrain {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
+        try { onRenderImpl(event); } finally { com.bino.binosvanillaplus.client.Perf.end("Distancia extra (terreno distante)", t0); }
+    }
+
+    private static void onRenderImpl(RenderLevelStageEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (!active(mc)) return;
         if (irisPack()) {   // com shaderpack: o terreno distante passa pelos shaders do pack (luz, agua, neblina do Complementary)

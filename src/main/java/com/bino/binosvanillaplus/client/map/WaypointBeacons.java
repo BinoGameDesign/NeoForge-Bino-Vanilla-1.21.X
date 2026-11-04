@@ -36,11 +36,12 @@ public class WaypointBeacons {
         Minecraft mc = Minecraft.getInstance();
         if (!haveMatrices || mc.player == null || mc.level == null || mc.options.hideGui || mc.screen != null) return;
         MapOptions.ensureLoaded();
-        if (!MapOptions.worldBeams || !com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player)) return;
+        if (!MapOptions.worldBeams) return;
+        boolean hasMap = com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player);   // sem mapa: so a marcacao de morte
         float ts = MinimapHud.smallScale(mc);
         int icon = Math.max(8, Math.round(16 * ts));
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
-            if (w.hidden) continue;
+            if (w.hidden || (!hasMap && !MapWaypoints.DEATH_SET.equals(w.set))) continue;
             double dx = w.x + 0.5 - CAM.x, dy = w.y + 1.2 - CAM.y, dz = w.z + 0.5 - CAM.z;
             double dist = Math.sqrt(mc.player.distanceToSqr(w.x + 0.5, w.y, w.z + 0.5));
             if (dist < 4) continue;
@@ -82,6 +83,11 @@ public class WaypointBeacons {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
+        try { onRenderImpl(event); } finally { com.bino.binosvanillaplus.client.Perf.end("Feixes das marcacoes", t0); }
+    }
+
+    private static void onRenderImpl(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft mc = Minecraft.getInstance();
         // guarda as matrizes da camera para os rotulos (desenhados depois, no HUD)
@@ -91,7 +97,8 @@ public class WaypointBeacons {
         haveMatrices = true;
         if (mc.player == null || mc.level == null || mc.options.hideGui) return;
         MapOptions.ensureLoaded();
-        if (!MapOptions.worldBeams || !com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player)) return;
+        if (!MapOptions.worldBeams) return;
+        boolean hasMap = com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player);   // quem morre perde o mapa: a morte aparece mesmo assim
         if (MapWaypoints.list().isEmpty()) return;
 
         Vec3 cam = event.getCamera().getPosition();
@@ -100,7 +107,7 @@ public class WaypointBeacons {
         float pt = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         long time = mc.level.getGameTime();
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
-            if (w.hidden) continue;
+            if (w.hidden || (!hasMap && !MapWaypoints.DEATH_SET.equals(w.set))) continue;
             double dx = w.x + 0.5 - cam.x, dz = w.z + 0.5 - cam.z;
             double dist2 = dx * dx + dz * dz;
             if (dist2 < 4.0 * 4.0) continue;   // colado na marcacao o feixe atrapalha a visao

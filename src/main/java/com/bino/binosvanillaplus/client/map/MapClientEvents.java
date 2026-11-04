@@ -78,7 +78,11 @@ public class MapClientEvents {
 
     @SubscribeEvent
     public static void registerLayers(RegisterGuiLayersEvent event) {
-        event.registerAboveAll(MinimapHud.ID, MinimapHud::render);
+        event.registerAboveAll(MinimapHud.ID, (g, dt) -> {
+            long t0 = com.bino.binosvanillaplus.client.Perf.start();
+            MinimapHud.render(g, dt);
+            com.bino.binosvanillaplus.client.Perf.end("Minimapa: desenho", t0);
+        });
         event.registerAboveAll(WaypointBeacons.LABELS_ID, WaypointBeacons::renderLabels);
         event.registerAboveAll(Pings.HUD_ID, Pings::renderHud);
         // avisos (Toasts) tambem aparecem no jogo, depois que uma tela fecha
@@ -91,9 +95,14 @@ public class MapClientEvents {
     @SubscribeEvent
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
         ExploredMap.tick(mc);
-        if (mc.player != null && mc.level != null && mc.player.tickCount % 3 == 0 && com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player))
+        com.bino.binosvanillaplus.client.Perf.end("Mapa: leitura dos chunks", t0);
+        if (mc.player != null && mc.level != null && mc.player.tickCount % 3 == 0 && com.bino.binosvanillaplus.map.MapGate.hasMap(mc.player)) {
+            t0 = com.bino.binosvanillaplus.client.Perf.start();
             MinimapHud.sample(mc);
+            com.bino.binosvanillaplus.client.Perf.end("Minimapa: leitura", t0);
+        }
         if (mc.player != null && mc.player.tickCount % 5 == 0) MapWaypoints.checkQuickReached(mc.player);
         while (ZOOM_IN.consumeClick()) { MapOptions.ensureLoaded(); MapOptions.minimapZoom = Math.max(0, MapOptions.minimapZoom - 1); MapOptions.save(); }
         while (ZOOM_OUT.consumeClick()) { MapOptions.ensureLoaded(); MapOptions.minimapZoom = Math.min(2, MapOptions.minimapZoom + 1); MapOptions.save(); }

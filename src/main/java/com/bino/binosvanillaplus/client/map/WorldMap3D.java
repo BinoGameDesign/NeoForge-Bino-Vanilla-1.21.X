@@ -26,6 +26,33 @@ public class WorldMap3D {
 
     public static float yaw = 0.0f, pitch = 0.95f, dist = 110f;
     public static Matrix4f view = new Matrix4f(), proj = new Matrix4f();
+    private static float shownPitch = Float.NaN;   // inclinacao usada de fato (sobe sozinha se a camera fosse entrar no terreno)
+
+    // posicao da camera em relacao ao alvo, para uma inclinacao
+    private static Vector3f camOffset(float p) {
+        return new Matrix4f().translate(0, 0, -dist).rotateX(p).rotateY(yaw).invert().transformPosition(new Vector3f());
+    }
+
+    // a linha alvo -> camera passa por baixo do terreno ja explorado?
+    private static boolean blocked(float p, double tx, double tz) {
+        Vector3f o = camOffset(p);
+        for (float t = 0.3f; t <= 1.001f; t += 0.1f) {
+            double wx = tx + o.x * t, wy = targetY + o.y * t, wz = tz + o.z * t;
+            int h = ExploredMap.heightAt((int) Math.floor(wx), (int) Math.floor(wz));
+            if (h != ExploredMap.UNKNOWN && wy < h + 2.5) return true;
+        }
+        return false;
+    }
+
+    // inclinacao minima que deixa a camera acima do terreno (colisao): sobe na hora, desce devagar
+    private static float collidePitch(double tx, double tz) {
+        float goal = pitch;
+        while (goal < 1.5f && blocked(goal, tx, tz)) goal += 0.03f;
+        goal = Math.min(goal, 1.5f);
+        if (Float.isNaN(shownPitch) || goal > shownPitch) shownPitch = goal;
+        else shownPitch += (goal - shownPitch) * 0.25f;
+        return shownPitch;
+    }
     public static double targetY = 64;                  // altura do alvo (suavizada)
 
     static class ChunkMesh { VertexBuffer vb, wvb, pvb; int version = -1; boolean has, hasW, hasP; }
@@ -64,7 +91,7 @@ public class WorldMap3D {
 
         int vc = viewChunks();
         proj = new Matrix4f().perspective(FOV, w / (float) h, 0.5f, 4000f);
-        view = new Matrix4f().translate(0, 0, -dist).rotateX(pitch).rotateY(yaw);
+        view = new Matrix4f().translate(0, 0, -dist).rotateX(collidePitch(tx, tz)).rotateY(yaw);
 
         // chunks explorados num CIRCULO em volta do alvo (monta as malhas que faltam, poucas por frame)
         int cxm = (int) Math.floor(tx / 16), czm = (int) Math.floor(tz / 16), built = 0;

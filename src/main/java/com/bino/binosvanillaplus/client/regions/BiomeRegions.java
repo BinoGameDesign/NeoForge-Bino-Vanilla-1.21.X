@@ -71,16 +71,7 @@ public final class BiomeRegions {
             int cx = (int) k, cz = (int) (k >> 32), id = e.getValue();
             long[] a = acc.computeIfAbsent(id, i -> new long[3]);
             a[0] += cx; a[1] += cz; a[2]++;
-            // so a borda com OUTRA regiao ja descoberta (nao desenha em volta do que ainda nao foi visto);
-            // cada borda e desenhada uma vez (pelo lado de menor id)
-            Integer r = CELLS.get(cellKey(cx + 1, cz));
-            if (r != null && r != id && id < r) list.add(new int[]{(cx + 1) * CELL, cz * CELL, (cx + 1) * CELL, (cz + 1) * CELL});
-            Integer d = CELLS.get(cellKey(cx, cz + 1));
-            if (d != null && d != id && id < d) list.add(new int[]{cx * CELL, (cz + 1) * CELL, (cx + 1) * CELL, (cz + 1) * CELL});
-            Integer l = CELLS.get(cellKey(cx - 1, cz));
-            if (l != null && l != id && id < l) list.add(new int[]{cx * CELL, cz * CELL, cx * CELL, (cz + 1) * CELL});
-            Integer u = CELLS.get(cellKey(cx, cz - 1));
-            if (u != null && u != id && id < u) list.add(new int[]{cx * CELL, cz * CELL, (cx + 1) * CELL, cz * CELL});
+            // (contornos desligados: nao calcula as bordas)
         }
         edges = new int[list.size() * 4];
         for (int i = 0; i < list.size(); i++) System.arraycopy(list.get(i), 0, edges, i * 4, 4);
@@ -114,6 +105,11 @@ public final class BiomeRegions {
 
     @SubscribeEvent
     public static void onTick(ClientTickEvent.Post event) {
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
+        try { onTickImpl(event); } finally { com.bino.binosvanillaplus.client.Perf.end("Regioes de bioma", t0); }
+    }
+
+    private static void onTickImpl(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer p = mc.player;

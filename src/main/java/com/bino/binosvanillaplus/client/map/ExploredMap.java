@@ -121,9 +121,10 @@ public final class ExploredMap {
         discover(level, p);
 
         int pcx = p.getBlockX() >> 4, pcz = p.getBlockZ() >> 4, budget = PER_RUN_BUDGET;
+        long deadline = System.nanoTime() + 2_500_000L;   // no maximo ~2,5 ms por rodada: le o resto nas proximas (sem engasgo)
         int scanR = scanRadius();
-        for (int d = 0; d <= scanR && budget > 0; d++) {
-            for (int dx = -d; dx <= d && budget > 0; dx++) {
+        for (int d = 0; d <= scanR && budget > 0 && System.nanoTime() < deadline; d++) {
+            for (int dx = -d; dx <= d && budget > 0 && System.nanoTime() < deadline; dx++) {
                 for (int dz = -d; dz <= d && budget > 0; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != d) continue;
                     int cx = pcx + dx, cz = pcz + dz;

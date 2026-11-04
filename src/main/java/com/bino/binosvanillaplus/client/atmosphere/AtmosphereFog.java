@@ -83,6 +83,11 @@ public final class AtmosphereFog {
 
     @SubscribeEvent
     public static void onTick(ClientTickEvent.Post event) {
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
+        try { onTickImpl(event); } finally { com.bino.binosvanillaplus.client.Perf.end("Neblina (leitura do bioma)", t0); }
+    }
+
+    private static void onTickImpl(ClientTickEvent.Post event) {
         if (MapAtmosphere.provider == MapAtmosphere.VANILLA) MapAtmosphere.provider = MAP_PROVIDER;
         AtmosphereState.tick(Minecraft.getInstance());
         MistParticles.tick(Minecraft.getInstance());
@@ -147,6 +152,11 @@ public final class AtmosphereFog {
     // ---------------------------------------------------------------- 2) neblina em camadas (sem shaderpack)
     @SubscribeEvent
     public static void onRenderStage(RenderLevelStageEvent event) {
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
+        try { onRenderStageImpl(event); } finally { com.bino.binosvanillaplus.client.Perf.end("Neblina em camadas", t0); }
+    }
+
+    private static void onRenderStageImpl(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !layersOn() || !AtmosphereState.valid() || skip(event.getCamera())) return;

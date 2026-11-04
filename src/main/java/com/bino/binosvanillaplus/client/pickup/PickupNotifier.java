@@ -70,6 +70,11 @@ public final class PickupNotifier {
 
     @SubscribeEvent
     public static void onTick(ClientTickEvent.Post event) {
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
+        try { onTickImpl(event); } finally { com.bino.binosvanillaplus.client.Perf.end("Avisos de coleta", t0); }
+    }
+
+    private static void onTickImpl(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) { lastPlayer = null; NOTES.clear(); InventoryNewLabels.clear(); return; }

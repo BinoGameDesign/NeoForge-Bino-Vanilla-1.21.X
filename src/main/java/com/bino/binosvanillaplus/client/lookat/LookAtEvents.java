@@ -36,6 +36,11 @@ public class LookAtEvents {
 
     @SubscribeEvent
     public static void onTick(ClientTickEvent.Post event) {
+        long t0 = com.bino.binosvanillaplus.client.Perf.start();
+        try { onTickImpl(event); } finally { com.bino.binosvanillaplus.client.Perf.end("Olhar para o bloco (HUD)", t0); }
+    }
+
+    private static void onTickImpl(ClientTickEvent.Post event) {
         while (TOGGLE.consumeClick()) {
             LookAtHud.enabled = !LookAtHud.enabled;
             Minecraft mc = Minecraft.getInstance();
