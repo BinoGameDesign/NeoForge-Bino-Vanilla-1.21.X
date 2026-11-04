@@ -4,7 +4,7 @@ import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.network.PhotoUploadPayload;
 import com.bino.binosvanillaplus.network.TripodShotPayload;
 import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.Screenshot;
+import net.minecraft.client.Screenshot;
 import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
