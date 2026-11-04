@@ -192,8 +192,12 @@ public class WorldMapScreen extends BinoScreen {
                 g.pose().pushPose();
                 g.pose().translate(sx, sy, 0);
                 g.pose().scale(k, k, 1f);
-                g.fill(-5, -5, 6, 6, w == hover ? 0xFFFFE27A : 0xFFFFFFFF);   // contorno branco (amarelo no hover)
-                WaypointIcons.badge(g, w.icon(), -4, -4, 9, w.color);
+                if (WaypointIcons.item(w.icon()) == null) {
+                    g.fill(-5, -5, 6, 6, w == hover ? 0xFFFFE27A : 0xFFFFFFFF);   // contorno branco (amarelo no hover)
+                    WaypointIcons.badge(g, w.icon(), -4, -4, 9, w.color);
+                } else {   // bloco: so a silhueta (amarela no hover)
+                    WaypointIcons.badge(g, w.icon(), -4, -4, 9, w == hover ? 0xFFE27A : w.color);
+                }
                 g.pose().popPose();
                 if (MapOptions.worldLabels) {
                     String label = w.name;

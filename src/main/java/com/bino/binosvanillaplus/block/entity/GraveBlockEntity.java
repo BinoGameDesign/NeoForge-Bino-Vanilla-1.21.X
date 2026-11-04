@@ -70,6 +70,7 @@ public class GraveBlockEntity extends BlockEntity {
     public boolean hadLoot() { return hadLoot; }
     public UUID getOwnerId() { return ownerId; }
     public UUID getGraveId() { return graveId; }
+    public String getOwnerName() { return ownerName; }
     public boolean isEmptyOfLoot() { return experience <= 0 && items.isEmpty(); }
     public boolean wasDissipated() { return dissipated; }
 
@@ -84,6 +85,7 @@ public class GraveBlockEntity extends BlockEntity {
         String n = CompanionAllayManager.getName(player);
         this.petName = n == null ? "" : n;
         setChanged();
+        if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }
 
     public boolean canAccess(Player player) {
@@ -170,6 +172,19 @@ public class GraveBlockEntity extends BlockEntity {
                 worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), sl.dimension().location().toString())
                 .withStyle(ChatFormatting.AQUA));
         owner.sendSystemMessage(Component.literal("  ").append(wait).append(Component.literal("   ")).append(dissipate));
+    }
+
+    // o cliente precisa do nome do dono (escrito entre o Allay e a lapide)
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag t = new CompoundTag();
+        t.putString("OwnerName", ownerName);
+        return t;
+    }
+
+    @Override
+    public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
     }
 
     // ---------- salvar / carregar ----------

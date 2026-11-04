@@ -147,7 +147,7 @@ public final class BlockIcons {
                         if (solid[yy * PX + xx]) { hit = true; break; }
                     }
                 }
-                out.setPixelRGBA(x, y, hit ? 0xFFFFFFFF : 0x00000000);
+                out.setPixelRGBA(x, y, hit && !solid[y * PX + x] ? 0xFFFFFFFF : 0x00000000);   // so o anel: nada de tinta por cima do bloco
             }
         }
 

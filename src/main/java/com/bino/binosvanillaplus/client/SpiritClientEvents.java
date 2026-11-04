@@ -19,6 +19,11 @@ public class SpiritClientEvents {
     }
 
     @SubscribeEvent
+    public static void registerBlockEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(com.bino.binosvanillaplus.block.entity.ModBlockEntities.GRAVE.get(), GraveRenderer::new);
+    }
+
+    @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.SPIRIT.get(), SpiritScreen::new);
     }

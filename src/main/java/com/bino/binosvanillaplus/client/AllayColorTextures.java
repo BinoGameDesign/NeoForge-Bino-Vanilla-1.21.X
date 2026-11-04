@@ -29,7 +29,7 @@ public class AllayColorTextures {
             0x9D9D97, 0x169C9C, 0x8932B8, 0x3C44AA, 0x835432, 0x5E7C16, 0xB02E26, 0x1D1D21};
 
     public static final int GHOST = 100;   // textura do Allay fantasma (cinza e branco) do tumulo
-    private static final int GHOST_RGB = 0xC9CED1;
+    private static final int GHOST_RGB = 0x1D1D21;   // preto
 
     private static final Map<Integer, ResourceLocation> CACHE = new HashMap<>();
 

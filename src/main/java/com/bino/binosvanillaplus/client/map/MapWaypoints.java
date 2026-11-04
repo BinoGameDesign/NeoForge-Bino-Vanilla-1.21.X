@@ -126,7 +126,7 @@ public class MapWaypoints {
         Waypoint w = new Waypoint();
         w.name = "Ponto de morte";
         w.x = x; w.y = y; w.z = z;
-        w.color = PALETTE[0];
+        w.color = 0xFFFFFFFF;   // marcador de morte sempre branco
         w.symbol = symbol;
         w.set = DEATH_SET;
         LIST.add(w);
