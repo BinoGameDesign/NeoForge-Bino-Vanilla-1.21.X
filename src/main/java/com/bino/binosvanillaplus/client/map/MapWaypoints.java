@@ -72,6 +72,7 @@ public class MapWaypoints {
         w.x = x; w.y = y; w.z = z;
         w.color = PALETTE[counter % PALETTE.length];
         w.set = DEFAULT_SET;
+        w.symbol = "item:minecraft:grass_block";
         return w;
     }
 
@@ -105,13 +106,28 @@ public class MapWaypoints {
     }
 
     // ponto de morte: so existe um, o mais recente
-    public static void setDeathPoint(int x, int y, int z) {
+    public static void setDeathPoint(int x, int y, int z) { setDeathPoint(x, y, z, "skull"); }
+
+    // chega do servidor quando o jogador morre: GRAVE = marca o tumulo (icone do bloco), DEATH = so o lugar, CLEAR = tira
+    public static void onGraveMark(com.bino.binosvanillaplus.network.GraveMarkPayload p) {
+        if (p.action() == com.bino.binosvanillaplus.network.GraveMarkPayload.CLEAR) {
+            LIST.removeIf(w -> DEATH_SET.equals(w.set));
+            save();
+            return;
+        }
+        MapOptions.ensureLoaded();
+        if (!MapOptions.deathPoint) return;
+        boolean grave = p.action() == com.bino.binosvanillaplus.network.GraveMarkPayload.GRAVE;
+        setDeathPoint(p.pos().getX(), p.pos().getY(), p.pos().getZ(), grave ? "item:binosvanillaplus:grave" : "skull");
+    }
+
+    public static void setDeathPoint(int x, int y, int z, String symbol) {
         LIST.removeIf(w -> DEATH_SET.equals(w.set));
         Waypoint w = new Waypoint();
         w.name = "Ponto de morte";
         w.x = x; w.y = y; w.z = z;
         w.color = PALETTE[0];
-        w.symbol = "skull";
+        w.symbol = symbol;
         w.set = DEATH_SET;
         LIST.add(w);
         save();

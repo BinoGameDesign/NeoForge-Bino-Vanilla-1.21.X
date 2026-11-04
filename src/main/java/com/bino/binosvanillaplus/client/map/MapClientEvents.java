@@ -15,7 +15,6 @@ import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.renderer.ShaderInstance;
-import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.resources.ResourceLocation;
 import java.io.IOException;
 import org.lwjgl.glfw.GLFW;
@@ -65,21 +64,14 @@ public class MapClientEvents {
                 s -> com.bino.binosvanillaplus.client.atmosphere.MistParticle.shader = s);
     }
 
-    // ponto de morte automatico
-    @SubscribeEvent
-    public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (!(event.getNewScreen() instanceof DeathScreen)) return;
-        Minecraft mc = Minecraft.getInstance();
-        MapOptions.ensureLoaded();
-        if (MapOptions.deathPoint && mc.player != null)
-            MapWaypoints.setDeathPoint(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ());
-    }
+    // (o ponto de morte agora vem do servidor: ver GraveMarkPayload / MapWaypoints.onGraveMark)
 
     // ao recarregar texturas (F3+T, pacote de recursos), as texturas guardadas dos blocos ficam velhas: limpa tudo
     @SubscribeEvent
     public static void registerReload(net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent event) {
         event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) rm -> {
             BlockLooks.clear();
+            BlockIcons.clear();
             WorldMap3D.clearAll();
         });
     }

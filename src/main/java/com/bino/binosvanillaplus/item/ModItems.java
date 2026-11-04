@@ -174,6 +174,10 @@ public class ModItems {
     public static final DeferredItem<DimensionalKeyItem> DIMENSIONAL_KEY = ITEMS.register("dimensional_key",
             () -> new DimensionalKeyItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
 
+    // Item do tumulo: so existe para servir de icone no mapa (nao aparece no criativo, nao se crafta)
+    public static final DeferredItem<net.minecraft.world.item.BlockItem> GRAVE = ITEMS.register("grave",
+            () -> new net.minecraft.world.item.BlockItem(com.bino.binosvanillaplus.block.ModBlocks.GRAVE.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

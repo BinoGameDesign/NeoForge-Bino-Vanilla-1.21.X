@@ -28,6 +28,9 @@ public class AllayColorTextures {
             0xF9FFFE, 0xF9801D, 0xC74EBD, 0x3AB3DA, 0xFED83D, 0x80C71F, 0xF38BAA, 0x474F52,
             0x9D9D97, 0x169C9C, 0x8932B8, 0x3C44AA, 0x835432, 0x5E7C16, 0xB02E26, 0x1D1D21};
 
+    public static final int GHOST = 100;   // textura do Allay fantasma (cinza e branco) do tumulo
+    private static final int GHOST_RGB = 0xC9CED1;
+
     private static final Map<Integer, ResourceLocation> CACHE = new HashMap<>();
 
     // Devolve a textura da cor pedida (cria na primeira vez)
@@ -50,7 +53,7 @@ public class AllayColorTextures {
             for (int y = 0; y < source.getHeight(); y++) {
                 for (int x = 0; x < source.getWidth(); x++) image.setRGB(x, y, source.getRGB(x, y));
             }
-            recolor(image, DYE_RGB[Math.floorMod(colorIndex, DYE_RGB.length)]);
+            recolor(image, colorIndex == GHOST ? GHOST_RGB : DYE_RGB[Math.floorMod(colorIndex, DYE_RGB.length)]);
 
             // Converte a imagem pintada para o formato do Minecraft
             ByteArrayOutputStream png = new ByteArrayOutputStream();

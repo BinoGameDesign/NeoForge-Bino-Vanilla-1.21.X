@@ -116,6 +116,15 @@ public class ModBlocks {
                     .sound(SoundType.WOOD)
                     .noOcclusion()));
 
+    // Tumulo de quem morreu: inquebravel (some ao pegar tudo / dissipar). Sem item no criativo (o item existe so como icone do mapa).
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.GraveBlock> GRAVE = BLOCKS.register("grave",
+            () -> new com.bino.binosvanillaplus.block.custom.GraveBlock(BlockBehaviour.Properties.of()
+                    .strength(-1.0f, 3600000.0f)
+                    .noLootTable()
+                    .noOcclusion()
+                    .lightLevel(s -> 5)
+                    .sound(SoundType.STONE)));
+
     // Corda e gancho: SEM BlockItem automatico (os itens sao registrados a mao em ModItems)
     public static final DeferredBlock<RopeBlock> ROPE = BLOCKS.register("rope",
             () -> new RopeBlock(BlockBehaviour.Properties.of()

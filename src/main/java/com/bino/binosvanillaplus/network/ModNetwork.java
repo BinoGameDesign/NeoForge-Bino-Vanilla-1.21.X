@@ -45,6 +45,10 @@ public class ModNetwork {
                 (payload, context) -> context.enqueueWork(() ->
                         com.bino.binosvanillaplus.pocket.PocketManager.reply((ServerPlayer) context.player(), payload.visitor(), payload.accept())));
 
+        // tumulo: marca/limpa o ponto de morte no mapa
+        registrar.playToClient(GraveMarkPayload.TYPE, GraveMarkPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.map.MapWaypoints.onGraveMark(payload)));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));

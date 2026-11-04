@@ -1,6 +1,6 @@
 package com.bino.binosvanillaplus.menu;
 
-import com.bino.binosvanillaplus.entity.SpiritEntity;
+import com.bino.binosvanillaplus.block.entity.GraveBlockEntity;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -22,7 +22,7 @@ public class SpiritMenu extends AbstractContainerMenu {
 
     private final Container container;
     private final ContainerData data;       // data 0 = xp guardada (sincroniza com o cliente)
-    private final SpiritEntity spirit;      // null no cliente
+    private final GraveBlockEntity spirit;     // o tumulo; null no cliente
     private boolean confirmDissipate;
 
     // Cliente
@@ -31,7 +31,7 @@ public class SpiritMenu extends AbstractContainerMenu {
     }
 
     // Servidor
-    public SpiritMenu(int id, Inventory inventory, SpiritEntity spirit) {
+    public SpiritMenu(int id, Inventory inventory, GraveBlockEntity spirit) {
         this(id, inventory, spirit.getItems(), new ContainerData() {
             @Override public int get(int index) { return Math.min(spirit.getExperience(), Short.MAX_VALUE); }
             @Override public void set(int index, int value) { }
@@ -39,7 +39,7 @@ public class SpiritMenu extends AbstractContainerMenu {
         }, spirit);
     }
 
-    private SpiritMenu(int id, Inventory inventory, Container container, ContainerData data, SpiritEntity spirit) {
+    private SpiritMenu(int id, Inventory inventory, Container container, ContainerData data, GraveBlockEntity spirit) {
         super(ModMenuTypes.SPIRIT.get(), id);
         checkContainerSize(container, SPIRIT_SLOTS);
         this.container = container;
@@ -82,6 +82,7 @@ public class SpiritMenu extends AbstractContainerMenu {
                 container.setChanged();
                 takeExperience(player);
                 if (leftover) player.displayClientMessage(Component.translatable("message.binosvanillaplus.spirit.inventory_full"), true);
+                else if (spirit.isEmptyOfLoot()) { spirit.dissipate(); player.closeContainer(); }   // pegou tudo: o tumulo some
                 return true;
             }
             case BUTTON_TAKE_XP -> { takeExperience(player); return true; }
@@ -128,12 +129,15 @@ public class SpiritMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(Player player) {
         if (spirit == null) return true;
-        return spirit.isAlive() && player.distanceToSqr(spirit) < 64.0;
+        return !spirit.isRemoved() && !spirit.wasDissipated()
+                && player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(spirit.getBlockPos())) < 64.0;
     }
 
     @Override
     public void removed(Player player) {
         super.removed(player);
         container.stopOpen(player);
+        // tirou o ultimo item na mao: o tumulo some
+        if (spirit != null && !player.level().isClientSide && !spirit.wasDissipated() && spirit.isEmptyOfLoot()) spirit.dissipate();
     }
 }

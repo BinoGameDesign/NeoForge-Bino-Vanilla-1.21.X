@@ -1,7 +1,7 @@
 package com.bino.binosvanillaplus.event;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
-import com.bino.binosvanillaplus.entity.SpiritEntity;
+import com.bino.binosvanillaplus.block.entity.GraveBlockEntity;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.UUID;
@@ -11,7 +11,6 @@ import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -33,10 +32,11 @@ public class SpiritCommands {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         UUID id = UuidArgument.getUuid(ctx, "id");
 
-        SpiritEntity spirit = null;
-        for (ServerLevel level : ctx.getSource().getServer().getAllLevels()) {
-            Entity e = level.getEntity(id);
-            if (e instanceof SpiritEntity s) { spirit = s; break; }
+        GraveBlockEntity spirit = null;
+        net.minecraft.core.GlobalPos where = GraveBlockEntity.REGISTRY.get(id);
+        if (where != null) {
+            ServerLevel level = ctx.getSource().getServer().getLevel(where.dimension());
+            if (level != null && level.getBlockEntity(where.pos()) instanceof GraveBlockEntity g) spirit = g;
         }
         if (spirit == null) {
             player.sendSystemMessage(Component.translatable("message.binosvanillaplus.spirit.not_found"));

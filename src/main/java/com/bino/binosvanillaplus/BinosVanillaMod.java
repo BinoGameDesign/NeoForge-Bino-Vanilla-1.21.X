@@ -97,7 +97,11 @@ public class BinosVanillaMod {
     {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-
+            // a textura da Chave Dimensional muda com o nivel (ver models/item/dimensional_key.json)
+            event.enqueueWork(() -> net.minecraft.client.renderer.item.ItemProperties.register(
+                    com.bino.binosvanillaplus.item.ModItems.DIMENSIONAL_KEY.get(),
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(MOD_ID, "key_level"),
+                    (stack, level, entity, seed) -> com.bino.binosvanillaplus.item.custom.DimensionalKeyItem.level(stack)));
         }
     }
 }

@@ -4,7 +4,6 @@ import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.blockentity.BeaconRenderer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -61,6 +60,26 @@ public class WaypointBeacons {
         }
     }
 
+    private static int lighten(int rgb, float k) {
+        int r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
+        r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k;
+        return (r << 16) | (g << 8) | b;
+    }
+
+    // coluna quadrada de raio r em volta do eixo, de y0 a y1
+    private static void pillar(org.joml.Matrix4f m, com.mojang.blaze3d.vertex.VertexConsumer vc, float r, int rgb, int alpha, float y0, float y1) {
+        int cr = (rgb >> 16) & 255, cg = (rgb >> 8) & 255, cb = rgb & 255;
+        float cx = 0.5f, cz = 0.5f;
+        float[][] c = {{cx - r, cz - r}, {cx + r, cz - r}, {cx + r, cz + r}, {cx - r, cz + r}};
+        for (int i = 0; i < 4; i++) {
+            float[] a = c[i], b = c[(i + 1) % 4];
+            vc.addVertex(m, a[0], y0, a[1]).setColor(cr, cg, cb, alpha);
+            vc.addVertex(m, b[0], y0, b[1]).setColor(cr, cg, cb, alpha);
+            vc.addVertex(m, b[0], y1, b[1]).setColor(cr, cg, cb, alpha);
+            vc.addVertex(m, a[0], y1, a[1]).setColor(cr, cg, cb, alpha);
+        }
+    }
+
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
@@ -89,8 +108,13 @@ public class WaypointBeacons {
             ps.translate(w.x - cam.x, w.y - cam.y, w.z - cam.z);
             // largura cresce com a distancia para o feixe continuar visivel de longe
             float grow = (float) Math.min(4.0, Math.max(1.0, Math.sqrt(dist2) / 60.0));
-            BeaconRenderer.renderBeaconBeam(ps, buf, BeaconRenderer.BEAM_LOCATION, pt, 1.0f, time, 0, 400,
-                    0xFF000000 | (w.color & 0xFFFFFF), 0.2f * grow, 0.25f * grow);
+            // feixe SOLIDO e intenso (o do beacon tem textura vazada): coluna na cor da marcacao + nucleo mais claro
+            float r = 0.13f * grow;
+            int rgb = w.color & 0xFFFFFF;
+            int core = lighten(rgb, 0.55f);
+            net.minecraft.client.renderer.RenderType rt = net.minecraft.client.renderer.RenderType.debugQuads();
+            pillar(ps.last().pose(), buf.getBuffer(rt), r, rgb, 235, 0f, 400f);
+            pillar(ps.last().pose(), buf.getBuffer(rt), r * 0.45f, core, 255, 0f, 400f);
             ps.popPose();
         }
         buf.endBatch();

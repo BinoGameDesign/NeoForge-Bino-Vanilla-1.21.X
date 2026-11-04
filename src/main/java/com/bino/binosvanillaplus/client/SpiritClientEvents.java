@@ -9,18 +9,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
-// Liga o Espirito ao modelo, ao desenho e a janela
+// Liga o Allay fantasma do tumulo ao desenho e a janela do tumulo
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public class SpiritClientEvents {
 
     @SubscribeEvent
-    public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(SpiritModel.LAYER, SpiritModel::createBodyLayer);
-    }
-
-    @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ModEntities.SPIRIT.get(), SpiritRenderer::new);
+        event.<net.minecraft.world.entity.animal.allay.Allay>registerEntityRenderer(ModEntities.GRAVE_ALLAY.get(), GraveAllayRenderer::new);
     }
 
     @SubscribeEvent

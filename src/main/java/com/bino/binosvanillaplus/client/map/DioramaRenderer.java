@@ -363,8 +363,8 @@ public class DioramaRenderer {
         RenderSystem.depthMask(false);
         for (MapWaypoints.Waypoint w : MapWaypoints.list()) {
             if (w.hidden) continue;
-            Matrix4f mv = new Matrix4f(baseView).translate((float) (w.x + 0.5 - ox), (float) (w.y - oy - 1.5), (float) (w.z + 0.5 - oz)).scale(width, height, width);
-            RenderSystem.setShaderColor(((w.color >> 16) & 0xFF) / 255f, ((w.color >> 8) & 0xFF) / 255f, (w.color & 0xFF) / 255f, curAlpha * 0.8f);
+            Matrix4f mv = new Matrix4f(baseView).translate((float) (w.x + 0.5 - ox), (float) (w.y - oy - 1.5), (float) (w.z + 0.5 - oz)).scale(width * 0.8f, height, width * 0.8f);   // 20% mais fino
+            RenderSystem.setShaderColor(((w.color >> 16) & 0xFF) / 255f, ((w.color >> 8) & 0xFF) / 255f, (w.color & 0xFF) / 255f, curAlpha);   // opaco: cor intensa
             bm.bind();
             bm.drawWithShader(mv, projection, shader);
         }

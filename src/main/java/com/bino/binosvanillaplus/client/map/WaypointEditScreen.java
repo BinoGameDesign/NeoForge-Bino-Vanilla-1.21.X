@@ -19,8 +19,8 @@ public class WaypointEditScreen extends BinoScreen {
     private final MapWaypoints.Waypoint draft;
     private EditBox name, xB, yB, zB, setB;
     private int L, T, W, H, step;
-    private final Tween[] colorHover = new Tween[16], iconHover = new Tween[16];
-    private final Tween colorSel = new Tween(0f, 40f), iconSel = new Tween(0f, 40f);
+    private final Tween[] colorHover = new Tween[16];
+    private final Tween colorSel = new Tween(0f, 40f);
     private final Tween badgeR = new Tween(0f, 60f), badgeG = new Tween(0f, 60f), badgeB = new Tween(0f, 60f);
     private EditBox invalid;
     private long invalidAt = -10000;
@@ -36,7 +36,7 @@ public class WaypointEditScreen extends BinoScreen {
         } else {
             draft = MapWaypoints.create(x, y, z);
         }
-        for (int i = 0; i < 16; i++) { colorHover[i] = new Tween(0f, 40f); iconHover[i] = new Tween(0f, 40f); }
+        for (int i = 0; i < 16; i++) { colorHover[i] = new Tween(0f, 40f); }
         badgeR.snap((draft.color >> 16) & 0xFF); badgeG.snap((draft.color >> 8) & 0xFF); badgeB.snap(draft.color & 0xFF);
     }
 
@@ -83,7 +83,18 @@ public class WaypointEditScreen extends BinoScreen {
         addRenderableWidget(BinoUi.closeButton(L + W - 30, T - 8, 19, this::onClose));
         setInitialFocus(name);
         colorSel.snap(swatchX(Math.max(0, colorIndex())));
-        iconSel.snap(swatchX(Math.max(0, WaypointIcons.IDS.indexOf(draft.icon()))));
+        // icone: bloco escolhido (com a silhueta na cor) + botao que abre a busca de blocos
+        addRenderableWidget(new BinoUi.Button(L + PAD + 34, T + 152, inner - 34, 20, "Escolher bloco...", BinoUi.Style.LIGHT,
+                () -> {
+                    // o que ja foi digitado nao se perde ao voltar da busca
+                    draft.name = name.getValue(); draft.set = setB.getValue();
+                    Integer px = parse(xB), py = parse(yB), pz = parse(zB);
+                    if (px != null) draft.x = px;
+                    if (py != null) draft.y = py;
+                    if (pz != null) draft.z = pz;
+                    Minecraft.getInstance().setScreen(new BlockPickerScreen(this, draft.symbol, draft.color, sym -> draft.symbol = sym));
+                })
+                .tooltip("Escolha o bloco que aparece no mapa (com busca)"));
     }
 
     private EditBox num(int x, int w, int value) {
@@ -174,36 +185,14 @@ public class WaypointEditScreen extends BinoScreen {
         }
 
         g.drawString(font, "Ícone", L + PAD, T + 146, BinoUi.TEXT, false);
-        int ii = WaypointIcons.IDS.indexOf(draft.icon());
-        if (ii >= 0) {
-            float sx = iconSel.get(swatchX(ii));
-            BinoUi.round(g, (int) sx - 2, T + 155, sz + 4, sz + 4, 0xFFFFFFFF);
-        }
-        int bc = animatedColor();
-        String hoverName = null;
-        for (int i = 0; i < WaypointIcons.IDS.size(); i++) {
-            int x = swatchX(i), y = T + 157;
-            boolean over = mx >= x && mx < x + sz && my >= y && my < y + sz;
-            float h = iconHover[i].get(over ? 1f : 0f);
-            float s = 1f + 0.18f * h;
-            g.pose().pushPose();
-            g.pose().translate(x + sz / 2f, y + sz / 2f, 0);
-            g.pose().scale(s, s, 1f);
-            WaypointIcons.badge(g, WaypointIcons.IDS.get(i), -sz / 2, -sz / 2, sz, bc);
-            g.pose().popPose();
-            if (over) hoverName = WaypointIcons.NAMES.get(i);
-        }
-        if (hoverName != null) setTooltipForNextRenderPass(Component.literal(hoverName));
+        // pre-visualizacao do icone: o bloco com a silhueta na cor atual
+        WaypointIcons.badge(g, draft.icon(), L + PAD + 6, T + 156, 14, animatedColor());
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (super.mouseClicked(mx, my, button)) return true;
         int sz = step - 4;
-        for (int i = 0; i < WaypointIcons.IDS.size(); i++) {
-            int ix = swatchX(i), iy = T + 157;
-            if (mx >= ix && mx < ix + sz && my >= iy && my < iy + sz) { draft.symbol = WaypointIcons.IDS.get(i); UiSound.tick(); return true; }
-        }
         for (int i = 0; i < MapWaypoints.PALETTE.length; i++) {
             int sx = swatchX(i), sy = T + 124;
             if (mx >= sx && mx < sx + sz && my >= sy && my < sy + sz) { draft.color = MapWaypoints.PALETTE[i]; UiSound.tick(); return true; }

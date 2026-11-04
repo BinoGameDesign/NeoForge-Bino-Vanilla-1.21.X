@@ -32,15 +32,17 @@ public class ModEntities {
                             .noSave()
                             .build("companion_allay"));
 
-    // Espirito do jogador morto (guarda itens e xp). Salvo no mundo; nunca some sozinho.
-    public static final Supplier<EntityType<SpiritEntity>> SPIRIT =
-            ENTITY_TYPES.register("spirit",
-                    () -> EntityType.Builder.<SpiritEntity>of(SpiritEntity::new, MobCategory.MISC)
-                            .sized(0.8f, 2.1f)
+    // Allay fantasma que fica parado em cima do tumulo (nao e salvo: o tumulo recria quando o chunk carrega)
+    public static final Supplier<EntityType<GraveAllayEntity>> GRAVE_ALLAY =
+            ENTITY_TYPES.register("grave_allay",
+                    () -> EntityType.Builder.<GraveAllayEntity>of(GraveAllayEntity::new, MobCategory.MISC)
+                            .sized(0.35f, 0.6f)
+                            .eyeHeight(0.36f)
                             .clientTrackingRange(10)
-                            .updateInterval(3)
+                            .updateInterval(20)
                             .fireImmune()
-                            .build("spirit"));
+                            .noSave()
+                            .build("grave_allay"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);

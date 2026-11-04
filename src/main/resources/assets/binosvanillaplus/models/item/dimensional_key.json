@@ -1,6 +1,86 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "binosvanillaplus:item/dimensional_key"
+ "parent": "minecraft:item/generated",
+ "textures": {
+  "layer0": "binosvanillaplus:item/dimensional_key_0"
+ },
+ "overrides": [
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 1
+   },
+   "model": "binosvanillaplus:item/dimensional_key_1"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 2
+   },
+   "model": "binosvanillaplus:item/dimensional_key_2"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 3
+   },
+   "model": "binosvanillaplus:item/dimensional_key_3"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 4
+   },
+   "model": "binosvanillaplus:item/dimensional_key_4"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 5
+   },
+   "model": "binosvanillaplus:item/dimensional_key_5"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 6
+   },
+   "model": "binosvanillaplus:item/dimensional_key_6"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 7
+   },
+   "model": "binosvanillaplus:item/dimensional_key_7"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 8
+   },
+   "model": "binosvanillaplus:item/dimensional_key_8"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 9
+   },
+   "model": "binosvanillaplus:item/dimensional_key_9"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 10
+   },
+   "model": "binosvanillaplus:item/dimensional_key_10"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 11
+   },
+   "model": "binosvanillaplus:item/dimensional_key_11"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 12
+   },
+   "model": "binosvanillaplus:item/dimensional_key_12"
+  },
+  {
+   "predicate": {
+    "binosvanillaplus:key_level": 13
+   },
+   "model": "binosvanillaplus:item/dimensional_key_13"
   }
+ ]
 }
