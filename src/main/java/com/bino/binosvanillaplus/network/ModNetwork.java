@@ -77,6 +77,10 @@ public class ModNetwork {
         registrar.playToServer(RespawnChoicePayload.TYPE, RespawnChoicePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.campfire.Campfires.choose((ServerPlayer) context.player(), payload.index())));
 
+        // nivel dos mobs (painel de inspecao)
+        registrar.playToClient(MobLevelPayload.TYPE, MobLevelPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.leveling.LevelClient.receive(payload)));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));

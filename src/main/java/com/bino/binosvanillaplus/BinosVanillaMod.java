@@ -51,6 +51,7 @@ public class BinosVanillaMod {
         com.bino.binosvanillaplus.menu.ModMenuTypes.register(modEventBus);   // janelas (menu da Mesa de Lapidação)
         com.bino.binosvanillaplus.recipe.ModRecipes.register(modEventBus);   // receita de upgrade da Chave Dimensional
         com.bino.binosvanillaplus.sound.ModSounds.register(modEventBus);   // sons (apito, sonar, camera)
+        com.bino.binosvanillaplus.leveling.ModAttachments.register(modEventBus);   // nivel dos mobs
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
         com.bino.binosvanillaplus.worldgen.ModFeatures.register(modEventBus);   // fosseis gerados no mundo

@@ -9,6 +9,7 @@ public class LookAtRegistry {
     static {
         PROVIDERS.add(new BasicProviders.Tool());
         PROVIDERS.add(new BasicProviders.Crop());
+        PROVIDERS.add(new com.bino.binosvanillaplus.client.leveling.LevelClient.Provider());   // nivel do mob
         PROVIDERS.add(new BasicProviders.Health());
     }
 }
