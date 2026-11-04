@@ -48,6 +48,23 @@ public final class RegionDifficulty {
         return clamp(1 + dist / BLOCKS_PER_LEVEL + smoothBiome(level, x, z, level.getSeaLevel()), MIN, MAX);
     }
 
+    // nivel da regiao (superficie) para um bioma ja conhecido: usado pelo mapa, que guarda o bioma de cada regiao
+    public static double regionLevel(Level level, int x, int z, Holder<Biome> biome) {
+        if (level.dimension().equals(PocketDimension.LEVEL)) return -1;
+        BlockPos spawn = level.getSharedSpawnPos();
+        double dx = x - spawn.getX(), dz = z - spawn.getZ();
+        double dist = Math.sqrt(dx * dx + dz * dz);
+        int off = biome == null ? 0 : biomeOffset(biome);
+        if (level.dimension().equals(Level.NETHER)) return clamp(40 + dist / 60.0 + off * 0.5, 40, 80);
+        if (level.dimension().equals(Level.END)) return clamp(75 + dist / 200.0, 75, 100);
+        return clamp(1 + dist / BLOCKS_PER_LEVEL + off, MIN, MAX);
+    }
+
+    public static String bandText(double level) {
+        int b = band(level);
+        return "Nv. " + (b * 5 - 4) + "–" + Math.min(100, b * 5);
+    }
+
     // aspereza media de 9 pontos em volta (grade de 24 blocos)
     private static double smoothBiome(Level level, int x, int z, int fallbackY) {
         int sum = 0, n = 0;

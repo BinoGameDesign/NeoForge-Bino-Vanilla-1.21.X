@@ -36,7 +36,7 @@ public final class BiomeRegions {
         int cells;
     }
 
-    public record Label(String name, int x, int z, int cells) {}
+    public record Label(String name, int x, int z, int cells, String biome) {}
 
     private static final Map<Long, Integer> CELLS = new HashMap<>();
     private static final Map<Integer, Region> REGIONS = new HashMap<>();
@@ -91,7 +91,7 @@ public final class BiomeRegions {
         for (Map.Entry<Integer, long[]> e : best.entrySet()) {
             Region r = REGIONS.get(e.getKey());
             if (r == null || r.cells < 4) continue;   // regioes minusculas nao ganham rotulo no mapa
-            ls.add(new Label(r.name, (int) e.getValue()[0] * CELL + CELL / 2, (int) e.getValue()[1] * CELL + CELL / 2, r.cells));
+            ls.add(new Label(r.name, (int) e.getValue()[0] * CELL + CELL / 2, (int) e.getValue()[1] * CELL + CELL / 2, r.cells, r.biome));
         }
         ls.sort((p, q) -> Integer.compare(q.cells(), p.cells()));
         labels = ls;

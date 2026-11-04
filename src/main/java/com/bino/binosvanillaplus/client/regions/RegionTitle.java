@@ -70,5 +70,13 @@ public final class RegionTitle {
         g.pose().scale(scale, scale, 1f);
         g.drawString(mc.font, text, 0, 0, (a << 24) | 0xFFFFFF, true);
         g.pose().popPose();
+        // faixa de nivel dos mobs da regiao, pequena, embaixo do nome
+        double lv = com.bino.binosvanillaplus.leveling.RegionDifficulty.surfaceLevel(mc.level, mc.player.getBlockX(), mc.player.getBlockZ());
+        if (lv >= 0) {
+            int col = com.bino.binosvanillaplus.client.leveling.LevelClient.bandColor(lv);
+            RegionOverlay.diamond(g, x + 4, y + 9 * scale + 6, 6, (a << 24) | (col & 0xFFFFFF));
+            com.bino.binosvanillaplus.client.ui.BinoUi.text(g, mc.font, "Mobs " + com.bino.binosvanillaplus.leveling.RegionDifficulty.bandText(lv),
+                    x + 10, y + 9 * scale + 2, 0.85f, (a << 24) | 0xDDDDDD, true);
+        }
     }
 }

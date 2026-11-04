@@ -52,8 +52,34 @@ public final class RegionOverlay {
     }
 
     // nomes das regioes (as maiores primeiro; um nome que bateria em outro ja desenhado e pulado)
-    public static void labels(GuiGraphics g, Font font, Projector pr, double ox, double oz, double radius, double fallbackY,
-                              int mapX, int mapY, int mapW, int mapH) {
+    // losango colorido da dificuldade (faixa de nivel dos mobs)
+    public static void diamond(GuiGraphics g, float cx, float cy, float size, int argb) {
+        g.pose().pushPose();
+        g.pose().translate(cx, cy, 0);
+        g.pose().mulPose(Axis.ZP.rotationDegrees(45f));
+        float h = size / 2f;
+        g.pose().scale(h, h, 1f);
+        g.fill(-1, -1, 1, 1, 0xFF1B1E1C);
+        g.pose().scale(0.72f, 0.72f, 1f);
+        g.fill(-1, -1, 1, 1, argb);
+        g.pose().popPose();
+    }
+
+    // bioma da regiao (guardado como texto) -> Holder do registro de biomas do cliente
+    private static net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome(String id) {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level == null || id == null) return null;
+        var rl = net.minecraft.resources.ResourceLocation.tryParse(id);
+        if (rl == null) return null;
+        return mc.level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME)
+                .getHolder(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.BIOME, rl)).orElse(null);
+    }
+
+    // devolve o texto do hover ("Mobs: Nv. 21-25") se o mouse estiver em cima de um losango
+    public static String labels(GuiGraphics g, Font font, Projector pr, double ox, double oz, double radius, double fallbackY,
+                              int mapX, int mapY, int mapW, int mapH, int mx, int my) {
+        String hover = null;
+        var mcl = net.minecraft.client.Minecraft.getInstance().level;
         double r2 = radius * radius;
         List<int[]> taken = new ArrayList<>();
         int shown = 0;
@@ -64,7 +90,7 @@ public final class RegionOverlay {
             float[] s = pr.project(l.x(), surfaceY(l.x(), l.z(), fallbackY) + 3, l.z());
             if (s[2] == 0f) continue;
             float k = 0.7f;
-            int w = (int) (font.width(l.name()) * k) + 6, h = 9;
+            int w = (int) (font.width(l.name()) * k) + 16, h = 9;
             int x = (int) s[0] - w / 2, y = (int) s[1] - h / 2;
             if (x < mapX || y < mapY || x + w > mapX + mapW || y + h > mapY + mapH) continue;
             boolean clash = false;
@@ -75,11 +101,20 @@ public final class RegionOverlay {
             taken.add(new int[]{x, y, w, h});
             g.fill(x, y, x + w, y + h, 0x70000000);
             g.pose().pushPose();
-            g.pose().translate(x + 3, y + 1.5f, 0);
+            g.pose().translate(x + 13, y + 1.5f, 0);
             g.pose().scale(k, k, 1f);
             g.drawString(font, l.name(), 0, 0, 0xFFFFFFFF, true);
             g.pose().popPose();
+            if (mcl != null) {
+                double lv = com.bino.binosvanillaplus.leveling.RegionDifficulty.regionLevel(mcl, l.x(), l.z(), biome(l.biome()));
+                if (lv >= 0) {
+                    diamond(g, x + 6, y + 4.5f, 7, com.bino.binosvanillaplus.client.leveling.LevelClient.bandColor(lv));
+                    if (mx >= x && mx < x + 12 && my >= y - 1 && my < y + h + 1)
+                        hover = "Mobs: " + com.bino.binosvanillaplus.leveling.RegionDifficulty.bandText(lv);
+                }
+            }
             shown++;
         }
+        return hover;
     }
 }
