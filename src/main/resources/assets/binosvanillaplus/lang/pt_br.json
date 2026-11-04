@@ -232,5 +232,10 @@
   "discovery.binosvanillaplus.ore.ancient_debris": "Destroços antigos: resistem até à lava. Origem da netherita.",
   "discovery.binosvanillaplus.ore.rubi_ore": "Rubi: cristal vermelho de brilho intenso.",
   "discovery.binosvanillaplus.ore.sapphire_ore": "Safira: cristal azul, frio ao toque.",
-  "discovery.binosvanillaplus.ore.jade_ore": "Jade: pedra verde e lisa, muito resistente."
+  "discovery.binosvanillaplus.ore.jade_ore": "Jade: pedra verde e lisa, muito resistente.",
+  "message.binosvanillaplus.campfire.set": "Fogueira marcada como ponto de retorno (%s/%s)",
+  "message.binosvanillaplus.campfire.removed": "Fogueira desmarcada como ponto de retorno",
+  "message.binosvanillaplus.campfire.unlit": "Acenda a fogueira para marcá-la como ponto de retorno",
+  "message.binosvanillaplus.campfire.pocket": "Fogueiras não marcam retorno na Dimensão Portátil",
+  "message.binosvanillaplus.campfire.gone": "A fogueira escolhida se apagou ou foi bloqueada: você renasceu no lugar padrão."
 }

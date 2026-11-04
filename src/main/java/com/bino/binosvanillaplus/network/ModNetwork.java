@@ -71,6 +71,12 @@ public class ModNetwork {
         registrar.playToClient(TripodShotPayload.TYPE, TripodShotPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.journal.PhotoCapture.tripod(payload)));
 
+        // fogueiras: lista ao morrer e escolha do lugar para renascer
+        registrar.playToClient(CampfireListPayload.TYPE, CampfireListPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.campfire.RespawnChoices.receive(payload)));
+        registrar.playToServer(RespawnChoicePayload.TYPE, RespawnChoicePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.campfire.Campfires.choose((ServerPlayer) context.player(), payload.index())));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));
