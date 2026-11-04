@@ -45,7 +45,7 @@ public class GraveAllayEntity extends Allay {
     }
 
     @Override
-    public InteractionResult interact(Player player, InteractionHand hand) {
+    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (level().isClientSide) return InteractionResult.sidedSuccess(true);
         if (gravePos != null && player instanceof ServerPlayer sp && level().getBlockEntity(gravePos) instanceof GraveBlockEntity be) {
             be.tryOpen(sp);

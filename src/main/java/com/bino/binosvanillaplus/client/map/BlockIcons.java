@@ -113,7 +113,7 @@ public final class BlockIcons {
             img.flipY();
         } finally {
             rt.destroyBuffers();
-            mc.getMainTarget().bindWrite(true);
+            mc.getMainRenderTarget().bindWrite(true);
             RenderSystem.setProjectionMatrix(oldProj, oldSort);
         }
 
