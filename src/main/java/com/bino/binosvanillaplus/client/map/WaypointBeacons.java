@@ -108,13 +108,10 @@ public class WaypointBeacons {
             ps.translate(w.x - cam.x, w.y - cam.y, w.z - cam.z);
             // largura cresce com a distancia para o feixe continuar visivel de longe
             float grow = (float) Math.min(4.0, Math.max(1.0, Math.sqrt(dist2) / 60.0));
-            // feixe SOLIDO e intenso (o do beacon tem textura vazada): coluna na cor da marcacao + nucleo mais claro
+            // feixe SOLIDO e intenso (o do beacon tem textura vazada): uma coluna so, inteira na cor da marcacao
             float r = 0.13f * grow;
-            int rgb = w.color & 0xFFFFFF;
-            int core = lighten(rgb, 0.55f);
             net.minecraft.client.renderer.RenderType rt = net.minecraft.client.renderer.RenderType.debugQuads();
-            pillar(ps.last().pose(), buf.getBuffer(rt), r, rgb, 235, 0f, 400f);
-            pillar(ps.last().pose(), buf.getBuffer(rt), r * 0.45f, core, 255, 0f, 400f);
+            pillar(ps.last().pose(), buf.getBuffer(rt), r, w.color & 0xFFFFFF, 255, 0f, 400f);
             ps.popPose();
         }
         buf.endBatch();
