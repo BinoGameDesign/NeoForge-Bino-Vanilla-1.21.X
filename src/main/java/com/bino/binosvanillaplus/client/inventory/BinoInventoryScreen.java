@@ -43,7 +43,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         return ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "textures/gui/inventory/" + n + ".png");
     }
 
-    private static Component t(String k) { return Component.translatable("gui.binosvanillaplus.inv." + k); }
+    private static net.minecraft.network.chat.MutableComponent t(String k) { return Component.translatable("gui.binosvanillaplus.inv." + k); }
 
     // ---------------------------------------------------------------- layout (coordenadas do Figma)
 
