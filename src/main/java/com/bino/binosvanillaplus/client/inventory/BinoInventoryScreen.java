@@ -426,22 +426,22 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         if (py + h > height - 4) py = height - 4 - h;
         popupRect = new float[]{px - 4, py, w + 8, h};   // folga para o mouse passar do slot para a lista
         if (popupSlot != popupShown) { popupShown = popupSlot; popupAt = Ease.now(); }
-        float k = outBack(Ease.since(popupAt, 190));        // a lista "brota" do lado do slot, com um leve repique
+        float bloom = outBack(Ease.since(popupAt, 190));        // a lista "brota" do lado do slot, com um leve repique
         float ax = px < r[0] ? px + w : px, ay = py;      // ponto de onde ela cresce (encostado no slot)
         g.pose().pushPose();
         g.pose().translate(0, 0, 400);
         if (pinned >= 0) round(g, r[0] - 1, r[1] - 1, r[2] + 2, r[2] + 2, 3, 0x60FFFFFF);   // slot com a lista aberta
-        float gx = ax + (px - ax) * k, gw = w * k, gh = h * k;
-        Glass.shadow(g, gx, ay, gw, gh, 5, 2f, 4f, 0.4f * Math.min(1f, k));
+        float gx = ax + (px - ax) * bloom, gw = w * bloom, gh = h * bloom;
+        Glass.shadow(g, gx, ay, gw, gh, 5, 2f, 4f, 0.4f * Math.min(1f, bloom));
         Glass.panel(g, gx, ay, gw, gh, 5, Glass.POPUP, 0xF01E211F);
         g.pose().translate(ax, ay, 0);
-        g.pose().scale(k, k, 1f);
+        g.pose().scale(bloom, bloom, 1f);
         g.pose().translate(-ax, -ay, 0);
         int over = -1;
         for (int k = 0; k < list.size(); k++) {
             int cx = (int) px + pad + (k % cols) * cell, cy = (int) py + pad + (k / cols) * cell;
             boolean hov = mx >= cx && mx < cx + cell && my >= cy && my < cy + cell;
-            if (Glass.available()) Glass.panel(g, ax + (cx + 1 - ax) * k, ay + (cy + 1 - ay) * k, (cell - 2) * k, (cell - 2) * k, 3 * k,
+            if (Glass.available()) Glass.panel(g, ax + (cx + 1 - ax) * bloom, ay + (cy + 1 - ay) * bloom, (cell - 2) * bloom, (cell - 2) * bloom, 3 * bloom,
                     Glass.SLOT.withMilk(hov ? 0.10f : 0f).withRim(hov ? 1.2f : 0.55f), 0xFF2A2D2B);
             else round(g, cx + 1, cy + 1, cell - 2, cell - 2, 2, hov ? 0xFF5B5E5C : 0xFF2A2D2B);
             net.minecraft.world.item.ItemStack st = menu.slots.get(list.get(k)).getItem();
