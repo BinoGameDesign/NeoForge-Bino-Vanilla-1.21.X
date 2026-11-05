@@ -26,7 +26,7 @@ public class RubiOreVariantEvents {
     private static final List<String> VANILLA_ORES = List.of("diamond_ore", "deepslate_diamond_ore");
 
     // Quantas variantes ja tem as fases de mineracao (b, c, d). Aumentar quando chegarem os modelos das outras.
-    public static final int STAGED_VARIANTS = 3;
+    public static final int STAGED_VARIANTS = 6;
     private static final String[] STAGE_NAMES = {"", "b", "c", "d"};
 
     private static ModelResourceLocation extra(String ore, int i) {

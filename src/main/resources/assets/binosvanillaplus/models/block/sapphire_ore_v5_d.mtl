@@ -1,0 +1,4 @@
+newmtl sapphire_ore_v5_d
+Kd 1.000000 1.000000 1.000000
+map_Kd minecraft:block/stone
+
