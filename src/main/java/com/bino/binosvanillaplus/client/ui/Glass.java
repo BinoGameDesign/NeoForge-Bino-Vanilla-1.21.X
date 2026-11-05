@@ -36,10 +36,10 @@ public final class Glass {
     }
 
     // vidro escuro dos paineis, poco escuro dos slots e vidro claro dos botoes
-    public static final Style PANEL = new Style(0.07f, 0.075f, 0.08f, 0.55f, 13f, 17f, 1.0f, 0.0f, false);
-    public static final Style SLOT = new Style(0.03f, 0.03f, 0.035f, 0.55f, 4f, 6f, 0.55f, 0.0f, true);
-    public static final Style BUTTON = new Style(0.86f, 0.87f, 0.88f, 0.70f, 5f, 7f, 0.9f, 0.02f, false);
-    public static final Style POPUP = new Style(0.06f, 0.065f, 0.07f, 0.68f, 8f, 10f, 1.0f, 0.0f, false);
+    public static final Style PANEL = new Style(0.07f, 0.075f, 0.08f, 0.42f, 13f, 17f, 1.0f, 0.0f, false);
+    public static final Style SLOT = new Style(0.03f, 0.03f, 0.035f, 0.44f, 4f, 6f, 0.55f, 0.0f, true);
+    public static final Style BUTTON = new Style(0.86f, 0.87f, 0.88f, 0.62f, 5f, 7f, 0.9f, 0.02f, false);
+    public static final Style POPUP = new Style(0.06f, 0.065f, 0.07f, 0.58f, 8f, 10f, 1.0f, 0.0f, false);
 
     public static boolean available() { return blur != null && glass != null; }
 

@@ -235,7 +235,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         g.pose().pushPose();
         g.pose().translate(X(cx) - font.width(title) * ts / 2f, Y(ty) + 16 * s, 0);
         g.pose().scale(ts, ts, 1f);
-        g.drawString(font, title, 0, 0, 0xFFFFFFFF, false);
+        g.drawString(font, title, 0, 0, 0xFFFFFFFF, true);   // com a sombra cinza do jogo por baixo
         g.pose().popPose();
 
         // fundos dos slots + silhuetas dos vazios
