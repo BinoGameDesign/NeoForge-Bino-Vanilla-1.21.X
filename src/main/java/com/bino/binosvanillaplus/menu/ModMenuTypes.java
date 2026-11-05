@@ -20,6 +20,9 @@ public class ModMenuTypes {
     public static final Supplier<MenuType<SpiritMenu>> SPIRIT = MENUS.register("spirit",
             () -> new MenuType<>(SpiritMenu::new, FeatureFlags.DEFAULT_FLAGS));
 
+    public static final Supplier<MenuType<com.bino.binosvanillaplus.inventory.BinoInventoryMenu>> BINO_INVENTORY = MENUS.register("bino_inventory",
+            () -> new MenuType<>(com.bino.binosvanillaplus.inventory.BinoInventoryMenu::new, FeatureFlags.DEFAULT_FLAGS));
+
     public static void register(IEventBus eventBus) {
         MENUS.register(eventBus);
     }

@@ -237,5 +237,14 @@
   "message.binosvanillaplus.campfire.removed": "Fogueira desmarcada como ponto de retorno",
   "message.binosvanillaplus.campfire.unlit": "Acenda a fogueira para marcá-la como ponto de retorno",
   "message.binosvanillaplus.campfire.pocket": "Fogueiras não marcam retorno na Dimensão Portátil",
-  "message.binosvanillaplus.campfire.gone": "A fogueira escolhida se apagou ou foi bloqueada: você renasceu no lugar padrão."
+  "message.binosvanillaplus.campfire.gone": "A fogueira escolhida se apagou ou foi bloqueada: você renasceu no lugar padrão.",
+  "container.binosvanillaplus.inventory": "Inventário",
+  "gui.binosvanillaplus.inv.tab.inventory": "Inventário",
+  "gui.binosvanillaplus.inv.tab.crafting": "Fabricação",
+  "gui.binosvanillaplus.inv.tab.armor": "Armadura",
+  "gui.binosvanillaplus.inv.tab.attributes_soon": "Atributos (em breve)",
+  "gui.binosvanillaplus.inv.sort_name": "Organizar por nome (A–Z)",
+  "gui.binosvanillaplus.inv.sort_count": "Organizar por quantidade",
+  "gui.binosvanillaplus.inv.sort_id": "Organizar por ID do item",
+  "gui.binosvanillaplus.inv.recipes": "Receitas+"
 }

@@ -37,7 +37,11 @@ public final class InventoryNewLabels {
         for (Slot slot : screen.getMenu().slots) {
             if (slot.getItem().isEmpty() || !NEW_ITEMS.contains(slot.getItem().getItem())) continue;
             g.pose().pushPose();
-            g.pose().translate(screen.getGuiLeft() + slot.x + 1, screen.getGuiTop() + slot.y + 1, 400);
+            if (screen instanceof com.bino.binosvanillaplus.client.inventory.BinoInventoryScreen bs) {   // inventario novo: slots no lugar do Figma
+                float[] r = bs.slotRect(slot);
+                if (r == null) { g.pose().popPose(); continue; }
+                g.pose().translate(r[0] + 2, r[1] + 2, 400);
+            } else g.pose().translate(screen.getGuiLeft() + slot.x + 1, screen.getGuiTop() + slot.y + 1, 400);
             g.pose().scale(0.5f, 0.5f, 1f);
             g.drawString(mc.font, "new", 0, 0, 0xFFFFFFFF, true);
             g.pose().popPose();

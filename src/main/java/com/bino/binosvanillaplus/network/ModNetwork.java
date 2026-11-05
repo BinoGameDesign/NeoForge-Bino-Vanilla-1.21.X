@@ -81,6 +81,12 @@ public class ModNetwork {
         registrar.playToClient(MobLevelPayload.TYPE, MobLevelPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.leveling.LevelClient.receive(payload)));
 
+        // inventario novo: abrir/organizar e item das costas (elytra)
+        registrar.playToServer(InventoryActionPayload.TYPE, InventoryActionPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.inventory.InventoryActions.handle((ServerPlayer) context.player(), payload.action())));
+        registrar.playToClient(BackItemPayload.TYPE, BackItemPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.inventory.BackSlot.CLIENT.put(payload.entityId(), payload.stack())));
+
         // pet aperta um bloco (Alt + botao direito)
         registrar.playToServer(PetActivatePayload.TYPE, PetActivatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPetActivate((ServerPlayer) context.player(), payload)));

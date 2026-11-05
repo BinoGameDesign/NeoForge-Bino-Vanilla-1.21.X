@@ -5,9 +5,16 @@
     "compatibilityLevel": "JAVA_21",
     "client": [
         "client.ClientLevelSkyMixin",
-        "client.MinecraftGlowMixin"
+        "client.MinecraftGlowMixin",
+        "client.LocalPlayerElytraMixin",
+        "client.ElytraLayerMixin",
+        "client.PlayerModelPoseMixin"
     ],
     "injectors": {
         "defaultRequire": 1
-    }
+    },
+    "mixins": [
+        "LivingEntityElytraMixin",
+        "PlayerElytraMixin"
+    ]
 }

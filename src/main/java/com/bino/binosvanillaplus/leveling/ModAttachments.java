@@ -19,5 +19,9 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<Integer>> MOB_LEVEL = ATTACHMENTS.register("mob_level",
             () -> AttachmentType.builder(() -> 0).serialize(Codec.INT).build());
 
+    // slots extras do jogador (brincos, colar, anel, longo alcance, costas)
+    public static final Supplier<AttachmentType<com.bino.binosvanillaplus.inventory.ExtraSlots>> EXTRA_SLOTS = ATTACHMENTS.register("extra_slots",
+            () -> AttachmentType.serializable(com.bino.binosvanillaplus.inventory.ExtraSlots::new).copyOnDeath().build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }
