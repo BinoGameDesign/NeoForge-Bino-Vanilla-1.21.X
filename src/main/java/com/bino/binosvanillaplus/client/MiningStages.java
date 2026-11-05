@@ -63,17 +63,15 @@ public final class MiningStages {
         if (stage > before) shatter(mc, pos, name, stage - before);
     }
 
-    // gemas (cubinhos 3D da cor da gema) + cascalho de pedra caindo + som de cristal quebrando
+    // cristais caindo + som de cristal quebrando
     private static void shatter(Minecraft mc, BlockPos pos, String ore, int steps) {
         String gem = ore.contains("rubi") ? "rubi" : ore.contains("sapphire") ? "sapphire" : ore.contains("jade") ? "jade"
                 : ore.contains("diamond") ? "diamond" : "forge";
-        TextureAtlas atlas = mc.getModelManager().getAtlas(TextureAtlas.LOCATION_BLOCKS);
-        TextureAtlasSprite gemSprite = atlas.getSprite(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "block/particle/" + gem + "_gem_particle"));
-        TextureAtlasSprite rock = atlas.getSprite(ResourceLocation.withDefaultNamespace(ore.contains("deepslate") ? "block/deepslate" : "block/stone"));
+        TextureAtlasSprite sprite = mc.getModelManager().getAtlas(TextureAtlas.LOCATION_BLOCKS)
+                .getSprite(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "block/" + gem + "_ore_crystal"));
         RandomSource r = mc.level.random;
         int n = 7 * steps + r.nextInt(4);
         for (int i = 0; i < n; i++) {
-            boolean isGem = i % 2 == 0;   // metade gemas, metade cascalho
             // um ponto numa das faces do bloco, um pouco para fora
             int face = r.nextInt(6);
             double u = r.nextDouble(), v = r.nextDouble();
@@ -89,9 +87,7 @@ public final class MiningStages {
             double vx = (x - 0.5) * 0.12 + (r.nextDouble() - 0.5) * 0.04;
             double vz = (z - 0.5) * 0.12 + (r.nextDouble() - 0.5) * 0.04;
             double vy = 0.06 + r.nextDouble() * 0.08;
-            double px = pos.getX() + x, py = pos.getY() + y, pz = pos.getZ() + z;
-            mc.particleEngine.add(isGem ? new GemCubeParticle(mc.level, px, py, pz, vx, vy, vz, gemSprite)
-                    : new CrystalShardParticle(mc.level, px, py, pz, vx * 0.8, vy * 0.8, vz * 0.8, rock, false));
+            mc.particleEngine.add(new CrystalShardParticle(mc.level, pos.getX() + x, pos.getY() + y, pos.getZ() + z, vx, vy, vz, sprite));
         }
         mc.level.playLocalSound(pos, SoundEvents.SMALL_AMETHYST_BUD_BREAK, SoundSource.BLOCKS, 0.8f, 0.9f + r.nextFloat() * 0.3f, false);
     }
