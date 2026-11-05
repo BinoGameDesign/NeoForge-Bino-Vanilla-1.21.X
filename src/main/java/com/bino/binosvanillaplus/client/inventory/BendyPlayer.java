@@ -1,6 +1,9 @@
 package com.bino.binosvanillaplus.client.inventory;
 
 import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.systems.RenderSystem;
+import org.joml.Vector3f;
+import org.lwjgl.opengl.GL11;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -56,14 +59,15 @@ public final class BendyPlayer {
 
     private static Rig wide, slim, armorOuter, armorInner;
 
-    // membro de 12 de altura dividido em dois de 6; a parte de baixo usa a textura 6 linhas abaixo (lados certos)
+    // membro de 12 de altura dividido em dois; a parte de baixo comeca 2 px DENTRO da de cima (sobreposicao),
+    // assim a dobra do cotovelo/joelho nao abre fresta. Textura 4 linhas abaixo = lados continuam certos.
     private static void limb(PartDefinition root, String name, int u, int v, int ou, int ov, float x0, float w,
                              float px, float py, CubeDeformation base, CubeDeformation over, boolean overlay, boolean mirror) {
         CubeListBuilder up = CubeListBuilder.create().mirror(mirror).texOffs(u, v).addBox(x0, -2, -2, w, 6, 4, base);
         if (overlay) up.texOffs(ou, ov).addBox(x0, -2, -2, w, 6, 4, over);
         PartDefinition top = root.addOrReplaceChild(name, up, PartPose.offset(px, py, 0));
-        CubeListBuilder lo = CubeListBuilder.create().mirror(mirror).texOffs(u, v + 6).addBox(x0, 0, -2, w, 6, 4, base);
-        if (overlay) lo.texOffs(ou, ov + 6).addBox(x0, 0, -2, w, 6, 4, over);
+        CubeListBuilder lo = CubeListBuilder.create().mirror(mirror).texOffs(u, v + 4).addBox(x0, -2, -2, w, 8, 4, base);
+        if (overlay) lo.texOffs(ou, ov + 4).addBox(x0, -2, -2, w, 8, 4, over);
         top.addOrReplaceChild("low", lo, PartPose.offset(0, 4, 0));
     }
 
@@ -72,8 +76,8 @@ public final class BendyPlayer {
         CubeListBuilder up = CubeListBuilder.create().mirror(mirror).texOffs(u, v).addBox(-2, 0, -2, 4, 6, 4, base);
         if (overlay) up.texOffs(ou, ov).addBox(-2, 0, -2, 4, 6, 4, over);
         PartDefinition top = root.addOrReplaceChild(name, up, PartPose.offset(px, 12, 0));
-        CubeListBuilder lo = CubeListBuilder.create().mirror(mirror).texOffs(u, v + 6).addBox(-2, 0, -2, 4, 6, 4, base);
-        if (overlay) lo.texOffs(ou, ov + 6).addBox(-2, 0, -2, 4, 6, 4, over);
+        CubeListBuilder lo = CubeListBuilder.create().mirror(mirror).texOffs(u, v + 4).addBox(-2, -2, -2, 4, 8, 4, base);
+        if (overlay) lo.texOffs(ou, ov + 4).addBox(-2, -2, -2, 4, 8, 4, over);
         top.addOrReplaceChild("low", lo, PartPose.offset(0, 6, 0));
     }
 
@@ -125,33 +129,77 @@ public final class BendyPlayer {
         armorOuter.pose(a, breathe);
         armorInner.pose(a, breathe);
 
-        PoseStack ps = g.pose();
-        ps.pushPose();
-        ps.translate(cx, cy, 150);
-        ps.scale(pxPerBlock, pxPerBlock, -pxPerBlock);
-        ps.mulPose(Axis.XP.rotationDegrees(-6f));                  // camera um pouco de cima
-        ps.mulPose(Axis.YP.rotationDegrees(yaw));                   // de frente para quem olha, girado 'yaw'
-        ps.translate(0, -8 / 16f, 0);                               // centro do corpo (cabeca -8, pes 24)
-        Lighting.setupForEntityInInventory();
+        // sombra suave no chao (embaixo dos pes)
+        shadow(g, cx, cy + pxPerBlock * 1.0f, pxPerBlock * 0.62f, pxPerBlock * 0.13f);
+        g.flush();
+
         MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
         int light = 0xF000F0;
+        lights();
 
-        rig.root.render(ps, buf.getBuffer(RenderType.entityTranslucent(skin.texture())), light, OverlayTexture.NO_OVERLAY);
-        armor(ps, buf, p, EquipmentSlot.HEAD, armorOuter, light);
-        armor(ps, buf, p, EquipmentSlot.CHEST, armorOuter, light);
-        armor(ps, buf, p, EquipmentSlot.LEGS, armorInner, light);
-        armor(ps, buf, p, EquipmentSlot.FEET, armorOuter, light);
+        // 1) contorno: o boneco desenhado 8 vezes, 1 px para cada lado, todo claro (cor "flash" do overlay, como o creeper)
+        int white = OverlayTexture.pack(OverlayTexture.u(1f), OverlayTexture.v(false));
+        for (int i = 0; i < 8; i++) {
+            float dx = (float) Math.round(Math.cos(i * Math.PI / 4)), dy = (float) Math.round(Math.sin(i * Math.PI / 4));
+            PoseStack ps = begin(g, cx + dx, cy + dy, pxPerBlock, yaw);
+            body(ps, buf, p, rig, skin, light, white, 0xFF000000, true);
+            g.pose().popPose();
+        }
+        buf.endBatch();
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);   // o boneco de verdade sempre por cima do contorno
 
+        // 2) o boneco
+        PoseStack ps = begin(g, cx, cy, pxPerBlock, yaw);
+        body(ps, buf, p, rig, skin, light, OverlayTexture.NO_OVERLAY, -1, false);
         boolean rightHanded = p.getMainArm() == HumanoidArm.RIGHT;
         held(ps, buf, p, rightHanded ? p.getMainHandItem() : p.getOffhandItem(), rig.rArm, rig.rArmLow, false, light);
         held(ps, buf, p, rightHanded ? p.getOffhandItem() : p.getMainHandItem(), rig.lArm, rig.lArmLow, true, light);
-
         buf.endBatch();
-        Lighting.setupFor3DItems();
         ps.popPose();
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);   // slots e textos desenhados depois ficam por cima
+        Lighting.setupFor3DItems();
     }
 
-    private static void armor(PoseStack ps, MultiBufferSource buf, AbstractClientPlayer p, EquipmentSlot slot, Rig rig, int light) {
+    private static PoseStack begin(GuiGraphics g, float cx, float cy, float px, float yaw) {
+        PoseStack ps = g.pose();
+        ps.pushPose();
+        ps.translate(cx, cy, 150);
+        ps.scale(px, px, -px);
+        ps.mulPose(Axis.XP.rotationDegrees(-6f));                  // camera um pouco de cima
+        ps.mulPose(Axis.YP.rotationDegrees(yaw));                   // de frente para quem olha, girado 'yaw'
+        ps.translate(0, -8 / 16f, 0);                               // centro do corpo (cabeca -8, pes 24)
+        return ps;
+    }
+
+    // luz principal de cima/esquerda/frente e uma luz fraca de lado: da volume (o inventario vanilla ilumina tudo por igual)
+    private static void lights() {
+        Lighting.setupForEntityInInventory();
+        RenderSystem.setShaderLights(new Vector3f(-0.5f, -0.75f, 0.6f).normalize(), new Vector3f(0.75f, -0.1f, 0.3f).normalize());
+    }
+
+    private static void body(PoseStack ps, MultiBufferSource buf, AbstractClientPlayer p, Rig rig, PlayerSkin skin,
+                             int light, int overlay, int tint, boolean flat) {
+        rig.root.render(ps, buf.getBuffer(RenderType.entityTranslucent(skin.texture())), light, overlay, tint);
+        armor(ps, buf, p, EquipmentSlot.HEAD, armorOuter, light, overlay, tint, flat);
+        armor(ps, buf, p, EquipmentSlot.CHEST, armorOuter, light, overlay, tint, flat);
+        armor(ps, buf, p, EquipmentSlot.LEGS, armorInner, light, overlay, tint, flat);
+        armor(ps, buf, p, EquipmentSlot.FEET, armorOuter, light, overlay, tint, flat);
+    }
+
+    private static void shadow(GuiGraphics g, float cx, float cy, float rx, float ry) {
+        for (int k = 0; k < 3; k++) {
+            float sx = rx * (1f - k * 0.22f), sy = ry * (1f - k * 0.22f);
+            int rows = Math.max(1, (int) Math.ceil(sy));
+            for (int r = -rows; r <= rows; r++) {
+                float f = r / (float) rows;
+                float hw = sx * (float) Math.sqrt(Math.max(0, 1 - f * f));
+                g.fill((int) (cx - hw), (int) (cy + r), (int) (cx + hw), (int) (cy + r) + 1, 0x26000000);
+            }
+        }
+    }
+
+    private static void armor(PoseStack ps, MultiBufferSource buf, AbstractClientPlayer p, EquipmentSlot slot, Rig rig,
+                              int light, int overlay, int tint, boolean flat) {
         ItemStack st = p.getItemBySlot(slot);
         if (!(st.getItem() instanceof ArmorItem ai) || ai.getEquipmentSlot() != slot) return;
         boolean inner = slot == EquipmentSlot.LEGS;
@@ -163,11 +211,12 @@ public final class BendyPlayer {
         };
         Holder<ArmorMaterial> mat = ai.getMaterial();
         for (ArmorMaterial.Layer layer : mat.value().layers()) {
-            int color = layer.dyeable() ? DyedItemColor.getOrDefault(st, -6265536) | 0xFF000000 : -1;
+            int color = flat ? tint : layer.dyeable() ? DyedItemColor.getOrDefault(st, -6265536) | 0xFF000000 : -1;
             ResourceLocation tex = net.neoforged.neoforge.client.ClientHooks.getArmorTexture(p, st, layer, inner, slot);
             for (ModelPart part : parts) {
-                part.render(ps, buf.getBuffer(RenderType.armorCutoutNoCull(tex)), light, OverlayTexture.NO_OVERLAY, color);
-                if (st.hasFoil()) part.render(ps, buf.getBuffer(RenderType.armorEntityGlint()), light, OverlayTexture.NO_OVERLAY);
+                // no contorno usa o mesmo tipo da skin (que aceita a cor "flash" do overlay)
+                part.render(ps, buf.getBuffer(flat ? RenderType.entityTranslucent(tex) : RenderType.armorCutoutNoCull(tex)), light, overlay, color);
+                if (!flat && st.hasFoil()) part.render(ps, buf.getBuffer(RenderType.armorEntityGlint()), light, OverlayTexture.NO_OVERLAY);
             }
         }
     }

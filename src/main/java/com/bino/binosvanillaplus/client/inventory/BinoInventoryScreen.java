@@ -107,12 +107,12 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             buttons.add(new Btn(3445, 359, 100, 19, null, "Z", InventoryActionPayload.SORT_NAME, t("sort_name")));
             buttons.add(new Btn(3445, 476, 100, 19, null, "=", InventoryActionPayload.SORT_COUNT, t("sort_count")));
             buttons.add(new Btn(3445, 593, 100, 19, null, "ID", InventoryActionPayload.SORT_ID, t("sort_id")));
-            tabs(3424, 1027, new int[]{TAB_CRAFT, TAB_ARMOR, TAB_ATTR});
+            tabs(3424, 806);
         } else if (tab == TAB_CRAFT) {
             buttons.add(new Btn(3445, 422, 196, 38, "recipes", null, -100, t("recipes")));
-            tabs(3445, 1018, new int[]{TAB_INV, TAB_ARMOR, TAB_ATTR});
+            tabs(3445, 806);
         } else {
-            tabs(2682, 1027, new int[]{TAB_CRAFT, TAB_INV, TAB_ATTR});
+            tabs(2682, 806);
         }
         // painel (para soltar item fora e para as janelas que perguntam o tamanho)
         float[] p = panel();
@@ -122,7 +122,11 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         imageHeight = (int) (p[3] * s);
     }
 
-    private void tabs(float x, float y, int[] order) {
+    // as 4 abas, sempre na mesma ordem; a aba aberta aparece selecionada
+    private static final int[] TAB_ORDER = {TAB_INV, TAB_CRAFT, TAB_ARMOR, TAB_ATTR};
+
+    private void tabs(float x, float y) {
+        int[] order = TAB_ORDER;
         for (int i = 0; i < order.length; i++) {
             int t = order[i];
             String icon = t == TAB_CRAFT ? "tab_crafting" : t == TAB_INV ? "tab_inventory" : t == TAB_ARMOR ? "tab_armor" : "tab_attributes";
@@ -154,8 +158,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     protected boolean hasClickedOutside(double mx, double my, int left, int top, int button) {
         float[] p = panel();
         boolean inPanel = mx >= X(p[0]) && mx < X(p[0] + p[2]) && my >= Y(p[1]) && my < Y(p[1] + p[3]);
-        boolean inPopup = popupRect != null && mx >= popupRect[0] && mx < popupRect[0] + popupRect[2] && my >= popupRect[1] && my < popupRect[1] + popupRect[3];
-        return !inPanel && !inPopup && buttonAt(mx, my) == null;
+        return !inPanel && !inPopup(mx, my) && buttonAt(mx, my) == null;
     }
 
     private Btn buttonAt(double mx, double my) {
@@ -168,6 +171,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0 && clickPopup(mx, my)) return true;
+        if (button == 0 && clickEquipSlot(mx, my)) return true;
         Btn b = button == 0 ? buttonAt(mx, my) : null;
         if (b != null && menu.getCarried().isEmpty()) {
             if (b.action() == -100) {
@@ -175,7 +179,8 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
                 minecraft.setScreen(new RecipeLookupScreen(this, RecipeLookupScreen.Mode.BROWSE, null));
             } else if (b.action() < 0) {
                 int t = -b.action();
-                if (t != TAB_ATTR) {
+                if (t != TAB_ATTR && t != BinoInventoryMenu.clientTab) {
+                    pinned = -1;
                     UiSound.click();
                     BinoInventoryMenu.clientTab = t;
                     layout();
@@ -208,8 +213,8 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
         // personagem (atras do painel na aba Inventario, como no Figma)
         // o personagem fica por cima do canto esquerdo do painel, como se fizesse parte do menu
-        if (tab == TAB_INV) character(1150, 1000, 1500, 32f, ActionPose.Pose.GUARD, g);
-        if (tab == TAB_ARMOR) character(1380, 1000, 1500, 30f, ActionPose.Pose.HERO, g);
+        if (tab == TAB_INV) character(820, 1000, 1500, 32f, ActionPose.Pose.GUARD, g);
+        if (tab == TAB_ARMOR) character(1060, 1000, 1500, 30f, ActionPose.Pose.HERO, g);
 
         // titulo
         String title = t(tab == TAB_CRAFT ? "tab.crafting" : tab == TAB_ARMOR ? "tab.armor" : "tab.inventory").getString();
@@ -247,12 +252,14 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             Tween tw = hover.computeIfAbsent(b, k -> new Tween(0f, 60f));
             boolean over = buttonAt(mx, my) == b;
             boolean disabled = b.action() == -TAB_ATTR;
-            float h = tw.get(over && !disabled ? 1f : 0f);
+            boolean selected = b.action() == -tab;
+            float h = tw.get((over && !disabled) || selected ? 1f : 0f);
             float bx = X(b.x()), by = Y(b.y()), bs = b.size() * s;
             float grow = h * 2f;
             round(g, bx - grow - 0.5f, by - grow - 0.5f, bs + grow * 2 + 1, bs + grow * 2 + 1, b.radius() * s + 0.5f, BUTTON_EDGE);
-            round(g, bx - grow, by - grow, bs + grow * 2, bs + grow * 2, b.radius() * s, disabled ? 0xFFB5B5B5 : BUTTON);
-            if (b.icon() != null) icon(g, b.icon(), bx + bs * 0.2f, by + bs * 0.2f, bs * 0.6f, disabled ? 0.35f : 0.67f);
+            round(g, bx - grow, by - grow, bs + grow * 2, bs + grow * 2, b.radius() * s, selected ? 0xFFFFFFFF : disabled ? 0xFFB5B5B5 : BUTTON);
+            if (selected) icon(g, "select", bx - grow - bs * 0.06f, by - grow - bs * 0.06f, bs + grow * 2 + bs * 0.12f, 1f);
+            if (b.icon() != null) icon(g, b.icon(), bx + bs * 0.2f, by + bs * 0.2f, bs * 0.6f, disabled ? 0.35f : selected ? 1f : 0.67f);
             else if ("=".equals(b.text())) {   // icone de lista (3 barras)
                 float lw = 57 * s, lh = Math.max(1, 11 * s);
                 for (int i = 0; i < 3; i++) fill(g, bx + bs * 0.24f, by + bs * 0.28f + i * 17 * s, lw * (1 - i * 0.2f), lh, BUTTON_INK);
@@ -301,8 +308,14 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
         int over = drawPopup(g, mx, my);
-        if (over >= 0) g.renderTooltip(font, menu.slots.get(over).getItem(), mx, my);
-        else renderTooltip(g, mx, my);
+        if (over >= 0) compareTooltip(g, menu.slots.get(over).getItem(), menu.slots.get(popupSlot).getItem(), popupSlot);
+        else if (popupRect != null && hoveredSlot != null && hoveredSlot.index == popupSlot) {
+            if (hoveredSlot.hasItem()) {   // o item equipado: tooltip do outro lado, sem cobrir a lista
+                float[] r = screenRect(popupSlot);
+                List<Component> l = getTooltipFromContainerItem(hoveredSlot.getItem());
+                tipAt(g, l, r[0] - 6 - tipWidth(l), r[1]);
+            }
+        } else renderTooltip(g, mx, my);
         Btn b = buttonAt(mx, my);
         if (b != null && menu.getCarried().isEmpty()) g.renderTooltip(font, b.tip(), mx, my);
     }
@@ -338,9 +351,10 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     // desenha a lista ao lado do slot em que o mouse esta; devolve o slot do inventario sob o mouse (ou -1)
     private int drawPopup(GuiGraphics g, int mx, int my) {
         popupCells.clear();
-        if (BinoInventoryMenu.clientTab != TAB_ARMOR || !menu.getCarried().isEmpty()) { popupSlot = -1; return -1; }
-        boolean inPopup = popupRect != null && mx >= popupRect[0] && mx < popupRect[0] + popupRect[2] && my >= popupRect[1] && my < popupRect[1] + popupRect[3];
-        if (hoveredSlot != null && equipSlot(hoveredSlot.index)) popupSlot = hoveredSlot.index;
+        if (BinoInventoryMenu.clientTab != TAB_ARMOR || !menu.getCarried().isEmpty()) { popupSlot = -1; pinned = -1; popupRect = null; return -1; }
+        boolean inPopup = inPopup(mx, my);
+        if (pinned >= 0) popupSlot = pinned;                                   // clicou no slot: a lista fica aberta
+        else if (hoveredSlot != null && equipSlot(hoveredSlot.index)) popupSlot = hoveredSlot.index;
         else if (!inPopup) popupSlot = -1;
         if (popupSlot < 0) { popupRect = null; return -1; }
         List<Integer> list = candidates(popupSlot);
@@ -354,6 +368,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         popupRect = new float[]{px - 4, py, w + 8, h};   // folga para o mouse passar do slot para a lista
         g.pose().pushPose();
         g.pose().translate(0, 0, 400);
+        if (pinned >= 0) round(g, r[0] - 1, r[1] - 1, r[2] + 2, r[2] + 2, 3, 0x60FFFFFF);   // slot com a lista aberta
         round(g, px, py, w, h, 3, 0xF01E211F);
         int over = -1;
         for (int k = 0; k < list.size(); k++) {
@@ -368,6 +383,102 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         }
         g.pose().popPose();
         return over;
+    }
+
+    private int pinned = -1;
+
+    private boolean inPopup(double mx, double my) {
+        return popupRect != null && mx >= popupRect[0] && mx < popupRect[0] + popupRect[2] && my >= popupRect[1] && my < popupRect[1] + popupRect[3];
+    }
+
+    // 1o clique num slot da aba Armadura abre (e prende) a lista; clicar de novo no mesmo slot pega o item, como sempre
+    private boolean clickEquipSlot(double mx, double my) {
+        if (BinoInventoryMenu.clientTab != TAB_ARMOR || !menu.getCarried().isEmpty() || hasShiftDown()) return false;
+        if (hoveredSlot != null && equipSlot(hoveredSlot.index)) {
+            int i = hoveredSlot.index;
+            if (pinned != i && !candidates(i).isEmpty()) { pinned = i; UiSound.click(); return true; }
+            pinned = -1;
+            return false;
+        }
+        if (!inPopup(mx, my)) pinned = -1;
+        return false;
+    }
+
+    // ---- tooltip de comparacao: o item da lista + o equipado, lado a lado, ao lado da lista (sem cobrir)
+
+    private int tipWidth(List<Component> l) {
+        int w = 0;
+        for (Component c : l) w = Math.max(w, font.width(c));
+        return w + 8;
+    }
+
+    private void tipAt(GuiGraphics g, List<Component> lines, float x, float y) {
+        int tx = (int) x, ty = (int) y;
+        g.renderTooltip(font, lines.stream().map(Component::getVisualOrderText).toList(),
+                (sw, sh, mx, my, tw, th) -> new org.joml.Vector2i(Math.max(4, Math.min(sw - tw - 4, tx + 4)), Math.max(4, Math.min(sh - th - 4, ty + 4))),
+                tx, ty);
+    }
+
+    private static net.minecraft.world.entity.EquipmentSlot equipmentOf(int slot) {
+        return switch (slot) {
+            case BinoInventoryMenu.ARMOR -> net.minecraft.world.entity.EquipmentSlot.HEAD;
+            case BinoInventoryMenu.ARMOR + 1 -> net.minecraft.world.entity.EquipmentSlot.CHEST;
+            case BinoInventoryMenu.ARMOR + 2 -> net.minecraft.world.entity.EquipmentSlot.LEGS;
+            case BinoInventoryMenu.ARMOR + 3 -> net.minecraft.world.entity.EquipmentSlot.FEET;
+            case BinoInventoryMenu.OFFHAND -> net.minecraft.world.entity.EquipmentSlot.OFFHAND;
+            default -> net.minecraft.world.entity.EquipmentSlot.MAINHAND;
+        };
+    }
+
+    private static Map<net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute>, Double> stats(
+            net.minecraft.world.item.ItemStack st, net.minecraft.world.entity.EquipmentSlot es) {
+        Map<net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute>, Double> m = new java.util.LinkedHashMap<>();
+        if (st.isEmpty()) return m;
+        st.forEachModifier(es, (attr, mod) -> {
+            if (mod.operation() == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE)
+                m.merge(attr, mod.amount(), Double::sum);
+        });
+        return m;
+    }
+
+    private static String num(double d) {
+        return Math.abs(d - Math.round(d)) < 0.01 ? String.valueOf(Math.round(d)) : String.format(java.util.Locale.ROOT, "%.1f", d);
+    }
+
+    private void compareTooltip(GuiGraphics g, net.minecraft.world.item.ItemStack cand, net.minecraft.world.item.ItemStack cur, int slot) {
+        List<Component> a = new ArrayList<>(getTooltipFromContainerItem(cand));
+        List<Component> b = null;
+        if (!cur.isEmpty()) {
+            var es = equipmentOf(slot);
+            var sa = stats(cand, es);
+            var sb = stats(cur, es);
+            java.util.Set<net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute>> keys = new java.util.LinkedHashSet<>(sa.keySet());
+            keys.addAll(sb.keySet());
+            List<Component> diff = new ArrayList<>();
+            for (var k : keys) {
+                double va = sa.getOrDefault(k, 0.0), vb = sb.getOrDefault(k, 0.0), d = va - vb;
+                if (Math.abs(d) < 0.001) continue;
+                diff.add(Component.literal((d > 0 ? "+" : "") + num(d) + " ").append(Component.translatable(k.value().getDescriptionId()))
+                        .withStyle(d > 0 ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.RED));
+            }
+            if (cand.isDamageableItem() && cur.isDamageableItem()) {
+                int da = cand.getMaxDamage() - cand.getDamageValue(), db = cur.getMaxDamage() - cur.getDamageValue();
+                if (da != db) diff.add(Component.literal((da > db ? "+" : "") + (da - db) + " ").append(t("durability"))
+                        .withStyle(da > db ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.RED));
+            }
+            a.add(Component.empty());
+            a.add(t("compare").withStyle(net.minecraft.ChatFormatting.GRAY));
+            if (diff.isEmpty()) a.add(t("compare_same").withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+            else a.addAll(diff);
+            b = new ArrayList<>();
+            b.add(t("equipped").withStyle(net.minecraft.ChatFormatting.GOLD));
+            b.addAll(getTooltipFromContainerItem(cur));
+        }
+        int wa = tipWidth(a), wb = b == null ? 0 : tipWidth(b) + 6;
+        float x = popupRect[0] + popupRect[2] + 6, y = popupRect[1];
+        if (x + wa + wb > width - 4) x = screenRect(slot)[0] - wa - wb - 8;   // sem espaco a direita: vai para a esquerda do slot
+        tipAt(g, a, x, y);
+        if (b != null) tipAt(g, b, x + wa + 6, y);
     }
 
     // clique num item da lista: troca com o que esta equipado (os mesmos cliques que o jogador faria)

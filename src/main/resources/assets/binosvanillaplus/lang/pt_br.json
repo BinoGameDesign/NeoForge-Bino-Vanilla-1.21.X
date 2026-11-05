@@ -246,5 +246,9 @@
   "gui.binosvanillaplus.inv.sort_name": "Organizar por nome (A–Z)",
   "gui.binosvanillaplus.inv.sort_count": "Organizar por quantidade",
   "gui.binosvanillaplus.inv.sort_id": "Organizar por ID do item",
+  "gui.binosvanillaplus.inv.equipped": "Equipado agora",
+  "gui.binosvanillaplus.inv.compare": "Comparado ao equipado:",
+  "gui.binosvanillaplus.inv.compare_same": "Mesmos atributos",
+  "gui.binosvanillaplus.inv.durability": "Durabilidade",
   "gui.binosvanillaplus.inv.recipes": "Receitas+"
 }
