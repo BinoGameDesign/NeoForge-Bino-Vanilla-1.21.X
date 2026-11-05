@@ -77,7 +77,7 @@ public final class BendyPlayer {
                     Object[] vs = verts(poly);
                     boolean bottom = true, top = true;
                     for (Object v : vs) { float y = pos(v).y(); bottom &= Math.abs(y - max) < 1e-4; top &= Math.abs(y - min) < 1e-4; }
-                    if (bottom) for (int i = 0; i < vs.length; i++) vs[i] = vertex(pos(vs[i]), uv(vs[i], "u"), uv(vs[i], "v") - 4f / texH);
+                    if (bottom) for (int i = 0; i < vs.length; i++) vs[i] = vertex(vs[i].getClass(), pos(vs[i]), uv(vs[i], "u"), uv(vs[i], "v") - 4f / texH);
                     else if (top) for (int i = 1; i < vs.length; i++) vs[i] = vs[0];
                 }
             }
@@ -104,12 +104,16 @@ public final class BendyPlayer {
         return f.getFloat(v);
     }
 
-    private static Object vertex(org.joml.Vector3f p, float u, float v) throws Exception {
+    private static Object vertex(Class<?> vc, org.joml.Vector3f p, float u, float v) throws Exception {
         try {
-            return ModelPart.Vertex.class.getDeclaredConstructor(float.class, float.class, float.class, float.class, float.class)
-                    .newInstance(p.x(), p.y(), p.z(), u, v);
+            java.lang.reflect.Constructor<?> c = vc.getDeclaredConstructor(float.class, float.class, float.class, float.class, float.class)
+                    ;
+            c.setAccessible(true);
+            return c.newInstance(p.x(), p.y(), p.z(), u, v);
         } catch (NoSuchMethodException e) {
-            return ModelPart.Vertex.class.getDeclaredConstructor(org.joml.Vector3f.class, float.class, float.class).newInstance(p, u, v);
+            java.lang.reflect.Constructor<?> c = vc.getDeclaredConstructor(org.joml.Vector3f.class, float.class, float.class);
+            c.setAccessible(true);
+            return c.newInstance(p, u, v);
         }
     }
 
