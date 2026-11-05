@@ -1,9 +1,9 @@
 #version 150
 
-// Luz do personagem do inventario:
-//  - luz principal de cima/esquerda (quente), sombra suave do lado oposto
-//  - luz de recorte (rim) fria nas faces que olham para a direita/baixo
-//  - leve oclusao: faces de baixo mais escuras
+// Luz do personagem do inventario (bem mais marcada que a do jogo):
+//  - frente bem iluminada, luz principal de cima/esquerda
+//  - lado direito/baixo em sombra, com recorte de luz fria na borda
+//  - topo das pecas com um brilho leve
 uniform sampler2D Sampler0;
 uniform vec4 ColorModulator;
 
@@ -18,13 +18,12 @@ void main() {
     if (tex.a < 0.1) discard;
     vec3 n = normalize(normal);
     vec2 keyDir = normalize(vec2(-0.6, -0.8));          // na tela: esquerda e cima (y da tela cresce para baixo)
-    float front = abs(n.z);                              // face virada para quem olha
+    float front = abs(n.z);
     float key = max(0.0, dot(n.xy, keyDir));
-    float light = 0.42 + front * 0.50 + key * 0.42;
-    float under = max(0.0, n.y);                         // face de baixo
-    light -= under * 0.12;
-    vec3 col = tex.rgb * light * vec3(1.03, 1.0, 0.96);  // luz levemente quente
-    float rim = max(0.0, dot(n.xy, -keyDir)) * (1.0 - front);
-    col += vec3(0.55, 0.72, 0.95) * rim * 0.22;          // recorte frio do lado da sombra
-    fragColor = vec4(min(col, vec3(1.0)), tex.a) * ColorModulator;
+    float shade = max(0.0, dot(n.xy, -keyDir));
+    float light = 0.26 + front * 0.78 + key * 0.62 - shade * 0.06;
+    vec3 col = tex.rgb * light * vec3(1.06, 1.0, 0.92);           // luz quente
+    col += vec3(1.0, 0.95, 0.85) * pow(key, 3.0) * 0.10;           // brilho no topo/esquerda
+    col += vec3(0.45, 0.65, 1.0) * shade * (1.0 - front) * 0.32;   // recorte frio no lado da sombra
+    fragColor = vec4(clamp(col, 0.0, 1.0), tex.a) * ColorModulator;
 }

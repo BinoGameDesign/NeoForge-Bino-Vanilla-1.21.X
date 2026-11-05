@@ -20,10 +20,10 @@ public final class ActionPose {
             case GUARD -> new Angles(v(0.08f, -0.25f, 0f), v(0f, -0.15f, 0f),
                     v(-0.45f, 0.35f, 0.55f), -0.95f, v(0.35f, 0f, -0.30f), -0.45f,
                     v(0.40f, 0f, 0.12f), 0.55f, v(-0.45f, 0f, -0.10f), 0.30f);
-            // heroica: item erguido acima da cabeca, a outra mao na cintura, peito aberto
-            case HERO -> new Angles(v(-0.25f, 0.10f, 0f), v(0f, 0.05f, 0f),
-                    v(-2.80f, 0.05f, 0.15f), -0.30f, v(-0.20f, 0.30f, -0.75f), -1.55f,
-                    v(0.05f, 0f, 0.16f), 0.10f, v(-0.10f, 0f, -0.16f), 0.20f);
+            // vitrine: em pe, confiante, mostrando a armadura; item na mao um pouco a frente, a outra mao solta ao lado
+            case HERO -> new Angles(v(-0.06f, 0.22f, 0f), v(0f, 0.08f, 0f),
+                    v(-0.40f, 0.05f, 0.12f), -0.55f, v(0.12f, 0f, -0.22f), -0.20f,
+                    v(0.02f, 0f, 0.10f), 0.04f, v(-0.06f, 0f, -0.10f), 0.10f);
             // golpe: estocada para a frente, passo largo
             case STRIKE -> new Angles(v(0.05f, 0.30f, 0f), v(0f, 0.28f, 0f),
                     v(-1.70f, -0.30f, 0.05f), -0.20f, v(0.60f, 0f, -0.15f), -0.80f,

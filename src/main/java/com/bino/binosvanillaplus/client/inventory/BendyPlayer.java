@@ -63,11 +63,18 @@ public final class BendyPlayer {
     // As "tampas" (face de cima/baixo) da parte de baixo do membro pegavam a textura do lugar errado (o ombro da armadura,
     // opaco e escuro) -> aqueles quadrados pretos na mao. Aqui a tampa da ponta (mao/pe) volta a usar a textura certa
     // e a tampa do cotovelo/joelho (escondida dentro da parte de cima) some.
-    private static void fixCaps(ModelPart part, float texH) {
+    // removeBottom: some com a tampa da ponta (a da mao). Na armadura e nas mangas da skin essa tampa vira uma placa
+    // escura flutuando na mao (no jogo normal ela fica virada para o chao e ninguem ve; com o cotovelo dobrado ela aparece).
+    // onlyFrom: a partir de qual cubo da peca aplicar a remocao (0 = todos; 1 = so a camada de cima/manga da skin)
+    private static int fixedCaps = 0;
+
+    private static void fixCaps(ModelPart part, float texH, boolean lower, boolean removeBottom, int onlyFrom) {
         try {
             java.lang.reflect.Field fc = ModelPart.class.getDeclaredField("cubes");
             fc.setAccessible(true);
+            int idx = 0;
             for (Object cube : (java.util.List<?>) fc.get(part)) {
+                boolean remove = removeBottom && idx++ >= onlyFrom;
                 java.lang.reflect.Field fp = cube.getClass().getDeclaredField("polygons");
                 fp.setAccessible(true);
                 Object[] polys = (Object[]) fp.get(cube);
@@ -77,8 +84,9 @@ public final class BendyPlayer {
                     Object[] vs = verts(poly);
                     boolean bottom = true, top = true;
                     for (Object v : vs) { float y = pos(v).y(); bottom &= Math.abs(y - max) < 1e-4; top &= Math.abs(y - min) < 1e-4; }
-                    if (bottom) for (int i = 0; i < vs.length; i++) vs[i] = vertex(vs[i].getClass(), pos(vs[i]), uv(vs[i], "u"), uv(vs[i], "v") - 4f / texH);
-                    else if (top) for (int i = 1; i < vs.length; i++) vs[i] = vs[0];
+                    if (bottom && remove) { for (int i = 1; i < vs.length; i++) vs[i] = vs[0]; fixedCaps++; }
+                    else if (bottom && lower) { for (int i = 0; i < vs.length; i++) vs[i] = vertex(vs[i].getClass(), pos(vs[i]), uv(vs[i], "u"), uv(vs[i], "v") - 4f / texH); fixedCaps++; }
+                    else if (top && lower) { for (int i = 1; i < vs.length; i++) vs[i] = vs[0]; fixedCaps++; }
                 }
             }
         } catch (Exception e) {
@@ -117,8 +125,11 @@ public final class BendyPlayer {
         }
     }
 
-    private static void fixRig(Rig r, float texH) {
-        fixCaps(r.rArmLow, texH); fixCaps(r.lArmLow, texH); fixCaps(r.rLegLow, texH); fixCaps(r.lLegLow, texH);
+    private static void fixRig(Rig r, float texH, boolean armor) {
+        int from = armor ? 0 : 1;   // armadura: tira a tampa da mao inteira; skin: so a da manga (a mao continua com a pele)
+        fixCaps(r.rArmLow, texH, true, true, from); fixCaps(r.lArmLow, texH, true, true, from);
+        if (armor) { fixCaps(r.rArm, texH, false, true, 0); fixCaps(r.lArm, texH, false, true, 0); }   // tampa do cotovelo da parte de cima
+        fixCaps(r.rLegLow, texH, true, false, 0); fixCaps(r.lLegLow, texH, true, false, 0);
     }
 
     // membro de 12 de altura dividido em dois; a parte de baixo comeca 2 px DENTRO da de cima (sobreposicao),
@@ -177,7 +188,8 @@ public final class BendyPlayer {
         slim = skinRig(true);
         armorOuter = armorRig(new CubeDeformation(1.0f));
         armorInner = armorRig(new CubeDeformation(0.5f));
-        fixRig(wide, 64); fixRig(slim, 64); fixRig(armorOuter, 32); fixRig(armorInner, 32);
+        fixRig(wide, 64, false); fixRig(slim, 64, false); fixRig(armorOuter, 32, true); fixRig(armorInner, 32, true);
+        com.bino.binosvanillaplus.BinosVanillaMod.LOGGER.info("BendyPlayer: {} tampas ajustadas", fixedCaps);
     }
 
     // desenha o jogador centrado em (cx, cy), 'pxPerBlock' pixels de GUI por bloco, virado 'yaw' graus
@@ -193,7 +205,6 @@ public final class BendyPlayer {
         armorInner.pose(a, breathe);
 
         // sombra suave no chao (embaixo dos pes)
-        shadow(g, cx, cy + pxPerBlock * 1.0f, pxPerBlock * 0.62f, pxPerBlock * 0.13f);
         g.flush();
 
         MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
