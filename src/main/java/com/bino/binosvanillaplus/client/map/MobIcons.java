@@ -60,6 +60,18 @@ public final class MobIcons {
     }
 
     // desenha o icone centrado em (cx, cy); size = lado do rosto em pixels de interface (aceita fracao: usa escala)
+    public static boolean hasFace(Entity e) { return FACES.containsKey(e.getType()); }
+
+    // igual ao draw, mas opaco (painel de inspecao)
+    public static void drawOpaque(GuiGraphics g, Entity e, float cx, float cy, float size) {
+        final int base = 10;
+        g.pose().pushPose();
+        g.pose().translate(cx, cy, 0);
+        g.pose().scale(size / base, size / base, 1f);
+        drawBase(g, e, 0, 0, base);
+        g.pose().popPose();
+    }
+
     public static void draw(GuiGraphics g, Entity e, float cx, float cy, float size) {
         final int base = 10;   // desenha em 10 px e encolhe: tamanhos quebrados ficam certinhos
         g.pose().pushPose();

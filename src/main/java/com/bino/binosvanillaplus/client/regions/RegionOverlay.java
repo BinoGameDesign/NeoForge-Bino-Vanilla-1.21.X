@@ -59,8 +59,6 @@ public final class RegionOverlay {
         g.pose().mulPose(Axis.ZP.rotationDegrees(45f));
         float h = size / 2f;
         g.pose().scale(h, h, 1f);
-        g.fill(-1, -1, 1, 1, 0xFF1B1E1C);
-        g.pose().scale(0.72f, 0.72f, 1f);
         g.fill(-1, -1, 1, 1, argb);
         g.pose().popPose();
     }

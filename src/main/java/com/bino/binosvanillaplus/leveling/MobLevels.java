@@ -66,16 +66,33 @@ public final class MobLevels {
 
     // ---------------------------------------------------------------- dar o nivel
 
+    // O evento de entrar no mundo acontece no MEIO do carregamento do chunk: ler altura/bioma ali fazia o servidor
+    // esperar o proprio chunk (mundo sem carregar e engasgos). Agora o mob entra numa fila e recebe o nivel no tick seguinte.
+    private static final java.util.ArrayDeque<Mob> QUEUE = new java.util.ArrayDeque<>();
+
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onJoin(EntityJoinLevelEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel level) || event.loadedFromDisk() && get(event.getEntity()) > 0) return;
+        if (event.getLevel().isClientSide()) return;
         Entity e = event.getEntity();
-        if (!eligible(e) || get(e) > 0) return;
+        if (eligible(e) && get(e) == 0) QUEUE.add((Mob) e);
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
+        for (int n = 0; n < 200 && !QUEUE.isEmpty(); n++) {
+            Mob m = QUEUE.poll();
+            if (m.isRemoved() || get(m) > 0 || !(m.level() instanceof ServerLevel level)) continue;
+            if (!level.isLoaded(m.blockPosition())) continue;
+            assign(level, m);
+        }
+    }
+
+    private static void assign(ServerLevel level, Mob e) {
         double base = RegionDifficulty.levelAt(level, e.blockPosition());
         if (base < 0) return;
         var r = level.getRandom();
         int lv = (int) Math.round(base + (r.nextFloat() + r.nextFloat() - 1f) * 2.5f);   // +-2,5, mais comum perto do centro
-        set((Mob) e, Math.max(RegionDifficulty.MIN, Math.min(RegionDifficulty.MAX, lv)));
+        set(e, Math.max(RegionDifficulty.MIN, Math.min(RegionDifficulty.MAX, lv)));
     }
 
     public static void set(Mob m, int lv) {

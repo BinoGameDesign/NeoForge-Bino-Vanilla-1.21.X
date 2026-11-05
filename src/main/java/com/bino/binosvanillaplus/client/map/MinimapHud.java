@@ -284,9 +284,9 @@ public class MinimapHud {
         int capX = x0 + 3;
         if (lvHere >= 0) {
             float tsl = smallScale(mc);
-            com.bino.binosvanillaplus.client.regions.RegionOverlay.diamond(g, x0 + 7, y0 + 7, 7, com.bino.binosvanillaplus.client.leveling.LevelClient.bandColor(lvHere));
+            com.bino.binosvanillaplus.client.regions.RegionOverlay.diamond(g, x0 + 6, y0 + 7, 5, com.bino.binosvanillaplus.client.leveling.LevelClient.bandColor(lvHere));
             String bt = com.bino.binosvanillaplus.leveling.RegionDifficulty.bandText(lvHere);
-            com.bino.binosvanillaplus.client.ui.BinoUi.text(g, mc.font, bt, x0 + 13, y0 + 7 - 4 * tsl, tsl, 0xFFFFFFFF, true);
+            com.bino.binosvanillaplus.client.ui.BinoUi.text(g, mc.font, bt, x0 + 11, y0 + 7 - 4 * tsl, tsl, 0xFFFFFFFF, true);
             capX = x0 + 15 + (int) (mc.font.width(bt) * tsl);
         }
         if (cave) g.drawString(mc.font, "\u2193", capX, y0 + 3, 0xFFFFD84A, true);   // seta: modo corte de caverna

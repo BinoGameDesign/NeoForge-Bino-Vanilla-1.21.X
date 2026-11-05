@@ -84,7 +84,7 @@ public final class RegionDifficulty {
         double s = surfaceLevel(level, pos.getX(), pos.getZ());
         if (s < 0) return -1;
         if (!level.dimension().equals(Level.OVERWORLD)) return s;
-        int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE, pos.getX(), pos.getZ());
+        int surface = level.hasChunkAt(pos) ? level.getHeight(Heightmap.Types.WORLD_SURFACE, pos.getX(), pos.getZ()) : level.getSeaLevel();
         int bottom = level.getMinBuildHeight();
         double depth = clamp((surface - pos.getY()) / (double) Math.max(16, surface - bottom), 0, 1);
         double bonus = 4 * depth;

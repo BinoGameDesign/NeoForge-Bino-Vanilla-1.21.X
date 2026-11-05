@@ -13,7 +13,8 @@ public class LookAtInfo {
     public final List<Component> lines = new ArrayList<>();
     public float health = -1;      // >= 0 desenha a barra de vida
     public float maxHealth = 0;
-    public int level = 0;          // > 0 desenha a gema com o nivel do mob ao lado do nome
+    public int level = 0;
+    public net.minecraft.world.entity.Entity entity;   // mob: desenha o rostinho (como no minimapa) no lugar do ovo          // > 0 desenha a gema com o nivel do mob ao lado do nome
 
     public LookAtInfo line(Component c) { lines.add(c); return this; }
 }

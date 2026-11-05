@@ -48,6 +48,7 @@ public class LookAtHud {
         }
         if (hit instanceof EntityHitResult ehr && hit.getType() == HitResult.Type.ENTITY) {
             Entity e = ehr.getEntity();
+            if (com.bino.binosvanillaplus.client.map.MobIcons.hasFace(e)) info.entity = e;
             SpawnEggItem egg = SpawnEggItem.byId(e.getType());
             if (egg != null) info.icon = new ItemStack(egg);
             info.title = e.getDisplayName();
@@ -80,7 +81,7 @@ public class LookAtHud {
 
     private static void draw(GuiGraphics g, Font font, LookAtInfo info) {
         final int pad = 5, iconSize = 18, lineH = font.lineHeight + 2;
-        boolean hasIcon = !info.icon.isEmpty();
+        boolean hasIcon = !info.icon.isEmpty() || info.entity != null;
         boolean hasBar = info.health >= 0;
 
         final int gem = 14;   // gema do nivel (textura 9x9 ampliada)
@@ -99,7 +100,8 @@ public class LookAtHud {
         g.fill(x, y, x + w, y + h, 0x99000000);                         // fundo preto, 60% de opacidade
 
         int tx = x + pad + (hasIcon ? iconSize + 4 : 0), ty = y + pad;
-        if (hasIcon) g.renderItem(info.icon, x + pad, y + pad);
+        if (info.entity != null) com.bino.binosvanillaplus.client.map.MobIcons.drawOpaque(g, info.entity, x + pad + iconSize / 2f, y + pad + iconSize / 2f, 14f);
+        else if (hasIcon) g.renderItem(info.icon, x + pad, y + pad);
         g.drawString(font, info.title, tx, ty, 0xFFFFFFFF);
         if (info.level > 0) levelGem(g, font, info.level, tx + font.width(info.title) + 3, ty + font.lineHeight / 2 - gem / 2, gem);
         ty += lineH;
