@@ -89,12 +89,37 @@ public final class ExploredMap {
 
     // ----------------------------------------------------------- ciclo de vida
 
+    // Singleplayer: pela PASTA do mundo (unica), nao pelo nome (dois mundos "Novo mundo" dividiam o mesmo mapa e o terreno
+    // distante de um aparecia no outro). Mapas antigos (guardados pelo nome) passam para a pasta nova do mundo dono deles.
     private static String worldKey(Minecraft mc) {
         String raw;
-        if (mc.getSingleplayerServer() != null) raw = "sp_" + mc.getSingleplayerServer().getWorldData().getLevelName();
+        if (mc.getSingleplayerServer() != null) {
+            var server = mc.getSingleplayerServer();
+            String folder = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toAbsolutePath().normalize().getFileName().toString();
+            String name = server.getWorldData().getLevelName();
+            raw = "sp2_" + folder;
+            migrateOld(clean("sp_" + name), clean(raw), folder.equals(name));
+        }
         else if (mc.getCurrentServer() != null) raw = "mp_" + mc.getCurrentServer().ip;
         else raw = "unknown";
-        return raw.replaceAll("[^a-zA-Z0-9._-]", "_");
+        return clean(raw);
+    }
+
+    private static String clean(String raw) { return raw.replaceAll("[^a-zA-Z0-9._-]", "_"); }
+
+    // o mapa antigo (pelo nome) so e' do mundo cuja pasta tem o mesmo nome; os outros comecam do zero
+    private static final java.util.Set<String> MIGRATED = new java.util.HashSet<>();
+
+    private static void migrateOld(String oldKey, String newKey, boolean owner) {
+        if (!MIGRATED.add(newKey)) return;   // so uma vez por mundo
+        try {
+            Path root = FMLPaths.GAMEDIR.get().resolve("binos_map");
+            Path oldDir = root.resolve(oldKey), newDir = root.resolve(newKey);
+            if (owner && java.nio.file.Files.isDirectory(oldDir) && !java.nio.file.Files.exists(newDir))
+                java.nio.file.Files.move(oldDir, newDir);
+        } catch (Exception e) {
+            BinosVanillaMod.LOGGER.warn("Mapa: nao consegui mover o mapa antigo {} -> {}", oldKey, newKey, e);
+        }
     }
 
     private static Path worldDir() {
