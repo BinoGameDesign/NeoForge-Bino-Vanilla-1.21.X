@@ -7,8 +7,7 @@
         "client.ClientLevelSkyMixin",
         "client.MinecraftGlowMixin",
         "client.LocalPlayerElytraMixin",
-        "client.ElytraLayerMixin",
-        "client.PlayerModelPoseMixin"
+        "client.ElytraLayerMixin"
     ],
     "injectors": {
         "defaultRequire": 1

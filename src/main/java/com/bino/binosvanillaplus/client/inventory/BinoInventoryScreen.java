@@ -9,15 +9,11 @@ import com.bino.binosvanillaplus.network.InventoryActionPayload;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.neoforged.neoforge.network.PacketDistributor;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,8 +47,18 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
     // ---------------------------------------------------------------- layout (coordenadas do Figma)
 
+    private static boolean hidHud, prevHideGui;
+
+    // HUD escondido enquanto o inventario esta aberto (como o F1)
+    @Override
+    public void removed() {
+        super.removed();
+        if (hidHud) { minecraft.options.hideGui = prevHideGui; hidHud = false; }
+    }
+
     @Override
     protected void init() {
+        if (!hidHud) { prevHideGui = minecraft.options.hideGui; minecraft.options.hideGui = true; hidHud = true; }
         s = Math.min(width / 3840f, height / 2160f);
         ox = (width - 3840 * s) / 2f;
         oy = (height - 2160 * s) / 2f;
@@ -148,7 +154,8 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     protected boolean hasClickedOutside(double mx, double my, int left, int top, int button) {
         float[] p = panel();
         boolean inPanel = mx >= X(p[0]) && mx < X(p[0] + p[2]) && my >= Y(p[1]) && my < Y(p[1] + p[3]);
-        return !inPanel && buttonAt(mx, my) == null;
+        boolean inPopup = popupRect != null && mx >= popupRect[0] && mx < popupRect[0] + popupRect[2] && my >= popupRect[1] && my < popupRect[1] + popupRect[3];
+        return !inPanel && !inPopup && buttonAt(mx, my) == null;
     }
 
     private Btn buttonAt(double mx, double my) {
@@ -160,6 +167,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        if (button == 0 && clickPopup(mx, my)) return true;
         Btn b = button == 0 ? buttonAt(mx, my) : null;
         if (b != null && menu.getCarried().isEmpty()) {
             if (b.action() == -100) {
@@ -185,7 +193,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        g.fill(0, 0, width, height, 0x30000000);   // o jogo continua aparecendo atras (como no Figma)
+        g.fill(0, 0, width, height, 0x90000000);   // fundo escurecido (como no mapa-mundi)
         renderBg(g, pt, mx, my);                    // no 1.21 o fundo da janela e' desenhado aqui (painel, slots, botoes, personagem)
     }
 
@@ -199,8 +207,9 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         fill(g, X(p[0]), Y(p[1]), p[2] * s, p[3] * s, PANEL);
 
         // personagem (atras do painel na aba Inventario, como no Figma)
-        if (tab == TAB_INV) character(g, 0, 221, 1454, 1624, -28f, ActionPose.Pose.GUARD);
-        if (tab == TAB_ARMOR) character(g, 275, 238, 1454, 1624, -24f, ActionPose.Pose.HERO);
+        // o personagem fica por cima do canto esquerdo do painel, como se fizesse parte do menu
+        if (tab == TAB_INV) character(1150, 1000, 1500, 32f, ActionPose.Pose.GUARD, g);
+        if (tab == TAB_ARMOR) character(1380, 1000, 1500, 30f, ActionPose.Pose.HERO, g);
 
         // titulo
         String title = t(tab == TAB_CRAFT ? "tab.crafting" : tab == TAB_ARMOR ? "tab.armor" : "tab.inventory").getString();
@@ -291,36 +300,97 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
-        renderTooltip(g, mx, my);
+        int over = drawPopup(g, mx, my);
+        if (over >= 0) g.renderTooltip(font, menu.slots.get(over).getItem(), mx, my);
+        else renderTooltip(g, mx, my);
         Btn b = buttonAt(mx, my);
         if (b != null && menu.getCarried().isEmpty()) g.renderTooltip(font, b.tip(), mx, my);
     }
 
-    // o proprio jogador (skin, armadura, item na mao) numa pose de acao
-    private void character(GuiGraphics g, float x, float y, float w, float h, float yaw, ActionPose.Pose pose) {
-        Player p = minecraft.player;
-        if (p == null) return;
-        float cx = X(x + w / 2f), cy = Y(y + h / 2f), scale = h * s * 0.92f / Math.max(1.8f, p.getBbHeight()) / p.getScale();
-        float bodyRot = p.yBodyRot, yRot = p.getYRot(), xRot = p.getXRot(), headO = p.yHeadRotO, head = p.yHeadRot;
-        p.yBodyRot = 180f + yaw;
-        p.setYRot(180f + yaw);
-        p.setXRot(0f);
-        p.yHeadRot = p.getYRot();
-        p.yHeadRotO = p.getYRot();
-        Quaternionf q = new Quaternionf().rotateZ((float) Math.PI);
-        Quaternionf cam = new Quaternionf().rotateX((float) Math.toRadians(4));
-        q.mul(cam);
-        ActionPose.current = pose;
-        try {
-            InventoryScreen.renderEntityInInventory(g, cx, cy, scale, new Vector3f(0f, p.getBbHeight() / 2f, 0f), q, cam, p);
-        } finally {
-            ActionPose.current = null;
-            p.yBodyRot = bodyRot;
-            p.setYRot(yRot);
-            p.setXRot(xRot);
-            p.yHeadRotO = headO;
-            p.yHeadRot = head;
+    // ---------------------------------------------------------------- aba Armadura: itens do inventario que servem no slot
+
+    private int popupSlot = -1;
+    private float[] popupRect;
+    private final List<int[]> popupCells = new ArrayList<>();   // {indice do slot do inventario, x, y}
+
+    private static boolean equipSlot(int i) {
+        return (i >= BinoInventoryMenu.ARMOR && i < BinoInventoryMenu.ARMOR + 4) || i == BinoInventoryMenu.OFFHAND
+                || (i >= BinoInventoryMenu.EXTRA && i < BinoInventoryMenu.END);
+    }
+
+    private List<Integer> candidates(int target) {
+        Slot t = menu.slots.get(target);
+        List<Integer> out = new ArrayList<>();
+        for (int i = BinoInventoryMenu.MAIN; i < BinoInventoryMenu.OFFHAND; i++) {
+            net.minecraft.world.item.ItemStack st = menu.slots.get(i).getItem();
+            if (st.isEmpty()) continue;
+            if (target == BinoInventoryMenu.OFFHAND) {   // mao secundaria: so o que faz sentido nela
+                boolean ok = st.getItem() instanceof net.minecraft.world.item.ShieldItem || st.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)
+                        || st.getItem() instanceof net.minecraft.world.item.FireworkRocketItem || st.is(net.minecraft.tags.ItemTags.ARROWS)
+                        || st.getItem() instanceof net.minecraft.world.item.MapItem || st.is(net.minecraft.world.item.Items.TORCH);
+                if (!ok) continue;
+            } else if (!t.mayPlace(st)) continue;
+            out.add(i);
         }
+        return out;
+    }
+
+    // desenha a lista ao lado do slot em que o mouse esta; devolve o slot do inventario sob o mouse (ou -1)
+    private int drawPopup(GuiGraphics g, int mx, int my) {
+        popupCells.clear();
+        if (BinoInventoryMenu.clientTab != TAB_ARMOR || !menu.getCarried().isEmpty()) { popupSlot = -1; return -1; }
+        boolean inPopup = popupRect != null && mx >= popupRect[0] && mx < popupRect[0] + popupRect[2] && my >= popupRect[1] && my < popupRect[1] + popupRect[3];
+        if (hoveredSlot != null && equipSlot(hoveredSlot.index)) popupSlot = hoveredSlot.index;
+        else if (!inPopup) popupSlot = -1;
+        if (popupSlot < 0) { popupRect = null; return -1; }
+        List<Integer> list = candidates(popupSlot);
+        if (list.isEmpty()) { popupRect = null; return -1; }
+        float[] r = screenRect(popupSlot);
+        int cell = 20, pad = 4, cols = Math.min(6, list.size()), rows = (list.size() + cols - 1) / cols;
+        int w = pad * 2 + cols * cell, h = pad * 2 + rows * cell;
+        float px = r[0] + r[2] + 4, py = r[1];
+        if (px + w > width - 4) px = r[0] - w - 4;
+        if (py + h > height - 4) py = height - 4 - h;
+        popupRect = new float[]{px - 4, py, w + 8, h};   // folga para o mouse passar do slot para a lista
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 400);
+        round(g, px, py, w, h, 3, 0xF01E211F);
+        int over = -1;
+        for (int k = 0; k < list.size(); k++) {
+            int cx = (int) px + pad + (k % cols) * cell, cy = (int) py + pad + (k / cols) * cell;
+            boolean hov = mx >= cx && mx < cx + cell && my >= cy && my < cy + cell;
+            round(g, cx + 1, cy + 1, cell - 2, cell - 2, 2, hov ? 0xFF5B5E5C : 0xFF2A2D2B);
+            net.minecraft.world.item.ItemStack st = menu.slots.get(list.get(k)).getItem();
+            g.renderItem(st, cx + 2, cy + 2);
+            g.renderItemDecorations(font, st, cx + 2, cy + 2);
+            popupCells.add(new int[]{list.get(k), cx, cy});
+            if (hov) over = list.get(k);
+        }
+        g.pose().popPose();
+        return over;
+    }
+
+    // clique num item da lista: troca com o que esta equipado (os mesmos cliques que o jogador faria)
+    private boolean clickPopup(double mx, double my) {
+        if (popupSlot < 0) return false;
+        for (int[] c : popupCells) {
+            if (mx >= c[1] && mx < c[1] + 20 && my >= c[2] && my < c[2] + 20) {
+                var gm = minecraft.gameMode;
+                int id = menu.containerId;
+                gm.handleInventoryMouseClick(id, c[0], 0, net.minecraft.world.inventory.ClickType.PICKUP, minecraft.player);
+                gm.handleInventoryMouseClick(id, popupSlot, 0, net.minecraft.world.inventory.ClickType.PICKUP, minecraft.player);
+                if (!menu.getCarried().isEmpty()) gm.handleInventoryMouseClick(id, c[0], 0, net.minecraft.world.inventory.ClickType.PICKUP, minecraft.player);
+                UiSound.click();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // o proprio jogador (skin, armadura, itens nas maos) numa pose de acao, com cotovelos e joelhos
+    private void character(float cx, float cy, float h, float yaw, ActionPose.Pose pose, GuiGraphics g) {
+        if (minecraft.player == null) return;
+        BendyPlayer.render(g, minecraft.player, X(cx), Y(cy), h * s / 2.0f, yaw, pose);
     }
 
     // ---------------------------------------------------------------- formas
