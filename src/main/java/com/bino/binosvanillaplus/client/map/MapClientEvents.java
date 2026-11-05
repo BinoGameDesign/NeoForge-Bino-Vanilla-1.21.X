@@ -52,6 +52,10 @@ public class MapClientEvents {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_depth"), DefaultVertexFormat.BLOCK),
                 s -> WorldMap3D.depthShader = s);
+        // luz estilo shader do personagem do inventario novo
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "bino_figure"), DefaultVertexFormat.NEW_ENTITY),
+                s -> com.bino.binosvanillaplus.client.inventory.BendyPlayer.shader = s);
         // neblina do ambiente em camadas (client/atmosphere)
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "atmos_fog"), DefaultVertexFormat.POSITION),

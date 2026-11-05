@@ -58,6 +58,64 @@ public final class BendyPlayer {
     }
 
     private static Rig wide, slim, armorOuter, armorInner;
+    public static net.minecraft.client.renderer.ShaderInstance shader;   // bino_figure (registrado em MapClientEvents)
+
+    // As "tampas" (face de cima/baixo) da parte de baixo do membro pegavam a textura do lugar errado (o ombro da armadura,
+    // opaco e escuro) -> aqueles quadrados pretos na mao. Aqui a tampa da ponta (mao/pe) volta a usar a textura certa
+    // e a tampa do cotovelo/joelho (escondida dentro da parte de cima) some.
+    private static void fixCaps(ModelPart part, float texH) {
+        try {
+            java.lang.reflect.Field fc = ModelPart.class.getDeclaredField("cubes");
+            fc.setAccessible(true);
+            for (Object cube : (java.util.List<?>) fc.get(part)) {
+                java.lang.reflect.Field fp = cube.getClass().getDeclaredField("polygons");
+                fp.setAccessible(true);
+                Object[] polys = (Object[]) fp.get(cube);
+                float min = Float.MAX_VALUE, max = -Float.MAX_VALUE;
+                for (Object poly : polys) for (Object v : verts(poly)) { float y = pos(v).y(); min = Math.min(min, y); max = Math.max(max, y); }
+                for (Object poly : polys) {
+                    Object[] vs = verts(poly);
+                    boolean bottom = true, top = true;
+                    for (Object v : vs) { float y = pos(v).y(); bottom &= Math.abs(y - max) < 1e-4; top &= Math.abs(y - min) < 1e-4; }
+                    if (bottom) for (int i = 0; i < vs.length; i++) vs[i] = vertex(pos(vs[i]), uv(vs[i], "u"), uv(vs[i], "v") - 4f / texH);
+                    else if (top) for (int i = 1; i < vs.length; i++) vs[i] = vs[0];
+                }
+            }
+        } catch (Exception e) {
+            com.bino.binosvanillaplus.BinosVanillaMod.LOGGER.warn("BendyPlayer: nao consegui ajustar as tampas do modelo", e);
+        }
+    }
+
+    private static Object[] verts(Object poly) throws Exception {
+        java.lang.reflect.Field f = poly.getClass().getDeclaredField("vertices");
+        f.setAccessible(true);
+        return (Object[]) f.get(poly);
+    }
+
+    private static org.joml.Vector3f pos(Object v) throws Exception {
+        java.lang.reflect.Field f = v.getClass().getDeclaredField("pos");
+        f.setAccessible(true);
+        return (org.joml.Vector3f) f.get(v);
+    }
+
+    private static float uv(Object v, String n) throws Exception {
+        java.lang.reflect.Field f = v.getClass().getDeclaredField(n);
+        f.setAccessible(true);
+        return f.getFloat(v);
+    }
+
+    private static Object vertex(org.joml.Vector3f p, float u, float v) throws Exception {
+        try {
+            return ModelPart.Vertex.class.getDeclaredConstructor(float.class, float.class, float.class, float.class, float.class)
+                    .newInstance(p.x(), p.y(), p.z(), u, v);
+        } catch (NoSuchMethodException e) {
+            return ModelPart.Vertex.class.getDeclaredConstructor(org.joml.Vector3f.class, float.class, float.class).newInstance(p, u, v);
+        }
+    }
+
+    private static void fixRig(Rig r, float texH) {
+        fixCaps(r.rArmLow, texH); fixCaps(r.lArmLow, texH); fixCaps(r.rLegLow, texH); fixCaps(r.lLegLow, texH);
+    }
 
     // membro de 12 de altura dividido em dois; a parte de baixo comeca 2 px DENTRO da de cima (sobreposicao),
     // assim a dobra do cotovelo/joelho nao abre fresta. Textura 4 linhas abaixo = lados continuam certos.
@@ -115,6 +173,7 @@ public final class BendyPlayer {
         slim = skinRig(true);
         armorOuter = armorRig(new CubeDeformation(1.0f));
         armorInner = armorRig(new CubeDeformation(0.5f));
+        fixRig(wide, 64); fixRig(slim, 64); fixRig(armorOuter, 32); fixRig(armorInner, 32);
     }
 
     // desenha o jogador centrado em (cx, cy), 'pxPerBlock' pixels de GUI por bloco, virado 'yaw' graus
@@ -150,7 +209,8 @@ public final class BendyPlayer {
 
         // 2) o boneco
         PoseStack ps = begin(g, cx, cy, pxPerBlock, yaw);
-        body(ps, buf, p, rig, skin, light, OverlayTexture.NO_OVERLAY, -1, false);
+        if (shader != null) shaded(ps, buf, p, rig, skin, light);
+        else body(ps, buf, p, rig, skin, light, OverlayTexture.NO_OVERLAY, -1, false);
         boolean rightHanded = p.getMainArm() == HumanoidArm.RIGHT;
         held(ps, buf, p, rightHanded ? p.getMainHandItem() : p.getOffhandItem(), rig.rArm, rig.rArmLow, false, light);
         held(ps, buf, p, rightHanded ? p.getOffhandItem() : p.getMainHandItem(), rig.lArm, rig.lArmLow, true, light);
@@ -175,6 +235,48 @@ public final class BendyPlayer {
     private static void lights() {
         Lighting.setupForEntityInInventory();
         RenderSystem.setShaderLights(new Vector3f(-0.5f, -0.75f, 0.6f).normalize(), new Vector3f(0.75f, -0.1f, 0.3f).normalize());
+    }
+
+    // desenha cada textura (skin, camadas da armadura) com o shader bino_figure; o brilho de encantamento vai no buffer normal
+    private static void shaded(PoseStack ps, MultiBufferSource buf, AbstractClientPlayer p, Rig rig, PlayerSkin skin, int light) {
+        RenderSystem.enableDepthTest();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        draw(skin.texture(), vc -> rig.root.render(ps, vc, light, OverlayTexture.NO_OVERLAY, -1));
+        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            ItemStack st = p.getItemBySlot(slot);
+            if (!(st.getItem() instanceof ArmorItem ai) || ai.getEquipmentSlot() != slot) continue;
+            boolean inner = slot == EquipmentSlot.LEGS;
+            ModelPart[] parts = parts(slot, inner ? armorInner : armorOuter);
+            for (ArmorMaterial.Layer layer : ai.getMaterial().value().layers()) {
+                int color = layer.dyeable() ? DyedItemColor.getOrDefault(st, -6265536) | 0xFF000000 : -1;
+                ResourceLocation tex = net.neoforged.neoforge.client.ClientHooks.getArmorTexture(p, st, layer, inner, slot);
+                draw(tex, vc -> { for (ModelPart part : parts) part.render(ps, vc, light, OverlayTexture.NO_OVERLAY, color); });
+            }
+            if (st.hasFoil()) for (ModelPart part : parts) part.render(ps, buf.getBuffer(RenderType.armorEntityGlint()), light, OverlayTexture.NO_OVERLAY);
+        }
+        RenderSystem.enableCull();
+    }
+
+    private static void draw(ResourceLocation tex, java.util.function.Consumer<com.mojang.blaze3d.vertex.VertexConsumer> geo) {
+        com.mojang.blaze3d.vertex.BufferBuilder bb = com.mojang.blaze3d.vertex.Tesselator.getInstance()
+                .begin(com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS, com.mojang.blaze3d.vertex.DefaultVertexFormat.NEW_ENTITY);
+        geo.accept(bb);
+        com.mojang.blaze3d.vertex.MeshData mesh = bb.build();
+        if (mesh == null) return;
+        RenderSystem.setShader(() -> shader);
+        RenderSystem.setShaderTexture(0, tex);
+        com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(mesh);
+    }
+
+    private static ModelPart[] parts(EquipmentSlot slot, Rig rig) {
+        return switch (slot) {
+            case HEAD -> new ModelPart[]{rig.head};
+            case CHEST -> new ModelPart[]{rig.body, rig.rArm, rig.lArm};
+            case LEGS -> new ModelPart[]{rig.body, rig.rLeg, rig.lLeg};
+            default -> new ModelPart[]{rig.rLeg, rig.lLeg};
+        };
     }
 
     private static void body(PoseStack ps, MultiBufferSource buf, AbstractClientPlayer p, Rig rig, PlayerSkin skin,

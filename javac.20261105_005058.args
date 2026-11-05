@@ -1,0 +1,6 @@
+-proc:none
+-d
+/tmp/jc
+src/main/java/com/bino/binosvanillaplus/client/inventory/BendyPlayer.java
+src/main/java/com/bino/binosvanillaplus/client/inventory/BinoInventoryScreen.java
+src/main/java/com/bino/binosvanillaplus/client/map/MapClientEvents.java

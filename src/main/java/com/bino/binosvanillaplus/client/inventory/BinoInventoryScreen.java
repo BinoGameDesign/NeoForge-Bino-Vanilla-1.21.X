@@ -25,7 +25,7 @@ import java.util.Map;
 // Os slots nao usam a posicao do jogo: cada um tem o seu retangulo do Figma (clique, hover e desenho).
 public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMenu> {
     private static final int TAB_INV = BinoInventoryMenu.TAB_INV, TAB_CRAFT = BinoInventoryMenu.TAB_CRAFT, TAB_ARMOR = BinoInventoryMenu.TAB_ARMOR, TAB_ATTR = 8;
-    private static final int PANEL = 0xA118281F;                // rgba(24,40,31,0.63)
+    private static final int PANEL = 0xA8222426;                // cinza escuro neutro (o verde do Figma ficava esverdeado demais a noite)
     private static final int SLOT = 0xD6212121;                 // rgba(33,33,33,0.84)
     private static final int BUTTON = 0xFFD9D9D9, BUTTON_EDGE = 0xFFE0FEFF, BUTTON_INK = 0xFF7B7B7B;
 
@@ -72,8 +72,9 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     private float[] panel() {
         int tab = BinoInventoryMenu.clientTab;
         if (tab == TAB_CRAFT) return new float[]{295, 337, 3231, 1414};
-        if (tab == TAB_ARMOR) return new float[]{1366, 343, 1369, 1414};
-        return new float[]{1138, 326, 2357, 1414};
+        // lado esquerdo esticado: o personagem fica por cima, cobrindo o canto
+        if (tab == TAB_ARMOR) return new float[]{960, 343, 1775, 1414};
+        return new float[]{700, 326, 2795, 1414};
     }
 
     private void layout() {
@@ -253,13 +254,12 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             boolean over = buttonAt(mx, my) == b;
             boolean disabled = b.action() == -TAB_ATTR;
             boolean selected = b.action() == -tab;
-            float h = tw.get((over && !disabled) || selected ? 1f : 0f);
+            float h = tw.get(over && !disabled && !selected ? 1f : 0f);
             float bx = X(b.x()), by = Y(b.y()), bs = b.size() * s;
-            float grow = h * 2f;
+            float grow = selected ? 0.8f : h * 2f;   // aba aberta: so um pouco maior e mais clara
             round(g, bx - grow - 0.5f, by - grow - 0.5f, bs + grow * 2 + 1, bs + grow * 2 + 1, b.radius() * s + 0.5f, BUTTON_EDGE);
-            round(g, bx - grow, by - grow, bs + grow * 2, bs + grow * 2, b.radius() * s, selected ? 0xFFFFFFFF : disabled ? 0xFFB5B5B5 : BUTTON);
-            if (selected) icon(g, "select", bx - grow - bs * 0.06f, by - grow - bs * 0.06f, bs + grow * 2 + bs * 0.12f, 1f);
-            if (b.icon() != null) icon(g, b.icon(), bx + bs * 0.2f, by + bs * 0.2f, bs * 0.6f, disabled ? 0.35f : selected ? 1f : 0.67f);
+            round(g, bx - grow, by - grow, bs + grow * 2, bs + grow * 2, b.radius() * s, selected ? 0xFFF4F6F6 : disabled ? 0xFFB5B5B5 : BUTTON);
+            if (b.icon() != null) icon(g, b.icon(), bx + bs * 0.2f, by + bs * 0.2f, bs * 0.6f, disabled ? 0.35f : selected ? 0.9f : 0.67f);
             else if ("=".equals(b.text())) {   // icone de lista (3 barras)
                 float lw = 57 * s, lh = Math.max(1, 11 * s);
                 for (int i = 0; i < 3; i++) fill(g, bx + bs * 0.24f, by + bs * 0.28f + i * 17 * s, lw * (1 - i * 0.2f), lh, BUTTON_INK);
@@ -447,7 +447,6 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
     private void compareTooltip(GuiGraphics g, net.minecraft.world.item.ItemStack cand, net.minecraft.world.item.ItemStack cur, int slot) {
         List<Component> a = new ArrayList<>(getTooltipFromContainerItem(cand));
-        List<Component> b = null;
         if (!cur.isEmpty()) {
             var es = equipmentOf(slot);
             var sa = stats(cand, es);
@@ -468,17 +467,15 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             }
             a.add(Component.empty());
             a.add(t("compare").withStyle(net.minecraft.ChatFormatting.GRAY));
+            a.add(Component.literal(" ").append(cur.getHoverName()).withStyle(net.minecraft.ChatFormatting.GOLD));
             if (diff.isEmpty()) a.add(t("compare_same").withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
-            else a.addAll(diff);
-            b = new ArrayList<>();
-            b.add(t("equipped").withStyle(net.minecraft.ChatFormatting.GOLD));
-            b.addAll(getTooltipFromContainerItem(cur));
+            else for (Component c : diff) a.add(Component.literal(" ").append(c));
         }
-        int wa = tipWidth(a), wb = b == null ? 0 : tipWidth(b) + 6;
-        float x = popupRect[0] + popupRect[2] + 6, y = popupRect[1];
-        if (x + wa + wb > width - 4) x = screenRect(slot)[0] - wa - wb - 8;   // sem espaco a direita: vai para a esquerda do slot
+        // uma caixa so: a direita da lista; sem espaco, a esquerda do slot; nunca por cima da lista
+        int wa = tipWidth(a);
+        float x = popupRect[0] + popupRect[2] + 8, y = popupRect[1];
+        if (x + wa > width - 4) x = Math.max(4, screenRect(slot)[0] - wa - 10);
         tipAt(g, a, x, y);
-        if (b != null) tipAt(g, b, x + wa + 6, y);
     }
 
     // clique num item da lista: troca com o que esta equipado (os mesmos cliques que o jogador faria)
