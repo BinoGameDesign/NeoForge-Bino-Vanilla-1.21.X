@@ -11,19 +11,26 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ModelEvent;
 
-// Liga o modelo 3D das ferramentas de rubi (models/item/<nome>_3d.json) ao item (que continua com o icone 2D)
+// Liga o modelo 3D das ferramentas (rubi, espadas de safira/jade/diamante e outros itens) (models/item/<nome>_3d.json) ao item (que continua com o icone 2D)
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public class ToolModelEvents {
 
-    private static final List<String> TOOLS = List.of("rubi_sword", "rubi_pickaxe", "rubi_shovel", "rubi_axe", "rubi_hoe", "cyalume_stick", "climbing_hook",
+    private static final List<String> TOOLS = List.of("rubi_sword", "sapphire_sword", "jade_sword", "minecraft:diamond_sword", "rubi_pickaxe", "rubi_shovel", "rubi_axe", "rubi_hoe", "cyalume_stick", "climbing_hook",
             "flashlight", "dynamite", "detonator", "explorer_whistle", "explorer_sonar", "camera");
 
     private static ResourceLocation id(String path) {
         return ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, path);
     }
 
+    // "minecraft:diamond_sword" = item do jogo base (o modelo 3D continua no nosso mod: item/diamond_sword_3d)
+    private static String name(String tool) { return tool.contains(":") ? tool.substring(tool.indexOf(':') + 1) : tool; }
+
+    private static ResourceLocation itemId(String tool) {
+        return tool.startsWith("minecraft:") ? ResourceLocation.withDefaultNamespace(name(tool)) : id(tool);
+    }
+
     private static ModelResourceLocation solidKey(String tool) {
-        return ModelResourceLocation.standalone(id("item/" + tool + "_3d"));
+        return ModelResourceLocation.standalone(id("item/" + name(tool) + "_3d"));
     }
 
     @SubscribeEvent
@@ -35,7 +42,7 @@ public class ToolModelEvents {
     public static void onModifyBaking(ModelEvent.ModifyBakingResult event) {
         Map<ModelResourceLocation, BakedModel> models = event.getModels();
         for (String tool : TOOLS) {
-            ModelResourceLocation itemKey = ModelResourceLocation.inventory(id(tool));
+            ModelResourceLocation itemKey = ModelResourceLocation.inventory(itemId(tool));
             BakedModel flat = models.get(itemKey);
             BakedModel solid = models.get(solidKey(tool));
             if (flat == null || solid == null) continue;   // algo faltando: o item continua 2D
