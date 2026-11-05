@@ -186,6 +186,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
         g.fill(0, 0, width, height, 0x30000000);   // o jogo continua aparecendo atras (como no Figma)
+        renderBg(g, pt, mx, my);                    // no 1.21 o fundo da janela e' desenhado aqui (painel, slots, botoes, personagem)
     }
 
     @Override
