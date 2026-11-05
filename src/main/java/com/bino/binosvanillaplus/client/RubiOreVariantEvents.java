@@ -25,13 +25,32 @@ public class RubiOreVariantEvents {
 
     private static final List<String> VANILLA_ORES = List.of("diamond_ore", "deepslate_diamond_ore");
 
+    // Quantas variantes ja tem as fases de mineracao (b, c, d). Aumentar quando chegarem os modelos das outras.
+    public static final int STAGED_VARIANTS = 3;
+    private static final String[] STAGE_NAMES = {"", "b", "c", "d"};
+
     private static ModelResourceLocation extra(String ore, int i) {
         return ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "block/" + ore + "_v" + i));
+    }
+
+    private static ModelResourceLocation stage(String ore, int i, int st) {
+        return ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "block/" + ore + "_v" + i + "_" + STAGE_NAMES[st]));
+    }
+
+    private static String modelName(Block block) {
+        return BuiltInRegistries.BLOCK.getKey(block).getPath();
     }
 
     @SubscribeEvent
     public static void onRegisterAdditional(ModelEvent.RegisterAdditional event) {
         for (String ore : VANILLA_ORES) for (int i = 1; i <= 8; i++) event.register(extra(ore, i));
+        for (String ore : MiningStages.ORE_NAMES) for (int i = 1; i <= STAGED_VARIANTS; i++) for (int st = 1; st <= 3; st++) event.register(stage(ore, i, st));
+    }
+
+    private static BakedModel[][] stages(Map<ModelResourceLocation, BakedModel> models, String ore) {
+        BakedModel[][] out = new BakedModel[8][4];
+        for (int i = 0; i < STAGED_VARIANTS; i++) for (int st = 1; st <= 3; st++) out[i][st] = models.get(stage(ore, i + 1, st));
+        return out;
     }
 
     @SubscribeEvent
@@ -54,7 +73,7 @@ public class RubiOreVariantEvents {
             variants[i] = models.get(BlockModelShaper.stateToModelLocation(s));
             if (variants[i] == null) return; // modelo faltando: deixa tudo como esta (variante 0)
         }
-        models.put(BlockModelShaper.stateToModelLocation(block.defaultBlockState()), new RubiOreVariantModel(variants));
+        models.put(BlockModelShaper.stateToModelLocation(block.defaultBlockState()), new RubiOreVariantModel(variants, stages(models, modelName(block))));
     }
 
     private static void wrapVanilla(Map<ModelResourceLocation, BakedModel> models, String ore) {
@@ -64,7 +83,8 @@ public class RubiOreVariantEvents {
             if (variants[i] == null) return;
         }
         Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.withDefaultNamespace(ore));
+        RubiOreVariantModel model = new RubiOreVariantModel(variants, stages(models, ore));
         for (BlockState s : block.getStateDefinition().getPossibleStates())
-            models.put(BlockModelShaper.stateToModelLocation(s), new RubiOreVariantModel(variants));
+            models.put(BlockModelShaper.stateToModelLocation(s), model);
     }
 }

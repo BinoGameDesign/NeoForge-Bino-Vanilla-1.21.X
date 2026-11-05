@@ -24,26 +24,33 @@ import org.jetbrains.annotations.Nullable;
 // Tambem deixa os CRISTAIS (textura rubi_ore_crystal) brilhando no maximo, mesmo no escuro; a pedra da base nao brilha.
 public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
     public static final ModelProperty<Integer> VARIANT = new ModelProperty<>();
+    public static final ModelProperty<Integer> STAGE = new ModelProperty<>();   // 0..3: fases do bloco sendo minerado (MiningStages)
 
     // Brilho dos cristais, de 0 (nenhum) a 15 (maximo). Mude aqui para deixar mais fraco.
     private static final int CRYSTAL_GLOW = 15;
 
     private final BakedModel[] variants;
-    // [variante][lado: 0..5 = Direction.ordinal(), 6 = sem lado] ja com o brilho aplicado
-    private final List<BakedQuad>[][] glowing;
+    // [variante][fase][lado: 0..5 = Direction.ordinal(), 6 = sem lado] ja com o brilho aplicado
+    private final List<BakedQuad>[][][] glowing;
 
+    public RubiOreVariantModel(BakedModel[] variants) { this(variants, null); }
+
+    // stages[v][1..3] = modelos das fases b, c e d da variante v (null = ainda nao feita: usa o modelo inteiro)
     @SuppressWarnings("unchecked")
-    public RubiOreVariantModel(BakedModel[] variants) {
+    public RubiOreVariantModel(BakedModel[] variants, @Nullable BakedModel[][] stages) {
         super(variants[0]);
         this.variants = variants;
-        this.glowing = new List[variants.length][7];
+        this.glowing = new List[variants.length][4][7];
         for (int v = 0; v < variants.length; v++) {
-            for (int s = 0; s < 7; s++) {
-                Direction side = s == 6 ? null : Direction.values()[s];
-                List<BakedQuad> quads = variants[v].getQuads(null, side, RandomSource.create(42L), ModelData.EMPTY, null);
-                glowing[v][s] = quads.stream().map(q ->
-                        isCrystal(q.getSprite().contents().name()) ? QuadTransformers.settingEmissivity(CRYSTAL_GLOW).process(q) : q
-                ).toList();
+            for (int st = 0; st < 4; st++) {
+                BakedModel m = st == 0 || stages == null || stages[v] == null || stages[v][st] == null ? variants[v] : stages[v][st];
+                for (int s = 0; s < 7; s++) {
+                    Direction side = s == 6 ? null : Direction.values()[s];
+                    List<BakedQuad> quads = m.getQuads(null, side, RandomSource.create(42L), ModelData.EMPTY, null);
+                    glowing[v][st][s] = quads.stream().map(q ->
+                            isCrystal(q.getSprite().contents().name()) ? QuadTransformers.settingEmissivity(CRYSTAL_GLOW).process(q) : q
+                    ).toList();
+                }
             }
         }
     }
@@ -73,12 +80,13 @@ public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
 
     @Override
     public ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData modelData) {
-        return modelData.derive().with(VARIANT, variantFor(pos)).build();
+        return modelData.derive().with(VARIANT, variantFor(pos)).with(STAGE, MiningStages.stageAt(pos)).build();
     }
 
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand, ModelData data, @Nullable RenderType renderType) {
-        return glowing[index(data)][side == null ? 6 : side.ordinal()];
+        Integer st = data.get(STAGE);
+        return glowing[index(data)][st == null ? 0 : st][side == null ? 6 : side.ordinal()];
     }
 
     // O bloco emite luz, e por padrao isso desliga a iluminacao suave (AO). Forcamos ligada para a pedra nao ficar "chapada".
