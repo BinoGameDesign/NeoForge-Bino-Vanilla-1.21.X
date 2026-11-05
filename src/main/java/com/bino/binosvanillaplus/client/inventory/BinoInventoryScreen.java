@@ -408,13 +408,18 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
     private int tipWidth(List<Component> l) {
         int w = 0;
-        for (Component c : l) w = Math.max(w, font.width(c));
+        for (Component c : l) w = Math.max(w, Math.min(220, font.width(c)));
         return w + 8;
     }
 
     private void tipAt(GuiGraphics g, List<Component> lines, float x, float y) {
         int tx = (int) x, ty = (int) y;
-        g.renderTooltip(font, lines.stream().map(Component::getVisualOrderText).toList(),
+        List<net.minecraft.util.FormattedCharSequence> seq = new ArrayList<>();
+        for (Component c : lines) {   // linhas longas quebram (a dica da lanterna era uma linha so enorme)
+            if (font.width(c) <= 220) seq.add(c.getVisualOrderText());
+            else seq.addAll(font.split(c, 220));
+        }
+        g.renderTooltip(font, seq,
                 (sw, sh, mx, my, tw, th) -> new org.joml.Vector2i(Math.max(4, Math.min(sw - tw - 4, tx + 4)), Math.max(4, Math.min(sh - th - 4, ty + 4))),
                 tx, ty);
     }

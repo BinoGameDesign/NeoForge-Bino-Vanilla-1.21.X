@@ -21,9 +21,9 @@ void main() {
     float front = abs(n.z);
     float key = max(0.0, dot(n.xy, keyDir));
     float shade = max(0.0, dot(n.xy, -keyDir));
-    float light = 0.26 + front * 0.78 + key * 0.62 - shade * 0.06;
+    float light = 0.52 + front * 0.50 + key * 0.38;               // faces de baixo/sombra nunca ficam pretas (minimo 0.52)
     vec3 col = tex.rgb * light * vec3(1.06, 1.0, 0.92);           // luz quente
     col += vec3(1.0, 0.95, 0.85) * pow(key, 3.0) * 0.10;           // brilho no topo/esquerda
-    col += vec3(0.45, 0.65, 1.0) * shade * (1.0 - front) * 0.32;   // recorte frio no lado da sombra
+    col += vec3(0.45, 0.65, 1.0) * shade * (1.0 - front) * 0.20;   // recorte frio no lado da sombra
     fragColor = vec4(clamp(col, 0.0, 1.0), tex.a) * ColorModulator;
 }
