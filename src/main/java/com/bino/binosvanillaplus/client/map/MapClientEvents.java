@@ -52,6 +52,13 @@ public class MapClientEvents {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "map_depth"), DefaultVertexFormat.BLOCK),
                 s -> WorldMap3D.depthShader = s);
+        // vidro dos menus (desfoque do fundo + painel de vidro)
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "ui_blur"), DefaultVertexFormat.POSITION),
+                s -> com.bino.binosvanillaplus.client.ui.Glass.blur = s);
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "ui_glass"), DefaultVertexFormat.POSITION),
+                s -> com.bino.binosvanillaplus.client.ui.Glass.glass = s);
         // luz estilo shader do personagem do inventario novo
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "bino_figure"), DefaultVertexFormat.NEW_ENTITY),

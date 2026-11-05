@@ -3,6 +3,8 @@ package com.bino.binosvanillaplus.client.inventory;
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.client.recipes.RecipeLookupScreen;
 import com.bino.binosvanillaplus.client.ui.Tween;
+import com.bino.binosvanillaplus.client.ui.Ease;
+import com.bino.binosvanillaplus.client.ui.Glass;
 import com.bino.binosvanillaplus.client.ui.UiSound;
 import com.bino.binosvanillaplus.inventory.BinoInventoryMenu;
 import com.bino.binosvanillaplus.network.InventoryActionPayload;
@@ -33,7 +35,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     private final Map<Integer, float[]> rects = new HashMap<>();
     private record Btn(float x, float y, float size, float radius, String icon, String text, int action, Component tip) {}
     private final List<Btn> buttons = new ArrayList<>();
-    private final Map<Btn, Tween> hover = new HashMap<>();
+    private final Map<Integer, Tween> hover = new HashMap<>();
 
     public BinoInventoryScreen(BinoInventoryMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -64,6 +66,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         oy = (height - 2160 * s) / 2f;
         super.init();
         layout();
+        syncAnim(true);
     }
 
     private float X(float d) { return ox + d * s; }
@@ -175,6 +178,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         if (button == 0 && clickEquipSlot(mx, my)) return true;
         Btn b = button == 0 ? buttonAt(mx, my) : null;
         if (b != null && menu.getCarried().isEmpty()) {
+            if (b.action() != -TAB_ATTR) pressAt.put(b.action(), Ease.now());
             if (b.action() == -100) {
                 UiSound.click();
                 minecraft.setScreen(new RecipeLookupScreen(this, RecipeLookupScreen.Mode.BROWSE, null));
@@ -185,6 +189,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
                     UiSound.click();
                     BinoInventoryMenu.clientTab = t;
                     layout();
+                    syncAnim(false);
                 }
             } else {
                 UiSound.click();
@@ -199,7 +204,8 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        g.fill(0, 0, width, height, 0x90000000);   // fundo escurecido (como no mapa-mundi)
+        Glass.capture();                             // copia e desfoca o mundo atras do menu (o vidro usa)
+        g.fill(0, 0, width, height, Glass.available() ? 0x48000000 : 0x90000000);   // mundo levemente escurecido
         renderBg(g, pt, mx, my);                    // no 1.21 o fundo da janela e' desenhado aqui (painel, slots, botoes, personagem)
     }
 
@@ -210,7 +216,11 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     protected void renderBg(GuiGraphics g, float pt, int mx, int my) {
         int tab = BinoInventoryMenu.clientTab;
         float[] p = panel();
-        fill(g, X(p[0]), Y(p[1]), p[2] * s, p[3] * s, PANEL);
+        // o painel "escorre" para o tamanho da aba nova (em vez de pular)
+        float pxx = pX.get(X(p[0])), pyy = pY.get(Y(p[1])), pww = pW.get(p[2] * s), phh = pH.get(p[3] * s);
+        float pr = 70 * s;
+        Glass.shadow(g, pxx, pyy, pww, phh, pr, 5f, 9f, 0.45f);
+        Glass.panel(g, pxx, pyy, pww, phh, pr, Glass.PANEL, PANEL);
 
         // personagem (atras do painel na aba Inventario, como no Figma)
         // o personagem fica por cima do canto esquerdo do painel, como se fizesse parte do menu
@@ -233,14 +243,17 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             if (!slot.isActive()) continue;
             float[] r = screenRect(slot.index);
             if (r == null) continue;
-            round(g, r[0], r[1], r[2], r[2], 9 * s * r[2] / (196 * s), SLOT);
+            float hv = slotHover.computeIfAbsent(slot.index, k -> new Tween(0f, 45f)).get(slot == hoveredSlot ? 1f : 0f);
+            float grow = hv * Math.max(0.6f, r[2] * 0.03f);   // o slot "incha" um pouco no hover
+            Glass.panel(g, r[0] - grow, r[1] - grow, r[2] + grow * 2, r[2] + grow * 2, r[2] * 0.17f,
+                    Glass.SLOT.withMilk(0.07f * hv).withRim(0.55f + 0.6f * hv), SLOT);
+            if (!Glass.available() && slot == hoveredSlot) round(g, r[0], r[1], r[2], r[2], 9 * s * r[2] / (196 * s), 0x30FFFFFF);
             String sil = silhouette(slot.index);
             if (sil != null && !slot.hasItem()) icon(g, sil, r[0] + r[2] * 0.2f, r[1] + r[2] * 0.2f, r[2] * 0.6f, 0.22f);
-            if (slot == hoveredSlot) round(g, r[0], r[1], r[2], r[2], 9 * s * r[2] / (196 * s), 0x30FFFFFF);
         }
         // linha da hotbar e item selecionado
         if (tab != TAB_ARMOR) {
-            g.fill((int) X(1386), (int) Y(1366), (int) X(1386 + 1951), (int) Y(1366) + 1, 0x80FFFFFF);
+            g.fill((int) X(1386), (int) Y(1366), (int) X(1386 + 1951), (int) Y(1366) + 1, 0x55FFFFFF);
             float[] r = screenRect(BinoInventoryMenu.HOTBAR + minecraft.player.getInventory().selected);
             if (r != null) icon(g, "select", r[0] - r[2] * 0.035f, r[1] - r[2] * 0.035f, r[2] * 1.07f, 1f);
         }
@@ -248,30 +261,76 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             float[] r = screenRect(BinoInventoryMenu.RESULT);
             icon(g, "select", r[0] - r[2] * 0.03f, r[1] - r[2] * 0.03f, r[2] * 1.06f, 1f);
         }
-        // botoes
-        for (Btn b : buttons) {
-            Tween tw = hover.computeIfAbsent(b, k -> new Tween(0f, 60f));
-            boolean over = buttonAt(mx, my) == b;
-            boolean disabled = b.action() == -TAB_ATTR;
-            boolean selected = b.action() == -tab;
-            float h = tw.get(over && !disabled && !selected ? 1f : 0f);
-            float bx = X(b.x()), by = Y(b.y()), bs = b.size() * s;
-            float grow = selected ? 0.8f : h * 2f;   // aba aberta: so um pouco maior e mais clara
-            round(g, bx - grow - 0.5f, by - grow - 0.5f, bs + grow * 2 + 1, bs + grow * 2 + 1, b.radius() * s + 0.5f, BUTTON_EDGE);
-            round(g, bx - grow, by - grow, bs + grow * 2, bs + grow * 2, b.radius() * s, selected ? 0xFFF4F6F6 : disabled ? 0xFFB5B5B5 : BUTTON);
-            if (b.icon() != null) icon(g, b.icon(), bx + bs * 0.2f, by + bs * 0.2f, bs * 0.6f, disabled ? 0.35f : selected ? 0.9f : 0.67f);
-            else if ("=".equals(b.text())) {   // icone de lista (3 barras)
-                float lw = 57 * s, lh = Math.max(1, 11 * s);
-                for (int i = 0; i < 3; i++) fill(g, bx + bs * 0.24f, by + bs * 0.28f + i * 17 * s, lw * (1 - i * 0.2f), lh, BUTTON_INK);
-            } else {
-                float k = 64 * s / 7f;
-                g.pose().pushPose();
-                g.pose().translate(bx + bs / 2f - font.width(b.text()) * k / 2f, by + bs / 2f - 3.5f * k, 0);
-                g.pose().scale(k, k, 1f);
-                g.drawString(font, b.text(), 0, 0, BUTTON_INK, false);
-                g.pose().popPose();
+        // botoes: vidro claro (como os botoes claros do Figma). A aba aberta tem uma gota de vidro mais clara que
+        // desliza ate a aba nova quando troca. Hover: cresce e brilha. Clique: aperta e volta (mola).
+        Btn selBtn = null;
+        for (Btn b : buttons) if (b.action() == -tab) selBtn = b;
+        float tabDx = tabX.get(0f);
+        if (selBtn != null) selY.get(Y(selBtn.y()));
+        for (int pass = 0; pass < 2; pass++) {
+            for (Btn b : buttons) {
+                boolean isTab = b.action() < 0 && b.action() != -100;
+                Tween tw = hover.computeIfAbsent(b.action(), k -> new Tween(0f, 55f));
+                boolean over = buttonAt(mx, my) == b;
+                boolean disabled = b.action() == -TAB_ATTR;
+                boolean selected = b.action() == -tab;
+                float h = pass == 0 ? tw.get(over && !disabled ? 1f : 0f) : tw.get();
+                float press = pressAt.containsKey(b.action()) ? Ease.since(pressAt.get(b.action()), 180) : 1f;
+                float squish = 1f - 0.10f * (float) Math.sin(Math.PI * press);
+                float bs0 = b.size() * s, grow = h * 1.6f;
+                float bs = (bs0 + grow * 2) * squish;
+                float bx = X(b.x()) + (isTab ? tabDx : 0) + bs0 / 2f - bs / 2f, by = Y(b.y()) + bs0 / 2f - bs / 2f;
+                float br = b.radius() * s * bs / bs0;
+                if (pass == 0) {
+                    Glass.shadow(g, bx, by, bs, bs, br, 2f, 3.5f, 0.30f);
+                    Glass.Style st = disabled ? Glass.BUTTON.withTint(0.55f).withMilk(-0.06f) : Glass.BUTTON.withMilk(0.02f + 0.06f * h).withRim(0.9f + 0.6f * h);
+                    if (Glass.available()) Glass.panel(g, bx, by, bs, bs, br, st, BUTTON);
+                    else {
+                        round(g, bx - 0.5f, by - 0.5f, bs + 1, bs + 1, br + 0.5f, BUTTON_EDGE);
+                        round(g, bx, by, bs, bs, br, selected ? 0xFFF4F6F6 : disabled ? 0xFFB5B5B5 : BUTTON);
+                    }
+                    continue;
+                }
+                // segunda passada: a gota da aba aberta (deslizando) por baixo do icone dela
+                if (selected && selBtn != null && Glass.available()) {
+                    float gy = selY.get(), gs = bs0 + 3f;
+                    Glass.panel(g, bx - (gs - bs) / 2f, gy + bs0 / 2f - gs / 2f, gs, gs, b.radius() * s * gs / bs0,
+                            Glass.BUTTON.withTint(0.80f).withMilk(0.10f).withRim(1.7f), 0xFFF4F6F6);
+                }
+                if (b.icon() != null) icon(g, b.icon(), bx + bs * 0.2f, by + bs * 0.2f, bs * 0.6f, disabled ? 0.35f : selected ? 0.9f : 0.67f);
+                else if ("=".equals(b.text())) {   // icone de lista (3 barras)
+                    float lw = 57 * s, lh = Math.max(1, 11 * s);
+                    for (int i = 0; i < 3; i++) fill(g, bx + bs * 0.24f, by + bs * 0.28f + i * 17 * s, lw * (1 - i * 0.2f), lh, BUTTON_INK);
+                } else {
+                    float k = 64 * s / 7f;
+                    g.pose().pushPose();
+                    g.pose().translate(bx + bs / 2f - font.width(b.text()) * k / 2f, by + bs / 2f - 3.5f * k, 0);
+                    g.pose().scale(k, k, 1f);
+                    g.drawString(font, b.text(), 0, 0, BUTTON_INK, false);
+                    g.pose().popPose();
+                }
             }
         }
+    }
+
+    // animacoes do menu
+    private final Tween pX = new Tween(0, 55f), pY = new Tween(0, 55f), pW = new Tween(0, 55f), pH = new Tween(0, 55f);
+    private final Tween tabX = new Tween(0, 60f), selY = new Tween(0, 50f);
+    private final Map<Integer, Tween> slotHover = new HashMap<>();
+    private final Map<Integer, Long> pressAt = new HashMap<>();
+    private boolean animInit;
+    private float lastTabColumn = Float.NaN;
+
+    // posicao inicial das animacoes (sem animar ao abrir) e coluna de abas: ao trocar de aba, as abas deslizam da coluna antiga
+    private void syncAnim(boolean snap) {
+        float[] p = panel();
+        if (snap) { pX.snap(X(p[0])); pY.snap(Y(p[1])); pW.snap(p[2] * s); pH.snap(p[3] * s); }
+        float col = Float.NaN;
+        for (Btn b : buttons) if (b.action() < 0 && b.action() != -100) { col = X(b.x()); break; }
+        if (!snap && !Float.isNaN(lastTabColumn) && !Float.isNaN(col)) tabX.snap(lastTabColumn - col).to(0f);
+        else tabX.snap(0f);
+        for (Btn b : buttons) if (b.action() == -BinoInventoryMenu.clientTab && snap) selY.snap(Y(b.y()));
+        lastTabColumn = col;
     }
 
     private static String silhouette(int i) {
@@ -356,9 +415,9 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         if (pinned >= 0) popupSlot = pinned;                                   // clicou no slot: a lista fica aberta
         else if (hoveredSlot != null && equipSlot(hoveredSlot.index)) popupSlot = hoveredSlot.index;
         else if (!inPopup) popupSlot = -1;
-        if (popupSlot < 0) { popupRect = null; return -1; }
+        if (popupSlot < 0) { popupRect = null; popupShown = -1; return -1; }
         List<Integer> list = candidates(popupSlot);
-        if (list.isEmpty()) { popupRect = null; return -1; }
+        if (list.isEmpty()) { popupRect = null; popupShown = -1; return -1; }
         float[] r = screenRect(popupSlot);
         int cell = 20, pad = 4, cols = Math.min(6, list.size()), rows = (list.size() + cols - 1) / cols;
         int w = pad * 2 + cols * cell, h = pad * 2 + rows * cell;
@@ -366,15 +425,25 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         if (px + w > width - 4) px = r[0] - w - 4;
         if (py + h > height - 4) py = height - 4 - h;
         popupRect = new float[]{px - 4, py, w + 8, h};   // folga para o mouse passar do slot para a lista
+        if (popupSlot != popupShown) { popupShown = popupSlot; popupAt = Ease.now(); }
+        float k = outBack(Ease.since(popupAt, 190));        // a lista "brota" do lado do slot, com um leve repique
+        float ax = px < r[0] ? px + w : px, ay = py;      // ponto de onde ela cresce (encostado no slot)
         g.pose().pushPose();
         g.pose().translate(0, 0, 400);
         if (pinned >= 0) round(g, r[0] - 1, r[1] - 1, r[2] + 2, r[2] + 2, 3, 0x60FFFFFF);   // slot com a lista aberta
-        round(g, px, py, w, h, 3, 0xF01E211F);
+        float gx = ax + (px - ax) * k, gw = w * k, gh = h * k;
+        Glass.shadow(g, gx, ay, gw, gh, 5, 2f, 4f, 0.4f * Math.min(1f, k));
+        Glass.panel(g, gx, ay, gw, gh, 5, Glass.POPUP, 0xF01E211F);
+        g.pose().translate(ax, ay, 0);
+        g.pose().scale(k, k, 1f);
+        g.pose().translate(-ax, -ay, 0);
         int over = -1;
         for (int k = 0; k < list.size(); k++) {
             int cx = (int) px + pad + (k % cols) * cell, cy = (int) py + pad + (k / cols) * cell;
             boolean hov = mx >= cx && mx < cx + cell && my >= cy && my < cy + cell;
-            round(g, cx + 1, cy + 1, cell - 2, cell - 2, 2, hov ? 0xFF5B5E5C : 0xFF2A2D2B);
+            if (Glass.available()) Glass.panel(g, ax + (cx + 1 - ax) * k, ay + (cy + 1 - ay) * k, (cell - 2) * k, (cell - 2) * k, 3 * k,
+                    Glass.SLOT.withMilk(hov ? 0.10f : 0f).withRim(hov ? 1.2f : 0.55f), 0xFF2A2D2B);
+            else round(g, cx + 1, cy + 1, cell - 2, cell - 2, 2, hov ? 0xFF5B5E5C : 0xFF2A2D2B);
             net.minecraft.world.item.ItemStack st = menu.slots.get(list.get(k)).getItem();
             g.renderItem(st, cx + 2, cy + 2);
             g.renderItemDecorations(font, st, cx + 2, cy + 2);
@@ -386,6 +455,13 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     }
 
     private int pinned = -1;
+    private int popupShown = -1;
+    private long popupAt;
+
+    private static float outBack(float t) {
+        float c1 = 1.70158f, c3 = c1 + 1f, u = t - 1f;
+        return 1f + c3 * u * u * u + c1 * u * u;
+    }
 
     private boolean inPopup(double mx, double my) {
         return popupRect != null && mx >= popupRect[0] && mx < popupRect[0] + popupRect[2] && my >= popupRect[1] && my < popupRect[1] + popupRect[3];
