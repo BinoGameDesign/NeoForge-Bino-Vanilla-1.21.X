@@ -22,8 +22,17 @@ public final class LevelClient {
         if (e != null) e.setData(ModAttachments.MOB_LEVEL.get(), p.level());
     }
 
-    // cor da faixa de nivel: verde (baixo) -> amarelo -> laranja -> vermelho -> roxo (muito alto)
+    // cor da faixa de nivel (as mesmas das gemas do painel): verde, ciano, azul, laranja, vermelho, roxo (100)
     public static int bandColor(double level) {
+        if (level >= 100) return 0xFFA63FE0;
+        if (level > 80) return 0xFFE0284F;
+        if (level > 60) return 0xFFF0A020;
+        if (level > 40) return 0xFF2F7CE0;
+        if (level > 20) return 0xFF2ED6C0;
+        return 0xFF2BD97A;
+    }
+
+    public static int smoothColor(double level) {
         int[] c = {0x6FD36F, 0xB8E05A, 0xF2D649, 0xF2A23C, 0xE8613A, 0xC93838, 0x9B3BC4};
         double t = Math.max(0, Math.min(0.9999, (level - 1) / 100.0)) * (c.length - 1);
         int i = (int) t;
@@ -40,7 +49,7 @@ public final class LevelClient {
         public void appendEntity(LookAtInfo info, Level level, Entity entity, LocalPlayer player) {
             int lv = MobLevels.get(entity);
             if (lv <= 0) return;
-            info.line(Component.literal("Nv. " + lv).withStyle(s -> s.withColor(bandColor(lv) & 0xFFFFFF)).withStyle(ChatFormatting.BOLD));
+            info.level = lv;   // gema ao lado do nome (LookAtHud.levelGem)
         }
     }
 }

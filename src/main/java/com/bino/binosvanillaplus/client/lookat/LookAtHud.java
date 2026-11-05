@@ -64,12 +64,28 @@ public class LookAtHud {
         return Component.literal(name).withStyle(net.minecraft.ChatFormatting.BLUE, net.minecraft.ChatFormatting.ITALIC);
     }
 
+    // gema colorida por faixa (1-20 verde, 21-40 ciano, 41-60 azul, 61-80 laranja, 81-99 vermelha, 100 roxa) com o nivel dentro
+    public static void levelGem(GuiGraphics g, Font font, int level, int x, int y, int size) {
+        String c = level >= 100 ? "purple" : level > 80 ? "red" : level > 60 ? "orange" : level > 40 ? "blue" : level > 20 ? "cyan" : "green";
+        g.blit(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("binosvanillaplus", "textures/gui/level/gem_" + c + ".png"),
+                x, y, size, size, 0, 0, 9, 9, 9, 9);
+        String t = String.valueOf(level);
+        float k = t.length() >= 3 ? 0.55f : 0.7f;
+        g.pose().pushPose();
+        g.pose().translate(x + size / 2f - font.width(t) * k / 2f, y + size / 2f - 3.5f * k, 0);
+        g.pose().scale(k, k, 1f);
+        g.drawString(font, t, 0, 0, 0xFFFFFFFF, true);
+        g.pose().popPose();
+    }
+
     private static void draw(GuiGraphics g, Font font, LookAtInfo info) {
         final int pad = 5, iconSize = 18, lineH = font.lineHeight + 2;
         boolean hasIcon = !info.icon.isEmpty();
         boolean hasBar = info.health >= 0;
 
-        int textW = Math.max(font.width(info.title), font.width(info.modName));
+        final int gem = 14;   // gema do nivel (textura 9x9 ampliada)
+        int titleW = font.width(info.title) + (info.level > 0 ? gem + 3 : 0);
+        int textW = Math.max(titleW, font.width(info.modName));
         for (Component c : info.lines) textW = Math.max(textW, font.width(c));
         int w = pad * 2 + textW + (hasIcon ? iconSize + 4 : 0);
         int h = pad * 2 + lineH * (2 + info.lines.size()) - 2 + (hasBar ? 6 : 0);
@@ -85,6 +101,7 @@ public class LookAtHud {
         int tx = x + pad + (hasIcon ? iconSize + 4 : 0), ty = y + pad;
         if (hasIcon) g.renderItem(info.icon, x + pad, y + pad);
         g.drawString(font, info.title, tx, ty, 0xFFFFFFFF);
+        if (info.level > 0) levelGem(g, font, info.level, tx + font.width(info.title) + 3, ty + font.lineHeight / 2 - gem / 2, gem);
         ty += lineH;
         g.drawString(font, info.modName, tx, ty, 0xFFFFFFFF);
         ty += lineH;
