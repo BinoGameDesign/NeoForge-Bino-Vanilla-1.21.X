@@ -33,7 +33,7 @@ public class GemCubeParticle extends Particle {
         gravity = 1.0f;
         friction = 0.96f;
         hasPhysics = true;
-        size = 0.05f + random.nextFloat() * 0.035f;   // meio lado do cubo, em blocos
+        size = 0.03f + random.nextFloat() * 0.02f;   // meio lado do cubo, em blocos (cubo de 1 a 1,6 pixel)
         setSize(size * 2, size * 2);
         lifetime = 35 + random.nextInt(25);
         axis = new Vector3f(random.nextFloat() - 0.5f, random.nextFloat() - 0.5f, random.nextFloat() - 0.5f).normalize();
