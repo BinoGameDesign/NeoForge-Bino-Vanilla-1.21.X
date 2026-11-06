@@ -33,6 +33,28 @@ import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.BannerBlock;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.WallBannerBlock;
+import net.minecraft.world.level.block.entity.BannerBlockEntity;
+import net.minecraft.world.level.block.entity.BannerPattern;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
+import net.minecraft.world.level.block.entity.BannerPatterns;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
+import java.util.ArrayList;
+import java.util.List;
 
 // Aliancas e hostilidades das faccoes:
 //  - ninguem ataca um aliado (mob do mesmo lado ou jogador da mesma faccao)
@@ -49,6 +71,11 @@ public final class FactionAI {
 
     private record Pending(ServerLevel level, IronGolem golem) {}
     private static final Deque<Pending> CAGED = new ArrayDeque<>();
+    private static final Deque<Pending> BUILT = new ArrayDeque<>();
+    private record Pumpkin(ServerLevel level, BlockPos pos, Faction faction, long time) {}
+    private static final List<Pumpkin> PUMPKINS = new ArrayList<>();
+    private record Outpost(ServerLevel level, long key, BoundingBox box) {}
+    private static final Deque<Outpost> OUTPOSTS = new ArrayDeque<>();
 
     @SubscribeEvent
     public static void onJoin(EntityJoinLevelEvent e) {
@@ -60,6 +87,7 @@ public final class FactionAI {
                     t -> t instanceof Player p && FactionData.get(p) == Faction.PILLAGER));
             g.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(g, PillagerGolem.class, true));
             if (!g.isPlayerCreated()) CAGED.add(new Pending((ServerLevel) e.getLevel(), g));
+            else BUILT.add(new Pending((ServerLevel) e.getLevel(), g));   // golem feito por jogador: ve quem colocou a abobora
         }
         if ((ent instanceof AbstractIllager || ent instanceof Ravager) && !(ent instanceof VillagerGuard)) {
             Mob m = (Mob) ent;
@@ -67,8 +95,54 @@ public final class FactionAI {
         }
     }
 
+    // quem colocou a abobora (para saber se o golem construido e' do jogador Pillager)
+    @SubscribeEvent
+    public static void onPlace(BlockEvent.EntityPlaceEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        BlockState st = e.getPlacedBlock();
+        if (st.is(Blocks.CARVED_PUMPKIN) || st.is(Blocks.JACK_O_LANTERN))
+            PUMPKINS.add(new Pumpkin((ServerLevel) p.level(), e.getPos().immutable(), FactionData.get(p), p.level().getGameTime()));
+    }
+
+    // chunk com o inicio de um Posto Villager: arruma o posto (bandeiras e guardas) no proximo tick
+    @SubscribeEvent
+    public static void onChunk(ChunkEvent.Load e) {
+        if (!(e.getLevel() instanceof ServerLevel level) || !(e.getChunk() instanceof LevelChunk chunk)) return;
+        Structure s = level.registryAccess().registryOrThrow(Registries.STRUCTURE).get(VILLAGER_OUTPOST);
+        if (s == null) return;
+        StructureStart start = chunk.getStartForStructure(s);
+        if (start != null && start.isValid()) OUTPOSTS.add(new Outpost(level, chunk.getPos().toLong(), start.getBoundingBox()));
+    }
+
     @SubscribeEvent
     public static void onTick(ServerTickEvent.Post e) {
+        // golens construidos: virou Golem Pillager se a abobora foi colocada por um jogador Pillager
+        for (int i = 0; i < 8 && !BUILT.isEmpty(); i++) {
+            Pending p = BUILT.poll();
+            IronGolem g = p.golem();
+            if (!g.isAlive() || g instanceof PillagerGolem) continue;
+            Pumpkin best = null;
+            for (Pumpkin pk : PUMPKINS)
+                if (pk.level() == p.level() && pk.pos().distSqr(g.blockPosition()) <= 16 && p.level().getGameTime() - pk.time() <= 3) best = pk;
+            if (best == null || best.faction() != Faction.PILLAGER) continue;
+            PillagerGolem pg = ModEntities.PILLAGER_GOLEM.get().create(p.level());
+            if (pg == null) continue;
+            pg.moveTo(g.getX(), g.getY(), g.getZ(), g.getYRot(), g.getXRot());
+            pg.setPlayerCreated(true);
+            g.discard();
+            p.level().addFreshEntity(pg);
+        }
+        PUMPKINS.removeIf(pk -> pk.level().getGameTime() - pk.time() > 5);
+        // postos villager: uma vez por posto, quando todos os chunks dele estiverem carregados
+        for (int i = 0, n = Math.min(4, OUTPOSTS.size()); i < n; i++) {
+            Outpost o = OUTPOSTS.poll();
+            FactionStructures data = FactionStructures.get(o.level());
+            if (data.done.contains(o.key())) continue;
+            BoundingBox b = o.box();
+            if (!o.level().hasChunksAt(b.minX(), b.minZ(), b.maxX(), b.maxZ())) { OUTPOSTS.add(o); continue; }
+            setupOutpost(o.level(), b);
+            data.mark(o.key());
+        }
         for (int i = 0; i < 32 && !CAGED.isEmpty(); i++) {
             Pending p = CAGED.poll();
             IronGolem g = p.golem();
@@ -83,6 +157,53 @@ public final class FactionAI {
             g.discard();
             level.addFreshEntity(pg);
         }
+    }
+
+    // bandeiras com as cores da vila e alguns guardas
+    private static void setupOutpost(ServerLevel level, BoundingBox b) {
+        BannerPatternLayers layers = villagerBanner(level);
+        for (BlockPos pos : BlockPos.betweenClosed(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ())) {
+            BlockState old = level.getBlockState(pos);
+            BlockState ns;
+            if (old.getBlock() instanceof WallBannerBlock) ns = Blocks.BROWN_WALL_BANNER.defaultBlockState().setValue(WallBannerBlock.FACING, old.getValue(WallBannerBlock.FACING));
+            else if (old.getBlock() instanceof BannerBlock) ns = Blocks.BROWN_BANNER.defaultBlockState().setValue(BannerBlock.ROTATION, old.getValue(BannerBlock.ROTATION));
+            else continue;
+            BlockPos at = pos.immutable();
+            level.setBlock(at, ns, 2);
+            if (level.getBlockEntity(at) instanceof BannerBlockEntity be) {
+                ItemStack st = new ItemStack(Items.BROWN_BANNER);
+                st.set(DataComponents.BANNER_PATTERNS, layers);
+                be.fromItem(st, DyeColor.BROWN);
+                be.setChanged();
+                level.sendBlockUpdated(at, ns, ns, 3);
+            }
+        }
+        int count = 3 + level.random.nextInt(3);
+        for (int i = 0, tries = 0; i < count && tries < 40; tries++) {
+            int x = b.minX() + level.random.nextInt(Math.max(1, b.getXSpan()));
+            int z = b.minZ() + level.random.nextInt(Math.max(1, b.getZSpan()));
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!level.getBlockState(pos.below()).isSolid() || !level.isEmptyBlock(pos) || !level.isEmptyBlock(pos.above())) continue;
+            VillagerGuard guard = ModEntities.VILLAGER_GUARD.get().create(level);
+            if (guard == null) continue;
+            guard.moveTo(x + 0.5, y, z + 0.5, level.random.nextFloat() * 360f, 0f);
+            guard.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.STRUCTURE, null);
+            guard.setPersistenceRequired();
+            level.addFreshEntity(guard);
+            i++;
+        }
+    }
+
+    // bandeira da vila: marrom com losango verde-limao e centro verde (cores dos villagers e da esmeralda)
+    private static BannerPatternLayers villagerBanner(ServerLevel level) {
+        var reg = level.registryAccess().registryOrThrow(Registries.BANNER_PATTERN);
+        return new BannerPatternLayers.Builder()
+                .add(reg.getHolderOrThrow(BannerPatterns.STRIPE_BOTTOM), DyeColor.GREEN)
+                .add(reg.getHolderOrThrow(BannerPatterns.RHOMBUS_MIDDLE), DyeColor.LIME)
+                .add(reg.getHolderOrThrow(BannerPatterns.CIRCLE_MIDDLE), DyeColor.GREEN)
+                .add(reg.getHolderOrThrow(BannerPatterns.BORDER), DyeColor.BROWN)
+                .build();
     }
 
     // ninguem mira num aliado
