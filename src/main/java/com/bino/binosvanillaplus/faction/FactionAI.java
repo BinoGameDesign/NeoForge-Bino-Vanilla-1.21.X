@@ -54,6 +54,18 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import java.util.ArrayList;
+import com.bino.binosvanillaplus.entity.faction.PillagerSmuggler;
+import com.bino.binosvanillaplus.entity.faction.VillagerMage;
+import com.bino.binosvanillaplus.entity.faction.VillagerVex;
+import com.bino.binosvanillaplus.network.CivilianSyncPayload;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.monster.Vex;
+import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.entity.living.LivingConversionEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.List;
 
 // Aliancas e hostilidades das faccoes:
@@ -76,6 +88,8 @@ public final class FactionAI {
     private static final List<Pumpkin> PUMPKINS = new ArrayList<>();
     private record Outpost(ServerLevel level, long key, BoundingBox box) {}
     private static final Deque<Outpost> OUTPOSTS = new ArrayDeque<>();
+    private record Spirit(ServerLevel level, Vec3 pos, VillagerMage owner, BlockPos origin) {}
+    private static final Deque<Spirit> SPIRITS = new ArrayDeque<>();
 
     @SubscribeEvent
     public static void onJoin(EntityJoinLevelEvent e) {
@@ -89,10 +103,32 @@ public final class FactionAI {
             if (!g.isPlayerCreated()) CAGED.add(new Pending((ServerLevel) e.getLevel(), g));
             else BUILT.add(new Pending((ServerLevel) e.getLevel(), g));   // golem feito por jogador: ve quem colocou a abobora
         }
-        if ((ent instanceof AbstractIllager || ent instanceof Ravager) && !(ent instanceof VillagerGuard)) {
-            Mob m = (Mob) ent;
-            m.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(m, VillagerGuard.class, true));
+        // vex invocado pelo Mago Villager: vira Espirito Villager (troca no proximo tick)
+        if (ent.getType() == EntityType.VEX && ent instanceof Vex v && v.getOwner() instanceof VillagerMage mage) {
+            e.setCanceled(true);
+            SPIRITS.add(new Spirit((ServerLevel) e.getLevel(), v.position(), mage, v.getBoundOrigin()));
+            return;
         }
+        // illagers, ravagers, bruxas e vex do jogo tambem atacam os lutadores novos do lado villager
+        if ((ent instanceof Raider || ent instanceof Vex) && !(ent instanceof com.bino.binosvanillaplus.faction.FactionMob)) {
+            Mob m = (Mob) ent;
+            m.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(m, LivingEntity.class, 10, true, false, FactionData::villagerFighter));
+        }
+    }
+
+    // o cliente precisa saber quais villagers sao Pillagers civis (textura)
+    @SubscribeEvent
+    public static void onTrack(PlayerEvent.StartTracking e) {
+        if (FactionData.isCivilian(e.getTarget()) && e.getEntity() instanceof ServerPlayer p)
+            PacketDistributor.sendToPlayer(p, new CivilianSyncPayload(e.getTarget().getId(), true));
+    }
+
+    // villager civil que vira zumbi (e volta curado) continua Pillager civil
+    @SubscribeEvent
+    public static void onConvert(LivingConversionEvent.Post e) {
+        if (!e.getEntity().getData(com.bino.binosvanillaplus.leveling.ModAttachments.PILLAGER_CIVILIAN)) return;
+        if (e.getOutcome() instanceof AbstractVillager) FactionData.setCivilian(e.getOutcome(), true);
+        else e.getOutcome().setData(com.bino.binosvanillaplus.leveling.ModAttachments.PILLAGER_CIVILIAN, true);   // o zumbi guarda a marca
     }
 
     // quem colocou a abobora (para saber se o golem construido e' do jogador Pillager)
@@ -133,6 +169,24 @@ public final class FactionAI {
             p.level().addFreshEntity(pg);
         }
         PUMPKINS.removeIf(pk -> pk.level().getGameTime() - pk.time() > 5);
+        // espiritos do Mago Villager
+        while (!SPIRITS.isEmpty()) {
+            Spirit sp = SPIRITS.poll();
+            if (!sp.owner().isAlive()) continue;
+            VillagerVex vx = ModEntities.VILLAGER_VEX.get().create(sp.level());
+            if (vx == null) continue;
+            vx.moveTo(sp.pos().x, sp.pos().y, sp.pos().z, 0f, 0f);
+            vx.finalizeSpawn(sp.level(), sp.level().getCurrentDifficultyAt(BlockPos.containing(sp.pos())), MobSpawnType.MOB_SUMMONED, null);
+            vx.setOwner(sp.owner());
+            vx.setBoundOrigin(sp.origin());
+            vx.setLimitedLife(20 * (30 + sp.level().random.nextInt(90)));
+            sp.level().addFreshEntity(vx);
+        }
+        // Contrabandista Pillager: de tempos em tempos perto de um jogador Pillager
+        ServerLevel ow = e.getServer().overworld();
+        if (ow.getGameTime() % 6000 == 0 && ow.getGameRules().getBoolean(GameRules.RULE_DO_TRADER_SPAWNING))
+            for (ServerPlayer pl : ow.players())
+                if (!pl.isSpectator() && FactionData.get(pl) == Faction.PILLAGER && ow.random.nextFloat() < 0.2f) spawnSmuggler(ow, pl);
         // postos villager: uma vez por posto, quando todos os chunks dele estiverem carregados
         for (int i = 0, n = Math.min(4, OUTPOSTS.size()); i < n; i++) {
             Outpost o = OUTPOSTS.poll();
@@ -149,13 +203,42 @@ public final class FactionAI {
             if (!g.isAlive() || g.isRemoved()) continue;
             ServerLevel level = p.level();
             if (!level.hasChunkAt(g.blockPosition())) continue;
-            if (!level.structureManager().getStructureWithPieceAt(g.blockPosition(), h -> h.is(VILLAGER_OUTPOST)).isValid()) continue;
+            boolean caged = level.structureManager().getStructureWithPieceAt(g.blockPosition(), h -> h.is(VILLAGER_OUTPOST)).isValid();
+            if (!caged && !civilianTown(level, g)) continue;
             PillagerGolem pg = ModEntities.PILLAGER_GOLEM.get().create(level);
             if (pg == null) continue;
             pg.moveTo(g.getX(), g.getY(), g.getZ(), g.getYRot(), g.getXRot());
             pg.setPersistenceRequired();
             g.discard();
             level.addFreshEntity(pg);
+        }
+    }
+
+    // golem nascido no meio de Pillagers civis (a vila deles chamou um golem): vira Golem Pillager
+    private static boolean civilianTown(ServerLevel level, IronGolem g) {
+        int civ = 0, vil = 0;
+        for (Villager v : level.getEntitiesOfClass(Villager.class, g.getBoundingBox().inflate(16)))
+            if (FactionData.isCivilian(v)) civ++; else vil++;
+        return civ > vil;
+    }
+
+    private static void spawnSmuggler(ServerLevel level, ServerPlayer p) {
+        if (!level.getEntitiesOfClass(PillagerSmuggler.class, p.getBoundingBox().inflate(64)).isEmpty()) return;
+        for (int tries = 0; tries < 10; tries++) {
+            int x = p.getBlockX() + (level.random.nextBoolean() ? 1 : -1) * (10 + level.random.nextInt(14));
+            int z = p.getBlockZ() + (level.random.nextBoolean() ? 1 : -1) * (10 + level.random.nextInt(14));
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!level.getBlockState(pos.below()).isSolid() || !level.isEmptyBlock(pos) || !level.isEmptyBlock(pos.above())) continue;
+            PillagerSmuggler sm = ModEntities.PILLAGER_SMUGGLER.get().create(level);
+            if (sm == null) return;
+            sm.moveTo(x + 0.5, y, z + 0.5, level.random.nextFloat() * 360f, 0f);
+            sm.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
+            sm.setDespawnDelay(48000);
+            sm.setWanderTarget(p.blockPosition());
+            sm.restrictTo(p.blockPosition(), 16);
+            level.addFreshEntity(sm);
+            return;
         }
     }
 
@@ -239,7 +322,8 @@ public final class FactionAI {
     @SubscribeEvent
     public static void onInteract(PlayerInteractEvent.EntityInteract e) {
         if (!(e.getTarget() instanceof AbstractVillager v)) return;
-        if (FactionData.get(e.getEntity()) != Faction.PILLAGER) return;
+        // villager nao negocia com Pillager; Pillager civil e contrabandista nao negociam com Villager
+        if (!FactionData.get(e.getEntity()).rival(FactionData.side(v))) return;
         e.setCanceled(true);
         e.setCancellationResult(InteractionResult.sidedSuccess(e.getLevel().isClientSide()));
         if (!e.getLevel().isClientSide()) {

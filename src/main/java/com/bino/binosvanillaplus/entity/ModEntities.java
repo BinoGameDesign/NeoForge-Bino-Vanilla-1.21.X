@@ -61,6 +61,37 @@ public class ModEntities {
                             .clientTrackingRange(8)
                             .build("villager_guard"));
 
+    // Faccoes, etapa 2 (mesmos tamanhos dos mobs do jogo em que se baseiam)
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.faction.VillagerMage>> VILLAGER_MAGE =
+            ENTITY_TYPES.register("villager_mage",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.faction.VillagerMage>of(com.bino.binosvanillaplus.entity.faction.VillagerMage::new, MobCategory.MONSTER)
+                            .sized(0.6f, 1.95f).passengerAttachments(2.0f).ridingOffset(-0.6f).clientTrackingRange(8)
+                            .build("villager_mage"));
+
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.faction.VillagerVex>> VILLAGER_VEX =
+            ENTITY_TYPES.register("villager_vex",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.faction.VillagerVex>of(com.bino.binosvanillaplus.entity.faction.VillagerVex::new, MobCategory.MONSTER)
+                            .fireImmune().sized(0.4f, 0.8f).eyeHeight(0.51875f).passengerAttachments(0.7375f).ridingOffset(0.04f).clientTrackingRange(8)
+                            .build("villager_vex"));
+
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.faction.VillagerWitch>> VILLAGER_WITCH =
+            ENTITY_TYPES.register("villager_witch",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.faction.VillagerWitch>of(com.bino.binosvanillaplus.entity.faction.VillagerWitch::new, MobCategory.MONSTER)
+                            .sized(0.6f, 1.95f).eyeHeight(1.62f).passengerAttachments(2.2625f).clientTrackingRange(8)
+                            .build("villager_witch"));
+
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.faction.VillagerRavager>> VILLAGER_RAVAGER =
+            ENTITY_TYPES.register("villager_ravager",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.faction.VillagerRavager>of(com.bino.binosvanillaplus.entity.faction.VillagerRavager::new, MobCategory.MONSTER)
+                            .sized(1.95f, 2.2f).passengerAttachments(new net.minecraft.world.phys.Vec3(0.0, 2.2625, -0.0625)).clientTrackingRange(10)
+                            .build("villager_ravager"));
+
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.faction.PillagerSmuggler>> PILLAGER_SMUGGLER =
+            ENTITY_TYPES.register("pillager_smuggler",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.faction.PillagerSmuggler>of(com.bino.binosvanillaplus.entity.faction.PillagerSmuggler::new, MobCategory.CREATURE)
+                            .sized(0.6f, 1.95f).eyeHeight(1.62f).clientTrackingRange(10)
+                            .build("pillager_smuggler"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

@@ -27,5 +27,9 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<Integer>> FACTION = ATTACHMENTS.register("faction",
             () -> AttachmentType.builder(() -> 0).serialize(Codec.INT).copyOnDeath().build());
 
+    // villager "Pillager civil" (mesmo villager do jogo, mas do lado dos pillagers)
+    public static final Supplier<AttachmentType<Boolean>> PILLAGER_CIVILIAN = ATTACHMENTS.register("pillager_civilian",
+            () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }

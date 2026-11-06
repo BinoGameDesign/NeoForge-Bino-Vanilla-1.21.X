@@ -22,6 +22,11 @@ public class ModCreativeModeTabs {
                     .displayItems((itemDisplayParameters, output) -> {
                         output.accept(ModItems.RUBI);
                         output.accept(ModItems.VILLAGER_GUARD_SPAWN_EGG);
+                        output.accept(ModItems.VILLAGER_MAGE_SPAWN_EGG);
+                        output.accept(ModItems.VILLAGER_WITCH_SPAWN_EGG);
+                        output.accept(ModItems.VILLAGER_RAVAGER_SPAWN_EGG);
+                        output.accept(ModItems.PILLAGER_SMUGGLER_SPAWN_EGG);
+                        output.accept(ModItems.PILLAGER_CIVILIAN_SPAWN_EGG);
                         output.accept(ModItems.RUBI_SWORD);
                         output.accept(ModItems.RUBI_PICKAXE);
                         output.accept(ModItems.RUBI_SHOVEL);

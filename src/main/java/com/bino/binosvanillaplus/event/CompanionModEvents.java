@@ -28,6 +28,11 @@ public class CompanionModEvents {
                         .add(Attributes.SCALE, 0.7)           // 30% menor
                         .build());
         event.put(ModEntities.PILLAGER_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
+        event.put(ModEntities.VILLAGER_MAGE.get(), net.minecraft.world.entity.monster.Evoker.createAttributes().build());
+        event.put(ModEntities.VILLAGER_VEX.get(), net.minecraft.world.entity.monster.Vex.createAttributes().build());
+        event.put(ModEntities.VILLAGER_WITCH.get(), net.minecraft.world.entity.monster.Witch.createAttributes().build());
+        event.put(ModEntities.VILLAGER_RAVAGER.get(), net.minecraft.world.entity.monster.Ravager.createAttributes().build());
+        event.put(ModEntities.PILLAGER_SMUGGLER.get(), net.minecraft.world.entity.Mob.createMobAttributes().build());
         event.put(ModEntities.VILLAGER_GUARD.get(), net.minecraft.world.entity.monster.Vindicator.createAttributes().build());
         event.put(ModEntities.GRAVE_ALLAY.get(),
                 Allay.createAttributes().add(Attributes.SCALE, 0.7).build());

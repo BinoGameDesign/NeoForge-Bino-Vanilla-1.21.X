@@ -1,6 +1,8 @@
 package com.bino.binosvanillaplus.entity.faction;
 
 import com.bino.binosvanillaplus.faction.Faction;
+import com.bino.binosvanillaplus.faction.FactionMob;
+import net.minecraft.world.entity.LivingEntity;
 import com.bino.binosvanillaplus.faction.FactionData;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
@@ -18,7 +20,7 @@ import net.minecraft.world.level.Level;
 
 // Golem Pillager (ferro enegrecido): o golem de ferro do lado dos pillagers.
 // Ataca villagers, golens de ferro, guardas villager e jogadores Villager; nunca ataca pillagers nem jogadores Pillager.
-public class PillagerGolem extends IronGolem {
+public class PillagerGolem extends IronGolem implements FactionMob {
     public PillagerGolem(EntityType<? extends IronGolem> type, Level level) {
         super(type, level);
     }
@@ -33,9 +35,12 @@ public class PillagerGolem extends IronGolem {
         targetSelector.addGoal(1, new HurtByTargetGoal(this));
         targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false,
                 t -> t instanceof Player p && FactionData.get(p) == Faction.VILLAGER));
-        targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, VillagerGuard.class, true));
+        targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, true, false, FactionData::villagerFighter));
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolem.class, 10, true, false, t -> !(t instanceof PillagerGolem)));
         targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
         targetSelector.addGoal(5, new ResetUniversalAngerTargetGoal<>(this, false));
     }
+
+    @Override
+    public Faction faction() { return Faction.PILLAGER; }
 }

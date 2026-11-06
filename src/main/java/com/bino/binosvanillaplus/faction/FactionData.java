@@ -1,10 +1,10 @@
 package com.bino.binosvanillaplus.faction;
 
-import com.bino.binosvanillaplus.entity.faction.PillagerGolem;
-import com.bino.binosvanillaplus.entity.faction.VillagerGuard;
 import com.bino.binosvanillaplus.leveling.ModAttachments;
 import com.bino.binosvanillaplus.network.FactionSyncPayload;
 import net.minecraft.server.level.ServerPlayer;
+import com.bino.binosvanillaplus.network.CivilianSyncPayload;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Vex;
@@ -27,12 +27,26 @@ public final class FactionData {
     // Lado de um mob: VILLAGER (villagers, golens, guardas), PILLAGER (illagers, ravager, bruxa, vex, golem pillager) ou NONE
     public static Faction side(Entity e) {
         if (e instanceof Player p) return get(p);
-        if (e instanceof VillagerGuard) return Faction.VILLAGER;
-        if (e instanceof PillagerGolem) return Faction.PILLAGER;
-        if (e instanceof IronGolem || e instanceof AbstractVillager) return Faction.VILLAGER;
+        if (e instanceof FactionMob m) return m.faction();
+        if (e instanceof AbstractVillager v) return isCivilian(v) ? Faction.PILLAGER : Faction.VILLAGER;
+        if (e instanceof IronGolem) return Faction.VILLAGER;
         if (e instanceof Raider || e instanceof Vex) return Faction.PILLAGER;
         return Faction.NONE;
     }
+
+    // villager "Pillager civil" (flag no proprio villager; o cliente recebe por pacote)
+    public static boolean isCivilian(Entity e) { return e instanceof AbstractVillager && e.getData(ModAttachments.PILLAGER_CIVILIAN); }
+
+    public static void setCivilian(Entity e, boolean on) {
+        e.setData(ModAttachments.PILLAGER_CIVILIAN, on);
+        if (!e.level().isClientSide()) PacketDistributor.sendToPlayersTrackingEntity(e, new CivilianSyncPayload(e.getId(), on));
+    }
+
+    // alvo de quem luta pelos villagers: jogador Pillager e mobs de combate do lado pillager (civis e mercadores nao)
+    public static boolean villagerEnemy(LivingEntity t) { return side(t) == Faction.PILLAGER && !(t instanceof AbstractVillager); }
+
+    // alvo extra dos pillagers: os mobs de combate do lado villager que sao nossos (guarda, mago, bruxa...)
+    public static boolean villagerFighter(LivingEntity t) { return t instanceof FactionMob m && m.faction() == Faction.VILLAGER; }
 
     // mesmo lado (e os dois tem lado)? Para jogador Errante/sem faccao nunca e' aliado.
     public static boolean allied(Entity a, Entity b) {

@@ -83,6 +83,8 @@ public class ModNetwork {
                     if (context.flow().isServerbound()) com.bino.binosvanillaplus.faction.FactionEvents.choose((ServerPlayer) context.player(), payload.faction());
                     else com.bino.binosvanillaplus.client.faction.FactionClient.open(payload);
                 }));
+        registrar.playToClient(com.bino.binosvanillaplus.network.CivilianSyncPayload.TYPE, com.bino.binosvanillaplus.network.CivilianSyncPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.faction.FactionClient.civilian(payload)));
         registrar.playToClient(FactionSyncPayload.TYPE, FactionSyncPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.faction.FactionClient.receive(payload)));
 

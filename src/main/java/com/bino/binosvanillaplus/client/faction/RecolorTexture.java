@@ -63,6 +63,78 @@ public class RecolorTexture extends SimpleTexture {
         return (r << 16) | (g << 8) | b;
     }
 
+    private static float sat(int r, int g, int b) {
+        int mx = Math.max(r, Math.max(g, b)), mn = Math.min(r, Math.min(g, b));
+        return (mx - mn) / (float) Math.max(mx, 1);
+    }
+
+    private static final int SALMON_0 = 0x7A4E3A, SALMON_1 = 0xDEAA8C;   // pele de villager
+    private static final int GRAY_0 = 0x464C4C, GRAY_1 = 0xC4CAC8;       // pele de pillager
+
+    // Evocador -> Mago Villager: pele salmao, manto esmeralda com o mesmo bordado dourado, camisa de couro
+    public static int villagerMage(int r, int g, int b, int x, int y) {
+        float l = lum(r, g, b), s = sat(r, g, b);
+        if (r > g && g > b && s > 0.4f) return (r << 16) | (g << 8) | b;                            // ouro
+        if (b > r + 18 && l > 0.5f && y < 18) return 0x40963C;                                       // olho
+        if (s < 0.14f && l > 0.38f) return ramp(SALMON_0, SALMON_1, (l - 0.38f) / 0.4f);             // pele
+        if (b >= r && g > r && l > 0.15f) return ramp(0x3A2414, 0x8C603C, (l - 0.15f) / 0.2f);       // camisa
+        return ramp(0x0E281A, 0x347446, l / 0.16f);                                                  // manto
+    }
+
+    // Vex -> Espirito Villager: azul de allay; na investida brilha verde-esmeralda
+    public static int villagerSpirit(int r, int g, int b, int x, int y) {
+        float l = lum(r, g, b);
+        if (r > b + 20) return ramp(0x146E3C, 0x78FFAA, (l - 0.2f) / 0.6f);
+        return ramp(0x1246BE, 0xAAF5FF, (l - 0.3f) / 0.65f);
+    }
+
+    // Bruxa -> Bruxa Villager: pele salmao, vestido verde, chapeu de couro (a joia verde fica)
+    public static int villagerWitch(int r, int g, int b, int x, int y) {
+        float l = lum(r, g, b), s = sat(r, g, b);
+        if (b > g + 20 && r > g) return ramp(0x163016, 0x548C3A, l / 0.2f);                         // roxo
+        if (y >= 64 && s < 0.25f && l < 0.2f) return ramp(0x281A10, 0x6E4C2E, l / 0.18f);           // chapeu
+        if (y < 64 && s < 0.25f && l > 0.5f) return ramp(SALMON_0, SALMON_1, (l - 0.4f) / 0.4f);     // pele
+        return (r << 16) | (g << 8) | b;
+    }
+
+    // Ravager -> Ravager Villager: couro marrom de boi, metal de latao, detalhes esmeralda
+    public static int villagerRavager(int r, int g, int b, int x, int y) {
+        float l = lum(r, g, b);
+        if (b > r + 15 && g > r + 15) return ramp(0x786028, 0xE6C86E, (l - 0.3f) / 0.45f);
+        if (r > g + 40) return ramp(0x1A6028, 0x5AC85A, (l - 0.1f) / 0.4f);
+        return ramp(0x281A10, 0xA27650, (l - 0.12f) / 0.32f);
+    }
+
+    // roupas de villager -> paleta pillager (carvao, vinho, petroleo)
+    public static int pillagerize(int r, int g, int b, int x, int y) {
+        float l = lum(r, g, b), s = sat(r, g, b);
+        if (s < 0.12f) return ramp(0x1A1A1C, 0x969698, l / 0.75f);
+        if (r >= g && r >= b) {
+            if (g > b + 25 && l > 0.5f) return ramp(0x5A5A54, 0xC8C4AA, (l - 0.5f) / 0.4f);         // palha -> pano claro
+            return ramp(0x220E10, 0x8C3434, l / 0.55f);                                             // vinho
+        }
+        return ramp(0x0E2022, 0x467874, l / 0.6f);                                                  // petroleo
+    }
+
+    // corpo de villager -> Pillager civil: pele cinza de pillager, roupa na paleta pillager
+    public static int pillagerSkin(int r, int g, int b, int x, int y) {
+        float l = lum(r, g, b), s = sat(r, g, b);
+        if (g > r + 10 && g > b) return (r << 16) | (g << 8) | b;                                    // olho
+        if (r > g && g > b && s > 0.18f && l > 0.35f) return ramp(GRAY_0, GRAY_1, (l - 0.3f) / 0.5f);
+        return pillagerize(r, g, b, x, y);
+    }
+
+    // Mercador ambulante -> Contrabandista Pillager: pele cinza, manto carvao, faixa vinho
+    public static int smuggler(int r, int g, int b, int x, int y) {
+        float l = lum(r, g, b), s = sat(r, g, b);
+        if (g > r + 10 && g > b && y < 18) return (r << 16) | (g << 8) | b;
+        if (r > g && g > b && s > 0.18f && s < 0.5f && l > 0.42f) return ramp(GRAY_0, GRAY_1, (l - 0.3f) / 0.5f);
+        if (b > r + 25) return ramp(0x14161A, 0x585A62, l / 0.5f);
+        if (r > 120 && g < 40) return ramp(0x3C1014, 0x96282C, (l - 0.1f) / 0.3f);
+        if (r > g && g > b && s > 0.6f) return (r << 16) | (g << 8) | b;
+        return pillagerize(r, g, b, x, y);
+    }
+
     // Golem de ferro -> Golem Pillager com as cores do Ravager: couro cinza-escuro, metal azulado, detalhes laranja
     public static int pillagerGolem(int r, int g, int b, int x, int y) {
         float l = lum(r, g, b);

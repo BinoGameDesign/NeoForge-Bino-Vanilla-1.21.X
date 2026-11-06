@@ -49,6 +49,18 @@ public class ModClientEvents {
         // faccoes: por enquanto o modelo do jogo com outra cor (a arte final vem depois)
         event.registerEntityRenderer(ModEntities.PILLAGER_GOLEM.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.PillagerGolemRenderer::new);
         event.registerEntityRenderer(ModEntities.VILLAGER_GUARD.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerGuardRenderer::new);
+        event.registerEntityRenderer(ModEntities.VILLAGER_MAGE.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerMageRenderer::new);
+        event.registerEntityRenderer(ModEntities.VILLAGER_VEX.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerVexRenderer::new);
+        event.registerEntityRenderer(ModEntities.VILLAGER_WITCH.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerWitchRenderer::new);
+        event.registerEntityRenderer(ModEntities.VILLAGER_RAVAGER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerRavagerRenderer::new);
+        event.registerEntityRenderer(ModEntities.PILLAGER_SMUGGLER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.PillagerSmugglerRenderer::new);
+    }
+
+    // cores do ovo do Pillager civil (os outros ovos pintam sozinhos)
+    @SubscribeEvent
+    public static void onItemColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) {
+        event.register((stack, tint) -> tint == 0 ? com.bino.binosvanillaplus.item.CivilianSpawnEggItem.BASE : com.bino.binosvanillaplus.item.CivilianSpawnEggItem.SPOTS,
+                com.bino.binosvanillaplus.item.ModItems.PILLAGER_CIVILIAN_SPAWN_EGG.get());
     }
 
     // Ensina o jogo a desenhar o coração rosa: usa o comportamento do coração normal (sobe e some)

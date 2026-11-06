@@ -8,7 +8,9 @@
         "client.MinecraftGlowMixin",
         "client.LocalPlayerElytraMixin",
         "client.ElytraLayerMixin",
-        "client.LevelRendererMiningMixin"
+        "client.LevelRendererMiningMixin",
+        "client.VillagerRendererMixin",
+        "client.VillagerProfessionLayerMixin"
     ],
     "injectors": {
         "defaultRequire": 1
@@ -16,6 +18,9 @@
     "mixins": [
         "LivingEntityElytraMixin",
         "PlayerElytraMixin",
-        "VillagerFactionPriceMixin"
+        "VillagerFactionPriceMixin",
+        "EntityFactionAllyMixin",
+        "VillagerBreedMixin",
+        "VillagerHostilesSensorMixin"
     ]
 }

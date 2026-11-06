@@ -26,6 +26,13 @@ public final class FactionClient {
 
     public static void receive(FactionSyncPayload p) { FACTIONS.put(p.player(), Faction.of(p.faction())); }
 
+    public static void civilian(com.bino.binosvanillaplus.network.CivilianSyncPayload p) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        net.minecraft.world.entity.Entity e = mc.level.getEntity(p.entity());
+        if (e != null) e.setData(com.bino.binosvanillaplus.leveling.ModAttachments.PILLAGER_CIVILIAN, p.civilian());
+    }
+
     public static void open(FactionChoosePayload p) {
         Minecraft.getInstance().setScreen(new FactionChoiceScreen());
     }

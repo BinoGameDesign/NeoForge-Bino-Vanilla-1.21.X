@@ -15,6 +15,17 @@ public class ModItems {
     // ovos das faccoes
     public static final DeferredItem<Item> VILLAGER_GUARD_SPAWN_EGG = ITEMS.register("villager_guard_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.VILLAGER_GUARD, 0x6B4B2A, 0x5DA34F, new Item.Properties()));
+    public static final DeferredItem<Item> VILLAGER_MAGE_SPAWN_EGG = ITEMS.register("villager_mage_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.VILLAGER_MAGE, 0x2E6B3F, 0xBCA341, new Item.Properties()));
+    public static final DeferredItem<Item> VILLAGER_WITCH_SPAWN_EGG = ITEMS.register("villager_witch_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.VILLAGER_WITCH, 0x3A6B2A, 0x5A3D24, new Item.Properties()));
+    public static final DeferredItem<Item> VILLAGER_RAVAGER_SPAWN_EGG = ITEMS.register("villager_ravager_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.VILLAGER_RAVAGER, 0x6B4A30, 0x2F7A3A, new Item.Properties()));
+    public static final DeferredItem<Item> PILLAGER_SMUGGLER_SPAWN_EGG = ITEMS.register("pillager_smuggler_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.PILLAGER_SMUGGLER, 0x2A2C32, 0x7A2A2E, new Item.Properties()));
+    // Pillager civil = villager do jogo marcado como pillager (assim ele vive, trabalha e se reproduz como villager)
+    public static final DeferredItem<Item> PILLAGER_CIVILIAN_SPAWN_EGG = ITEMS.register("pillager_civilian_spawn_egg",
+            () -> new com.bino.binosvanillaplus.item.CivilianSpawnEggItem(new Item.Properties()));
 
     public static final DeferredItem<Item> RUBI = ITEMS.register("rubi",
             () -> new Item(new Item.Properties()));
