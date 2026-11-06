@@ -2,6 +2,7 @@ package com.bino.binosvanillaplus.entity.faction;
 
 import com.bino.binosvanillaplus.faction.Faction;
 import com.bino.binosvanillaplus.faction.FactionData;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
@@ -36,6 +37,13 @@ public class VillagerGuard extends Vindicator {
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Raider.class, 10, true, false, t -> !(t instanceof VillagerGuard)));
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Vex.class, true));
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, PillagerGolem.class, true));
+    }
+
+    // O Vindicator herda dos illagers um "sou aliado de todo illager" (tag illager_friends), e a mira do jogo
+    // ignora aliados: por isso o Vingador apanhava e nao revidava. Aqui o lado e' o da faccao.
+    @Override
+    public boolean isAlliedTo(Entity e) {
+        return FactionData.allied(this, e) || isAlliedTo(e.getTeam());
     }
 
     @Override
