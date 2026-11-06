@@ -75,7 +75,7 @@ public final class FactionAI {
             if (!g.isAlive() || g.isRemoved()) continue;
             ServerLevel level = p.level();
             if (!level.hasChunkAt(g.blockPosition())) continue;
-            if (!level.structureManager().getStructureWithPieceAt(g.blockPosition(), VILLAGER_OUTPOST).isValid()) continue;
+            if (!level.structureManager().getStructureWithPieceAt(g.blockPosition(), h -> h.is(VILLAGER_OUTPOST)).isValid()) continue;
             PillagerGolem pg = ModEntities.PILLAGER_GOLEM.get().create(level);
             if (pg == null) continue;
             pg.moveTo(g.getX(), g.getY(), g.getZ(), g.getYRot(), g.getXRot());
