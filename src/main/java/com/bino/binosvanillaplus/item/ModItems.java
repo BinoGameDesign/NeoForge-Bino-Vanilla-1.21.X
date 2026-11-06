@@ -12,6 +12,12 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public class ModItems {
     public static final DeferredRegister.Items ITEMS  = DeferredRegister.createItems(BinosVanillaMod.MOD_ID);
 
+    // ovos das faccoes
+    public static final DeferredItem<Item> PILLAGER_GOLEM_SPAWN_EGG = ITEMS.register("pillager_golem_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.PILLAGER_GOLEM, 0x35343A, 0x8E2424, new Item.Properties()));
+    public static final DeferredItem<Item> VILLAGER_GUARD_SPAWN_EGG = ITEMS.register("villager_guard_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.VILLAGER_GUARD, 0x6B4B2A, 0x5DA34F, new Item.Properties()));
+
     public static final DeferredItem<Item> RUBI = ITEMS.register("rubi",
             () -> new Item(new Item.Properties()));
 

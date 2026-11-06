@@ -44,6 +44,23 @@ public class ModEntities {
                             .noSave()
                             .build("grave_allay"));
 
+    // Faccoes: golem de ferro enegrecido (lado pillager) e vingador villager (lado villager)
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.faction.PillagerGolem>> PILLAGER_GOLEM =
+            ENTITY_TYPES.register("pillager_golem",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.faction.PillagerGolem>of(com.bino.binosvanillaplus.entity.faction.PillagerGolem::new, MobCategory.MISC)
+                            .sized(1.4f, 2.7f)
+                            .clientTrackingRange(10)
+                            .build("pillager_golem"));
+
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.faction.VillagerGuard>> VILLAGER_GUARD =
+            ENTITY_TYPES.register("villager_guard",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.faction.VillagerGuard>of(com.bino.binosvanillaplus.entity.faction.VillagerGuard::new, MobCategory.MONSTER)
+                            .sized(0.6f, 1.95f)
+                            .passengerAttachments(2.0f)
+                            .ridingOffset(-0.6f)
+                            .clientTrackingRange(8)
+                            .build("villager_guard"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

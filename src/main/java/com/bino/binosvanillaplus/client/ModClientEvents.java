@@ -46,6 +46,9 @@ public class ModClientEvents {
 
         // Renderizador do Allay (modelo e animação vanilla), mas com a textura trocada conforme a cor do pet
         event.<Allay>registerEntityRenderer(ModEntities.COMPANION_ALLAY.get(), CompanionAllayRenderer::new);
+        // faccoes: por enquanto o modelo do jogo com outra cor (a arte final vem depois)
+        event.registerEntityRenderer(ModEntities.PILLAGER_GOLEM.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.PillagerGolemRenderer::new);
+        event.registerEntityRenderer(ModEntities.VILLAGER_GUARD.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerGuardRenderer::new);
     }
 
     // Ensina o jogo a desenhar o coração rosa: usa o comportamento do coração normal (sobe e some)

@@ -23,5 +23,9 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<com.bino.binosvanillaplus.inventory.ExtraSlots>> EXTRA_SLOTS = ATTACHMENTS.register("extra_slots",
             () -> AttachmentType.serializable(com.bino.binosvanillaplus.inventory.ExtraSlots::new).copyOnDeath().build());
 
+    // faccao do jogador (0 = ainda nao escolheu; ver faction/Faction)
+    public static final Supplier<AttachmentType<Integer>> FACTION = ATTACHMENTS.register("faction",
+            () -> AttachmentType.builder(() -> 0).serialize(Codec.INT).copyOnDeath().build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }

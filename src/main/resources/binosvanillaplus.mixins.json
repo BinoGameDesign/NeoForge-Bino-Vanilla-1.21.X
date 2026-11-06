@@ -15,6 +15,7 @@
     },
     "mixins": [
         "LivingEntityElytraMixin",
-        "PlayerElytraMixin"
+        "PlayerElytraMixin",
+        "VillagerFactionPriceMixin"
     ]
 }

@@ -77,6 +77,15 @@ public class ModNetwork {
         registrar.playToServer(RespawnChoicePayload.TYPE, RespawnChoicePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.campfire.Campfires.choose((ServerPlayer) context.player(), payload.index())));
 
+        // faccoes: escolha (tela <-> servidor) e faccao de cada jogador (nome vermelho dos rivais)
+        registrar.playBidirectional(FactionChoosePayload.TYPE, FactionChoosePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.flow().isServerbound()) com.bino.binosvanillaplus.faction.FactionEvents.choose((ServerPlayer) context.player(), payload.faction());
+                    else com.bino.binosvanillaplus.client.faction.FactionClient.open(payload);
+                }));
+        registrar.playToClient(FactionSyncPayload.TYPE, FactionSyncPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.faction.FactionClient.receive(payload)));
+
         // nivel dos mobs (painel de inspecao)
         registrar.playToClient(MobLevelPayload.TYPE, MobLevelPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.leveling.LevelClient.receive(payload)));
