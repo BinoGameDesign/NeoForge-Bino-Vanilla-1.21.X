@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 20083233,
+    "separation": 20,
+    "spacing": 80
+  },
+  "structures": [
+    {
+      "structure": "binosvanillaplus:villager_mansion",
+      "weight": 1
+    }
+  ]
+}

@@ -31,5 +31,9 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<Boolean>> PILLAGER_CIVILIAN = ATTACHMENTS.register("pillager_civilian",
             () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
 
+    // villager ja conferido (nasceu ou nao numa Vila Pillager)
+    public static final Supplier<AttachmentType<Boolean>> FACTION_CHECKED = ATTACHMENTS.register("faction_checked",
+            () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }

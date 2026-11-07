@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:woodland_mansion",
+  "biomes": "#binosvanillaplus:has_structure/villager_mansion",
+  "spawn_overrides": {},
+  "step": "surface_structures"
+}

@@ -88,6 +88,15 @@ public final class FactionAI {
     private static final List<Pumpkin> PUMPKINS = new ArrayList<>();
     private record Outpost(ServerLevel level, long key, BoundingBox box) {}
     private static final Deque<Outpost> OUTPOSTS = new ArrayDeque<>();
+    // mobs que nasceram com a estrutura: conferir se estao numa estrutura espelhada (no proximo tick)
+    private record Born(ServerLevel level, Mob mob) {}
+    private static final Deque<Born> BORN = new ArrayDeque<>();
+    public static final net.minecraft.tags.TagKey<Structure> PILLAGER_VILLAGES =
+            net.minecraft.tags.TagKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "pillager_villages"));
+    public static final ResourceKey<Structure> VILLAGER_MANSION =
+            ResourceKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "villager_mansion"));
+    public static final ResourceKey<Structure> VILLAGER_WITCH_HUT =
+            ResourceKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "villager_witch_hut"));
     private record Spirit(ServerLevel level, Vec3 pos, VillagerMage owner, BlockPos origin) {}
     private static final Deque<Spirit> SPIRITS = new ArrayDeque<>();
 
@@ -103,6 +112,10 @@ public final class FactionAI {
             if (!g.isPlayerCreated()) CAGED.add(new Pending((ServerLevel) e.getLevel(), g));
             else BUILT.add(new Pending((ServerLevel) e.getLevel(), g));   // golem feito por jogador: ve quem colocou a abobora
         }
+        // villager novo (ainda nao conferido), evocador/vingador/bruxa do jogo: ver se nasceram numa estrutura espelhada
+        if ((ent instanceof Villager v && !v.getData(com.bino.binosvanillaplus.leveling.ModAttachments.FACTION_CHECKED))
+                || ent.getType() == EntityType.EVOKER || ent.getType() == EntityType.VINDICATOR || ent.getType() == EntityType.WITCH)
+            BORN.add(new Born((ServerLevel) e.getLevel(), (Mob) ent));
         // vex invocado pelo Mago Villager: vira Espirito Villager (troca no proximo tick)
         if (ent.getType() == EntityType.VEX && ent instanceof Vex v && v.getOwner() instanceof VillagerMage mage) {
             e.setCanceled(true);
@@ -169,6 +182,25 @@ public final class FactionAI {
             p.level().addFreshEntity(pg);
         }
         PUMPKINS.removeIf(pk -> pk.level().getGameTime() - pk.time() > 5);
+        // estruturas espelhadas: Vila Pillager (villagers viram Pillagers civis), Mansao Villager (evocador -> Mago,
+        // vingador -> Vingador Villager) e Cabana da Bruxa Villager (bruxa -> Bruxa Villager)
+        for (int i = 0; i < 64 && !BORN.isEmpty(); i++) {
+            Born b = BORN.poll();
+            Mob m = b.mob();
+            ServerLevel level = b.level();
+            if (!m.isAlive() || m.isRemoved() || !level.hasChunkAt(m.blockPosition())) continue;
+            var sm = level.structureManager();
+            BlockPos pos = m.blockPosition();
+            if (m instanceof Villager v) {
+                v.setData(com.bino.binosvanillaplus.leveling.ModAttachments.FACTION_CHECKED, true);
+                if (!FactionData.isCivilian(v) && sm.getStructureWithPieceAt(pos, h -> h.is(PILLAGER_VILLAGES)).isValid())
+                    FactionData.setCivilian(v, true);
+            } else if (m.getType() == EntityType.WITCH) {
+                if (sm.getStructureWithPieceAt(pos, h -> h.is(VILLAGER_WITCH_HUT)).isValid()) swap(level, m, ModEntities.VILLAGER_WITCH.get());
+            } else if (sm.getStructureWithPieceAt(pos, h -> h.is(VILLAGER_MANSION)).isValid()) {
+                swap(level, m, m.getType() == EntityType.EVOKER ? ModEntities.VILLAGER_MAGE.get() : ModEntities.VILLAGER_GUARD.get());
+            }
+        }
         // espiritos do Mago Villager
         while (!SPIRITS.isEmpty()) {
             Spirit sp = SPIRITS.poll();
@@ -204,7 +236,8 @@ public final class FactionAI {
             ServerLevel level = p.level();
             if (!level.hasChunkAt(g.blockPosition())) continue;
             boolean caged = level.structureManager().getStructureWithPieceAt(g.blockPosition(), h -> h.is(VILLAGER_OUTPOST)).isValid();
-            if (!caged && !civilianTown(level, g)) continue;
+            if (!caged && !level.structureManager().getStructureWithPieceAt(g.blockPosition(), h -> h.is(PILLAGER_VILLAGES)).isValid()
+                    && !civilianTown(level, g)) continue;
             PillagerGolem pg = ModEntities.PILLAGER_GOLEM.get().create(level);
             if (pg == null) continue;
             pg.moveTo(g.getX(), g.getY(), g.getZ(), g.getYRot(), g.getXRot());
@@ -212,6 +245,17 @@ public final class FactionAI {
             g.discard();
             level.addFreshEntity(pg);
         }
+    }
+
+    // troca um mob do jogo pela versao espelhada, no mesmo lugar (fica permanente, como os da estrutura)
+    private static void swap(ServerLevel level, Mob old, EntityType<? extends Mob> type) {
+        Mob n = type.create(level);
+        if (n == null) return;
+        n.moveTo(old.getX(), old.getY(), old.getZ(), old.getYRot(), old.getXRot());
+        n.finalizeSpawn(level, level.getCurrentDifficultyAt(old.blockPosition()), MobSpawnType.STRUCTURE, null);
+        n.setPersistenceRequired();
+        old.discard();
+        level.addFreshEntity(n);
     }
 
     // golem nascido no meio de Pillagers civis (a vila deles chamou um golem): vira Golem Pillager
