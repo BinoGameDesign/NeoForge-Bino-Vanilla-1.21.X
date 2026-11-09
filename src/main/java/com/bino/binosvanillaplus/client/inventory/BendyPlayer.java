@@ -201,7 +201,9 @@ public final class BendyPlayer {
     }
 
     // uma camada de uma peca de armadura
-    private static void armorPiece(PoseStack ps, VertexConsumer vc, EquipmentSlot slot, int light, int overlay, int color) {
+    private static void armorPiece(PoseStack ps, VertexConsumer vc, EquipmentSlot slot, ItemStack st, int light, int overlay, int color) {
+        net.minecraft.client.model.HumanoidModel<?> m3 = com.bino.binosvanillaplus.client.armor.Armor3D.model(st);
+        if (m3 != null) { armor3D(ps, vc, m3, slot, light, overlay, color); return; }
         boolean inner = slot == EquipmentSlot.LEGS;
         Rig r = inner ? armorInner : armorOuter;
         float g = inner ? 0.5f : 1.0f;
@@ -221,6 +223,21 @@ public final class BendyPlayer {
                 limb(ps, vc, r.rLeg, r.rLegLow, 0, 16, -2, 0, 4, 12, 6, g, false, true, 64, 32, light, overlay, color);
                 limb(ps, vc, r.lLeg, r.lLegLow, 0, 16, -2, 0, 4, 12, 6, g, true, true, 64, 32, light, overlay, color);
             }
+        }
+    }
+
+    // peca com modelo 3D: cada parte copia a pose do osso do boneco (o antebraco/canela dobrados nao entortam a peca)
+    private static void armor3D(PoseStack ps, VertexConsumer vc, net.minecraft.client.model.HumanoidModel<?> m, EquipmentSlot slot,
+                                int light, int overlay, int color) {
+        Rig r = armorOuter;
+        m.head.copyFrom(r.head); m.body.copyFrom(r.body);
+        m.rightArm.copyFrom(r.rArm); m.leftArm.copyFrom(r.lArm);
+        m.rightLeg.copyFrom(r.rLeg); m.leftLeg.copyFrom(r.lLeg);
+        switch (slot) {
+            case HEAD -> { m.head.render(ps, vc, light, overlay, color); m.hat.render(ps, vc, light, overlay, color); }
+            case CHEST -> { m.body.render(ps, vc, light, overlay, color); m.rightArm.render(ps, vc, light, overlay, color); m.leftArm.render(ps, vc, light, overlay, color); }
+            case LEGS -> { m.body.render(ps, vc, light, overlay, color); m.rightLeg.render(ps, vc, light, overlay, color); m.leftLeg.render(ps, vc, light, overlay, color); }
+            default -> { m.rightLeg.render(ps, vc, light, overlay, color); m.leftLeg.render(ps, vc, light, overlay, color); }
         }
     }
 
@@ -267,7 +284,7 @@ public final class BendyPlayer {
             PoseStack ps = begin(g, cx + dx, cy + dy, pxPerBlock, yaw);
             calibrate(ps);
             skin(ps, buf.getBuffer(RenderType.entityTranslucent(sk.texture())), rig, light, white, 0xFF000000);
-            eachArmorLayer(p, (tex, color, slot, st) -> armorPiece(ps, buf.getBuffer(RenderType.entityTranslucent(tex)), slot, light, white, 0xFF000000));
+            eachArmorLayer(p, (tex, color, slot, st) -> armorPiece(ps, buf.getBuffer(RenderType.entityTranslucent(tex)), slot, st, light, white, 0xFF000000));
             g.pose().popPose();
         }
         buf.endBatch();
@@ -282,14 +299,14 @@ public final class BendyPlayer {
             RenderSystem.defaultBlendFunc();
             RenderSystem.disableCull();
             draw(sk.texture(), vc -> skin(ps, vc, rig, light, OverlayTexture.NO_OVERLAY, -1));
-            eachArmorLayer(p, (tex, color, slot, st) -> draw(tex, vc -> armorPiece(ps, vc, slot, light, OverlayTexture.NO_OVERLAY, color)));
+            eachArmorLayer(p, (tex, color, slot, st) -> draw(tex, vc -> armorPiece(ps, vc, slot, st, light, OverlayTexture.NO_OVERLAY, color)));
             RenderSystem.enableCull();
         } else {
             skin(ps, buf.getBuffer(RenderType.entityTranslucent(sk.texture())), rig, light, OverlayTexture.NO_OVERLAY, -1);
-            eachArmorLayer(p, (tex, color, slot, st) -> armorPiece(ps, buf.getBuffer(RenderType.armorCutoutNoCull(tex)), slot, light, OverlayTexture.NO_OVERLAY, color));
+            eachArmorLayer(p, (tex, color, slot, st) -> armorPiece(ps, buf.getBuffer(RenderType.armorCutoutNoCull(tex)), slot, st, light, OverlayTexture.NO_OVERLAY, color));
         }
         eachArmorLayer(p, (tex, color, slot, st) -> {
-            if (st.hasFoil()) armorPiece(ps, buf.getBuffer(RenderType.armorEntityGlint()), slot, light, OverlayTexture.NO_OVERLAY, -1);
+            if (st.hasFoil()) armorPiece(ps, buf.getBuffer(RenderType.armorEntityGlint()), slot, st, light, OverlayTexture.NO_OVERLAY, -1);
         });
         boolean rightHanded = p.getMainArm() == HumanoidArm.RIGHT;
         held(ps, buf, p, rightHanded ? p.getMainHandItem() : p.getOffhandItem(), rig.rArm, rig.rArmLow, false, light);
