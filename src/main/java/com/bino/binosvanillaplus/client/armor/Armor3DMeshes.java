@@ -66,4 +66,23 @@ public final class Armor3DMeshes {
         PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12F, 0F));
         return LayerDefinition.create(mesh, 128, 64);
     }
+
+    // jade_leggings (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/jade_leggings.bbmodel)
+    public static LayerDefinition jadeLeggings() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
+                .texOffs(16, 16).addBox(-4F, 0F, -2F, 8F, 12F, 4F, new CubeDeformation(0.5F))
+                .texOffs(18, 56).addBox(-2.6F, 12F, 2F, 5F, 7F, 1F, new CubeDeformation(0F))
+                .texOffs(18, 56).addBox(-2.6F, 12F, -3F, 5F, 7F, 1F, new CubeDeformation(0F)), PartPose.offset(0F, 0F, 0F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.offset(-5F, 2F, 0F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.offset(5F, 2F, 0F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create()
+                .texOffs(0, 16).addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(0.5F)), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create()
+                .texOffs(0, 16).mirror().addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(0.5F)).mirror(false), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 64, 64);
+    }
 }

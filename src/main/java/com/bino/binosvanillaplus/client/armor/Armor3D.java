@@ -38,6 +38,7 @@ public final class Armor3D {
     private static final Entry[] ENTRIES = {
             entry(ModItems.JADE_HELMET, "jade_helmet", Armor3DMeshes::jadeHelmet),
             entry(ModItems.JADE_CHESTPLATE, "jade_chestplate", Armor3DMeshes::jadeChestplate),
+            entry(ModItems.JADE_LEGGINGS, "jade_leggings", Armor3DMeshes::jadeLeggings),
     };
 
     @SubscribeEvent
