@@ -128,8 +128,8 @@ public class ModItems {
             () -> new Armor3DItem(ModArmorMaterials.JADE, ArmorItem.Type.LEGGINGS,
                     new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33)), "jade_leggings"));   // modelo 3D; 33 = multiplicador do diamante
     public static final DeferredItem<ArmorItem> JADE_BOOTS = ITEMS.register("jade_boots",
-            () -> new ArmorItem(ModArmorMaterials.JADE, ArmorItem.Type.BOOTS,
-                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33))));   // 33 = multiplicador do diamante
+            () -> new Armor3DItem(ModArmorMaterials.JADE, ArmorItem.Type.BOOTS,
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33)), "jade_boots"));   // modelo 3D; 33 = multiplicador do diamante
 
     // ===== FORJA =====
     public static final DeferredItem<ForgeStoneItem> FORGE_STONE_1 = ITEMS.register("forge_stone_1",
