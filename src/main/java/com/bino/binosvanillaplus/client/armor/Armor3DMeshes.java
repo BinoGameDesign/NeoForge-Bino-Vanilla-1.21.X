@@ -108,6 +108,49 @@ public final class Armor3DMeshes {
         return LayerDefinition.create(mesh, 64, 64);
     }
 
+    // rubi_helmet (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/rubi_helmet.bbmodel)
+    public static LayerDefinition rubiHelmet() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create()
+                .texOffs(0, 0).addBox(-4F, -8F, -4F, 8F, 8F, 8F, new CubeDeformation(1F))
+                .texOffs(32, 6).addBox(-4F, -10F, -4F, 8F, 2F, 8F, new CubeDeformation(-0.1F))
+                .texOffs(0, 17).addBox(-6.5F, -7.9F, -6.6F, 13F, 2F, 2F, new CubeDeformation(-0.3F))
+                .texOffs(70, 48).addBox(3.46863F, -8.09443F, -6.71368F, 2F, 14F, 2F, new CubeDeformation(-0.7F))
+                .texOffs(70, 48).mirror().addBox(-5.46863F, -8.09443F, -6.71368F, 2F, 14F, 2F, new CubeDeformation(-0.7F)).mirror(false), PartPose.offset(0F, 0F, 0F));
+        head.addOrReplaceChild("head_r0", CubeListBuilder.create().texOffs(41, 47).addBox(-1F, -7F, -4F, 1F, 7F, 10F, new CubeDeformation(-0.1F)),
+                PartPose.offsetAndRotation(7.56863F, -0.59443F, -1.01368F, -0F, -0F, -0.34907F));
+        head.addOrReplaceChild("head_r1", CubeListBuilder.create().texOffs(41, 47).addBox(-1F, -7F, -4F, 1F, 7F, 10F, new CubeDeformation(-0.1F)),
+                PartPose.offsetAndRotation(-6.63137F, -0.19443F, -1.01368F, -0F, -0F, 0.34907F));
+        head.addOrReplaceChild("head_r2", CubeListBuilder.create().texOffs(41, 47).addBox(-0.5F, -3.5F, -5F, 1F, 7F, 10F, new CubeDeformation(-0.1F)),
+                PartPose.offsetAndRotation(-0.00415F, -3.65436F, 5.98632F, 1.5708F, -1.309F, -1.5708F));
+        head.addOrReplaceChild("head_r3", CubeListBuilder.create().texOffs(0, 17).addBox(-6.5F, -1F, -1F, 13F, 2F, 2F, new CubeDeformation(-0.3F)),
+                PartPose.offsetAndRotation(0F, -6.9F, 5.4F, -0F, 3.14159F, 0F));
+        head.addOrReplaceChild("head_r4", CubeListBuilder.create().texOffs(0, 22).addBox(-5.5F, -2F, -1F, 11F, 2F, 2F, new CubeDeformation(-0.5F)),
+                PartPose.offsetAndRotation(-5.5F, -5.9F, -0.1F, -0F, -1.5708F, 0F));
+        head.addOrReplaceChild("head_r5", CubeListBuilder.create().texOffs(0, 22).addBox(-5.5F, -2F, -1F, 11F, 2F, 2F, new CubeDeformation(-0.5F)),
+                PartPose.offsetAndRotation(5.6F, -5.9F, -0.1F, -0F, -1.5708F, 0F));
+        head.addOrReplaceChild("head_r6", CubeListBuilder.create().texOffs(112, 30).addBox(-4F, -8F, 1F, 8F, 8F, 0F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-0.13137F, -7.69443F, -6.61368F, -0.2618F, -0F, 0F));
+        head.addOrReplaceChild("head_r7", CubeListBuilder.create().texOffs(1, 29).addBox(-1F, -2F, -1F, 4F, 3F, 1F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(6.46863F, -4.79443F, -5.01368F, -0F, -0F, -0.34907F));
+        head.addOrReplaceChild("head_r8", CubeListBuilder.create().texOffs(1, 29).addBox(-1F, -2F, -1F, 4F, 3F, 1F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-8.53137F, -5.19443F, -5.01368F, -0F, -0F, 0.30543F));
+        head.addOrReplaceChild("head_r9", CubeListBuilder.create().texOffs(0, 33).addBox(-1F, -2F, -1F, 4F, 3F, 2F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(6.46863F, -6.79443F, -5.71368F, -0F, -0F, -0.34907F));
+        head.addOrReplaceChild("head_r10", CubeListBuilder.create().texOffs(0, 40).addBox(-1F, -2F, -1F, 4F, 3F, 2F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-8.53137F, -7.39443F, -5.51368F, -0F, -0F, 0.30543F));
+        head.addOrReplaceChild("head_r11", CubeListBuilder.create().texOffs(1, 62).addBox(-4F, -2F, 1F, 8F, 2F, 0F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-0.13137F, -7.69443F, -7.01368F, -0.2618F, -0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.offset(-5F, 2F, 0F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.offset(5F, 2F, 0F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 128, 64);
+    }
+
     // sapphire_boots (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/sapphire_boots.bbmodel)
     public static LayerDefinition sapphireBoots() {
         MeshDefinition mesh = new MeshDefinition();
