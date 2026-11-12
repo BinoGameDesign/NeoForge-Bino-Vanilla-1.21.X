@@ -153,4 +153,29 @@ public final class Armor3DMeshes {
         PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12F, 0F));
         return LayerDefinition.create(mesh, 64, 64);
     }
+
+    // sapphire_leggings (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/sapphire_leggings.bbmodel)
+    public static LayerDefinition sapphireLeggings() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
+                .texOffs(16, 16).addBox(-4F, 0F, -2F, 8F, 12F, 4F, new CubeDeformation(0.5F)), PartPose.offset(0F, 0F, 0F));
+        body.addOrReplaceChild("body_r0", CubeListBuilder.create().texOffs(16, 56).addBox(-3F, -3.5F, -0.5F, 6F, 7F, 1F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-4.9F, 12.5F, 0F, -0F, 1.5708F, 0.1309F));
+        body.addOrReplaceChild("body_r1", CubeListBuilder.create().texOffs(16, 56).addBox(-3.5F, -3.5F, -0.5F, 6F, 7F, 1F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(4.9F, 12.5F, 0.5F, -0F, -1.5708F, -0.1309F));
+        body.addOrReplaceChild("body_r2", CubeListBuilder.create().texOffs(46, 53).addBox(-4F, -3.5F, -1.5F, 7F, 9F, 2F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(4.7F, 12.5F, -0.7F, -0F, 1.5708F, -0.1309F));
+        body.addOrReplaceChild("body_r3", CubeListBuilder.create().texOffs(46, 53).addBox(-4F, -3.5F, -1.5F, 7F, 9F, 2F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-4.6F, 12.5F, 0.5F, -0F, -1.5708F, 0.1309F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.offset(-5F, 2F, 0F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.offset(5F, 2F, 0F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create()
+                .texOffs(0, 16).addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(0.5F)), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create()
+                .texOffs(0, 16).mirror().addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(0.5F)).mirror(false), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 64, 64);
+    }
 }
