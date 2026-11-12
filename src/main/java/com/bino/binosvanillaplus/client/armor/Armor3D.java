@@ -43,6 +43,7 @@ public final class Armor3D {
             entry(ModItems.SAPPHIRE_HELMET, "sapphire_helmet", Armor3DMeshes::sapphireHelmet),
             entry(ModItems.SAPPHIRE_CHESTPLATE, "sapphire_chestplate", Armor3DMeshes::sapphireChestplate),
             entry(ModItems.SAPPHIRE_LEGGINGS, "sapphire_leggings", Armor3DMeshes::sapphireLeggings),
+            entry(ModItems.SAPPHIRE_BOOTS, "sapphire_boots", Armor3DMeshes::sapphireBoots),
     };
 
     @SubscribeEvent
