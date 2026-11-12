@@ -108,6 +108,27 @@ public final class Armor3DMeshes {
         return LayerDefinition.create(mesh, 64, 64);
     }
 
+    // sapphire_chestplate (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/sapphire_chestplate.bbmodel)
+    public static LayerDefinition sapphireChestplate() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
+                .texOffs(16, 16).addBox(-4F, 0F, -2F, 8F, 12F, 4F, new CubeDeformation(1.1F)), PartPose.offset(0F, 0F, 0F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create()
+                .texOffs(40, 16).addBox(-3F, -2F, -2F, 4F, 12F, 4F, new CubeDeformation(1F))
+                .texOffs(41, 38).addBox(-3F, -2F, -2F, 4F, 12F, 4F, new CubeDeformation(1.2F)), PartPose.offset(-5F, 2F, 0F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create()
+                .texOffs(22, 43).mirror().addBox(-1F, -2F, -2F, 4F, 12F, 4F, new CubeDeformation(1F)).mirror(false)
+                .texOffs(22, 29).addBox(5.6F, -1F, -3.9F, 0F, 3F, 8F, new CubeDeformation(0F))
+                .texOffs(32, 0).addBox(-2.4F, -4F, -3.9F, 8F, 3F, 8F, new CubeDeformation(0F))
+                .texOffs(0, 1).addBox(-2.5F, 2F, -3.4F, 7F, 3F, 7F, new CubeDeformation(0F)), PartPose.offset(5F, 2F, 0F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 64, 64);
+    }
+
     // sapphire_helmet (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/sapphire_helmet.bbmodel)
     public static LayerDefinition sapphireHelmet() {
         MeshDefinition mesh = new MeshDefinition();
