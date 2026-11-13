@@ -108,6 +108,33 @@ public final class Armor3DMeshes {
         return LayerDefinition.create(mesh, 64, 64);
     }
 
+    // rubi_chestplate (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/rubi_chestplate.bbmodel)
+    public static LayerDefinition rubiChestplate() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
+                .texOffs(16, 16).addBox(-4F, 0F, -2F, 8F, 12F, 4F, new CubeDeformation(1.1F))
+                .texOffs(0, 52).addBox(-4.5F, -0.1F, -4F, 9F, 10F, 2F, new CubeDeformation(0F))
+                .texOffs(0, 52).addBox(-4.5F, -0.1F, 2F, 9F, 10F, 2F, new CubeDeformation(0F)), PartPose.offset(0F, 0F, 0F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create()
+                .texOffs(40, 16).addBox(-3F, -2F, -2F, 4F, 12F, 4F, new CubeDeformation(1F)), PartPose.offset(-5F, 2F, 0F));
+        rightarm.addOrReplaceChild("right_arm_r0", CubeListBuilder.create().texOffs(42, 49).mirror().addBox(-1F, -2F, -3.5F, 4F, 8F, 7F, new CubeDeformation(-0.1F)).mirror(false),
+                PartPose.offsetAndRotation(-3.5F, 0.3F, 0F, -0F, -0F, 0.21817F));
+        rightarm.addOrReplaceChild("right_arm_r1", CubeListBuilder.create().texOffs(42, 49).mirror().addBox(-1F, -2F, -3.5F, 4F, 8F, 7F, new CubeDeformation(0F)).mirror(false),
+                PartPose.offsetAndRotation(-3.5F, -1.7F, 0F, -0F, -0F, 0.21817F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create()
+                .texOffs(40, 16).mirror().addBox(-1F, -2F, -2F, 4F, 12F, 4F, new CubeDeformation(1F)).mirror(false), PartPose.offset(5F, 2F, 0F));
+        leftarm.addOrReplaceChild("left_arm_r0", CubeListBuilder.create().texOffs(42, 49).addBox(-3F, -2F, -3.5F, 4F, 8F, 7F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(3.5F, -1.7F, 0F, -0F, -0F, -0.21817F));
+        leftarm.addOrReplaceChild("left_arm_r1", CubeListBuilder.create().texOffs(42, 49).addBox(-3F, -2F, -3.5F, 4F, 8F, 7F, new CubeDeformation(-0.1F)),
+                PartPose.offsetAndRotation(3.5F, 0.3F, 0F, -0F, -0F, -0.21817F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 64, 64);
+    }
+
     // rubi_helmet (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/rubi_helmet.bbmodel)
     public static LayerDefinition rubiHelmet() {
         MeshDefinition mesh = new MeshDefinition();
