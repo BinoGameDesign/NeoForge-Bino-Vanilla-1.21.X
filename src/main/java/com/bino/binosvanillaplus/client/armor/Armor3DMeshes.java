@@ -12,6 +12,45 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 public final class Armor3DMeshes {
     private Armor3DMeshes() {}
 
+    // diamond_chestplate (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/diamond_chestplate.bbmodel)
+    public static LayerDefinition diamondChestplate() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
+                .texOffs(0, 16).addBox(-4F, 0F, -2F, 8F, 12F, 4F, new CubeDeformation(1.1F)), PartPose.offset(0F, 0F, 0F));
+        body.addOrReplaceChild("body_r0", CubeListBuilder.create().texOffs(40, 0).addBox(-3F, -2F, -1F, 7F, 12F, 1F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-0.5F, 1.9F, -3F, -0.08727F, -0F, 0F));
+        body.addOrReplaceChild("body_r1", CubeListBuilder.create().texOffs(40, 24).addBox(-1F, -1F, -1F, 2F, 2F, 2F, new CubeDeformation(-0.2F)),
+                PartPose.offsetAndRotation(3.5F, 0F, -3.9F, -0F, -0F, -0.7854F));
+        body.addOrReplaceChild("body_r2", CubeListBuilder.create().texOffs(40, 20).addBox(-3F, -2F, -1F, 7F, 3F, 1F, new CubeDeformation(-0.1F)),
+                PartPose.offsetAndRotation(-0.5F, 13.2399F, -3.17851F, 0.3927F, -0F, 0F));
+        body.addOrReplaceChild("body_r3", CubeListBuilder.create().texOffs(40, 24).mirror().addBox(-1F, -1F, -1F, 2F, 2F, 2F, new CubeDeformation(-0.2F)).mirror(false),
+                PartPose.offsetAndRotation(-3.5F, 0F, -3.9F, -0F, -0F, 0.7854F));
+        body.addOrReplaceChild("body_r4", CubeListBuilder.create().texOffs(40, 28).addBox(-1.5F, -1.5F, 0F, 3F, 3F, 1F, new CubeDeformation(-0.1F)),
+                PartPose.offsetAndRotation(3.5F, 0F, -4.4F, -0F, -0F, -0.7854F));
+        body.addOrReplaceChild("body_r5", CubeListBuilder.create().texOffs(40, 28).mirror().addBox(-1.5F, -1.5F, 0F, 3F, 3F, 1F, new CubeDeformation(-0.1F)).mirror(false),
+                PartPose.offsetAndRotation(-3.5F, 0F, -4.4F, -0F, -0F, 0.7854F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create()
+                .texOffs(40, 13).mirror().addBox(-3F, 5.9F, -2F, 4F, 3F, 4F, new CubeDeformation(1.3F)).mirror(false)
+                .texOffs(24, 16).mirror().addBox(-3F, -2F, -2F, 4F, 12F, 4F, new CubeDeformation(1F)).mirror(false), PartPose.offset(-5F, 2F, 0F));
+        rightarm.addOrReplaceChild("right_arm_r0", CubeListBuilder.create().texOffs(0, 32).mirror().addBox(-1F, -4F, -3F, 5F, 4F, 6F, new CubeDeformation(0.5F)).mirror(false),
+                PartPose.offsetAndRotation(-3.5F, 1.2F, 0F, -0F, -0F, -0.02618F));
+        rightarm.addOrReplaceChild("right_arm_r1", CubeListBuilder.create().texOffs(0, 32).mirror().addBox(-1F, -4F, -3F, 5F, 4F, 6F, new CubeDeformation(0.6F)).mirror(false),
+                PartPose.offsetAndRotation(-4F, -0.8F, 0F, -0F, -0F, 0.10472F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create()
+                .texOffs(24, 16).addBox(-1F, -2F, -2F, 4F, 12F, 4F, new CubeDeformation(1F))
+                .texOffs(40, 13).addBox(-1F, 5.9F, -2F, 4F, 3F, 4F, new CubeDeformation(1.3F)), PartPose.offset(5F, 2F, 0F));
+        leftarm.addOrReplaceChild("left_arm_r0", CubeListBuilder.create().texOffs(0, 32).addBox(-4F, -4F, -3F, 5F, 4F, 6F, new CubeDeformation(0.6F)),
+                PartPose.offsetAndRotation(4F, -0.8F, 0F, -0F, -0F, -0.10472F));
+        leftarm.addOrReplaceChild("left_arm_r1", CubeListBuilder.create().texOffs(0, 32).addBox(-4F, -4F, -3F, 5F, 4F, 6F, new CubeDeformation(0.5F)),
+                PartPose.offsetAndRotation(3.5F, 1.2F, 0F, -0F, -0F, 0.02618F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 64, 64);
+    }
+
     // diamond_helmet (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/diamond_helmet.bbmodel)
     public static LayerDefinition diamondHelmet() {
         MeshDefinition mesh = new MeshDefinition();

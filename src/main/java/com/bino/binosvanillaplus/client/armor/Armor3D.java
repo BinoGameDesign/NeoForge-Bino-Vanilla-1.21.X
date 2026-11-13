@@ -52,6 +52,7 @@ public final class Armor3D {
             entry(ModItems.RUBI_BOOTS, "rubi_boots", Armor3DMeshes::rubiBoots),
             // pecas do jogo base: a textura do modelo vem de texture() (mixin ClientHooksArmorTextureMixin)
             entry(() -> Items.DIAMOND_HELMET, "diamond_helmet", Armor3DMeshes::diamondHelmet),
+            entry(() -> Items.DIAMOND_CHESTPLATE, "diamond_chestplate", Armor3DMeshes::diamondChestplate),
     };
 
     private static final Map<Item, ResourceLocation> TEXTURES = new HashMap<>();
