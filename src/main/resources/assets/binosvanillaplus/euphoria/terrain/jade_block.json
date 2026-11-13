@@ -1,0 +1,8 @@
+{
+  "name": "jade_block",
+  "glsl": "jade_block.glsl",
+  "mat0": [
+    "binosvanillaplus:jade_block"
+  ],
+  "held_lighting": false
+}

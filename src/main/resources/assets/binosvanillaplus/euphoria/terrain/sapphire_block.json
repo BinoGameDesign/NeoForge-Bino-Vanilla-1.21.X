@@ -1,0 +1,8 @@
+{
+  "name": "sapphire_block",
+  "glsl": "sapphire_block.glsl",
+  "mat0": [
+    "binosvanillaplus:sapphire_block"
+  ],
+  "held_lighting": false
+}
