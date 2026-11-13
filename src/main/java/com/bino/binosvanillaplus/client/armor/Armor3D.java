@@ -14,6 +14,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -27,12 +28,13 @@ import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsE
 public final class Armor3D {
     private Armor3D() {}
 
-    private record Entry(Supplier<? extends Item> item, ModelLayerLocation layer, Supplier<LayerDefinition> mesh) {}
+    private record Entry(Supplier<? extends Item> item, ModelLayerLocation layer, Supplier<LayerDefinition> mesh, ResourceLocation texture) {}
 
     private static final Map<Item, HumanoidModel<LivingEntity>> MODELS = new HashMap<>();
 
     private static Entry entry(Supplier<? extends Item> item, String name, Supplier<LayerDefinition> mesh) {
-        return new Entry(item, new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "armor/" + name), "main"), mesh);
+        return new Entry(item, new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "armor/" + name), "main"), mesh,
+                ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "textures/models/armor/" + name + "_3d.png"));
     }
 
     private static final Entry[] ENTRIES = {
@@ -48,7 +50,17 @@ public final class Armor3D {
             entry(ModItems.RUBI_CHESTPLATE, "rubi_chestplate", Armor3DMeshes::rubiChestplate),
             entry(ModItems.RUBI_LEGGINGS, "rubi_leggings", Armor3DMeshes::rubiLeggings),
             entry(ModItems.RUBI_BOOTS, "rubi_boots", Armor3DMeshes::rubiBoots),
+            // pecas do jogo base: a textura do modelo vem de texture() (mixin ClientHooksArmorTextureMixin)
+            entry(() -> Items.DIAMOND_HELMET, "diamond_helmet", Armor3DMeshes::diamondHelmet),
     };
+
+    private static final Map<Item, ResourceLocation> TEXTURES = new HashMap<>();
+
+    // textura do modelo 3D (ou null se a peca nao tem modelo 3D); usada para as pecas do jogo base
+    public static ResourceLocation texture(ItemStack stack) {
+        if (TEXTURES.isEmpty()) for (Entry en : ENTRIES) TEXTURES.put(en.item().get(), en.texture());
+        return TEXTURES.get(stack.getItem());
+    }
 
     @SubscribeEvent
     public static void onLayers(EntityRenderersEvent.RegisterLayerDefinitions e) {

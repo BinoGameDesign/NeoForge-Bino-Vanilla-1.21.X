@@ -9,7 +9,8 @@
         "client.ElytraLayerMixin",
         "client.LevelRendererMiningMixin",
         "client.VillagerRendererMixin",
-        "client.VillagerProfessionLayerMixin"
+        "client.VillagerProfessionLayerMixin",
+        "client.ClientHooksArmorTextureMixin"
     ],
     "injectors": {
         "defaultRequire": 1

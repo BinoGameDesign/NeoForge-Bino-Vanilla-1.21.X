@@ -12,6 +12,26 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 public final class Armor3DMeshes {
     private Armor3DMeshes() {}
 
+    // diamond_helmet (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/diamond_helmet.bbmodel)
+    public static LayerDefinition diamondHelmet() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create()
+                .texOffs(0, 0).addBox(-4F, -8F, -4F, 8F, 8F, 8F, new CubeDeformation(1F))
+                .texOffs(32, 0).addBox(-4F, -8F, -4F, 8F, 8F, 8F, new CubeDeformation(1.6F))
+                .texOffs(102, 49).mirror().addBox(-6.3F, -1F, -5.5F, 2F, 3F, 11F, new CubeDeformation(0F)).mirror(false)
+                .texOffs(102, 49).addBox(4.3F, -1F, -5.5F, 2F, 3F, 11F, new CubeDeformation(0F)), PartPose.offset(0F, 0F, 0F));
+        head.addOrReplaceChild("head_r0", CubeListBuilder.create().texOffs(0, 0).addBox(-1F, -1F, -1F, 2F, 2F, 2F, new CubeDeformation(-0.3F)),
+                PartPose.offsetAndRotation(0F, -6.1F, -5F, -0F, -0F, -0.7854F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.offset(-5F, 2F, 0F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.offset(5F, 2F, 0F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 128, 64);
+    }
+
     // jade_boots (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/jade_boots.bbmodel)
     public static LayerDefinition jadeBoots() {
         MeshDefinition mesh = new MeshDefinition();
