@@ -46,14 +46,6 @@ public class MapOptionsScreen extends BinoScreen {
             MapOptions.save();
         }).tooltip("Mostra ao longe o terreno que voce ja explorou, alem da distancia de renderizacao"));
         y += rowH;
-        BinoUi.Button[] atm = new BinoUi.Button[1];
-        atm[0] = addRenderableWidget(new BinoUi.Button(L + 13, y, W - 26, rowH - 3, atmText(), BinoUi.Style.LIGHT, () -> {
-            MapOptions.atmosphere = (MapOptions.atmosphere + 2) % 3;   // camadas -> so cor -> desligada -> camadas
-            atm[0].setLabel(atmText());
-            MapOptions.save();
-        }).tooltip("Cor da neblina por bioma, caverna e dimensão (também no minimapa e no mapa-mundi). "
-                + "Camadas: névoa que deita nos vales e afina com a altura (com shaderpack, só a cor)"));
-        y += rowH;
         BinoUi.Button[] op = new BinoUi.Button[1];
         op[0] = addRenderableWidget(new BinoUi.Button(L + 13, y, W - 26, rowH - 3, opacityText(), BinoUi.Style.LIGHT, () -> {
             int[] steps = {40, 60, 80, 100};
@@ -69,14 +61,6 @@ public class MapOptionsScreen extends BinoScreen {
     private static String farText() {
         if (FarTerrain.externalTakesOver()) return "Distância extra: pelo Distant Horizons";
         return "Distância extra: " + (MapOptions.farChunks == 0 ? "Desligado" : MapOptions.farChunks + " chunks");
-    }
-
-    private static String atmText() {
-        return "Neblina do ambiente: " + switch (MapOptions.atmosphere) {
-            case 0 -> "Desligada";
-            case 1 -> "Só cor";
-            default -> "Cor + camadas";
-        };
     }
 
     private static String opacityText() { return "Opacidade do minimapa: " + MapOptions.minimapOpacity + "%"; }

@@ -4,15 +4,19 @@ import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
 import org.joml.Matrix4f;
 
 // Distancia extra (escrita do zero, ideia parecida com a do Distant Horizons, mas bem mais leve):
@@ -98,8 +102,7 @@ public class FarTerrain {
 
         Sun.update(mc);
         Sun.applyUniforms();
-        float[] fog = com.bino.binosvanillaplus.client.atmosphere.AtmosphereState.valid() && MapOptions.atmosphere >= 1
-                ? com.bino.binosvanillaplus.client.atmosphere.AtmosphereState.fog : MapAtmosphere.provider.fogColor();
+        float[] fog = MapAtmosphere.provider.fogColor();
         sh.safeGetUniform("MapFogColor").set(fog[0], fog[1], fog[2]);
         sh.safeGetUniform("MapFogStart").set(farBlocks * 0.62f);
         sh.safeGetUniform("MapFogEnd").set(farBlocks * 0.98f);
@@ -196,5 +199,15 @@ public class FarTerrain {
         vb.drawWithShader(new Matrix4f(view).translate(ox, oy, oz), proj, sh);
     }
 
-    // (a neblina do jogo e' empurrada para o fim da distancia extra em atmosphere/AtmosphereFog.onRenderFog)
+    // sem shaderpack: a neblina do jogo vai para o fim do terreno distante (senao ele some dentro dela)
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onRenderFog(ViewportEvent.RenderFog event) {
+        if (event.getMode() != FogRenderer.FogMode.FOG_TERRAIN || event.getType() != FogType.NONE) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!active(mc) || irisPack()) return;
+        float farBlocks = MapOptions.farChunks * 16f;
+        event.setNearPlaneDistance(farBlocks * 0.62f);
+        event.setFarPlaneDistance(farBlocks * 0.98f);
+        event.setCanceled(true);
+    }
 }
