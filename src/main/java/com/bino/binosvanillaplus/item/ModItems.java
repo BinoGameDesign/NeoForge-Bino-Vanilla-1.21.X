@@ -100,8 +100,8 @@ public class ModItems {
             () -> new Armor3DItem(ModArmorMaterials.RUBI, ArmorItem.Type.LEGGINGS,
                     new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33)), "rubi_leggings"));   // 33 = multiplicador do diamante
     public static final DeferredItem<ArmorItem> RUBI_BOOTS = ITEMS.register("rubi_boots",
-            () -> new ArmorItem(ModArmorMaterials.RUBI, ArmorItem.Type.BOOTS,
-                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33))));   // 33 = multiplicador do diamante
+            () -> new Armor3DItem(ModArmorMaterials.RUBI, ArmorItem.Type.BOOTS,
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33)), "rubi_boots"));   // 33 = multiplicador do diamante
 
     // ===== Armadura de Safira =====
     public static final DeferredItem<ArmorItem> SAPPHIRE_HELMET = ITEMS.register("sapphire_helmet",
