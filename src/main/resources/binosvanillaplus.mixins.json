@@ -10,7 +10,8 @@
         "client.LevelRendererMiningMixin",
         "client.VillagerRendererMixin",
         "client.VillagerProfessionLayerMixin",
-        "client.ClientHooksArmorTextureMixin"
+        "client.ClientHooksArmorTextureMixin",
+        "client.ItemInHandRendererForgeGlowMixin"
     ],
     "injectors": {
         "defaultRequire": 1
