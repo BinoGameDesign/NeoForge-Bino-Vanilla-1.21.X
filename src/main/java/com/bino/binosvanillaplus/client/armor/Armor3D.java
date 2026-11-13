@@ -53,6 +53,7 @@ public final class Armor3D {
             // pecas do jogo base: a textura do modelo vem de texture() (mixin ClientHooksArmorTextureMixin)
             entry(() -> Items.DIAMOND_HELMET, "diamond_helmet", Armor3DMeshes::diamondHelmet),
             entry(() -> Items.DIAMOND_CHESTPLATE, "diamond_chestplate", Armor3DMeshes::diamondChestplate),
+            entry(() -> Items.DIAMOND_LEGGINGS, "diamond_leggings", Armor3DMeshes::diamondLeggings),
     };
 
     private static final Map<Item, ResourceLocation> TEXTURES = new HashMap<>();

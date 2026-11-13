@@ -71,6 +71,29 @@ public final class Armor3DMeshes {
         return LayerDefinition.create(mesh, 128, 64);
     }
 
+    // diamond_leggings (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/diamond_leggings.bbmodel)
+    public static LayerDefinition diamondLeggings() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
+                .texOffs(16, 16).addBox(-4F, 0F, -2F, 8F, 12F, 4F, new CubeDeformation(0.5F)), PartPose.offset(0F, 0F, 0F));
+        body.addOrReplaceChild("body_r0", CubeListBuilder.create().texOffs(17, 56).addBox(-3F, -3.5F, -0.5F, 6F, 6F, 1F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(4.9F, 12.6F, 0F, -0F, -1.5708F, -0.17453F));
+        body.addOrReplaceChild("body_r1", CubeListBuilder.create().texOffs(17, 56).mirror().addBox(-3F, -3.5F, -0.5F, 6F, 6F, 1F, new CubeDeformation(0F)).mirror(false),
+                PartPose.offsetAndRotation(-4.9F, 12.6F, 0F, -0F, 1.5708F, 0.17453F));
+        body.addOrReplaceChild("body_r2", CubeListBuilder.create().texOffs(49, 56).addBox(-2.5F, -3.5F, -0.5F, 5F, 7F, 1F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(-0F, 12.6F, -3F, -3.05433F, -0F, 3.14159F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.offset(-5F, 2F, 0F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.offset(5F, 2F, 0F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create()
+                .texOffs(0, 16).addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(0.5F)), PartPose.offset(-1.9F, 12F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create()
+                .texOffs(0, 16).mirror().addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(0.5F)).mirror(false), PartPose.offset(1.9F, 12F, 0F));
+        return LayerDefinition.create(mesh, 64, 64);
+    }
+
     // jade_boots (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/jade_boots.bbmodel)
     public static LayerDefinition jadeBoots() {
         MeshDefinition mesh = new MeshDefinition();
