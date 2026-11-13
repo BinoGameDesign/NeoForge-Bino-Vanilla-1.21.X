@@ -11,7 +11,8 @@
         "client.VillagerRendererMixin",
         "client.VillagerProfessionLayerMixin",
         "client.ClientHooksArmorTextureMixin",
-        "client.ItemInHandRendererForgeGlowMixin"
+        "client.ItemInHandRendererForgeGlowMixin",
+        "client.GuiGraphicsForgeOutlineMixin"
     ],
     "injectors": {
         "defaultRequire": 1

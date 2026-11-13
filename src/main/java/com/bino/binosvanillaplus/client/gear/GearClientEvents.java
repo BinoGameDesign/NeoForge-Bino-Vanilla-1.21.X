@@ -47,6 +47,7 @@ public final class GearClientEvents {
     @SubscribeEvent
     public static void addLayers(EntityRenderersEvent.AddLayers event) {
         ForgeGlow.clearCache();   // recarregou os recursos: le de novo a cor dos itens
+        ForgeIconOutline.clearCache();
         for (PlayerSkin.Model model : event.getSkins()) {
             if (event.getSkin(model) instanceof PlayerRenderer renderer) {
                 renderer.addLayer(new HelmetLampLayer(renderer));
