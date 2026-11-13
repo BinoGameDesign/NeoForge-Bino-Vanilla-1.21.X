@@ -48,10 +48,6 @@ public final class AtmosphereState {
 
     public static boolean valid() { return valid; }
 
-    // ---- para as particulas de nevoa (MistParticles)
-    static float caveNow() { return caveF; }
-    static boolean dims() { return dimMode; }
-
     // ---------------------------------------------------------------- tick
     public static void tick(Minecraft mc) {
         ClientLevel lvl = mc.level;
