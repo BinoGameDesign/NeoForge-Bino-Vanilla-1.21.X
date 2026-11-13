@@ -12,6 +12,28 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 public final class Armor3DMeshes {
     private Armor3DMeshes() {}
 
+    // diamond_boots (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/diamond_boots.bbmodel)
+    public static LayerDefinition diamondBoots() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        PartDefinition head = root.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition hat = root.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.offset(0F, 0F, 0F));
+        PartDefinition rightarm = root.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.offset(-5F, 2F, 0F));
+        PartDefinition leftarm = root.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.offset(5F, 2F, 0F));
+        PartDefinition rightleg = root.addOrReplaceChild("right_leg", CubeListBuilder.create()
+                .texOffs(0, 16).addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(1.1F))
+                .texOffs(18, 58).addBox(-3F, 10F, -4.9F, 6F, 3F, 2F, new CubeDeformation(0F)), PartPose.offset(-1.9F, 12F, 0F));
+        rightleg.addOrReplaceChild("right_leg_r0", CubeListBuilder.create().texOffs(38, 59).addBox(-3F, -1.5F, 0F, 6F, 4F, 0F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(0F, 4.5F, -3.7F, 0.17453F, -0F, 0F));
+        PartDefinition leftleg = root.addOrReplaceChild("left_leg", CubeListBuilder.create()
+                .texOffs(0, 16).mirror().addBox(-2F, 0F, -2F, 4F, 12F, 4F, new CubeDeformation(1.15F)).mirror(false)
+                .texOffs(18, 58).addBox(-3F, 10F, -4.9F, 6F, 3F, 2F, new CubeDeformation(0.05F)), PartPose.offset(1.9F, 12F, 0F));
+        leftleg.addOrReplaceChild("left_leg_r0", CubeListBuilder.create().texOffs(38, 59).addBox(-3F, -1.5F, 0F, 6F, 4F, 0F, new CubeDeformation(0F)),
+                PartPose.offsetAndRotation(0F, 4.5F, -3.75F, 0.17453F, -0F, 0F));
+        return LayerDefinition.create(mesh, 64, 64);
+    }
+
     // diamond_chestplate (gerado por tools/bbmodel_armor.py a partir de tools/armor_models/diamond_chestplate.bbmodel)
     public static LayerDefinition diamondChestplate() {
         MeshDefinition mesh = new MeshDefinition();
