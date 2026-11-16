@@ -65,15 +65,29 @@ public final class ForgeGlow {
 
     public static void clearCache() { COLORS.clear(); }
 
+    // Cor do material quando existir o sprite da gema/material (jade_sword -> jade.png, diamond_helmet -> diamond.png):
+    // assim todas as pecas de um conjunto brilham igual, mesmo as que tem outras cores no desenho (couro, capuz...).
+    // Sem isso, a cor vem do proprio sprite do item.
     private static int readColor(Item item) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
-        ResourceLocation tex = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "textures/item/" + id.getPath() + ".png");
+        String path = id.getPath();
+        int us = path.indexOf('_');
+        if (us > 0) {
+            Integer mat = spriteColor(id.getNamespace(), path.substring(0, us));
+            if (mat != null) return mat;
+        }
+        Integer own = spriteColor(id.getNamespace(), path);
+        return own == null ? FALLBACK : own;
+    }
+
+    private static Integer spriteColor(String namespace, String name) {
+        ResourceLocation tex = ResourceLocation.fromNamespaceAndPath(namespace, "textures/item/" + name + ".png");
         var res = Minecraft.getInstance().getResourceManager().getResource(tex);
-        if (res.isEmpty()) return FALLBACK;
+        if (res.isEmpty()) return null;
         try (InputStream in = res.get().open(); NativeImage img = NativeImage.read(in)) {
             return dominant(img);
         } catch (Exception e) {
-            return FALLBACK;
+            return null;
         }
     }
 
