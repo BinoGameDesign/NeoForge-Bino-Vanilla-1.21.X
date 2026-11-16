@@ -182,6 +182,7 @@
   "message.binosvanillaplus.tripod.timer": "Foto em 5 segundos...",
   "item.binosvanillaplus.exploration_diary": "Diário de Exploração",
   "tooltip.binosvanillaplus.exploration_diary": "Descobertas fotografadas e, no fim, suas fotos (revelar = 1 papel).",
+  "item.binosvanillaplus.mining_tab_icon": "Ícone da aba Mining",
   "item.binosvanillaplus.photo": "Foto",
   "tooltip.binosvanillaplus.photo": "Tirada no dia %s. Coloque numa moldura.",
   "message.binosvanillaplus.journal.new": "Nova descoberta no diário: %s",
