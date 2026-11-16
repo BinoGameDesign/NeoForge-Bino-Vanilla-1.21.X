@@ -29,9 +29,8 @@ public class ModCreativeModeTabs {
 
     // ---------------------------------------------------------------- Mining
     // minerios, gemas, blocos, mesa de lapidacao, pedras de forja, pedra filosofal, ferramentas e armaduras
-    // (icone provisorio: sera trocado pelo icone do Mining)
     public static final Supplier<CreativeModeTab> MINING_TAB = CREATIVE_MODE_TAB.register("mining",
-            () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.RUBI.get()))
+            () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.MINING_TAB_ICON.get()))
                     .title(Component.translatable("creativetab.binosvanillaplus.mining"))
                     .displayItems((params, output) -> {
                         output.accept(ModBlocks.RUBI_ORE);

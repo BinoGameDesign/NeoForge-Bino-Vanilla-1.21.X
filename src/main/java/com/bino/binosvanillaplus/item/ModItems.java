@@ -209,6 +209,9 @@ public class ModItems {
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.PhotoItem> PHOTO = ITEMS.register("photo",
             () -> new com.bino.binosvanillaplus.item.custom.PhotoItem(new Item.Properties().stacksTo(1)));
 
+    // So serve de icone da aba Mining no criativo (nao aparece em aba nenhuma, nao se crafta)
+    public static final DeferredItem<Item> MINING_TAB_ICON = ITEMS.register("mining_tab_icon", () -> new Item(new Item.Properties()));
+
     // Item do tumulo: so existe para servir de icone no mapa (nao aparece no criativo, nao se crafta)
     public static final DeferredItem<net.minecraft.world.item.BlockItem> GRAVE = ITEMS.register("grave",
             () -> new net.minecraft.world.item.BlockItem(com.bino.binosvanillaplus.block.ModBlocks.GRAVE.get(), new Item.Properties()));
