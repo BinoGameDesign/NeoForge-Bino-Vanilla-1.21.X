@@ -12,11 +12,13 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
 
-// Abas do modo criativo, uma (ou duas) por mod do futuro conjunto. Ids com o prefixo do mod:
-//   gems_*    -> Gemas & Forja        explore_*  -> Exploracao
-//   world_*   -> Mundo Vivo           pocket_*   -> Dimensao Portatil
-// Todas aparecem em sequencia, nesta ordem. Itens que nao devem aparecer no criativo (foto, tumulo, luz da lanterna,
-// parede e porta da dimensao) ficam de fora de proposito.
+// Abas do modo criativo, uma por mod do futuro conjunto (cada mod funciona sozinho e melhora quando usado com os outros):
+//   mining_*      -> Mining       (gemas, equipamentos, forja, lapidario)
+//   exploration_* -> Exploration  (corda, gancho, lanterna, dinamite, camera, sonar...)
+//   adventure_*   -> Adventure    (mapa, Allay, tumulo, pings, dimensao portatil, fogueiras, niveis de mobs)
+//   faction_*     -> Faction      (ovos de spawn das faccoes)
+// New Menus (inventario novo e receitas) nao tem itens, entao nao tem aba.
+// Ficam de fora de proposito: foto, tumulo, luz da lanterna, parede e porta da dimensao.
 public class ModCreativeModeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TAB =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, BinosVanillaMod.MOD_ID);
@@ -25,11 +27,12 @@ public class ModCreativeModeTabs {
         return ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, path);
     }
 
-    // ---------------------------------------------------------------- Gemas & Forja
-    // materiais, minerios, blocos, mesa de lapidacao, pedras de forja e pedra filosofal
-    public static final Supplier<CreativeModeTab> GEMS_MATERIALS_TAB = CREATIVE_MODE_TAB.register("gems_materials",
+    // ---------------------------------------------------------------- Mining
+    // minerios, gemas, blocos, mesa de lapidacao, pedras de forja, pedra filosofal, ferramentas e armaduras
+    // (icone provisorio: sera trocado pelo icone do Mining)
+    public static final Supplier<CreativeModeTab> MINING_TAB = CREATIVE_MODE_TAB.register("mining",
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.RUBI.get()))
-                    .title(Component.translatable("creativetab.binosvanillaplus.gems_materials"))
+                    .title(Component.translatable("creativetab.binosvanillaplus.mining"))
                     .displayItems((params, output) -> {
                         output.accept(ModBlocks.RUBI_ORE);
                         output.accept(ModBlocks.RUBI_DEEPSLATE_ORE);
@@ -64,14 +67,6 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.PHILOSOPHER_STONE_INCOMPLETE);
                         output.accept(ModItems.PHILOSOPHER_STONE_SMALL);
                         output.accept(ModItems.PHILOSOPHER_STONE_LARGE);
-                    }).build());
-
-    // ferramentas e armaduras de cada gema (rubi, safira, jade)
-    public static final Supplier<CreativeModeTab> GEMS_GEAR_TAB = CREATIVE_MODE_TAB.register("gems_gear",
-            () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.RUBI_SWORD.get()))
-                    .withTabsBefore(id("gems_materials"))
-                    .title(Component.translatable("creativetab.binosvanillaplus.gems_gear"))
-                    .displayItems((params, output) -> {
                         output.accept(ModItems.RUBI_SWORD);
                         output.accept(ModItems.RUBI_PICKAXE);
                         output.accept(ModItems.RUBI_SHOVEL);
@@ -101,11 +96,11 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.JADE_BOOTS);
                     }).build());
 
-    // ---------------------------------------------------------------- Exploracao
-    public static final Supplier<CreativeModeTab> EXPLORE_TAB = CREATIVE_MODE_TAB.register("explore_tools",
+    // ---------------------------------------------------------------- Exploration
+    public static final Supplier<CreativeModeTab> EXPLORATION_TAB = CREATIVE_MODE_TAB.register("exploration",
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.CYALUME_STICK.get()))
-                    .withTabsBefore(id("gems_gear"))
-                    .title(Component.translatable("creativetab.binosvanillaplus.explore_tools"))
+                    .withTabsBefore(id("mining"))
+                    .title(Component.translatable("creativetab.binosvanillaplus.exploration"))
                     .displayItems((params, output) -> {
                         output.accept(ModItems.CYALUME_STICK);
                         output.accept(ModItems.FLASHLIGHT);
@@ -124,11 +119,20 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.FOSSIL_LIMB);
                     }).build());
 
-    // ---------------------------------------------------------------- Mundo Vivo
-    public static final Supplier<CreativeModeTab> WORLD_TAB = CREATIVE_MODE_TAB.register("world_spawn_eggs",
+    // ---------------------------------------------------------------- Adventure
+    public static final Supplier<CreativeModeTab> ADVENTURE_TAB = CREATIVE_MODE_TAB.register("adventure",
+            () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.DIMENSIONAL_KEY.get()))
+                    .withTabsBefore(id("exploration"))
+                    .title(Component.translatable("creativetab.binosvanillaplus.adventure"))
+                    .displayItems((params, output) -> {
+                        output.accept(ModItems.DIMENSIONAL_KEY);
+                    }).build());
+
+    // ---------------------------------------------------------------- Faction
+    public static final Supplier<CreativeModeTab> FACTION_TAB = CREATIVE_MODE_TAB.register("faction",
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.VILLAGER_GUARD_SPAWN_EGG.get()))
-                    .withTabsBefore(id("explore_tools"))
-                    .title(Component.translatable("creativetab.binosvanillaplus.world_spawn_eggs"))
+                    .withTabsBefore(id("adventure"))
+                    .title(Component.translatable("creativetab.binosvanillaplus.faction"))
                     .displayItems((params, output) -> {
                         output.accept(ModItems.VILLAGER_GUARD_SPAWN_EGG);
                         output.accept(ModItems.VILLAGER_MAGE_SPAWN_EGG);
@@ -136,15 +140,6 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.VILLAGER_RAVAGER_SPAWN_EGG);
                         output.accept(ModItems.PILLAGER_SMUGGLER_SPAWN_EGG);
                         output.accept(ModItems.PILLAGER_CIVILIAN_SPAWN_EGG);
-                    }).build());
-
-    // ---------------------------------------------------------------- Dimensao Portatil
-    public static final Supplier<CreativeModeTab> POCKET_TAB = CREATIVE_MODE_TAB.register("pocket_dimension",
-            () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.DIMENSIONAL_KEY.get()))
-                    .withTabsBefore(id("world_spawn_eggs"))
-                    .title(Component.translatable("creativetab.binosvanillaplus.pocket_dimension"))
-                    .displayItems((params, output) -> {
-                        output.accept(ModItems.DIMENSIONAL_KEY);
                     }).build());
 
     public static void register(IEventBus eventBus) {
