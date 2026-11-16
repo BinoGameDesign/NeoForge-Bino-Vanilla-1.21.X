@@ -21,7 +21,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 // Mesa de Lapidação: o bloco que abre o menu de lapidar minérios brutos
-public class LapidaryTableBlock extends HorizontalDirectionalBlock {
+public class LapidaryTableBlock extends HorizontalDirectionalBlock implements net.minecraft.world.level.block.EntityBlock {
 
     // Exigido pelo jogo para registrar o tipo do bloco
     public static final MapCodec<LapidaryTableBlock> CODEC = simpleCodec(LapidaryTableBlock::new);
@@ -55,12 +55,27 @@ public class LapidaryTableBlock extends HorizontalDirectionalBlock {
         return SHAPE;
     }
 
-    // Botão direito no bloco: abre o menu (só o servidor abre)
+    // Botão direito no bloco: abre o menu (só o servidor abre). No cliente, a janela vira a cena em primeira pessoa
+    // (client/lapidary/LapidaryScene).
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        level.getBlockEntity(pos);   // mesas colocadas antes da cena existir ganham o block entity aqui
         if (level.isClientSide) return InteractionResult.SUCCESS;
         player.openMenu(state.getMenuProvider(level, pos));
         return InteractionResult.CONSUME;
+    }
+
+    // Mesas antigas (colocadas antes da cena existir) nao tem block entity, entao o disco, o lapidador, o botao e o
+    // visor nao aparecem. Este tick visual do cliente (blocos perto do jogador, ao acaso) cria o block entity.
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, net.minecraft.util.RandomSource random) {
+        level.getBlockEntity(pos);
+    }
+
+    // so para o renderizador das pecas que se mexem (ver LapidaryTableBlockEntity)
+    @Override
+    public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new com.bino.binosvanillaplus.block.entity.LapidaryTableBlockEntity(pos, state);
     }
 
     @Override

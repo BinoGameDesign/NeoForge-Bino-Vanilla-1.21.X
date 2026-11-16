@@ -22,6 +22,7 @@ public class LapidaryMenu extends AbstractContainerMenu {
     private static final int RESULT_SLOT = 2;
 
     private final ContainerLevelAccess access;
+    private final Player owner;
 
     // Os dois espaços de entrada. Sempre que mudam, o resultado é recalculado.
     private final Container input = new SimpleContainer(2) {
@@ -41,6 +42,7 @@ public class LapidaryMenu extends AbstractContainerMenu {
     public LapidaryMenu(int containerId, Inventory inventory, ContainerLevelAccess access) {
         super(ModMenuTypes.LAPIDARY.get(), containerId);
         this.access = access;
+        this.owner = inventory.player;
 
         // Posições iguais às da bigorna: 27, 76 e 134 (altura 47)
         this.addSlot(new Slot(this.input, 0, 27, 47) {
@@ -91,6 +93,49 @@ public class LapidaryMenu extends AbstractContainerMenu {
             boolean ready = gem != null && this.input.getItem(1).is(Items.FLINT);
             this.result.setItem(0, ready ? new ItemStack(gem) : ItemStack.EMPTY);
             this.broadcastChanges();
+            this.showOnTable(0);
+        }
+    }
+
+    // Botoes do menu (a cena em primeira pessoa aperta no fim da animacao): 0 = lapida uma gema, 1 = lapida tudo
+    // o que der. A gema vai direto para o inventario (ou cai no chao se estiver cheio).
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id != 0 && id != 1) return false;
+        int times = id == 1 ? Math.min(this.input.getItem(0).getCount(), this.input.getItem(1).getCount()) : 1;
+        boolean made = false;
+        for (int i = 0; i < times; i++) {
+            Item gem = gemFor(this.input.getItem(0));
+            if (gem == null || !this.input.getItem(1).is(Items.FLINT)) break;
+            ItemStack out = new ItemStack(gem);
+            this.input.removeItem(0, 1);
+            this.input.removeItem(1, 1);
+            if (!player.getInventory().add(out)) player.drop(out, false);
+            made = true;
+        }
+        return made;
+    }
+
+    // posicao da mesa (so existe no servidor)
+    public java.util.Optional<net.minecraft.core.BlockPos> tablePos() {
+        return this.access.evaluate((level, pos) -> pos);
+    }
+
+    // Avisa os jogadores por perto do que esta em cima da mesa (cut: 0 nada, 1 comecou uma lapidacao, 2 lapidar tudo)
+    private void showOnTable(int cut) {
+        this.access.execute((level, pos) -> {
+            if (level instanceof net.minecraft.server.level.ServerLevel server)
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingChunk(server, new net.minecraft.world.level.ChunkPos(pos),
+                        new com.bino.binosvanillaplus.network.LapidaryDisplayPayload(pos, this.owner.getId(),
+                                this.input.getItem(1).copy(), this.input.getItem(0).copy(), cut));
+        });
+    }
+
+    // O cliente comecou a animacao de lapidar: repassa para quem esta por perto (so visual)
+    public static void onCutStarted(net.minecraft.server.level.ServerPlayer player, net.minecraft.core.BlockPos pos, boolean all) {
+        if (player.containerMenu instanceof LapidaryMenu menu && menu.tablePos().map(pos::equals).orElse(false)
+                && !menu.result.getItem(0).isEmpty()) {
+            menu.showOnTable(all ? 2 : 1);
         }
     }
 
@@ -103,6 +148,12 @@ public class LapidaryMenu extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         super.removed(player);
+        // a mesa fica vazia para quem esta olhando
+        this.access.execute((level, pos) -> {
+            if (level instanceof net.minecraft.server.level.ServerLevel server)
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingChunk(server, new net.minecraft.world.level.ChunkPos(pos),
+                        new com.bino.binosvanillaplus.network.LapidaryDisplayPayload(pos, -1, ItemStack.EMPTY, ItemStack.EMPTY, 0));
+        });
         this.access.execute((level, pos) -> this.clearContainer(player, this.input));
     }
 

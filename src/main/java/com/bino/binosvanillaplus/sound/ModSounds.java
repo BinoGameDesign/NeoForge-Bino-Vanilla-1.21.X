@@ -16,6 +16,11 @@ public class ModSounds {
     public static final Supplier<SoundEvent> WHISTLE = register("whistle");
     public static final Supplier<SoundEvent> SONAR_PING = register("sonar_ping");
     public static final Supplier<SoundEvent> CAMERA_SHUTTER = register("camera_shutter");
+    // mesa de lapidacao (cena em primeira pessoa)
+    public static final Supplier<SoundEvent> LAPIDARY_SPIN = register("lapidary_spin");
+    public static final Supplier<SoundEvent> LAPIDARY_READY = register("lapidary_ready");
+    public static final Supplier<SoundEvent> LAPIDARY_DONE = register("lapidary_done");
+    public static final Supplier<SoundEvent> LAPIDARY_CONTACT = register("lapidary_contact");
 
     private static Supplier<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name)));

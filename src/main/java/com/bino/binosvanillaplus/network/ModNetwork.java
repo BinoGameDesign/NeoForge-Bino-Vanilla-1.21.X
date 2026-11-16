@@ -32,6 +32,13 @@ public class ModNetwork {
                 (payload, context) -> context.enqueueWork(() ->
                         CompanionAllayManager.setFrontCamera(context.player().getUUID(), payload.front())));
 
+        // mesa de lapidacao: inicio da animacao (cliente -> servidor) e o que esta em cima da mesa (servidor -> clientes)
+        registrar.playToServer(LapidaryCutPayload.TYPE, LapidaryCutPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        com.bino.binosvanillaplus.menu.LapidaryMenu.onCutStarted((ServerPlayer) context.player(), payload.pos(), payload.all())));
+        registrar.playToClient(LapidaryDisplayPayload.TYPE, LapidaryDisplayPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.lapidary.LapidaryRemote.receive(payload)));
+
         // ping (Alt + botao esquerdo): o servidor repassa para todos da mesma dimensao
         registrar.playToServer(PingPayload.TYPE, PingPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> onPing((ServerPlayer) context.player(), payload)));

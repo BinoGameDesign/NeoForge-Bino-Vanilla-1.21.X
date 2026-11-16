@@ -274,5 +274,19 @@
   "faction.binosvanillaplus.choose_title": "Escolha sua facção",
   "faction.binosvanillaplus.choose_hint": "Dá para trocar depois, mas só com um ritual.",
   "faction.binosvanillaplus.confirm": "Escolher",
-  "faction.binosvanillaplus.joined": "Você agora faz parte dos %s."
+  "faction.binosvanillaplus.joined": "Você agora faz parte dos %s.",
+  "subtitles.binosvanillaplus.lapidary_spin": "Disco de lapidação gira",
+  "subtitles.binosvanillaplus.lapidary_ready": "Mesa de lapidação pronta",
+  "subtitles.binosvanillaplus.lapidary_done": "Gema lapidada",
+  "subtitles.binosvanillaplus.lapidary_contact": "Lapidador raspa a pedra",
+  "lapidary.binosvanillaplus.hint.take_flint": "Pegue um sílex na barra",
+  "lapidary.binosvanillaplus.hint.place_flint": "Coloque o sílex na ponta do lapidador",
+  "lapidary.binosvanillaplus.hint.take_ore": "Pegue um minério bruto na barra",
+  "lapidary.binosvanillaplus.hint.place_ore": "Coloque o minério no centro do disco",
+  "lapidary.binosvanillaplus.hint.press": "Aperte o botão para lapidar  (Shift: lapidar tudo)",
+  "lapidary.binosvanillaplus.hint.working": "Lapidando...",
+  "lapidary.binosvanillaplus.hint.wrong": "Esse item não vai aí",
+  "lapidary.binosvanillaplus.hint.leave": "Esc: sair  ·  Botão direito: devolver o item",
+  "lapidary.binosvanillaplus.more": "Mais itens do inventário",
+  "lapidary.binosvanillaplus.nothing": "Nada mais para lapidar no inventário"
 }

@@ -12,7 +12,9 @@
         "client.VillagerProfessionLayerMixin",
         "client.ClientHooksArmorTextureMixin",
         "client.ItemInHandRendererForgeGlowMixin",
-        "client.GuiGraphicsForgeOutlineMixin"
+        "client.GuiGraphicsForgeOutlineMixin",
+        "client.CameraLapidaryMixin",
+        "client.HumanoidModelLapidaryMixin"
     ],
     "injectors": {
         "defaultRequire": 1

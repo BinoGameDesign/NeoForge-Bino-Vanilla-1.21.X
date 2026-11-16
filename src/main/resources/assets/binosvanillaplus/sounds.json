@@ -1,5 +1,47 @@
 {
-  "whistle": {"sounds": [{"name": "binosvanillaplus:whistle", "attenuation_distance": 16}], "subtitle": "subtitles.binosvanillaplus.whistle"},
-  "sonar_ping": {"sounds": ["binosvanillaplus:sonar_ping"], "subtitle": "subtitles.binosvanillaplus.sonar_ping"},
-  "camera_shutter": {"sounds": ["binosvanillaplus:camera_shutter"], "subtitle": "subtitles.binosvanillaplus.camera_shutter"}
+  "whistle": {
+    "sounds": [
+      {
+        "name": "binosvanillaplus:whistle",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.whistle"
+  },
+  "sonar_ping": {
+    "sounds": [
+      "binosvanillaplus:sonar_ping"
+    ],
+    "subtitle": "subtitles.binosvanillaplus.sonar_ping"
+  },
+  "camera_shutter": {
+    "sounds": [
+      "binosvanillaplus:camera_shutter"
+    ],
+    "subtitle": "subtitles.binosvanillaplus.camera_shutter"
+  },
+  "lapidary_spin": {
+    "sounds": [
+      "binosvanillaplus:lapidary_spin"
+    ],
+    "subtitle": "subtitles.binosvanillaplus.lapidary_spin"
+  },
+  "lapidary_ready": {
+    "sounds": [
+      "binosvanillaplus:lapidary_ready"
+    ],
+    "subtitle": "subtitles.binosvanillaplus.lapidary_ready"
+  },
+  "lapidary_done": {
+    "sounds": [
+      "binosvanillaplus:lapidary_done"
+    ],
+    "subtitle": "subtitles.binosvanillaplus.lapidary_done"
+  },
+  "lapidary_contact": {
+    "sounds": [
+      "binosvanillaplus:lapidary_contact"
+    ],
+    "subtitle": "subtitles.binosvanillaplus.lapidary_contact"
+  }
 }
