@@ -34,7 +34,7 @@ if "forearm_bone_l" not in grp:
     add_bone("leg_r", "calf_bone_r", [-1.8, 3, 1.8], ["calf_r", "foot_r"])
 
 # ------------------------------------------------------------------ helpers
-# Convencoes deste rig (Blockbench, ordem ZYX, X e Y invertidos no animador):
+# Convencoes das contas abaixo (o anim() inverte X e Y ao gravar, que e como o Blockbench aplica):
 #  corpo/cabeca/pernas: X+ = frente desce (inclina pra frente / perna vai pra tras / panturrilha dobra o joelho)
 #  bracos estao em T: o braco "pendurado" e Z (esq -90 / dir +90); a frente/tras e Y.
 def AL(hang=78, fwd=0, roll=0):  return [roll, -fwd, -hang]   # braco esquerdo: hang 90=reto pra baixo, 0=em T, <0 = acima
@@ -51,6 +51,7 @@ def anim(name, length, loop, tracks):
         for ch, pts in chans.items():
             for p in pts:
                 t, v = p[0], p[1]
+                if ch == "rotation": v = [-v[0], -v[1], v[2]]   # Blockbench (Modded Entity) aplica X e Y no sentido oposto ao das contas acima
                 kfs.append({"channel": ch, "data_points": [{"x": v[0], "y": v[1], "z": v[2]}], "uuid": U(),
                             "time": round(t, 4), "color": -1, "interpolation": p[2] if len(p) > 2 else "catmullrom"})
         animators[grp[bone]["uuid"]] = {"name": bone, "type": "bone", "keyframes": kfs}
@@ -310,7 +311,7 @@ import math
 def track(a, bone, ch="rotation"):
     an = a["animators"].get(grp[bone]["uuid"])
     if not an: return []
-    return sorted([(k["time"], k["data_points"][0]["x"]) for k in an["keyframes"] if k["channel"] == ch])
+    return sorted([(k["time"], -k["data_points"][0]["x"]) for k in an["keyframes"] if k["channel"] == ch])
 def sample(tr, t):
     if not tr: return 0.0
     if t <= tr[0][0]: return tr[0][1]
