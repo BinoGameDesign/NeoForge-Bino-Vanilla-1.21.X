@@ -28,6 +28,9 @@ import net.neoforged.neoforge.client.ClientHooks;
 public final class HandArmor {
     private HandArmor() {}
 
+    // 1 = tamanho da armadura vestida; o braco de pele tem 4 px e a armadura 6 px (6 * 0,78 = ~4,7 px)
+    private static final float SLEEVE_WIDTH = 0.78f, SLEEVE_LENGTH = 0.84f;
+
     private static HumanoidModel<AbstractClientPlayer> outer;
 
     private static HumanoidModel<AbstractClientPlayer> outer() {
@@ -52,7 +55,10 @@ public final class HandArmor {
         ModelPart dst = right ? model.rightArm : model.leftArm;
         dst.copyFrom(right ? source.rightArm : source.leftArm);
         dst.visible = true;
-        dst.xScale = dst.yScale = dst.zScale = 1f;
+        // Em primeira pessoa o braco aparece de perto: a manga do jogo (2 px maior que o braco em cada lado, e sem tampa na
+        // ponta) vira um "bambole". Aqui ela e' afinada e encurtada para ficar logo acima da pele e terminar antes da mao.
+        dst.xScale = dst.zScale = SLEEVE_WIDTH;
+        dst.yScale = SLEEVE_LENGTH;
 
         for (ArmorMaterial.Layer layer : layers) {
             int color = layer.dyeable() ? FastColor.ARGB32.opaque(DyedItemColor.getOrDefault(stack, -6265536)) : -1;
