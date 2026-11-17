@@ -357,7 +357,7 @@ public class CaveGoblinEntity extends PathfinderMob {
         private int repath;
         FleeGoal(CaveGoblinEntity g) { this.g = g; setFlags(EnumSet.of(Flag.MOVE)); }
         @Override public boolean canUse() { return g.fleeTicks > 0 && g.threat() != null; }
-        @Override public boolean canContinueUse() { return canUse(); }
+        @Override public boolean canContinueToUse() { return canUse(); }
         @Override public void start() { repath = 0; g.setState(ST_FLEE); }
         @Override public void stop() { g.setState(ST_NORMAL); g.getNavigation().stop(); }
         @Override public void tick() {
@@ -390,7 +390,7 @@ public class CaveGoblinEntity extends PathfinderMob {
             target = best;
             return best != null;
         }
-        @Override public boolean canContinueUse() {
+        @Override public boolean canContinueToUse() {
             return target != null && canBeRobbed(target) && g.stealCooldown == 0 && g.fleeTicks == 0 && time < 900 && g.distanceToSqr(target) < 20 * 20;
         }
         @Override public void start() { time = 0; g.setState(ST_STALK); }
@@ -434,7 +434,7 @@ public class CaveGoblinEntity extends PathfinderMob {
             }
             return true;
         }
-        @Override public boolean canContinueUse() { return g.blockLight() >= DARK_LIMIT - 2 && g.fleeTicks == 0; }
+        @Override public boolean canContinueToUse() { return g.blockLight() >= DARK_LIMIT - 2 && g.fleeTicks == 0; }
         @Override public void start() {
             g.setState(ST_SHIELD);
             if (dest != null) g.getNavigation().moveTo(dest.x, dest.y, dest.z, 1.1);
