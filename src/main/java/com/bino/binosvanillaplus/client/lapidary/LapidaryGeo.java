@@ -22,7 +22,7 @@ public final class LapidaryGeo {
     public static final Vec3 ORE = new Vec3(7.0, 12.45, 10.5);
     // ponta do lapidador: face de baixo (o silex fica preso aqui); desce ARM_DROP pixels ao lapidar
     public static final Vec3 FLINT = new Vec3(7.25, 14.6, 11.0);
-    public static final double ARM_DROP = 1.1;
+    public static final double ARM_DROP = 1.8;
     // botao (face da frente) e visor
     public static final Vec3 BUTTON = new Vec3(1.15, 8.0, 5.0);
     public static final double BUTTON_PRESS = 0.15;
@@ -33,7 +33,7 @@ public final class LapidaryGeo {
     public static final Vec3 REST_RIGHT = new Vec3(2.6, 11.5, 13.2);
     public static final Vec3 REST_LEFT = new Vec3(2.2, 11.2, 1.6);
     // camera da cena (olho) e ponto para onde ela olha; onde o jogador fica de pe
-    public static final Vec3 EYE = new Vec3(-9.0, 27.5, 8.0);
+    public static final Vec3 EYE = new Vec3(-5.6, 24.4, 8.0);
     public static final Vec3 LOOK = new Vec3(8.0, 12.0, 8.0);
     public static final Vec3 STAND = new Vec3(-7.5, 0, 8.0);
     // area do tampo (para a mao seguir o mouse)

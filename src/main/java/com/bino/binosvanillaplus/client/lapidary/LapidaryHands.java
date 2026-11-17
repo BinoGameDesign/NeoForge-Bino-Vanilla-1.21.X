@@ -40,6 +40,9 @@ public final class LapidaryHands {
         }
     }
 
+    // distancia da camera (em blocos) a que a mao fica quando alcanca a barra de itens
+    private static final double BAR_REACH = 0.62;
+
     private static final Spring RIGHT = new Spring(), LEFT = new Spring();
     private static double tapAt = -100, lastFrame;
 
@@ -93,7 +96,7 @@ public final class LapidaryHands {
                 omegaL = 22;
             }
             // direita: vai ate o disco, pega a gema e leva ate o canto das gemas
-            double a = 2.0 + e, pick = LapidaryCut.pickAt(all), place = LapidaryCut.placeAt(all);
+            double a = LapidaryCut.reachAt(all), pick = LapidaryCut.pickAt(all), place = LapidaryCut.placeAt(all);
             Vec3 disc = p(LapidaryGeo.ORE).add(0, 0.05, 0).add(towardCam.scale(0.03));
             Vec3 gems = p(LapidaryGeo.GEMS).add(0, 0.05, 0).add(towardCam.scale(0.03));
             if (t >= a - 0.25 && t < pick) {
@@ -109,11 +112,19 @@ public final class LapidaryHands {
         } else if (LapidaryScene.phase == LapidaryScene.Phase.ACTIVE) {
             switch (LapidaryScene.hover) {
                 case BUTTON -> tL = p(LapidaryGeo.BUTTON.x - 1.0, LapidaryGeo.BUTTON.y + 0.2, LapidaryGeo.BUTTON.z);
+                case PILE -> tR = p(LapidaryGeo.GEMS).add(0, 0.07, 0).add(towardCam.scale(0.03));
                 case FLINT, ORE -> tR = LapidaryScene.targetPoint(LapidaryScene.hover, LapidaryScene.localView())
                         .add(0, LapidaryScene.hover == LapidaryScene.Target.FLINT ? -0.02 : 0.07, 0).add(towardCam.scale(0.05));
                 default -> {
-                    Vec3 top = LapidaryScene.onTop();
-                    if (top != null) tR = top.add(0, 0.07, 0).add(towardCam.scale(0.03));
+                    Vec3[] ray = LapidaryScene.overBar ? LapidaryPick.ray() : null;
+                    if (ray != null) {
+                        // mouse sobre a barra de itens: o braco sobe ate la (a mao fica sob o cursor)
+                        tR = ray[0].add(ray[1].scale(BAR_REACH));
+                        omegaR = 18;
+                    } else {
+                        Vec3 top = LapidaryScene.onTop();
+                        if (top != null) tR = top.add(0, 0.07, 0).add(towardCam.scale(0.03));
+                    }
                 }
             }
             // toque rapido ao clicar
@@ -156,6 +167,19 @@ public final class LapidaryHands {
         if (!held.isEmpty() && LapidaryScene.phase != LapidaryScene.Phase.OUTRO) {
             Vec3 dir = RIGHT.pos.subtract(shoulder(true, cam, yaw)).normalize();
             item(ps, buf, held, RIGHT.pos.add(dir.scale(0.035)).add(0, -0.025, 0), cam, yaw, 0.42f, light);
+        }
+
+        // gemas recolhidas da mesa: voam da mesa ate a camera
+        if (!LapidaryScene.flying.isEmpty()) {
+            double nowT = LapidaryScene.clock();
+            Vec3 to = cam.add(f.scale(0.3)).add(0, -0.35, 0);
+            LapidaryScene.flying.removeIf(fl -> nowT - fl.start() > LapidaryScene.FLY);
+            for (LapidaryScene.Flying fl : LapidaryScene.flying) {
+                double u = LapidaryCut.window(nowT - fl.start(), 0, LapidaryScene.FLY);
+                double k = u * u;
+                Vec3 at = fl.from().add(to.subtract(fl.from()).scale(k)).add(0, 0.14 * LapidaryCut.hump(u), 0);
+                item(ps, buf, fl.stack(), at, cam, yaw, 0.19f * 1.6f * (float) (1 - 0.6 * u), light);
+            }
         }
 
         // itens voltando para o inventario ao sair

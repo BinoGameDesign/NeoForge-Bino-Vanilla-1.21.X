@@ -40,7 +40,7 @@ public final class LapidaryScene {
     private LapidaryScene() {}
 
     public enum Phase { NONE, INTRO, ACTIVE, OUTRO }
-    public enum Target { NONE, FLINT, ORE, BUTTON }
+    public enum Target { NONE, FLINT, ORE, BUTTON, PILE }
 
     public static Phase phase = Phase.NONE;
     static BlockPos pos = BlockPos.ZERO;
@@ -60,8 +60,16 @@ public final class LapidaryScene {
     static int lastSlot = -1;
     static double denyAt = -100;
     static String hintKey = "";
+    static double hintAt = -100, activeAt = -100;
 
     public static Target hover = Target.NONE;
+    // o mouse esta sobre a barra de itens (a mao direita sobe ate la)
+    public static boolean overBar;
+
+    // gemas que o jogador acabou de recolher da mesa e que voam para o inventario
+    record Flying(ItemStack stack, Vec3 from, double start) {}
+    static final List<Flying> flying = new ArrayList<>();
+    static final double FLY = 0.45;
 
     // itens que estavam na mesa ao sair (voam para a camera)
     record Leaving(ItemStack stack, Vec3 from, float size) {}
@@ -91,9 +99,14 @@ public final class LapidaryScene {
         leaving = false;
         cutAt = -100;
         pile.clear();
+        flying.clear();
         lastSlot = -1;
+        hintKey = "";
+        hintAt = -100;
+        activeAt = -100;
         wasReady = ready();
         hover = Target.NONE;
+        overBar = false;
         savedCamera = mc.options.getCameraType();
         if (!savedCamera.isFirstPerson()) mc.options.setCameraType(CameraType.FIRST_PERSON);
         Vec3 stand = standPoint(player);
@@ -152,6 +165,7 @@ public final class LapidaryScene {
         phase = Phase.NONE;
         leaving = false;
         pile.clear();
+        flying.clear();
         leavingItems = List.of();
         if (savedCamera != null && !savedCamera.isFirstPerson()) mc.options.setCameraType(savedCamera);
         savedCamera = null;
@@ -192,6 +206,7 @@ public final class LapidaryScene {
             } else if (leanFrom >= 0 && now - leanFrom >= LEAN) {
                 phase = Phase.ACTIVE;
                 phaseAt = now;
+                activeAt = now;
                 faceTable(player);   // com a camera ja na cena: o giro do corpo nao aparece (os outros veem ele virar)
             }
         }
@@ -201,7 +216,7 @@ public final class LapidaryScene {
 
         if (cutAt > 0) {
             double t = now - cutAt;
-            if (!contactPlayed && t >= 0.58) { contactPlayed = true; sound(ModSounds.LAPIDARY_CONTACT.get(), 0.7f, 1f); sound(SoundEvents.GRINDSTONE_USE, 0.35f, 1.3f); }
+            if (!contactPlayed && t >= LapidaryCut.CONTACT) { contactPlayed = true; sound(ModSounds.LAPIDARY_CONTACT.get(), 0.7f, 1f); sound(SoundEvents.GRINDSTONE_USE, 0.35f, 1.3f); }
             if (!donePlayed && t >= LapidaryCut.gemAt(cutAll)) { donePlayed = true; sound(ModSounds.LAPIDARY_DONE.get(), 0.7f, 1f); }
             if (!beat && t >= LapidaryCut.placeAt(cutAll)) {
                 beat = true;
@@ -287,7 +302,7 @@ public final class LapidaryScene {
     private static double cutKick() {
         if (cutAt < 0) return 0;
         double t = clock() - cutAt;
-        return LapidaryCut.hump(LapidaryCut.window(t, 0.55, 0.85)) * 0.8 + LapidaryCut.speed(t, cutAll) * 0.15;
+        return LapidaryCut.hump(LapidaryCut.window(t, 0.75, 1.10)) * 0.8 + LapidaryCut.speed(t, cutAll) * 0.15;
     }
 
     @Nullable
@@ -310,7 +325,7 @@ public final class LapidaryScene {
     }
 
     public static double fov(double vanilla) {
-        return Mth.lerp(weight, vanilla, 62.0);
+        return Mth.lerp(weight, vanilla, 54.0);
     }
 
     // ---------------------------------------------------------------- menu
@@ -381,10 +396,23 @@ public final class LapidaryScene {
                 if (!held.isEmpty() || !ready()) { deny(); return; }
                 startCut(shift);
             }
+            case PILE -> collect();
             default -> {
                 if (button == 1 && !held.isEmpty()) giveBack();
             }
         }
+    }
+
+    // recolhe as gemas prontas que estao na mesa (as gemas ja estao no inventario: aqui so a mao as leva)
+    static void collect() {
+        if (pile.isEmpty()) return;
+        double now = clock();
+        for (int i = 0; i < pile.size(); i++)
+            flying.add(new Flying(pile.get(pile.size() - 1 - i), point(LapidaryGeo.GEMS).add(0, 0.02 * i, 0), now + 0.06 * i));
+        pile.clear();
+        LapidaryHands.tap();
+        sound(SoundEvents.ITEM_PICKUP, 0.35f, 1.25f);
+        sound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.4f, 1.5f);
     }
 
     // devolve o item da mao para o lugar de onde veio (ou para qualquer espaco livre do inventario)
@@ -473,10 +501,11 @@ public final class LapidaryScene {
         if (ray == null) return;
         double best = Double.MAX_VALUE;
         LapidaryView v = localView();
-        Target[] ts = {Target.FLINT, Target.ORE, Target.BUTTON};
+        Target[] ts = {Target.FLINT, Target.ORE, Target.BUTTON, Target.PILE};
         for (Target t : ts) {
+            if (t == Target.PILE && (pile.isEmpty() || !carried().isEmpty())) continue;
             Vec3 p = targetPoint(t, v);
-            double r = t == Target.BUTTON ? 0.07 : t == Target.ORE ? 0.11 : 0.09;
+            double r = t == Target.BUTTON ? 0.07 : t == Target.ORE ? 0.11 : t == Target.PILE ? 0.13 : 0.09;
             Vec3 to = p.subtract(ray[0]);
             double along = to.dot(ray[1]);
             if (along <= 0) continue;
@@ -490,6 +519,7 @@ public final class LapidaryScene {
             case FLINT -> point(LapidaryGeo.FLINT.x, LapidaryGeo.FLINT.y - v.armDrop(), LapidaryGeo.FLINT.z);
             case ORE -> point(LapidaryGeo.ORE);
             case BUTTON -> point(LapidaryGeo.BUTTON);
+            case PILE -> point(LapidaryGeo.GEMS);
             default -> point(LapidaryGeo.LOOK);
         };
     }
@@ -506,6 +536,21 @@ public final class LapidaryScene {
         double cx = pos.getX() + 0.5, cz = pos.getZ() + 0.5;
         if (Math.abs(hit.x - cx) > 0.6 || Math.abs(hit.z - cz) > 0.6) return null;
         return new Vec3(Mth.clamp(hit.x, cx - 0.42, cx + 0.42), y, Mth.clamp(hit.z, cz - 0.46, cz + 0.46));
+    }
+
+    // A legenda aparece quando muda e some sozinha (a "wrong" e' mais curta)
+    public static float hintAlpha(String key) {
+        double now = clock();
+        if (!key.equals(hintKey)) { hintKey = key; hintAt = now; }
+        if (key.isEmpty()) return 0f;
+        double life = key.endsWith(".wrong") ? 1.1 : 2.4;
+        return (float) (1 - LapidaryCut.window(now - hintAt, life, life + 0.5));
+    }
+
+    // "Esc: sair..." so aparece no comeco da cena
+    public static float leaveAlpha() {
+        if (activeAt < 0) return 0f;
+        return (float) (1 - LapidaryCut.window(clock() - activeAt, 3.5, 4.2));
     }
 
     // dica no rodape

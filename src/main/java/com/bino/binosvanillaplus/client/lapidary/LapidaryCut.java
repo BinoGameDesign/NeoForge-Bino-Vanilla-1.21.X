@@ -4,13 +4,13 @@ package com.bino.binosvanillaplus.client.lapidary;
 // Ritmo baseado nas estacoes do Cinematic Interactions (corte do cortador de pedra: ~1 s; "tudo": +0,5 s), esticado
 // para as etapas daqui:
 //   0,00-0,36  mao esquerda aperta o botao
-//   0,30-0,60  lapidador desce ate quase encostar
-//   0,55-0,85  disco acelera; gira; 1,45-1,95 desacelera ate parar (faiscas enquanto gira)
-//   1,25       o minerio vira gema
-//   1,95-2,20  lapidador sobe
-//   2,00-2,30  mao direita vai ate o disco e pega a gema
-//   2,30-2,70  leva a gema ate o canto das gemas e solta (2,70 = o menu lapida de verdade)
-//   2,70-2,95  mao volta
+//   0,30-1,05  lapidador desce devagar ate encostar no minerio (contato em ~0,95)
+//   0,85-1,20  disco acelera; gira; 1,80-2,30 desacelera ate parar (faiscas enquanto gira)
+//   1,55       o minerio vira gema
+//   2,30-2,75  lapidador sobe
+//   2,50-2,80  mao direita vai ate o disco e pega a gema
+//   2,80-3,30  leva a gema ate o canto das gemas e solta (3,30 = o menu lapida de verdade)
+//   3,30-3,55  mao volta
 // "Lapidar tudo" (Shift) gira 0,8 s a mais.
 public final class LapidaryCut {
     private LapidaryCut() {}
@@ -18,21 +18,23 @@ public final class LapidaryCut {
     public static final double MAX_REV_PER_S = 2.4;
 
     public static double extra(boolean all) { return all ? 0.8 : 0.0; }
-    public static double length(boolean all) { return 2.95 + extra(all); }
-    public static double gemAt(boolean all) { return 1.25 + extra(all) * 0.5; }
-    public static double pickAt(boolean all) { return 2.30 + extra(all); }
-    public static double placeAt(boolean all) { return 2.70 + extra(all); }
+    public static double length(boolean all) { return 3.55 + extra(all); }
+    public static final double CONTACT = 0.95;   // o lapidador encosta na pedra
+    public static double reachAt(boolean all) { return 2.50 + extra(all); }   // a mao direita chega ao disco
+    public static double gemAt(boolean all) { return 1.55 + extra(all) * 0.5; }
+    public static double pickAt(boolean all) { return 2.80 + extra(all); }
+    public static double placeAt(boolean all) { return 3.30 + extra(all); }
 
     // 0 a 1
     public static double speed(double t, boolean all) {
         double e = extra(all);
-        return smoother(window(t, 0.55, 0.85)) * (1 - smoother(window(t, 1.45 + e, 1.95 + e)));
+        return smoother(window(t, 0.85, 1.20)) * (1 - smoother(window(t, 1.80 + e, 2.30 + e)));
     }
 
     // pixels que o lapidador desceu
     public static double armDrop(double t, boolean all) {
         double e = extra(all);
-        return LapidaryGeo.ARM_DROP * (smoother(window(t, 0.30, 0.60)) - smoother(window(t, 1.95 + e, 2.20 + e)));
+        return LapidaryGeo.ARM_DROP * (smoother(window(t, 0.30, 1.05)) - smoother(window(t, 2.30 + e, 2.75 + e)));
     }
 
     // pixels que o botao afundou

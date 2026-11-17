@@ -34,7 +34,7 @@ public abstract class HumanoidModelLapidaryMixin<T extends LivingEntity> {
             // aperta o botao
             m.leftArm.xRot -= (float) (0.30 * LapidaryCut.hump(LapidaryCut.window(t, 0.10, 0.45)));
             // pega a gema no disco e leva para o lado
-            double reach = LapidaryCut.hump(LapidaryCut.window(t, 2.0 + e, LapidaryCut.placeAt(all) + 0.2));
+            double reach = LapidaryCut.hump(LapidaryCut.window(t, LapidaryCut.reachAt(all), LapidaryCut.placeAt(all) + 0.2));
             double carry = LapidaryCut.smoother(LapidaryCut.window(t, LapidaryCut.pickAt(all), LapidaryCut.placeAt(all)));
             m.rightArm.xRot -= (float) (0.25 * reach);
             m.rightArm.yRot += (float) (0.55 * carry * (1 - LapidaryCut.window(t, LapidaryCut.placeAt(all), LapidaryCut.length(all))));

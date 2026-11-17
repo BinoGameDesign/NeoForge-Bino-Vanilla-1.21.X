@@ -83,6 +83,7 @@ public class LapidarySceneScreen extends Screen {
         LapidaryScene.updateHover();
         boolean overUi = overUi(mouseX, mouseY);
         if (overUi) LapidaryScene.hover = LapidaryScene.Target.NONE;
+        LapidaryScene.overBar = overUi || mouseY < TOP + SLOT + 10 && LapidaryScene.phase == LapidaryScene.Phase.ACTIVE;
 
         List<Integer> list = items();
         var cells = cells();
@@ -130,15 +131,20 @@ public class LapidarySceneScreen extends Screen {
 
         // dica no rodape
         float a = slide();
+        float sc = 0.75f;   // legenda menor
         String hint = LapidaryScene.hint();
-        if (!hint.isEmpty()) {
+        float ha = LapidaryScene.hintAlpha(hint);
+        if (!hint.isEmpty() && ha > 0.02f) {
             String t = Component.translatable(hint).getString();
             boolean wrong = hint.endsWith(".wrong");
-            int col = alpha(wrong ? 0xFFFF7A6B : 0xFFFFFFFF, a);
-            g.drawString(font, t, width / 2 - font.width(t) / 2, height - 38, col, true);
+            int col = alpha(wrong ? 0xFFFF7A6B : 0xFFFFFFFF, a * ha);
+            BinoUi.text(g, font, t, width / 2f - font.width(t) * sc / 2f, height - 34, sc, col, true);
         }
-        String leave = Component.translatable("lapidary.binosvanillaplus.hint.leave").getString();
-        g.drawString(font, leave, width / 2 - font.width(leave) / 2, height - 24, alpha(BinoUi.TEXT_DIM, a * 0.9f), true);
+        float la = LapidaryScene.leaveAlpha();
+        if (la > 0.02f) {
+            String leave = Component.translatable("lapidary.binosvanillaplus.hint.leave").getString();
+            BinoUi.text(g, font, leave, width / 2f - font.width(leave) * sc / 2f, height - 22, sc, alpha(BinoUi.TEXT_DIM, a * 0.9f * la), true);
+        }
 
         if (!tip.isEmpty()) g.renderTooltip(font, tip, mouseX, mouseY);
     }

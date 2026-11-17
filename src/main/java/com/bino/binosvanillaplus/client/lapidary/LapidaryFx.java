@@ -17,7 +17,7 @@ public final class LapidaryFx {
     private LapidaryFx() {}
 
     public static void sparks(ClientLevel level, BlockPos pos, LapidaryView v) {
-        if (v.disc().isEmpty() || v.armDrop() < 0.6f) return;   // so quando o lapidador encosta na pedra
+        if (v.disc().isEmpty() || v.armDrop() < 1.4f) return;   // so quando o lapidador encosta na pedra
         Minecraft mc = Minecraft.getInstance();
         RandomSource rnd = level.random;
         Direction facing = LapidaryGeo.facing(level.getBlockState(pos));
