@@ -17,6 +17,17 @@ public class ForgeUtil {
         return stack.getOrDefault(ModDataComponents.FORGE_LEVEL.get(), 0);
     }
 
+    // Custo em NIVEIS de experiencia de cada forja na bigorna, pelo nivel que o item vai ter (+1 a +10).
+    // Cresce rapido: o ultimo passo gasta 39 niveis (o limite da bigorna e 39: a partir de 40 ela mostra "Muito caro!").
+    // Em pontos de XP, forjar de +0 a +10 custa no minimo ~7.000 pontos (cada passo exige ter pelo menos aquele nivel), o que
+    // paga o bonus de +50% de XP das ferramentas de Jade.
+    //   nivel do item:     +1  +2  +3  +4  +5  +6  +7  +8  +9  +10
+    private static final int[] ANVIL_COST = {2, 4, 6, 9, 12, 16, 21, 27, 33, 39};
+
+    public static int anvilCost(int toLevel) {
+        return ANVIL_COST[Math.max(1, Math.min(MAX_LEVEL, toLevel)) - 1];
+    }
+
     // Multiplicador de status: +3 = 1.3, +10 = 2.0
     public static double multiplier(int level) {
         return 1.0 + BONUS_PER_LEVEL * level;

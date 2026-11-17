@@ -23,8 +23,7 @@ import java.util.List;
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
 public class ForgeEvents {
 
-    // Custo em níveis de experiência para forjar na bigorna (precisa ser pelo menos 1, senão a bigorna não libera o item)
-    private static final int ANVIL_XP_COST = 1;
+    // O custo em níveis de experiência de cada forja (+1 a +10) está em ForgeUtil.anvilCost (progressivo).
 
     // ---------- 1) BIGORNA: equipamento + pedra de forja ----------
     @SubscribeEvent
@@ -48,7 +47,7 @@ public class ForgeEvents {
         }
 
         event.setOutput(result);
-        event.setCost(ANVIL_XP_COST);
+        event.setCost(ForgeUtil.anvilCost(stone.getLevel()));
         event.setMaterialCost(1);     // gasta 1 pedra
     }
 

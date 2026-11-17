@@ -92,44 +92,44 @@ public class ModItems {
     // ===== Armadura de Rubi =====
     public static final DeferredItem<ArmorItem> RUBI_HELMET = ITEMS.register("rubi_helmet",
             () -> new Armor3DItem(ModArmorMaterials.RUBI, ArmorItem.Type.HELMET,
-                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(33)), "rubi_helmet"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(30)), "rubi_helmet"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
     public static final DeferredItem<ArmorItem> RUBI_CHESTPLATE = ITEMS.register("rubi_chestplate",
             () -> new Armor3DItem(ModArmorMaterials.RUBI, ArmorItem.Type.CHESTPLATE,
-                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(33)), "rubi_chestplate"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(30)), "rubi_chestplate"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
     public static final DeferredItem<ArmorItem> RUBI_LEGGINGS = ITEMS.register("rubi_leggings",
             () -> new Armor3DItem(ModArmorMaterials.RUBI, ArmorItem.Type.LEGGINGS,
-                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33)), "rubi_leggings"));   // 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(30)), "rubi_leggings"));   // 33 = multiplicador do diamante
     public static final DeferredItem<ArmorItem> RUBI_BOOTS = ITEMS.register("rubi_boots",
             () -> new Armor3DItem(ModArmorMaterials.RUBI, ArmorItem.Type.BOOTS,
-                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33)), "rubi_boots"));   // 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(30)), "rubi_boots"));   // 33 = multiplicador do diamante
 
     // ===== Armadura de Safira =====
     public static final DeferredItem<ArmorItem> SAPPHIRE_HELMET = ITEMS.register("sapphire_helmet",
             () -> new Armor3DItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.HELMET,
-                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(33)), "sapphire_helmet"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(33)), "sapphire_helmet"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
     public static final DeferredItem<ArmorItem> SAPPHIRE_CHESTPLATE = ITEMS.register("sapphire_chestplate",
             () -> new Armor3DItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.CHESTPLATE,
-                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(33)), "sapphire_chestplate"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(33)), "sapphire_chestplate"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
     public static final DeferredItem<ArmorItem> SAPPHIRE_LEGGINGS = ITEMS.register("sapphire_leggings",
             () -> new Armor3DItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.LEGGINGS,
-                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33)), "sapphire_leggings"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33)), "sapphire_leggings"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
     public static final DeferredItem<ArmorItem> SAPPHIRE_BOOTS = ITEMS.register("sapphire_boots",
             () -> new Armor3DItem(ModArmorMaterials.SAPPHIRE, ArmorItem.Type.BOOTS,
-                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33)), "sapphire_boots"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33)), "sapphire_boots"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
 
     // ===== Armadura de Jade =====
     public static final DeferredItem<ArmorItem> JADE_HELMET = ITEMS.register("jade_helmet",
             () -> new Armor3DItem(ModArmorMaterials.JADE, ArmorItem.Type.HELMET,
-                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(33)), "jade_helmet"));   // modelo 3D   // 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(36)), "jade_helmet"));   // modelo 3D   // 33 = multiplicador do diamante
     public static final DeferredItem<ArmorItem> JADE_CHESTPLATE = ITEMS.register("jade_chestplate",
             () -> new Armor3DItem(ModArmorMaterials.JADE, ArmorItem.Type.CHESTPLATE,
-                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(33)), "jade_chestplate"));   // modelo 3D   // 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(36)), "jade_chestplate"));   // modelo 3D   // 33 = multiplicador do diamante
     public static final DeferredItem<ArmorItem> JADE_LEGGINGS = ITEMS.register("jade_leggings",
             () -> new Armor3DItem(ModArmorMaterials.JADE, ArmorItem.Type.LEGGINGS,
-                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(33)), "jade_leggings"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(36)), "jade_leggings"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
     public static final DeferredItem<ArmorItem> JADE_BOOTS = ITEMS.register("jade_boots",
             () -> new Armor3DItem(ModArmorMaterials.JADE, ArmorItem.Type.BOOTS,
-                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(33)), "jade_boots"));   // modelo 3D; 33 = multiplicador do diamante
+                    new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(36)), "jade_boots"));   // modelo 3D; fator de durabilidade (diamante = 33, ver ModArmorMaterials)
 
     // ===== FORJA =====
     public static final DeferredItem<ForgeStoneItem> FORGE_STONE_1 = ITEMS.register("forge_stone_1",

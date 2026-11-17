@@ -20,7 +20,7 @@ public class GemAbilityEvents {
 
     // ====== VALORES QUE VOCÊ PODE AJUSTAR ======
     public static final int SAPPHIRE_EXTRA_DROP_CHANCE = 3; // 1 em 3 = 1/3 de chance
-    public static final double JADE_XP_MULTIPLIER = 1.25;   // +25% de experiência
+    public static final double JADE_XP_MULTIPLIER = 1.5;    // +50% de experiência (paga o custo de XP da forja)
 
     // Diz se o item é uma espada/ferramenta feita com o material (tier) indicado
     private static boolean isMadeOf(ItemStack stack, Tier tier) {
