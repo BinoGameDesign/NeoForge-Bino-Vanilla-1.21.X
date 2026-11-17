@@ -26,7 +26,6 @@
         "VillagerFactionPriceMixin",
         "EntityFactionAllyMixin",
         "VillagerBreedMixin",
-        "VillagerHostilesSensorMixin",
-        "CombatRulesArmorMixin"
+        "VillagerHostilesSensorMixin"
     ]
 }

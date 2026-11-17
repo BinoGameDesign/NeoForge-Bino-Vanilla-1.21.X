@@ -1,49 +1,40 @@
 package com.bino.binosvanillaplus.util;
 
-import com.bino.binosvanillaplus.BinosVanillaMod;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.tags.TagKey;
+import com.bino.binosvanillaplus.leveling.MobLevels;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.monster.warden.Warden;
+import net.minecraft.world.entity.monster.ElderGuardian;
 
-// Modelo global de armadura do Bino's Vanilla+.
-//  1) Curva: ate 20 pontos de armadura efetiva = igual ao vanilla (x/25).
-//     Acima disso a reducao continua subindo com retorno decrescente, tendendo a 99%.
-//     Assim o +10 (armadura x2) nao e desperdicado no teto de 20 do vanilla.
-//  2) Teto de hit: so para quem veste o set mais forte do jogo (armadura >= CAP_START_ARMOR).
-//     Nenhum golpe de mob tira mais que CAP_FRACTION da vida maxima, EXCETO dano da tag
-//     binosvanillaplus:boss_special (o ataque especial, escapavel, do boss final).
-//     Entre CAP_START_ARMOR e CAP_FULL_ARMOR o teto vai entrando em rampa (sem degrau).
+// Armadura estilo World of Warcraft: reducao = A / (A + K), com K crescendo com o NIVEL de quem ataca.
+//   A = armadura + 2 x resistencia (toughness)      K = K_BASE + K_PER_LEVEL x nivel do atacante      reducao maxima = MAX_REDUCTION
+// Contra mobs de nivel baixo a armadura rende quase como no vanilla; contra mobs nivel 100 ela rende bem menos
+// (e o dano deles ja e maior), entao subir armadura/forja/encantos continua valendo ate o fim do jogo.
+// Sem teto de 20 pontos: o +10 (armadura e resistencia x2) sempre ajuda, com retorno decrescente.
+// Resultado de exemplo (so armadura, sem encantos): ver claude/mining-balanceamento.md
 public final class ArmorModel {
     private ArmorModel() {}
 
     // ====== VALORES QUE VOCE PODE AJUSTAR ======
-    public static final float SOFT_START = 20f;      // acima disso a curva e suave
-    public static final float SOFT_HALF = 20f;       // a cada 20 pontos acima, metade da distancia ate o limite
-    public static final float SOFT_TOP = 0.99f;      // reducao maxima possivel (99%)
-    public static final float CAP_START_ARMOR = 40f; // abaixo disso: sem teto (netherite +10 = 40)
-    public static final float CAP_FULL_ARMOR = 48f;  // a partir daqui: teto cheio (enderita +10 = 48)
-    public static final float CAP_FRACTION = 0.70f;  // teto = 70% da vida maxima
+    public static final float TOUGHNESS_WEIGHT = 2f;   // quanto a resistencia vale em pontos de armadura
+    public static final float K_BASE = 8f;
+    public static final float K_PER_LEVEL = 0.12f;     // nivel 100 => K = 20
+    public static final float MAX_REDUCTION = 0.85f;
+    public static final int BOSS_LEVEL = 50;           // chefes vanilla nao tem nivel de mob; contam como este
 
-    public static final TagKey<DamageType> BOSS_SPECIAL =
-            TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "boss_special"));
-
-    // Recebe a "armadura efetiva" x (o numero que o vanilla dividiria por 25) e devolve o equivalente suavizado
-    public static float soften(float x) {
-        if (x <= SOFT_START) return x;
-        float over = x - SOFT_START;
-        float r = 0.8f + (SOFT_TOP - 0.8f) * (1f - (float) Math.pow(2.0, -over / SOFT_HALF));
-        return r * 25f;
+    public static int attackerLevel(DamageSource source) {
+        Entity e = source.getEntity();
+        if (e instanceof EnderDragon || e instanceof WitherBoss || e instanceof Warden || e instanceof ElderGuardian) return BOSS_LEVEL;
+        if (e instanceof LivingEntity le && MobLevels.eligible(le)) return Math.max(1, MobLevels.get(le));
+        return 1;
     }
 
-    // Teto de dano por golpe para um jogador com essa armadura, ou -1 se nao ha teto
-    public static float hitCap(float armor, float maxHealth, DamageSource source) {
-        if (armor <= CAP_START_ARMOR) return -1f;
-        if (source.getEntity() == null && source.getDirectEntity() == null) return -1f;   // queda, lava, fome etc. nao contam
-        if (source.is(BOSS_SPECIAL) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return -1f;
-        float t = Math.min(1f, (armor - CAP_START_ARMOR) / (CAP_FULL_ARMOR - CAP_START_ARMOR));
-        return maxHealth * (1f - (1f - CAP_FRACTION) * t);
+    public static float reduction(float armor, float toughness, int level) {
+        float a = armor + TOUGHNESS_WEIGHT * toughness;
+        if (a <= 0f) return 0f;
+        return Math.min(MAX_REDUCTION, a / (a + K_BASE + K_PER_LEVEL * level));
     }
 }
