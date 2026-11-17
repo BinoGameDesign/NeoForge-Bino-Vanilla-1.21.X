@@ -42,6 +42,11 @@ public class RubiOreVariantEvents {
     }
 
     @SubscribeEvent
+    public static void onLoggingOut(net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) {
+        MiningStages.clear();
+    }
+
+    @SubscribeEvent
     public static void onRegisterAdditional(ModelEvent.RegisterAdditional event) {
         for (String ore : VANILLA_ORES) for (int i = 1; i <= 8; i++) event.register(extra(ore, i));
         for (String ore : MiningStages.ORE_NAMES) for (int i = 1; i <= STAGED_VARIANTS; i++) for (int st = 1; st <= 3; st++) event.register(stage(ore, i, st));

@@ -42,8 +42,13 @@ public class RubiPickaxeItem extends PickaxeItem implements MultiBreakTool {
     // Transforma o bloco em um "nome de família", ignorando a versão deepslate.
     // "minecraft:deepslate_iron_ore" e "minecraft:iron_ore" viram o mesmo nome,
     // e "binosvanillaplus:rubi_deepslate_ore" vira "binosvanillaplus:rubi_ore".
+    // (guardado por bloco: antes remontava o texto para cada um dos 26 vizinhos de cada bloco do veio)
+    private static final java.util.Map<net.minecraft.world.level.block.Block, String> FAMILIES = new java.util.concurrent.ConcurrentHashMap<>();
+
     private static String oreFamily(BlockState state) {
-        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
-        return id.getNamespace() + ":" + id.getPath().replace("deepslate_", "");
+        return FAMILIES.computeIfAbsent(state.getBlock(), b -> {
+            ResourceLocation id = BuiltInRegistries.BLOCK.getKey(b);
+            return id.getNamespace() + ":" + id.getPath().replace("deepslate_", "");
+        });
     }
 }

@@ -30,8 +30,15 @@ public final class MiningStages {
     private static final Map<Integer, long[]> BREAKERS = new HashMap<>();            // quem esta quebrando -> {pos, progresso}
 
     public static int stageAt(BlockPos pos) {
+        if (STAGE.isEmpty()) return 0;   // quase sempre: ninguem esta quebrando minerio (evita criar um Long por bloco)
         Integer s = STAGE.get(pos.asLong());
         return s == null ? 0 : s;
+    }
+
+    // saiu do mundo: esquece quem estava quebrando o que (senao ficam fases presas)
+    public static void clear() {
+        STAGE.clear();
+        BREAKERS.clear();
     }
 
     // progresso da rachadura 0..9 -> fase. a: 0-1, b: 2-4, c: 5-7, d: 8-9

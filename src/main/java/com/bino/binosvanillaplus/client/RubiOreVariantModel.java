@@ -2,6 +2,7 @@ package com.bino.binosvanillaplus.client;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.BakedModelWrapper;
+import net.neoforged.neoforge.client.model.IQuadTransformer;
 import net.neoforged.neoforge.client.model.QuadTransformers;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
@@ -29,31 +31,49 @@ public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
     // Brilho dos cristais, de 0 (nenhum) a 15 (maximo). Mude aqui para deixar mais fraco.
     private static final int CRYSTAL_GLOW = 15;
 
+    private static final IQuadTransformer GLOW = QuadTransformers.settingEmissivity(CRYSTAL_GLOW);
+
     private final BakedModel[] variants;
-    // [variante][fase][lado: 0..5 = Direction.ordinal(), 6 = sem lado] ja com o brilho aplicado
-    private final List<BakedQuad>[][][] glowing;
+    private final BakedModel[][] stageModels;   // [variante][fase] (null = usa o modelo inteiro da variante)
+    // [variante * 4 + fase] -> por lado (0..5 = Direction.ordinal(), 6 = sem lado), ja com o brilho aplicado.
+    // Montado so quando o bloco aparece pela primeira vez (as fases de mineracao quase nunca aparecem, e eram 3/4 do trabalho).
+    private final AtomicReferenceArray<List<BakedQuad>[]> glowing;
 
     public RubiOreVariantModel(BakedModel[] variants) { this(variants, null); }
 
     // stages[v][1..3] = modelos das fases b, c e d da variante v (null = ainda nao feita: usa o modelo inteiro)
-    @SuppressWarnings("unchecked")
     public RubiOreVariantModel(BakedModel[] variants, @Nullable BakedModel[][] stages) {
         super(variants[0]);
         this.variants = variants;
-        this.glowing = new List[variants.length][4][7];
-        for (int v = 0; v < variants.length; v++) {
-            for (int st = 0; st < 4; st++) {
-                BakedModel m = st == 0 || stages == null || stages[v] == null || stages[v][st] == null ? variants[v] : stages[v][st];
-                for (int s = 0; s < 7; s++) {
-                    Direction side = s == 6 ? null : Direction.values()[s];
-                    List<BakedQuad> quads = m.getQuads(null, side, RandomSource.create(42L), ModelData.EMPTY, null);
-                    glowing[v][st][s] = quads.stream().map(q ->
-                            isCrystal(q.getSprite().contents().name()) ? QuadTransformers.settingEmissivity(CRYSTAL_GLOW).process(q) : q
-                    ).toList();
-                }
+        this.stageModels = stages;
+        this.glowing = new AtomicReferenceArray<>(variants.length * 4);
+    }
+
+    // quads da variante v na fase st, com os cristais acesos (montados uma vez; as threads que montam chunks leem sem trava)
+    @SuppressWarnings("unchecked")
+    private List<BakedQuad>[] glowing(int v, int st) {
+        int idx = v * 4 + st;
+        List<BakedQuad>[] sides = glowing.get(idx);
+        if (sides != null) return sides;
+        synchronized (this) {
+            sides = glowing.get(idx);
+            if (sides != null) return sides;
+            BakedModel m = st == 0 || stageModels == null || stageModels[v] == null || stageModels[v][st] == null ? variants[v] : stageModels[v][st];
+            sides = new List[7];
+            RandomSource rand = RandomSource.create(42L);
+            for (int s = 0; s < 7; s++) {
+                rand.setSeed(42L);
+                List<BakedQuad> quads = m.getQuads(null, s == 6 ? null : DIRECTIONS[s], rand, ModelData.EMPTY, null);
+                List<BakedQuad> out = new java.util.ArrayList<>(quads.size());
+                for (BakedQuad q : quads) out.add(isCrystal(q.getSprite().contents().name()) ? GLOW.process(q) : q);
+                sides[s] = List.copyOf(out);
             }
+            glowing.set(idx, sides);
+            return sides;
         }
     }
+
+    private static final Direction[] DIRECTIONS = Direction.values();
 
     // Qualquer textura do nosso mod chamada block/<gema>_ore_crystal (rubi, safira, jade, diamante...) brilha.
     private static boolean isCrystal(ResourceLocation name) {
@@ -86,7 +106,7 @@ public class RubiOreVariantModel extends BakedModelWrapper<BakedModel> {
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand, ModelData data, @Nullable RenderType renderType) {
         Integer st = data.get(STAGE);
-        return glowing[index(data)][st == null ? 0 : st][side == null ? 6 : side.ordinal()];
+        return glowing(index(data), st == null ? 0 : st)[side == null ? 6 : side.ordinal()];
     }
 
     // O bloco emite luz, e por padrao isso desliga a iluminacao suave (AO). Forcamos ligada para a pedra nao ficar "chapada".

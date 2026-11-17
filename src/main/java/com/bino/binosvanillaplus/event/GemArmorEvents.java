@@ -36,10 +36,11 @@ public class GemArmorEvents {
     private static final double SAPPHIRE_MAGNET_SPEED = 0.25;  // velocidade com que os itens vêm até você
 
     // Conta quantas peças (0 a 4) do material o jogador está vestindo
+    private static final EquipmentSlot[] ARMOR_SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+
     public static int countPieces(Player player, DeferredHolder<ArmorMaterial, ArmorMaterial> material) {
         int count = 0;
-        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST,
-                EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+        for (EquipmentSlot slot : ARMOR_SLOTS) {
             if (player.getItemBySlot(slot).getItem() instanceof ArmorItem armor
                     && armor.getMaterial().is(material.getId())) {
                 count++;
@@ -86,6 +87,10 @@ public class GemArmorEvents {
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player player = event.getEntity();
         if (player.level().isClientSide || player.isSpectator() || !player.isAlive()) return;
+        // a cada 2 ticks basta (a velocidade dada continua valendo no tick seguinte): metade das buscas e dos pacotes
+        if ((player.tickCount & 1) != 0) return;
+        // quem nao veste o capacete de safira (quase todo mundo) sai aqui, sem olhar as outras pecas
+        if (!(player.getItemBySlot(EquipmentSlot.HEAD).getItem() instanceof ArmorItem helmet) || !helmet.getMaterial().is(ModArmorMaterials.SAPPHIRE.getId())) return;
         if (!hasFullSet(player, ModArmorMaterials.SAPPHIRE)) return;
 
         // Todos os itens no chão dentro do alcance
