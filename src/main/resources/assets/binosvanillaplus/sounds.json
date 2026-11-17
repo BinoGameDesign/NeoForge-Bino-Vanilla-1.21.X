@@ -43,5 +43,82 @@
       "binosvanillaplus:lapidary_contact"
     ],
     "subtitle": "subtitles.binosvanillaplus.lapidary_contact"
+  },
+  "cave_goblin.ambient": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.piglin.ambient",
+        "type": "event",
+        "pitch": 1.7,
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.cave_goblin.ambient"
+  },
+  "cave_goblin.hurt": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.piglin.hurt",
+        "type": "event",
+        "pitch": 1.7,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.cave_goblin.hurt"
+  },
+  "cave_goblin.death": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.piglin.death",
+        "type": "event",
+        "pitch": 1.7,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.cave_goblin.death"
+  },
+  "cave_goblin.steal": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.piglin.admiring_item",
+        "type": "event",
+        "pitch": 1.8,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.cave_goblin.steal"
+  },
+  "cave_goblin.giggle": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.witch.celebrate",
+        "type": "event",
+        "pitch": 1.9,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.cave_goblin.giggle"
+  },
+  "cave_goblin.startled": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.screech",
+        "type": "event",
+        "pitch": 1.6,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.cave_goblin.startled"
+  },
+  "cave_goblin.ring": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.illusioner.mirror_move",
+        "type": "event",
+        "pitch": 1.4,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.cave_goblin.ring"
   }
 }

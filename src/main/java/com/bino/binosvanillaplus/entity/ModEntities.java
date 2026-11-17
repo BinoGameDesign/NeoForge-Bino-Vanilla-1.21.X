@@ -22,6 +22,15 @@ public class ModEntities {
                             .build("cyalume_stick"));
 
     // noSave() = o jogo nunca grava esta entidade no mundo
+    // Cave Goblin (Exploration): um pouco maior que um zumbi bebe; categoria MONSTER so para nascer no escuro das cavernas (nao e hostil)
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.goblin.CaveGoblinEntity>> CAVE_GOBLIN =
+            ENTITY_TYPES.register("cave_goblin",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.goblin.CaveGoblinEntity>of(com.bino.binosvanillaplus.entity.goblin.CaveGoblinEntity::new, MobCategory.MONSTER)
+                            .sized(0.5f, 1.05f)
+                            .eyeHeight(0.8f)
+                            .clientTrackingRange(8)
+                            .build("cave_goblin"));
+
     public static final Supplier<EntityType<CompanionAllayEntity>> COMPANION_ALLAY =
             ENTITY_TYPES.register("companion_allay",
                     () -> EntityType.Builder.<CompanionAllayEntity>of(CompanionAllayEntity::new, MobCategory.MISC)

@@ -98,5 +98,16 @@
   "discovery.binosvanillaplus.ore.rubi_ore": "Ruby: a red crystal with an intense shine.",
   "discovery.binosvanillaplus.ore.sapphire_ore": "Sapphire: a blue crystal, cold to the touch.",
   "discovery.binosvanillaplus.ore.jade_ore": "Jade: a smooth green stone, very tough.",
-  "creativetab.binosvanillaplus.mining": "Mining"
+  "creativetab.binosvanillaplus.mining": "Mining",
+  "entity.binosvanillaplus.cave_goblin": "Cave Goblin",
+  "item.binosvanillaplus.cave_goblin_spawn_egg": "Cave Goblin Spawn Egg",
+  "item.binosvanillaplus.invisible_ring": "Ring of Invisibility",
+  "message.binosvanillaplus.goblin_stole": "A Cave Goblin stole your %s!",
+  "subtitles.binosvanillaplus.cave_goblin.ambient": "Cave Goblin mutters",
+  "subtitles.binosvanillaplus.cave_goblin.hurt": "Cave Goblin hurts",
+  "subtitles.binosvanillaplus.cave_goblin.death": "Cave Goblin dies",
+  "subtitles.binosvanillaplus.cave_goblin.steal": "Cave Goblin snatches",
+  "subtitles.binosvanillaplus.cave_goblin.giggle": "Cave Goblin giggles",
+  "subtitles.binosvanillaplus.cave_goblin.startled": "Cave Goblin shrieks",
+  "subtitles.binosvanillaplus.cave_goblin.ring": "Something vanishes"
 }

@@ -110,6 +110,8 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.EXPLORER_SONAR);
                         output.accept(ModItems.CAMERA);
                         output.accept(ModItems.EXPLORATION_DIARY);
+                        output.accept(ModItems.INVISIBLE_RING);
+                        output.accept(ModItems.CAVE_GOBLIN_SPAWN_EGG);
                         output.accept(ModBlocks.DYNAMITE);
                         output.accept(ModBlocks.CAMERA_TRIPOD);
                         output.accept(ModBlocks.FOSSIL_SKULL);

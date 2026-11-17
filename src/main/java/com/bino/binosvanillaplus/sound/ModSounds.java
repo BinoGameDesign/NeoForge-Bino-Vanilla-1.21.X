@@ -22,6 +22,15 @@ public class ModSounds {
     public static final Supplier<SoundEvent> LAPIDARY_DONE = register("lapidary_done");
     public static final Supplier<SoundEvent> LAPIDARY_CONTACT = register("lapidary_contact");
 
+    // Cave Goblin (por enquanto apontam para sons do jogo com outro tom, em sounds.json; trocar pelos gravados depois)
+    public static final Supplier<SoundEvent> CAVE_GOBLIN_AMBIENT = register("cave_goblin.ambient");
+    public static final Supplier<SoundEvent> CAVE_GOBLIN_HURT = register("cave_goblin.hurt");
+    public static final Supplier<SoundEvent> CAVE_GOBLIN_DEATH = register("cave_goblin.death");
+    public static final Supplier<SoundEvent> CAVE_GOBLIN_STEAL = register("cave_goblin.steal");
+    public static final Supplier<SoundEvent> CAVE_GOBLIN_GIGGLE = register("cave_goblin.giggle");
+    public static final Supplier<SoundEvent> CAVE_GOBLIN_STARTLED = register("cave_goblin.startled");
+    public static final Supplier<SoundEvent> CAVE_GOBLIN_RING = register("cave_goblin.ring");
+
     private static Supplier<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name)));
     }

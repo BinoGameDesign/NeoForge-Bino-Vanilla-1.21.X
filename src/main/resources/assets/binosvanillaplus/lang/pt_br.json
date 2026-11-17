@@ -290,5 +290,16 @@
   "lapidary.binosvanillaplus.hint.wrong": "Esse item não vai aí",
   "lapidary.binosvanillaplus.hint.leave": "Esc: sair  ·  Botão direito: devolver o item",
   "lapidary.binosvanillaplus.more": "Mais itens do inventário",
-  "lapidary.binosvanillaplus.nothing": "Nada mais para lapidar no inventário"
+  "lapidary.binosvanillaplus.nothing": "Nada mais para lapidar no inventário",
+  "entity.binosvanillaplus.cave_goblin": "Goblin das Cavernas",
+  "item.binosvanillaplus.cave_goblin_spawn_egg": "Ovo Gerador de Goblin das Cavernas",
+  "item.binosvanillaplus.invisible_ring": "Anel da Invisibilidade",
+  "message.binosvanillaplus.goblin_stole": "Um Goblin das Cavernas roubou %s!",
+  "subtitles.binosvanillaplus.cave_goblin.ambient": "Goblin das Cavernas resmunga",
+  "subtitles.binosvanillaplus.cave_goblin.hurt": "Goblin das Cavernas se machuca",
+  "subtitles.binosvanillaplus.cave_goblin.death": "Goblin das Cavernas morre",
+  "subtitles.binosvanillaplus.cave_goblin.steal": "Goblin das Cavernas furta",
+  "subtitles.binosvanillaplus.cave_goblin.giggle": "Goblin das Cavernas dá risadinhas",
+  "subtitles.binosvanillaplus.cave_goblin.startled": "Goblin das Cavernas grita de susto",
+  "subtitles.binosvanillaplus.cave_goblin.ring": "Algo desaparece"
 }

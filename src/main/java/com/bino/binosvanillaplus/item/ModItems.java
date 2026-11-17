@@ -204,6 +204,12 @@ public class ModItems {
     // Camera, Diario de Exploracao e Foto revelada
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.CameraItem> CAMERA = ITEMS.register("camera",
             () -> new com.bino.binosvanillaplus.item.custom.CameraItem(new Item.Properties().stacksTo(1)));
+    // Cave Goblin: ovo com textura propria (cores brancas = sem tingir) e o anel raro que ele carrega
+    public static final DeferredItem<Item> CAVE_GOBLIN_SPAWN_EGG = ITEMS.register("cave_goblin_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.CAVE_GOBLIN, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
+    // durabilidade = segundos de invisibilidade (1200 = 20 min); gasta 1 por segundo so enquanto a invisibilidade esta ativa
+    public static final DeferredItem<Item> INVISIBLE_RING = ITEMS.register("invisible_ring",
+            () -> new Item(new Item.Properties().durability(1200).rarity(Rarity.EPIC)));
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem> EXPLORATION_DIARY = ITEMS.register("exploration_diary",
             () -> new com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.PhotoItem> PHOTO = ITEMS.register("photo",
