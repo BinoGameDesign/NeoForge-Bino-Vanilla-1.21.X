@@ -148,6 +148,10 @@ public class ModBlocks {
     public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.RatTrapBlock> RAT_TRAP = registerBlock("rat_trap",
             () -> new com.bino.binosvanillaplus.block.custom.RatTrapBlock(BlockBehaviour.Properties.of().strength(0.6f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.DESTROY)));
 
+    // Gaiola (captura viva de ratos e passaros)
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.CageBlock> CAGE = registerBlock("cage",
+            () -> new com.bino.binosvanillaplus.block.custom.CageBlock(BlockBehaviour.Properties.of().strength(1.5f).sound(SoundType.METAL).noOcclusion().requiresCorrectToolForDrops()));
+
     public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.DynamiteBlock> DYNAMITE = registerBlock("dynamite",
             () -> new com.bino.binosvanillaplus.block.custom.DynamiteBlock(BlockBehaviour.Properties.of()
                     .instabreak()

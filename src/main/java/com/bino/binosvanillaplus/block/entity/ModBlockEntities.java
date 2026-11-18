@@ -31,6 +31,9 @@ public class ModBlockEntities {
     public static final Supplier<BlockEntityType<RatTrapBlockEntity>> RAT_TRAP = BLOCK_ENTITIES.register("rat_trap",
             () -> BlockEntityType.Builder.of(RatTrapBlockEntity::new, ModBlocks.RAT_TRAP.get()).build(null));
 
+    public static final Supplier<BlockEntityType<CageBlockEntity>> CAGE = BLOCK_ENTITIES.register("cage",
+            () -> BlockEntityType.Builder.of(CageBlockEntity::new, ModBlocks.CAGE.get()).build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

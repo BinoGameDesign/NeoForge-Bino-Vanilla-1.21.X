@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "closed=false,facing=north": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 0
+    },
+    "closed=true,facing=north": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 0
+    },
+    "closed=false,facing=east": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 90
+    },
+    "closed=true,facing=east": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 90
+    },
+    "closed=false,facing=south": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 180
+    },
+    "closed=true,facing=south": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 180
+    },
+    "closed=false,facing=west": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 270
+    },
+    "closed=true,facing=west": {
+      "model": "binosvanillaplus:block/cage",
+      "y": 270
+    }
+  }
+}

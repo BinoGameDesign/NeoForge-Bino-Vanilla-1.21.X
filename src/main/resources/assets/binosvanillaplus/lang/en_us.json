@@ -126,5 +126,7 @@
   "block.binosvanillaplus.rat_trap": "Rat Trap",
   "message.binosvanillaplus.rat_trap_bait": "Bait: %s/%s",
   "subtitles.binosvanillaplus.rat_trap.snap": "Rat trap snaps",
-  "item.binosvanillaplus.cooked_rat_meat": "Cooked Rat Meat"
+  "item.binosvanillaplus.cooked_rat_meat": "Cooked Rat Meat",
+  "block.binosvanillaplus.cage": "Cage",
+  "block.binosvanillaplus.cage.with": "Cage (%s)"
 }

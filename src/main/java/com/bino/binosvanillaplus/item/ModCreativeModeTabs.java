@@ -117,6 +117,7 @@ public class ModCreativeModeTabs {
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.CHEESE);
                         output.accept(ModItems.CHEESE_SLICE);
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.RAT_TRAP);
+                        output.accept(com.bino.binosvanillaplus.block.ModBlocks.CAGE);
                         output.accept(ModItems.RAT_SPAWN_EGG);
                         output.accept(ModBlocks.DYNAMITE);
                         output.accept(ModBlocks.CAMERA_TRIPOD);

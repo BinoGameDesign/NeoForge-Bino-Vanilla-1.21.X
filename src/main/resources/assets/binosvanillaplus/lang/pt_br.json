@@ -318,5 +318,7 @@
   "block.binosvanillaplus.rat_trap": "Ratoeira",
   "message.binosvanillaplus.rat_trap_bait": "Isca: %s/%s",
   "subtitles.binosvanillaplus.rat_trap.snap": "Ratoeira fecha",
-  "item.binosvanillaplus.cooked_rat_meat": "Carne de Rato Cozida"
+  "item.binosvanillaplus.cooked_rat_meat": "Carne de Rato Cozida",
+  "block.binosvanillaplus.cage": "Gaiola",
+  "block.binosvanillaplus.cage.with": "Gaiola (%s)"
 }
