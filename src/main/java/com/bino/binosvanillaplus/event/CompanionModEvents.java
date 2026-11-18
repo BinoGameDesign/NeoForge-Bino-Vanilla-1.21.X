@@ -20,14 +20,14 @@ public class CompanionModEvents {
                 (type, level, reason, pos, random) -> net.minecraft.world.entity.Mob.checkMobSpawnRules(type, level, reason, pos, random)
                         && (net.minecraft.world.entity.MobSpawnType.isSpawner(reason) || reason == net.minecraft.world.entity.MobSpawnType.SPAWN_EGG
                             || reason == net.minecraft.world.entity.MobSpawnType.EVENT
-                            || (pos.getY() < 0 && !level.canSeeSky(pos) && level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos) == 0)),
+                            || (pos.getY() < 40 && !level.canSeeSky(pos) && level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos) == 0)),
                 net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
         // Cave Goblin: so abaixo de Y 0, sem ceu, sem luz de bloco, chao firme (ovos e spawners ignoram a regra de luz/altura)
         event.register(ModEntities.CAVE_GOBLIN.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
                 net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 (type, level, reason, pos, random) -> net.minecraft.world.entity.Mob.checkMobSpawnRules(type, level, reason, pos, random)
                         && (net.minecraft.world.entity.MobSpawnType.isSpawner(reason) || reason == net.minecraft.world.entity.MobSpawnType.SPAWN_EGG
-                            || (pos.getY() < 0 && !level.canSeeSky(pos) && level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos) == 0)),
+                            || (pos.getY() < 40 && !level.canSeeSky(pos) && level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos) == 0)),
                 net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
         event.register(ModEntities.VILLAGER_GUARD.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
                 net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,

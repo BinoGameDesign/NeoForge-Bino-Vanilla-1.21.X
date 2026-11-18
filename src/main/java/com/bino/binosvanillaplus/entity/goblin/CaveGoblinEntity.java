@@ -128,6 +128,7 @@ public class CaveGoblinEntity extends PathfinderMob {
         goalSelector.addGoal(1, new FleeGoal(this));
         goalSelector.addGoal(2, new AvoidEntityGoal<>(this, LivingEntity.class, 8.0f, 1.0, 1.4, this::isScary));
         goalSelector.addGoal(3, stealGoal);
+        goalSelector.addGoal(4, new EatMeatGoal(this));
         goalSelector.addGoal(4, new HuntRatGoal(this));
         goalSelector.addGoal(4, new SeekDarknessGoal(this));
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
@@ -431,6 +432,43 @@ public class CaveGoblinEntity extends PathfinderMob {
         }
     }
 
+    // Carne de rato (crua ou cozida) no chao a ate 8 blocos: vai ate ela, pega e come (animacao eat)
+    static class EatMeatGoal extends Goal {
+        private final CaveGoblinEntity g;
+        @Nullable private net.minecraft.world.entity.item.ItemEntity meat;
+        private int time;
+        EatMeatGoal(CaveGoblinEntity g) { this.g = g; setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+        private static boolean isMeat(net.minecraft.world.entity.item.ItemEntity i) {
+            return i.isAlive() && (i.getItem().is(ModItems.RAT_MEAT.get()) || i.getItem().is(ModItems.COOKED_RAT_MEAT.get()));
+        }
+        @Override public boolean canUse() {
+            if (g.eatTicks > 0 || g.fleeTicks > 0 || g.getState() != ST_NORMAL || g.tickCount % 10 != 0) return false;
+            var list = g.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, g.getBoundingBox().inflate(8), EatMeatGoal::isMeat);
+            meat = list.isEmpty() ? null : list.get(0);
+            return meat != null;
+        }
+        @Override public boolean canContinueToUse() { return meat != null && isMeat(meat) && g.fleeTicks == 0 && time < 300; }
+        @Override public void start() { time = 0; }
+        @Override public void stop() { meat = null; }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
+        @Override public void tick() {
+            if (meat == null) return;
+            time++;
+            g.getLookControl().setLookAt(meat, 30, 30);
+            if (time % 5 == 0) g.getNavigation().moveTo(meat, 1.1);
+            if (g.distanceToSqr(meat) < 1.5) {
+                meat.getItem().shrink(1);
+                if (meat.getItem().isEmpty()) meat.discard();
+                g.playSound(net.minecraft.sounds.SoundEvents.GENERIC_EAT, 0.8f, 1.3f);
+                g.eatTicks = 70;
+                g.setState(ST_EAT);
+                g.getNavigation().stop();
+                g.huntCooldown = 2400;
+                meat = null;
+            }
+        }
+    }
+
     // Caca ratos: persegue um rato calmo, mata e come (animacao eat). Depois fica um tempo sem fome.
     static class HuntRatGoal extends Goal {
         private final CaveGoblinEntity g;
@@ -446,12 +484,7 @@ public class CaveGoblinEntity extends PathfinderMob {
         @Override public boolean canContinueToUse() { return prey != null && prey.isAlive() && isPrey(prey) && g.fleeTicks == 0 && time < 300; }
         @Override public void start() { time = 0; }
         @Override public void stop() {
-            if (prey != null && !prey.isAlive() && g.distanceToSqr(prey) < 9) {   // pegou: come
-                g.eatTicks = 70;
-                g.setState(ST_EAT);
-                g.getNavigation().stop();
-                g.huntCooldown = 2400;
-            } else g.huntCooldown = 400;
+            g.huntCooldown = prey != null && !prey.isAlive() ? 60 : 400;   // pegou: logo depois vai comer a carne (EatMeatGoal)
             prey = null;
         }
         @Override public boolean requiresUpdateEveryTick() { return true; }

@@ -10,10 +10,10 @@ import json, uuid, base64, io, os
 from PIL import Image
 OUT = os.path.dirname(os.path.abspath(__file__)); U = lambda: str(uuid.uuid4())
 BONES = {"root": (None, (0, 0, 0), (0, 0, 0)), "camera": ("root", (0, 0, 0), (0, 0, 0)),
-         "right_arm": ("root", (7, -6, 2), (85, 12, 0)), "food": ("right_arm", (7, -16.5, 2), (0, 0, 0)),
+         "right_arm": ("root", (7, -6, 2), (85, 12, 0)), "food": ("right_arm", (7, -20.5, 1), (0, 0, 0)),
          "left_arm": ("root", (-7, -7, 2), (82, -12, 0))}
 CUBES = [("right_arm", "braco_d", (5, -18, 0), (9, -6, 4)), ("left_arm", "braco_e", (-9, -19, 0), (-5, -7, 4)),
-         ("food", "comida", (5, -18.5, -0.5), (9, -15.5, 4.5)), ("camera", "olho", (-0.5, -0.5, -0.5), (0.5, 0.5, 0.5))]
+         ("food", "comida", (5, -22, -1.5), (9, -19, 3.5)), ("camera", "olho", (-0.5, -0.5, -0.5), (0.5, 0.5, 0.5))]
 W = H = 64
 img = Image.new("RGBA", (W, H))
 for y in range(H):

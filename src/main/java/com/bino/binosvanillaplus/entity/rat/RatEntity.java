@@ -82,7 +82,8 @@ public class RatEntity extends PathfinderMob {
                 .add(Attributes.MAX_HEALTH, 4.0)
                 .add(Attributes.MOVEMENT_SPEED, 0.3)
                 .add(Attributes.ATTACK_DAMAGE, 1.0)
-                .add(Attributes.FOLLOW_RANGE, 16.0);
+                .add(Attributes.FOLLOW_RANGE, 16.0)
+                .add(Attributes.SCALE, 0.85);   // um pouco menor que o modelo
     }
 
     @Override
@@ -289,8 +290,9 @@ public class RatEntity extends PathfinderMob {
     static class EatCakeGoal extends Goal {
         private final RatEntity r;
         @Nullable private BlockPos cake;
-        private int time;
+        private int time, chew;
         EatCakeGoal(RatEntity r) { this.r = r; setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
         @Override public boolean canUse() {
             if (r.getState() != ST_NORMAL || r.getRandom().nextInt(60) != 0) return false;
             BlockPos base = r.blockPosition();
@@ -302,7 +304,7 @@ public class RatEntity extends PathfinderMob {
         @Override public boolean canContinueToUse() {
             return cake != null && time < 400 && r.level().getBlockState(cake).is(RatSpawning.RAT_FOOD) && r.getState() != ST_FLEE;
         }
-        @Override public void start() { time = 0; r.getNavigation().moveTo(cake.getX() + 0.5, cake.getY(), cake.getZ() + 0.5, 1.0); }
+        @Override public void start() { time = 0; chew = 0; r.getNavigation().moveTo(cake.getX() + 0.5, cake.getY(), cake.getZ() + 0.5, 1.0); }
         @Override public void stop() { cake = null; if (r.getState() == ST_EAT) r.setState(ST_NORMAL); }
         @Override public void tick() {
             if (cake == null) return;
@@ -313,8 +315,8 @@ public class RatEntity extends PathfinderMob {
                 return;
             }
             r.getNavigation().stop();
-            if (r.getState() != ST_EAT) { r.setState(ST_EAT); r.eatTicks = 60; }
-            if (r.eatTicks == 1) {   // terminou de comer: tira um pedaco
+            if (chew == 0) { r.setState(ST_EAT); r.eatTicks = 0; }
+            if (++chew >= 60) {   // terminou de comer: tira um pedaco (o objetivo acaba e o rato vai embora)
                 BlockState s = r.level().getBlockState(cake);
                 if (s.getBlock() instanceof com.bino.binosvanillaplus.block.custom.CheeseBlock) {
                     com.bino.binosvanillaplus.block.custom.CheeseBlock.takeBite(r.level(), cake, s);
@@ -327,6 +329,7 @@ public class RatEntity extends PathfinderMob {
                     r.level().setBlock(cake, net.minecraft.world.level.block.Blocks.CAKE.defaultBlockState().setValue(CakeBlock.BITES, 1), 3);
                 } else r.level().removeBlock(cake, false);   // outra comida da tag: some
                 r.playSound(ModSounds.RAT_EAT.get(), 0.6f, 1.0f);
+                r.setState(ST_NORMAL);
                 cake = null;
             }
         }

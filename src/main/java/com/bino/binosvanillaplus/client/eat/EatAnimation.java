@@ -132,7 +132,7 @@ public final class EatAnimation {
         rig.rightArm.translateAndRotate(ps);
         rig.food.translateAndRotate(ps);                            // inclui a escala (mordidas)
         ps.mulPose(Axis.ZP.rotationDegrees(180));                   // volta para y para cima (o item e desenhado em pe)
-        ps.scale(0.42f, 0.42f, 0.42f);
+        ps.scale(0.55f, 0.55f, 0.55f);
         mc.getItemRenderer().render(stack, ItemDisplayContext.NONE, false, ps, buf, light, OverlayTexture.NO_OVERLAY, solid);
         ps.popPose();
     }

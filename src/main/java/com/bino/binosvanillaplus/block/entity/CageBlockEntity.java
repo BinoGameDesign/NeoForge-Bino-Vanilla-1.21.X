@@ -81,7 +81,20 @@ public class CageBlockEntity extends BlockEntity {
 
     // servidor: a cada 2 s puxa os bichos que gostam da isca para dentro
     public static void serverTick(Level level, BlockPos pos, BlockState state, CageBlockEntity be) {
-        if (state.getValue(CageBlock.CLOSED) || be.bait.isEmpty() || level.getGameTime() % 40 != (pos.asLong() & 31)) return;
+        if (state.getValue(CageBlock.CLOSED) || be.bait.isEmpty()) return;
+        if (level.getGameTime() % 5 == 0) {   // chegou na porta: entra e a porta fecha
+            net.minecraft.world.phys.Vec3 c = net.minecraft.world.phys.Vec3.atBottomCenterOf(pos);
+            for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, new AABB(pos).inflate(1.0), be::lures)) {
+                double dx = e.getX() - c.x, dz = e.getZ() - c.z, dy = e.getY() - c.y;
+                double reach = e instanceof Parrot ? 1.1 : 0.45;
+                if (dx * dx + dz * dz < reach * reach && dy > -0.3 && dy < (e instanceof Parrot ? 1.6 : 0.6)) {
+                    be.capture(e);
+                    CageBlock.close(level, pos, state);
+                    return;
+                }
+            }
+        }
+        if (level.getGameTime() % 40 != (pos.asLong() & 31)) return;
         for (PathfinderMob m : level.getEntitiesOfClass(PathfinderMob.class, new AABB(pos).inflate(12), be::lures))
             m.getNavigation().moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 1.0);
     }

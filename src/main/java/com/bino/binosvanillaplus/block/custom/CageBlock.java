@@ -70,6 +70,8 @@ public class CageBlock extends BaseEntityBlock {
 
     @Nullable private static CageBlockEntity be(Level l, BlockPos p) { return l.getBlockEntity(p) instanceof CageBlockEntity c ? c : null; }
 
+    public static void close(Level level, BlockPos pos, BlockState state) { door(level, pos, state, true); }
+
     private static void door(Level level, BlockPos pos, BlockState state, boolean close) {
         level.setBlock(pos, state.setValue(CLOSED, close), 3);
         level.blockEvent(pos, state.getBlock(), DOOR_EVENT, close ? 1 : 0);
