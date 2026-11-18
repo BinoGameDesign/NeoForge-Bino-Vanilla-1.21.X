@@ -19,6 +19,10 @@ public class ModParticles {
     public static final Supplier<SimpleParticleType> PINK_HEART =
             PARTICLE_TYPES.register("pink_heart", () -> new SimpleParticleType(false));
 
+    // "Z" que sobe de quem esta dormindo (rato)
+    public static final Supplier<SimpleParticleType> SLEEP_Z =
+            PARTICLE_TYPES.register("sleep_z", () -> new SimpleParticleType(false));
+
     public static void register(IEventBus eventBus) {
         PARTICLE_TYPES.register(eventBus);
     }
