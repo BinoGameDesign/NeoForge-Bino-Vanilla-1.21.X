@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Silhueta colorida atras do icone de item +10 (ver ForgeIconOutline). Todas as formas de desenhar item na
+// Silhueta colorida atras do icone de item +4 a +10 (ver ForgeIconOutline). Todas as formas de desenhar item na
 // interface (inventario, hotbar, baus...) passam por este renderItem privado.
 @Mixin(GuiGraphics.class)
 public abstract class GuiGraphicsForgeOutlineMixin {

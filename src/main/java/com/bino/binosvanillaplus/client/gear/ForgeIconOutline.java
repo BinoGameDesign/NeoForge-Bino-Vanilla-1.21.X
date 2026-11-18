@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Icone 2D de item +10 (inventario, hotbar...): contorno de 1 pixel em degrade, no estilo da espada de safira que o
+// Icone 2D de item forjado +4/+6/+8/+10 (inventario, hotbar...): contorno de 1 pixel em degrade, no estilo da espada de safira que o
 // Bino desenhou. E' desenhado antes do item (GuiGraphicsForgeOutlineMixin), entao fica por tras dele.
 //  - Se existir textures/gui/forge_icon/<nome>.png (18x18, feito a mao), ele e' usado.
 //  - Senao o contorno e' gerado a partir do sprite 2D: dois pontos de brilho (a ponta de cima-direita e o canto de
@@ -33,19 +33,28 @@ public final class ForgeIconOutline {
     private static final Outline NONE = new Outline(null, 0, 0, new int[0]);
     private static final Map<Item, Outline> CACHE = new HashMap<>();
 
+    // opacidade do contorno por faixa (+4, +6, +8, +10); os brilhos piscando aparecem a partir do +8
+    private static final float[] ALPHA = {0f, 0.40f, 0.62f, 0.82f, 1.0f};
+
     public static void draw(GuiGraphics g, ItemStack stack, int x, int y) {
-        if (ForgeGlow.tier(stack) < 4) return;
+        int tier = ForgeGlow.tier(stack);
+        if (tier < 1) return;
         Outline o = CACHE.computeIfAbsent(stack.getItem(), ForgeIconOutline::build);
         if (o == NONE) return;
         RenderSystem.enableBlend();
+        g.setColor(1f, 1f, 1f, ALPHA[tier]);
         g.blit(o.tex, x - 1, y - 1, 18, 18, 0, 0, o.w, o.h, o.w, o.h);
-        // brilhos piscando (cada um no seu tempo)
+        g.setColor(1f, 1f, 1f, 1f);
+        if (tier < 3) return;
+        // brilhos piscando (cada um no seu tempo); no +8 mais fracos
+        float sparkK = tier >= 4 ? 1f : 0.6f;
         double t = Util.getMillis() / 1000.0;
         for (int i = 0; i + 1 < o.sparks.length; i += 2) {
             double ph = (t / 2.6 + i * 0.37) % 1.0;
             double f = ph < 0.18 ? Math.sin(ph / 0.18 * Math.PI) : 0;
             if (f <= 0.01) continue;
             int px = x - 1 + o.sparks[i] * 18 / o.w, py = y - 1 + o.sparks[i + 1] * 18 / o.h;
+            f *= sparkK;
             g.fill(px, py, px + 1, py + 1, white(f));
             int arm = white(f * 0.45);
             g.fill(px - 1, py, px, py + 1, arm);

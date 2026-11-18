@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // Brilho de ressonancia da forja: equipamento +4 ou mais emite um brilho suave na cor principal do item
-// (+4 de leve, +6 mais forte, +8 mais, +10 o maximo), pulsando devagar. Item na mao: ItemInHandRendererForgeGlowMixin.
+// (+4 de leve, +6 mais forte, +8 mais, +10 o maximo), pulsando devagar. Item (mao, chao, moldura): contorno em ForgeOutline.
 // Armadura vestida: ForgeArmorGlowLayer. E' so visual (nao ilumina o chao).
 public final class ForgeGlow {
     private ForgeGlow() {}
@@ -150,46 +150,5 @@ public final class ForgeGlow {
         else h = 60f * ((r - g) / d + 4f);
         if (h < 0) h += 360f;
         out[0] = h; out[1] = max == 0 ? 0 : d / max; out[2] = max / 255f;
-    }
-
-    // ---------------------------------------------------------------- item na mao
-    private static final RandomSource RANDOM = RandomSource.create();
-
-    // Desenha duas "cascas" do modelo do item, um pouco maiores, translucidas e acesas, por cima do item ja desenhado.
-    public static void renderHeld(LivingEntity entity, ItemStack stack, ItemDisplayContext ctx, boolean leftHand,
-                                  PoseStack ps, MultiBufferSource buf) {
-        int tier = tier(stack);
-        if (tier == 0 || entity.isInvisible()) return;
-        Minecraft mc = Minecraft.getInstance();
-        BakedModel model = mc.getItemRenderer().getModel(stack, entity.level(), entity, entity.getId() + ctx.ordinal());
-        if (model.isCustomRenderer()) return;   // itens desenhados por codigo (escudo, tridente): sem brilho
-        float a = alpha(tier);
-        if (ctx.firstPerson()) a *= 0.7f;      // na propria mao, mais discreto
-        int rgb = color(stack.getItem());
-        float r = ((rgb >> 16) & 255) / 255f, g = ((rgb >> 8) & 255) / 255f, b = (rgb & 255) / 255f;
-        VertexConsumer vc = buf.getBuffer(RenderType.entityTranslucentEmissive(TextureAtlas.LOCATION_BLOCKS));
-
-        ps.pushPose();
-        BakedModel shown = ClientHooks.handleCameraTransforms(ps, model, ctx, leftHand);
-        float[][] shells = {{1.05f, a}, {1.12f + 0.02f * tier, a * 0.45f}};
-        for (float[] sh : shells) {
-            ps.pushPose();
-            ps.scale(sh[0], sh[0], sh[0]);
-            ps.translate(-0.5f, -0.5f, -0.5f);
-            PoseStack.Pose pose = ps.last();
-            for (BakedModel pass : shown.getRenderPasses(stack, true)) {
-                for (Direction d : Direction.values()) quads(vc, pose, pass, d, r, g, b, sh[1]);
-                quads(vc, pose, pass, null, r, g, b, sh[1]);
-            }
-            ps.popPose();
-        }
-        ps.popPose();
-    }
-
-    private static void quads(VertexConsumer vc, PoseStack.Pose pose, BakedModel model, Direction side,
-                              float r, float g, float b, float a) {
-        RANDOM.setSeed(42L);
-        for (BakedQuad q : model.getQuads(null, side, RANDOM))
-            vc.putBulkData(pose, q, r, g, b, a, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
     }
 }
