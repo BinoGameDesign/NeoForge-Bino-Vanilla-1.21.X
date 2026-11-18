@@ -38,6 +38,7 @@ public class ModSounds {
     public static final Supplier<SoundEvent> RAT_SQUEAK = register("rat.squeak");
     public static final Supplier<SoundEvent> RAT_EAT = register("rat.eat");
     public static final Supplier<SoundEvent> RAT_ATTACK = register("rat.attack");
+    public static final Supplier<SoundEvent> RAT_TRAP_SNAP = register("rat_trap.snap");
 
     private static Supplier<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name)));

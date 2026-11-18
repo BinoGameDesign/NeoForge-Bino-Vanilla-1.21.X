@@ -201,5 +201,21 @@
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.rat.attack"
+  },
+  "rat_trap.snap": {
+    "sounds": [
+      {
+        "name": "minecraft:block.iron_trapdoor.close",
+        "type": "event",
+        "pitch": 1.7
+      },
+      {
+        "name": "minecraft:block.piston.contract",
+        "type": "event",
+        "pitch": 2.0,
+        "volume": 0.7
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.rat_trap.snap"
   }
 }

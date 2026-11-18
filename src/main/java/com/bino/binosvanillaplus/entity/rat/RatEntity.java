@@ -109,6 +109,7 @@ public class RatEntity extends PathfinderMob {
         goalSelector.addGoal(1, new FleeGoal(this));
         goalSelector.addGoal(2, new SleepGoal(this));
         goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.4, true));
+        goalSelector.addGoal(3, new BaitGoal(this));
         goalSelector.addGoal(4, new EatCakeGoal(this));
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0f));
@@ -328,6 +329,32 @@ public class RatEntity extends PathfinderMob {
                 r.playSound(ModSounds.RAT_EAT.get(), 0.6f, 1.0f);
                 cake = null;
             }
+        }
+    }
+
+    // ratoeira com isca a ate 16 blocos: vai ate ela (e pisa)
+    static class BaitGoal extends Goal {
+        private final RatEntity r;
+        @Nullable private BlockPos trap;
+        private int time;
+        BaitGoal(RatEntity r) { this.r = r; setFlags(EnumSet.of(Flag.MOVE)); }
+        @Override public boolean canUse() {
+            if (r.isAngry() || r.getState() == ST_SLEEP || r.getRandom().nextInt(20) != 0) return false;
+            double best = 16 * 16; trap = null;
+            for (BlockPos p : com.bino.binosvanillaplus.block.entity.RatTrapBlockEntity.baited(r.level())) {
+                double d = p.distToCenterSqr(r.position());
+                if (d < best) { best = d; trap = p; }
+            }
+            return trap != null;
+        }
+        @Override public boolean canContinueToUse() {
+            return trap != null && time < 400 && com.bino.binosvanillaplus.block.entity.RatTrapBlockEntity.baited(r.level()).contains(trap) && r.getState() != ST_FLEE;
+        }
+        @Override public void start() { time = 0; r.getNavigation().moveTo(trap.getX() + 0.5, trap.getY(), trap.getZ() + 0.5, 1.0); }
+        @Override public void stop() { trap = null; }
+        @Override public void tick() {
+            time++;
+            if (trap != null && time % 20 == 0) r.getNavigation().moveTo(trap.getX() + 0.5, trap.getY(), trap.getZ() + 0.5, 1.0);
         }
     }
 

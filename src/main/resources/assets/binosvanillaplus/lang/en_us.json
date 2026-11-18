@@ -122,5 +122,8 @@
   "subtitles.binosvanillaplus.rat.attack": "Rat bites",
   "block.binosvanillaplus.cheese": "Cheese",
   "item.binosvanillaplus.cheese_slice": "Cheese Slice",
-  "block.binosvanillaplus.milk_cauldron": "Milk Cauldron"
+  "block.binosvanillaplus.milk_cauldron": "Milk Cauldron",
+  "block.binosvanillaplus.rat_trap": "Rat Trap",
+  "message.binosvanillaplus.rat_trap_bait": "Bait: %s/%s",
+  "subtitles.binosvanillaplus.rat_trap.snap": "Rat trap snaps"
 }

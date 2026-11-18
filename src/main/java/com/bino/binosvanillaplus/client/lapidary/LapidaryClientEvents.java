@@ -35,11 +35,13 @@ public class LapidaryClientEvents {
         event.register(LapidaryGeo.ARM);
         event.register(LapidaryGeo.BUTTON_MODEL);
         event.register(LapidaryGeo.VISOR_MODEL);
+        event.register(com.bino.binosvanillaplus.client.trap.RatTrapRenderer.BAIL);   // arco da ratoeira
     }
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.LAPIDARY_TABLE.get(), LapidaryTableRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.RAT_TRAP.get(), com.bino.binosvanillaplus.client.trap.RatTrapRenderer::new);
     }
 
     // a janela antiga ia abrir: no lugar dela entra a cena. Durante a cena, o menu de pausa (janela perdeu o foco)

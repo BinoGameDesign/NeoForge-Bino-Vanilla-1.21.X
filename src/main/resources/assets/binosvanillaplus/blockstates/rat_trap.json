@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "facing=north,sprung=false": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 0
+    },
+    "facing=north,sprung=true": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 0
+    },
+    "facing=east,sprung=false": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 90
+    },
+    "facing=east,sprung=true": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 90
+    },
+    "facing=south,sprung=false": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 180
+    },
+    "facing=south,sprung=true": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 180
+    },
+    "facing=west,sprung=false": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 270
+    },
+    "facing=west,sprung=true": {
+      "model": "binosvanillaplus:block/rat_trap",
+      "y": 270
+    }
+  }
+}
