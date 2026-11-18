@@ -69,4 +69,13 @@ public class BasicProviders {
             }
         }
     }
+
+    // Caldeirao com leite: fase do cozimento, tempo restante, se falta fogo/leite
+    public static class MilkCauldron implements LookAtProvider {
+        @Override
+        public void appendBlock(LookAtInfo info, Level level, BlockPos pos, BlockState state, LocalPlayer player) {
+            if (state.getBlock() instanceof com.bino.binosvanillaplus.block.custom.MilkCauldronBlock)
+                for (Component c : com.bino.binosvanillaplus.block.custom.MilkCauldronBlock.describe(state, level, pos)) info.line(c);
+        }
+    }
 }

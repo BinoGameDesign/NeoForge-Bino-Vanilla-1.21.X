@@ -6,7 +6,6 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.cauldron.CauldronInteraction;
@@ -111,7 +110,7 @@ public class MilkCauldronBlock extends Block {
         return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
-    // Texto de status (usado pelo Jade e pelo clique com a mao vazia)
+    // Texto de status (usado pelo painel "olhando para" do mod e pelo Jade)
     public static List<Component> describe(BlockState state, Level level, BlockPos pos) {
         List<Component> out = new ArrayList<>();
         int cook = state.getValue(COOK);
@@ -131,15 +130,7 @@ public class MilkCauldronBlock extends Block {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (state.getValue(COOK) < READY) {
-            if (level.isClientSide) {
-                MutableComponent msg = Component.empty();
-                List<Component> lines = describe(state, level, pos);
-                for (int i = 0; i < lines.size(); i++) { if (i > 0) msg.append(" · "); msg.append(lines.get(i)); }
-                player.displayClientMessage(msg, true);
-            }
-            return InteractionResult.sidedSuccess(level.isClientSide);
-        }
+        if (state.getValue(COOK) < READY) return InteractionResult.PASS;
         if (!level.isClientSide) {
             ItemStack cheese = new ItemStack(ModItems.CHEESE.get());
             if (!player.getInventory().add(cheese)) player.drop(cheese, false);

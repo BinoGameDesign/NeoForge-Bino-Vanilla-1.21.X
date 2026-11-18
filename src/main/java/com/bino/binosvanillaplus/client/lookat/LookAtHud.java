@@ -19,9 +19,20 @@ import net.neoforged.fml.ModList;
 public class LookAtHud {
     public static boolean enabled = true;
 
+    // Se o jogador usa Jade/WTHIT/The One Probe, o painel deles mostra tudo (inclusive o nosso, via plugin)
+    // e o nosso some para nao ficar um em cima do outro.
+    private static Boolean otherHud;
+    public static boolean otherHudLoaded() {
+        if (otherHud == null) {
+            ModList ml = ModList.get();
+            otherHud = ml.isLoaded("jade") || ml.isLoaded("wthit") || ml.isLoaded("waila") || ml.isLoaded("hwyla") || ml.isLoaded("theoneprobe");
+        }
+        return otherHud;
+    }
+
     public static void render(GuiGraphics g, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
-        if (!enabled || mc.player == null || mc.level == null || mc.options.hideGui
+        if (!enabled || otherHudLoaded() || mc.player == null || mc.level == null || mc.options.hideGui
                 || mc.screen != null || mc.getDebugOverlay().showDebugScreen()) return;
 
         LookAtInfo info = collect(mc);

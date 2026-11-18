@@ -135,5 +135,7 @@
   "tooltip.binosvanillaplus.milk_cauldron.phase.curdling": "Curdling (%s%%)",
   "tooltip.binosvanillaplus.milk_cauldron.time": "~%s s left",
   "tooltip.binosvanillaplus.milk_cauldron.need_fire": "Needs a lit campfire below",
-  "config.jade.plugin_binosvanillaplus.milk_cauldron": "Milk Cauldron"
+  "config.jade.plugin_binosvanillaplus.milk_cauldron": "Milk Cauldron",
+  "lookat.binosvanillaplus.mob_level": "Level %s",
+  "config.jade.plugin_binosvanillaplus.mob_level": "Mob level"
 }
