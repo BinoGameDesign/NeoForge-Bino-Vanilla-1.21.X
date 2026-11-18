@@ -124,7 +124,7 @@ public final class ForgeOutline {
         if (arr[tier] == null) {
             float alpha = halo ? HALO_ALPHA : ALPHA[tier];
             arr[tier] = new RenderType("binosvanillaplus_forge_outline_" + tier + (halo ? "_halo" : ""),
-                    DefaultVertexFormat.POSITION_COLOR_TEX, VertexFormat.Mode.QUADS, 1536, false, false,
+                    DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS, 1536, false, false,
                     () -> {
                         RenderSystem.setShader(GameRenderer::getRendertypeOutlineShader);
                         RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
