@@ -66,7 +66,7 @@ def tex_cheese():
     area(16, 16, 16, 16, Om, Wm)                               # fundo
     for x in range(16, 32): P[x, 16 + 15] = D + (255,)
     return img
-CHEESE_IMG = tex_cheese()
+CHEESE_IMG = Image.open(os.path.join(OUT, "cheese.png")).convert("RGBA") if os.path.exists(os.path.join(OUT, "cheese.png")) else tex_cheese()   # textura do Bino
 H = 6                              # altura em pixels; roda de 12 px (2..14) com cantos chanfrados
 def wheel(x, z):                   # celula (x, z) dentro da roda?
     dx, dz = min(x - 2, 13 - x), min(z - 2, 13 - z)
@@ -113,11 +113,10 @@ DISPLAY_BLOCK = {"gui": {"rotation": [30, 225, 0], "scale": [0.8, 0.8, 0.8], "tr
                  "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
                  "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 2, 0], "scale": [0.4, 0.4, 0.4]},
                  "fixed": {"scale": [0.6, 0.6, 0.6]}}
-for bites in range(5):
+for bites in range(1, 5):          # o cheese_0 e o modelo do Bino; daqui saem os outros 4 com a mesma textura e o mesmo jeito de UV
     els = cheese_model(present_cells(bites))
     bbmodel(f"cheese_{bites}", els, "cheese", CHEESE_IMG, DISPLAY_BLOCK)
     java_json(f"{MOD}/models/block/cheese_{bites}.json", els, "binosvanillaplus:block/cheese", 32, display=DISPLAY_BLOCK)
-CHEESE_IMG.save(f"{MOD}/textures/block/cheese.png"); CHEESE_IMG.save(os.path.join(OUT, "cheese.png"))
 # pedaco: fatia triangular em degraus (ponta para -x, casca na parte larga em +x), centrado
 slice_cells = set()
 for i, x in enumerate(range(4, 13)):
@@ -137,15 +136,7 @@ def slice_model():
         if x1 == 13: f["east"] = [z0, 16, z1, 21]                       # casca na parte de tras
         els.append({"name": f"fatia_{n}", "from": [x0, 0, z0], "to": [x1, 5, z1], "faces": f, "color": n})
     return els
-slice_els = slice_model()
-DISPLAY_SLICE = {"thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 2, 1], "scale": [0.55, 0.55, 0.55]},
-                 "thirdperson_lefthand": {"rotation": [0, 90, 0], "translation": [0, 2, 1], "scale": [0.55, 0.55, 0.55]},
-                 "firstperson_righthand": {"rotation": [0, -20, 10], "translation": [1, 4, 0], "scale": [0.7, 0.7, 0.7]},
-                 "firstperson_lefthand": {"rotation": [0, -20, 10], "translation": [1, 4, 0], "scale": [0.7, 0.7, 0.7]},
-                 "ground": {"translation": [0, 2, 0], "scale": [0.6, 0.6, 0.6]},
-                 "gui": {"rotation": [30, 225, 0], "translation": [2, 2, 0], "scale": [1, 1, 1]}, "head": {"translation": [0, 13, 0]}, "fixed": {"scale": [0.8, 0.8, 0.8]}}
-bbmodel("cheese_slice_3d", slice_els, "cheese", CHEESE_IMG, DISPLAY_SLICE, parent="")
-java_json(f"{MOD}/models/item/cheese_slice_3d.json", slice_els, "binosvanillaplus:block/cheese", 32, parent=None, display=DISPLAY_SLICE)
+# (pedaco de queijo agora e o modelo do Bino: cheese_slice_3d.bbmodel)
 
 # ============================================================ RATOEIRA: agora feita pelo Bino (rat_trap.bbmodel); so as cores usadas pela gaiola
 WOOD, WOOD_D, WOOD_L = (176, 128, 78), (140, 98, 56), (196, 150, 98)
@@ -158,35 +149,52 @@ DISPLAY_FLAT = {"gui": {"rotation": [30, 225, 0], "scale": [0.9, 0.9, 0.9], "tra
                 "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 3, 2], "scale": [0.5, 0.5, 0.5]},
                 "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 4, 0], "scale": [0.6, 0.6, 0.6]}, "fixed": {"scale": [0.8, 0.8, 0.8]}}
 
-# ============================================================ GAIOLA (barras de ferro, base de madeira, porta que desce)
+# ============================================================ GAIOLA (refeita com cubos de verdade: barras de 0,5 px, todas as faces)
+# porta tipo guilhotina na frente (-z): aberta = levantada acima do teto; fechada = embaixo
 def tex_cage():
     img = Image.new("RGBA", (32, 32)); P = img.load()
-    for y in range(16):                       # barras: colunas de 1 px a cada 2, com travessas em cima/embaixo
-        for x in range(16):
-            bar = x % 3 == 0 or y in (0, 15)
-            if bar: P[x, y] = (STEEL_L if y == 0 else STEEL_D if y == 15 or x % 6 == 0 else STEEL) + (255,)
     for y in range(16):
-        for x in range(16, 32): P[x, y] = (WOOD_D if (y % 4 == 0 or random.random() < 0.07) else WOOD) + (255,)
-    for y in range(16, 32):                   # tela do topo (grade)
-        for x in range(16):
-            if x % 3 == 0 or y % 3 == 1: P[x, y] = STEEL + (255,)
+        for x in range(32): P[x, y] = (WOOD_D if (y % 4 == 0 or random.random() < 0.07) else WOOD_L if random.random() < 0.12 else WOOD) + (255,)   # madeira
     for y in range(16, 24):
-        for x in range(16, 32): P[x, y] = (STEEL_L if y == 16 else STEEL_D if y == 23 else STEEL) + (255,)
+        for x in range(32): P[x, y] = (STEEL_L if y == 16 else STEEL_D if y == 23 else STEEL) + (255,)                                             # ferro
     for y in range(24, 32):
-        for x in range(16, 24): P[x, y] = COPPER + (255,)
+        for x in range(16): P[x, y] = (COPPER_D if (x + y) % 5 == 0 else COPPER) + (255,)                                                         # prato de isca
+        for x in range(16, 32): P[x, y] = (STEEL_D if (x + y) % 2 else STEEL) + (255,)                                                            # alca / trinco
     return img
 CAGE_IMG = tex_cage()
-BARS, WOODUV2, MESH, SOLID, PLATE = [0, 0, 16, 16], [16, 0, 32, 4], [0, 16, 16, 32], [16, 16, 32, 18], [16, 24, 24, 30]
+W_ = lambda a, b, c, d: [a, b, c, d]
+def cube(name, fr, to, area):     # uv proporcional ao tamanho, dentro da area (x0, y0) da textura
+    x0, y0 = area
+    sx, sy, sz = (max(0.5, to[i] - fr[i]) for i in range(3))
+    def uv(w, h): return [x0, y0, x0 + min(16, w), y0 + min(8, h)]
+    return {"name": name, "from": list(fr), "to": list(to), "faces": {
+        "north": uv(sx, sy), "south": uv(sx, sy), "east": uv(sz, sy), "west": uv(sz, sy), "up": uv(sx, sz), "down": uv(sx, sz)}}
+WOODA, STEELA, PLATEA, DARKA = (0, 0), (0, 16), (0, 24), (16, 24)
+X0, X1, Z0, Z1, TOPY = 3, 13, 1, 15, 8
 def cage(closed):
-    x0, x1, z0, z1, h = 3, 13, 1, 15, 8
-    els = [box("base", (x0, 0, z0), (x1, 1, z1), WOODUV2),
-           {"name": "lado_e", "from": [x0, 1, z0], "to": [x0, h, z1], "faces": {"east": BARS, "west": BARS}},
-           {"name": "lado_d", "from": [x1, 1, z0], "to": [x1, h, z1], "faces": {"east": BARS, "west": BARS}},
-           {"name": "fundo", "from": [x0, 1, z1], "to": [x1, h, z1], "faces": {"north": BARS, "south": BARS}},
-           {"name": "teto", "from": [x0, h, z0], "to": [x1, h, z1], "faces": {"up": MESH, "down": MESH}},
-           box("alca", (7, h, 6), (9, h + 1.5, 10), SOLID), box("prato", (6.5, 1, 10), (9.5, 1.25, 13), PLATE)]
-    if closed: els.append({"name": "porta", "from": [x0, 1, z0], "to": [x1, h, z0], "faces": {"north": BARS, "south": BARS}})
-    else:      els.append({"name": "porta", "from": [x0, h, z0], "to": [x1, h + 0.01, z0 + 7], "faces": {"up": BARS, "down": BARS}})   # porta levantada, deitada no teto
+    els = [cube("base", (X0, 0, Z0), (X1, 1, Z1), WOODA), cube("prato", (6.5, 1, 11), (9.5, 1.25, 14), PLATEA)]
+    # colunas dos cantos e moldura de cima
+    for (x, z) in ((X0, Z0), (X1 - 0.5, Z0), (X0, Z1 - 0.5), (X1 - 0.5, Z1 - 0.5)):
+        els.append(cube("coluna", (x, 1, z), (x + 0.5, TOPY, z + 0.5), STEELA))
+    els += [cube("moldura_e", (X0, TOPY - 0.5, Z0), (X0 + 0.5, TOPY, Z1), STEELA), cube("moldura_d", (X1 - 0.5, TOPY - 0.5, Z0), (X1, TOPY, Z1), STEELA),
+            cube("moldura_f", (X0, TOPY - 0.5, Z0), (X1, TOPY, Z0 + 0.5), STEELA), cube("moldura_t", (X0, TOPY - 0.5, Z1 - 0.5), (X1, TOPY, Z1), STEELA)]
+    # barras dos lados (a cada 2 px), do fundo e do teto
+    for z in range(Z0 + 2, Z1 - 1, 2):
+        els.append(cube("barra_e", (X0, 1, z), (X0 + 0.5, TOPY - 0.5, z + 0.5), STEELA))
+        els.append(cube("barra_d", (X1 - 0.5, 1, z), (X1, TOPY - 0.5, z + 0.5), STEELA))
+        els.append(cube("teto", (X0 + 0.5, TOPY - 0.5, z), (X1 - 0.5, TOPY, z + 0.5), STEELA))
+    for x in range(X0 + 2, X1 - 1, 2):
+        els.append(cube("barra_fundo", (x, 1, Z1 - 0.5), (x + 0.5, TOPY - 0.5, Z1), STEELA))
+    # alca em cima
+    els += [cube("alca_e", (6.5, TOPY, 7.5), (7, TOPY + 1.5, 8.5), DARKA), cube("alca_d", (9, TOPY, 7.5), (9.5, TOPY + 1.5, 8.5), DARKA),
+            cube("alca_topo", (6.5, TOPY + 1.5, 7.5), (9.5, TOPY + 2, 8.5), DARKA)]
+    # porta (grade da frente) que desliza nos trilhos das colunas da frente
+    dy = 0 if closed else TOPY - 1.5
+    els.append(cube("porta_base", (X0 + 0.5, 1 + dy, Z0), (X1 - 0.5, 1.5 + dy, Z0 + 0.5), STEELA))
+    els.append(cube("porta_topo", (X0 + 0.5, TOPY - 1 + dy, Z0), (X1 - 0.5, TOPY - 0.5 + dy, Z0 + 0.5), STEELA))
+    for x in range(X0 + 2, X1 - 1, 2):
+        els.append(cube("porta_barra", (x, 1.5 + dy, Z0), (x + 0.5, TOPY - 1 + dy, Z0 + 0.5), STEELA))
+    for n, e in enumerate(els): e["name"] = f"{e['name']}_{n}"; e["color"] = n % 8
     return els
 for st in (False, True):
     n = "cage" + ("_closed" if st else "")
@@ -216,36 +224,5 @@ def icon_cage():
     P[6, 2] = STEEL + (255,); P[9, 2] = STEEL + (255,); P[7, 2] = STEEL + (255,); P[8, 2] = STEEL + (255,)
     return im
 icon_cage().save(f"{MOD}/textures/item/cage.png"); icon_cage().save(os.path.join(OUT, "cage_icon.png"))
-# ============================================================ CARNE DE RATO 3D (corpinho + cauda enrolada); cozida = mesma forma, outra textura
-def tex_meat(cooked):
-    pal = ([(126, 56, 40), (110, 46, 34), (142, 70, 50)], (86, 34, 26), (150, 90, 70)) if cooked else \
-          ([(214, 64, 58), (196, 48, 46), (232, 96, 86)], (150, 26, 30), (240, 150, 140))
-    body, dark, fat = pal
-    img = Image.new("RGBA", (32, 32)); P = img.load()
-    for y in range(16):
-        for x in range(32): P[x, y] = random.choice(body) + (255,)
-    for _ in range(18): P[random.randrange(32), random.randrange(16)] = fat + (255,)   # gordura/marmorizado
-    for x in range(32): P[x, 15] = dark + (255,)
-    for y in range(16, 20):                                                           # cauda
-        for x in range(32): P[x, y] = (dark if y == 19 else body[1]) + (255,)
-    return img
-MEAT_EL = [box("corpo", (5, 0, 5.5), (11, 3, 10.5), [0, 0, 6, 3]),
-           box("topo", (6, 3, 6.5), (10, 4, 9.5), [6, 0, 10, 1]),
-           box("lado_e", (4, 0.5, 6.5), (5, 2.5, 9.5), [10, 0, 13, 2]), box("lado_d", (11, 0.5, 6.5), (12, 2.5, 9.5), [13, 0, 16, 2]),
-           box("cauda_1", (12, 1, 7.5), (14, 1.75, 8.25), [0, 16, 4, 17]), box("cauda_2", (13.25, 1, 8.25), (14, 1.75, 10.5), [4, 16, 8, 17]),
-           box("cauda_3", (11.5, 1, 10.5), (14, 1.75, 11.25), [8, 16, 12, 17])]
-# faces com uv na escala da textura 32: up/down usam a area do corpo
-for e in MEAT_EL:
-    e["faces"]["up"] = e["faces"]["down"] = [int(e["from"][0]), int(e["from"][2]) - 4, int(e["to"][0]), int(e["to"][2]) - 4] if e["name"].startswith(("corpo", "topo", "lado")) else e["faces"]["north"]
-DISPLAY_MEAT = {"thirdperson_righthand": {"rotation": [75, 0, 0], "translation": [0, 3, 1], "scale": [0.7, 0.7, 0.7]},
-                "thirdperson_lefthand": {"rotation": [75, 0, 0], "translation": [0, 3, 1], "scale": [0.7, 0.7, 0.7]},
-                "firstperson_righthand": {"rotation": [10, -30, 15], "translation": [1, 5, -1], "scale": [0.8, 0.8, 0.8]},
-                "firstperson_lefthand": {"rotation": [10, -30, 15], "translation": [1, 5, -1], "scale": [0.8, 0.8, 0.8]},
-                "ground": {"translation": [0, 3, 0], "scale": [0.6, 0.6, 0.6]}, "gui": {"rotation": [30, 225, 0], "translation": [0, 3, 0], "scale": [1.1, 1.1, 1.1]},
-                "head": {"translation": [0, 13, 0]}, "fixed": {"scale": [0.9, 0.9, 0.9]}}
-for cooked in (False, True):
-    n = "cooked_rat_meat" if cooked else "rat_meat"
-    img = tex_meat(cooked); img.save(f"{MOD}/textures/block/{n}_3d.png"); img.save(os.path.join(OUT, f"{n}_3d.png"))
-    bbmodel(f"{n}_3d", MEAT_EL, f"{n}_3d", img, DISPLAY_MEAT, parent="")
-    java_json(f"{MOD}/models/item/{n}_3d.json", MEAT_EL, f"binosvanillaplus:block/{n}_3d", 32, parent=None, display=DISPLAY_MEAT)
+# (carne de rato 3D agora e o modelo do Bino: rat_meat_3d.bbmodel)
 print("ok")
