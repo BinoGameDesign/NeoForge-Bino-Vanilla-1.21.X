@@ -291,12 +291,12 @@ public class RatEntity extends PathfinderMob {
             if (r.getState() != ST_NORMAL || r.getRandom().nextInt(60) != 0) return false;
             BlockPos base = r.blockPosition();
             for (BlockPos p : BlockPos.betweenClosed(base.offset(-8, -2, -8), base.offset(8, 2, 8))) {
-                if (r.level().getBlockState(p).getBlock() instanceof CakeBlock) { cake = p.immutable(); return true; }
+                if (r.level().getBlockState(p).is(RatSpawning.RAT_FOOD)) { cake = p.immutable(); return true; }
             }
             return false;
         }
         @Override public boolean canContinueToUse() {
-            return cake != null && time < 400 && r.level().getBlockState(cake).getBlock() instanceof CakeBlock && r.getState() != ST_FLEE;
+            return cake != null && time < 400 && r.level().getBlockState(cake).is(RatSpawning.RAT_FOOD) && r.getState() != ST_FLEE;
         }
         @Override public void start() { time = 0; r.getNavigation().moveTo(cake.getX() + 0.5, cake.getY(), cake.getZ() + 0.5, 1.0); }
         @Override public void stop() { cake = null; if (r.getState() == ST_EAT) r.setState(ST_NORMAL); }
@@ -312,9 +312,14 @@ public class RatEntity extends PathfinderMob {
             if (r.getState() != ST_EAT) { r.setState(ST_EAT); r.eatTicks = 60; }
             if (r.eatTicks == 1) {   // terminou de comer: tira um pedaco
                 BlockState s = r.level().getBlockState(cake);
-                int bites = s.getValue(CakeBlock.BITES);
-                if (bites < 6) r.level().setBlock(cake, s.setValue(CakeBlock.BITES, bites + 1), 3);
-                else r.level().removeBlock(cake, false);
+                if (s.getBlock() instanceof CakeBlock) {
+                    int bites = s.getValue(CakeBlock.BITES);
+                    if (bites < 6) r.level().setBlock(cake, s.setValue(CakeBlock.BITES, bites + 1), 3);
+                    else r.level().removeBlock(cake, false);
+                } else if (s.getBlock() instanceof net.minecraft.world.level.block.CandleCakeBlock) {   // derruba a vela e morde
+                    net.minecraft.world.level.block.Block.dropResources(s, r.level(), cake);
+                    r.level().setBlock(cake, net.minecraft.world.level.block.Blocks.CAKE.defaultBlockState().setValue(CakeBlock.BITES, 1), 3);
+                } else r.level().removeBlock(cake, false);   // outra comida da tag: some
                 r.playSound(ModSounds.RAT_EAT.get(), 0.6f, 1.0f);
                 cake = null;
             }
