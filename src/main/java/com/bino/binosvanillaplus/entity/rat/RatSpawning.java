@@ -47,6 +47,11 @@ public class RatSpawning {
     public static final int STRUCT_CHECK_EVERY = 200;         // ticks (10 s) por jogador
     public static final float STRUCT_CHANCE = 0.3f;
     public static final int STRUCT_MAX_RATS = 5;              // no maximo tantos ratos a 32 blocos
+    // cavernas: spawner PROPRIO (nao disputa vaga com zumbis/esqueletos no limite de monstros do jogo)
+    public static final int CAVE_CHECK_EVERY = 100;           // ticks (5 s) por jogador
+    public static final float CAVE_CHANCE = 0.6f;
+    public static final int CAVE_MAX_RATS = 12;               // limite so de ratos a 48 blocos do jogador
+    public static final int CAVE_MAX_Y = 40;
 
     public static final TagKey<Block> RAT_FOOD = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "rat_food"));
 
@@ -68,6 +73,8 @@ public class RatSpawning {
         long now = sl.getGameTime();
         if (now % FOOD_CHECK_EVERY == 0) checkFood(sl, now);
         if (now % STRUCT_CHECK_EVERY == 0) for (ServerPlayer p : sl.players()) checkStructures(sl, p);
+        if (now % CAVE_CHECK_EVERY == 0 && sl.dimension() == net.minecraft.world.level.Level.OVERWORLD)
+            for (ServerPlayer p : sl.players()) checkCave(sl, p);
     }
 
     private static void checkFood(ServerLevel sl, long now) {
@@ -106,6 +113,26 @@ public class RatSpawning {
         if (spot != null) spawnAt(sl, spot, 1 + sl.random.nextInt(2));
     }
 
+    // ------------------------------------------------------------------ cavernas (sempre, sem limite de monstros)
+    private static void checkCave(ServerLevel sl, ServerPlayer p) {
+        if (p.isSpectator() || p.getY() > CAVE_MAX_Y + 16 || sl.random.nextFloat() >= CAVE_CHANCE) return;
+        if (nearbyRats(sl, p.blockPosition(), 48) >= CAVE_MAX_RATS) return;
+        BlockPos at = p.blockPosition();
+        for (int tries = 0; tries < 6; tries++) {
+            double a = sl.random.nextDouble() * Math.PI * 2, d = 16 + sl.random.nextDouble() * 24;
+            int x = at.getX() + (int) Math.round(Math.cos(a) * d), z = at.getZ() + (int) Math.round(Math.sin(a) * d);
+            if (!sl.hasChunkAt(new BlockPos(x, at.getY(), z))) continue;
+            for (int dy = 10; dy >= -10; dy--) {
+                BlockPos q = new BlockPos(x, at.getY() + dy, z);
+                if (q.getY() >= CAVE_MAX_Y || !sl.getBlockState(q).isAir() || !sl.getBlockState(q.above()).isAir()) continue;
+                if (!sl.getBlockState(q.below()).isFaceSturdy(sl, q.below(), net.minecraft.core.Direction.UP) || !sl.getFluidState(q).isEmpty()) continue;
+                if (sl.canSeeSky(q) || sl.getBrightness(LightLayer.BLOCK, q) > 0) continue;
+                spawnAt(sl, q, 1 + sl.random.nextInt(3), MobSpawnType.NATURAL);   // natural: pode virar o enxame raro
+                return;
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ ajudantes
     // a posicao esta dentro de uma peca dessa estrutura? (o 1.21.1 pede uma condicao sobre o Holder da estrutura)
     private static boolean inside(ServerLevel sl, BlockPos pos, ResourceKey<Structure> key) {
@@ -136,12 +163,14 @@ public class RatSpawning {
         return null;
     }
 
-    private static void spawnAt(ServerLevel sl, BlockPos pos, int n) {
+    private static void spawnAt(ServerLevel sl, BlockPos pos, int n) { spawnAt(sl, pos, n, MobSpawnType.EVENT); }
+
+    private static void spawnAt(ServerLevel sl, BlockPos pos, int n, MobSpawnType type) {
         for (int i = 0; i < n; i++) {
             RatEntity r = ModEntities.RAT.get().create(sl);
             if (r == null) return;
             r.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, sl.random.nextFloat() * 360, 0);
-            r.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
+            r.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), i == 0 ? type : MobSpawnType.EVENT, null);
             sl.addFreshEntity(r);
         }
     }
