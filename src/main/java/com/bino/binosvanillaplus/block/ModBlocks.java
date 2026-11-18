@@ -102,13 +102,15 @@ public class ModBlocks {
                             .noOcclusion() // deixa a luz chegar aos cristais
                             .sound(SoundType.STONE)));
 
-    // Bloco de Pedra Filosofal (9 pedras filosofais grandes). Cristal um pouco translucido: HalfTransparentBlock (como o
+    // Bloco de Pedra Filosofal (9 pedras filosofais grandes). Cristal bem translucido, muito refletivo no shader
+    // (philosopher_block_s.png: lisura alta + id de metal, mais que o ferro) e com luz fraca (nivel 6): HalfTransparentBlock (como o
     // vidro: some a face entre dois blocos iguais) + render_type translucent no modelo + alfa na textura.
     public static final DeferredBlock<Block> PHILOSOPHER_BLOCK = registerBlock("philosopher_block",
             () -> new net.minecraft.world.level.block.HalfTransparentBlock(BlockBehaviour.Properties.of()
                     .strength(5.0f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.AMETHYST)
+                    .lightLevel(st -> 6)   // brilho fraco proprio do cristal
                     .noOcclusion()
                     .isValidSpawn((st, lv, pos, type) -> false)
                     .isRedstoneConductor((st, lv, pos) -> false)
