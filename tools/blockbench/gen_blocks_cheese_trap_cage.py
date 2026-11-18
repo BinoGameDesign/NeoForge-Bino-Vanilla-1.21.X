@@ -113,7 +113,7 @@ DISPLAY_BLOCK = {"gui": {"rotation": [30, 225, 0], "scale": [0.8, 0.8, 0.8], "tr
                  "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
                  "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 2, 0], "scale": [0.4, 0.4, 0.4]},
                  "fixed": {"scale": [0.6, 0.6, 0.6]}}
-for bites in range(1, 5):          # o cheese_0 e o modelo do Bino; daqui saem os outros 4 com a mesma textura e o mesmo jeito de UV
+for bites in (1,):                 # 2, 3 e 4 tambem sao do Bino agora; so o 1 sai daqui          # o cheese_0 e o modelo do Bino; daqui saem os outros 4 com a mesma textura e o mesmo jeito de UV
     els = cheese_model(present_cells(bites))
     bbmodel(f"cheese_{bites}", els, "cheese", CHEESE_IMG, DISPLAY_BLOCK)
     java_json(f"{MOD}/models/block/cheese_{bites}.json", els, "binosvanillaplus:block/cheese", 32, display=DISPLAY_BLOCK)
@@ -196,11 +196,7 @@ def cage(closed):
         els.append(cube("porta_barra", (x, 1.5 + dy, Z0), (x + 0.5, TOPY - 1 + dy, Z0 + 0.5), STEELA))
     for n, e in enumerate(els): e["name"] = f"{e['name']}_{n}"; e["color"] = n % 8
     return els
-for st in (False, True):
-    n = "cage" + ("_closed" if st else "")
-    els = cage(st); bbmodel(n, els, "cage", CAGE_IMG, DISPLAY_FLAT)
-    java_json(f"{MOD}/models/block/{n}.json", els, "binosvanillaplus:block/cage", 32, display=DISPLAY_FLAT)
-CAGE_IMG.save(f"{MOD}/textures/block/cage.png"); CAGE_IMG.save(os.path.join(OUT, "cage.png"))
+# (gaiola agora e do Bino: cage.bbmodel; cage_closed sai dele descendo a porta)
 
 # ============================================================ icones 2D (ratoeira e gaiola) 16x16
 def icon_trap():
