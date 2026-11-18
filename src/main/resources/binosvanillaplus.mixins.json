@@ -15,7 +15,8 @@
         "client.GuiGraphicsForgeOutlineMixin",
         "client.CameraLapidaryMixin",
         "client.HumanoidModelLapidaryMixin",
-        "client.PlayerRendererHandArmorMixin"
+        "client.PlayerRendererHandArmorMixin",
+        "client.HumanoidModelEatMixin"
     ],
     "injectors": {
         "defaultRequire": 1

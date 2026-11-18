@@ -214,15 +214,15 @@ public class ModItems {
     public static final DeferredItem<Item> RAT_SPAWN_EGG = ITEMS.register("rat_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.RAT, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
     public static final DeferredItem<Item> RAT_MEAT = ITEMS.register("rat_meat",
-            () -> new Item(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder()
+            () -> new com.bino.binosvanillaplus.item.custom.ImmersiveFoodItem(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder()
                     .nutrition(4).saturationModifier(0.4f)   // carne podre: 4 e 0,1
                     .effect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.HUNGER, 600, 0), 0.8f)
-                    .build())));
+                    .build()), 48));   // 48 ticks = duracao da animacao eat_meat
     // pedaco de queijo (sai do queijo colocado no chao); o queijo inteiro e o item do bloco ModBlocks.CHEESE
     public static final DeferredItem<Item> COOKED_RAT_MEAT = ITEMS.register("cooked_rat_meat",
-            () -> new Item(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder().nutrition(6).saturationModifier(0.6f).build())));
+            () -> new com.bino.binosvanillaplus.item.custom.ImmersiveFoodItem(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder().nutrition(6).saturationModifier(0.6f).build()), 48));
     public static final DeferredItem<Item> CHEESE_SLICE = ITEMS.register("cheese_slice",
-            () -> new Item(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder().nutrition(3).saturationModifier(0.6f).build())));
+            () -> new com.bino.binosvanillaplus.item.custom.ImmersiveFoodItem(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder().nutrition(3).saturationModifier(0.6f).build()), 40));   // 40 = eat_cheese
     public static final java.util.function.Supplier<Item> CHEESE = () -> com.bino.binosvanillaplus.block.ModBlocks.CHEESE.get().asItem();
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem> EXPLORATION_DIARY = ITEMS.register("exploration_diary",
             () -> new com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem(new Item.Properties().stacksTo(1)));
