@@ -150,6 +150,7 @@ public class RatEntity extends PathfinderMob {
         boolean ok = super.doHurtTarget(target);
         if (ok) {
             event(EV_ATTACK);
+            playSound(ModSounds.RAT_ATTACK.get(), 0.7f, 1.0f);
             if (target instanceof LivingEntity le && random.nextInt(POISON_ONE_IN) == 0)
                 le.addEffect(new MobEffectInstance(MobEffects.POISON, POISON_TICKS, 0), this);
         }

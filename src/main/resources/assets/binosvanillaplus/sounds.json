@@ -124,16 +124,16 @@
   "rat.ambient": {
     "sounds": [
       {
-        "name": "minecraft:entity.bat.ambient",
-        "type": "event",
-        "pitch": 1.5,
-        "volume": 0.4
+        "name": "binosvanillaplus:rat/ambient1"
       },
       {
-        "name": "minecraft:entity.silverfish.ambient",
-        "type": "event",
-        "pitch": 1.7,
-        "volume": 0.5
+        "name": "binosvanillaplus:rat/ambient2"
+      },
+      {
+        "name": "binosvanillaplus:rat/ambient3"
+      },
+      {
+        "name": "binosvanillaplus:rat/ambient4"
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.rat.ambient"
@@ -141,10 +141,13 @@
   "rat.hurt": {
     "sounds": [
       {
-        "name": "minecraft:entity.silverfish.hurt",
-        "type": "event",
-        "pitch": 1.6,
-        "volume": 1.0
+        "name": "binosvanillaplus:rat/hurt1"
+      },
+      {
+        "name": "binosvanillaplus:rat/hurt2"
+      },
+      {
+        "name": "binosvanillaplus:rat/hurt3"
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.rat.hurt"
@@ -152,10 +155,10 @@
   "rat.death": {
     "sounds": [
       {
-        "name": "minecraft:entity.silverfish.death",
-        "type": "event",
-        "pitch": 1.6,
-        "volume": 1.0
+        "name": "binosvanillaplus:rat/death1"
+      },
+      {
+        "name": "binosvanillaplus:rat/death2"
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.rat.death"
@@ -163,10 +166,13 @@
   "rat.squeak": {
     "sounds": [
       {
-        "name": "minecraft:entity.bat.ambient",
-        "type": "event",
-        "pitch": 1.8,
-        "volume": 0.6
+        "name": "binosvanillaplus:rat/squeak1"
+      },
+      {
+        "name": "binosvanillaplus:rat/squeak2"
+      },
+      {
+        "name": "binosvanillaplus:rat/squeak3"
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.rat.squeak"
@@ -181,5 +187,19 @@
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.rat.eat"
+  },
+  "rat.attack": {
+    "sounds": [
+      {
+        "name": "binosvanillaplus:rat/attack1"
+      },
+      {
+        "name": "binosvanillaplus:rat/attack2"
+      },
+      {
+        "name": "binosvanillaplus:rat/attack3"
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.rat.attack"
   }
 }

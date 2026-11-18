@@ -31,12 +31,13 @@ public class ModSounds {
     public static final Supplier<SoundEvent> CAVE_GOBLIN_STARTLED = register("cave_goblin.startled");
     public static final Supplier<SoundEvent> CAVE_GOBLIN_RING = register("cave_goblin.ring");
 
-    // Rato (provisorios: eventos do jogo com outro tom em sounds.json)
+    // Rato: sons do "Squeaky Rat" de qubodup (CC0) com variacoes de tom/tempo; eat ainda e provisorio
     public static final Supplier<SoundEvent> RAT_AMBIENT = register("rat.ambient");
     public static final Supplier<SoundEvent> RAT_HURT = register("rat.hurt");
     public static final Supplier<SoundEvent> RAT_DEATH = register("rat.death");
     public static final Supplier<SoundEvent> RAT_SQUEAK = register("rat.squeak");
     public static final Supplier<SoundEvent> RAT_EAT = register("rat.eat");
+    public static final Supplier<SoundEvent> RAT_ATTACK = register("rat.attack");
 
     private static Supplier<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name)));
