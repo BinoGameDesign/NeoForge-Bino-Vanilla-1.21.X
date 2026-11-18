@@ -109,5 +109,14 @@
   "subtitles.binosvanillaplus.cave_goblin.steal": "Cave Goblin snatches",
   "subtitles.binosvanillaplus.cave_goblin.giggle": "Cave Goblin giggles",
   "subtitles.binosvanillaplus.cave_goblin.startled": "Cave Goblin shrieks",
-  "subtitles.binosvanillaplus.cave_goblin.ring": "Something vanishes"
+  "subtitles.binosvanillaplus.cave_goblin.ring": "Something vanishes",
+  "entity.binosvanillaplus.rat": "Rat",
+  "entity.binosvanillaplus.deep_rat": "Deep Rat",
+  "item.binosvanillaplus.rat_spawn_egg": "Rat Spawn Egg",
+  "item.binosvanillaplus.rat_meat": "Rat Meat",
+  "subtitles.binosvanillaplus.rat.ambient": "Rat squeaks",
+  "subtitles.binosvanillaplus.rat.hurt": "Rat hurts",
+  "subtitles.binosvanillaplus.rat.death": "Rat dies",
+  "subtitles.binosvanillaplus.rat.squeak": "Rat squeaks",
+  "subtitles.binosvanillaplus.rat.eat": "Rat nibbles"
 }

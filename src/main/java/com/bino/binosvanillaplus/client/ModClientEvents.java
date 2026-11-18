@@ -54,6 +54,7 @@ public class ModClientEvents {
         event.registerEntityRenderer(ModEntities.VILLAGER_WITCH.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerWitchRenderer::new);
         event.registerEntityRenderer(ModEntities.VILLAGER_RAVAGER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerRavagerRenderer::new);
         event.registerEntityRenderer(ModEntities.CAVE_GOBLIN.get(), com.bino.binosvanillaplus.client.goblin.CaveGoblinRenderer::new);
+        event.registerEntityRenderer(ModEntities.RAT.get(), com.bino.binosvanillaplus.client.rat.RatRenderer::new);
         event.registerEntityRenderer(ModEntities.PILLAGER_SMUGGLER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.PillagerSmugglerRenderer::new);
     }
 

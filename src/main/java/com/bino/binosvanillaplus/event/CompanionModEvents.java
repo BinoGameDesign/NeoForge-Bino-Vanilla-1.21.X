@@ -14,6 +14,14 @@ public class CompanionModEvents {
     // o guarda villager nasce no Posto Villager (como os pillagers no posto deles), em qualquer luz
     @SubscribeEvent
     public static void spawnPlacements(net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent event) {
+        // Rato: cavernas (abaixo de Y 0), sem ceu, sem luz de bloco
+        event.register(ModEntities.RAT.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
+                net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, reason, pos, random) -> net.minecraft.world.entity.Mob.checkMobSpawnRules(type, level, reason, pos, random)
+                        && (net.minecraft.world.entity.MobSpawnType.isSpawner(reason) || reason == net.minecraft.world.entity.MobSpawnType.SPAWN_EGG
+                            || reason == net.minecraft.world.entity.MobSpawnType.EVENT
+                            || (pos.getY() < 0 && !level.canSeeSky(pos) && level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos) == 0)),
+                net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
         // Cave Goblin: so abaixo de Y 0, sem ceu, sem luz de bloco, chao firme (ovos e spawners ignoram a regra de luz/altura)
         event.register(ModEntities.CAVE_GOBLIN.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
                 net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
@@ -35,6 +43,7 @@ public class CompanionModEvents {
     @SubscribeEvent
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.CAVE_GOBLIN.get(), com.bino.binosvanillaplus.entity.goblin.CaveGoblinEntity.createAttributes().build());
+        event.put(ModEntities.RAT.get(), com.bino.binosvanillaplus.entity.rat.RatEntity.createAttributes().build());
         event.put(ModEntities.COMPANION_ALLAY.get(),
                 Allay.createAttributes()                 // parte dos atributos do Allay normal
                         .add(Attributes.FLYING_SPEED, 0.15)   // 0,1 do Allay normal x 1,5 = 50% mais rápido

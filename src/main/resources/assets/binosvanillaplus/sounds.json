@@ -120,5 +120,66 @@
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.cave_goblin.ring"
+  },
+  "rat.ambient": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.bat.ambient",
+        "type": "event",
+        "pitch": 1.5,
+        "volume": 0.4
+      },
+      {
+        "name": "minecraft:entity.silverfish.ambient",
+        "type": "event",
+        "pitch": 1.7,
+        "volume": 0.5
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.rat.ambient"
+  },
+  "rat.hurt": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.hurt",
+        "type": "event",
+        "pitch": 1.6,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.rat.hurt"
+  },
+  "rat.death": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.silverfish.death",
+        "type": "event",
+        "pitch": 1.6,
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.rat.death"
+  },
+  "rat.squeak": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.bat.ambient",
+        "type": "event",
+        "pitch": 1.8,
+        "volume": 0.6
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.rat.squeak"
+  },
+  "rat.eat": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.eat",
+        "type": "event",
+        "pitch": 1.6,
+        "volume": 0.6
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.rat.eat"
   }
 }

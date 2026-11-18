@@ -96,6 +96,7 @@ public class CaveGoblinEntity extends PathfinderMob {
     private int fleeTicks;
     private int stealCooldown;
     private int giggleIn;
+    private int eatTicks, huntCooldown;
     private StealGoal stealGoal;
 
     public CaveGoblinEntity(EntityType<? extends PathfinderMob> type, Level level) {
@@ -107,7 +108,8 @@ public class CaveGoblinEntity extends PathfinderMob {
         return Mob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 10.0)
                 .add(Attributes.MOVEMENT_SPEED, 0.3)
-                .add(Attributes.FOLLOW_RANGE, 24.0);
+                .add(Attributes.FOLLOW_RANGE, 24.0)
+                .add(Attributes.ATTACK_DAMAGE, 3.0);   // so usa para cacar ratos
     }
 
     @Override
@@ -126,6 +128,7 @@ public class CaveGoblinEntity extends PathfinderMob {
         goalSelector.addGoal(1, new FleeGoal(this));
         goalSelector.addGoal(2, new AvoidEntityGoal<>(this, LivingEntity.class, 8.0f, 1.0, 1.4, this::isScary));
         goalSelector.addGoal(3, stealGoal);
+        goalSelector.addGoal(4, new HuntRatGoal(this));
         goalSelector.addGoal(4, new SeekDarknessGoal(this));
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
@@ -139,8 +142,8 @@ public class CaveGoblinEntity extends PathfinderMob {
         return e instanceof Mob;
     }
 
-    // presas (ratos, que vem depois). Por enquanto nenhuma.
-    public static boolean isPrey(LivingEntity e) { return false; }
+    // presas: ratos calmos (rato de enxame assusta)
+    public static boolean isPrey(LivingEntity e) { return com.bino.binosvanillaplus.entity.rat.RatEntity.isEasyPrey(e); }
 
     // ------------------------------------------------------------------ escuro
     @Override
@@ -157,6 +160,8 @@ public class CaveGoblinEntity extends PathfinderMob {
         if (level().isClientSide) { clientAnimations(); return; }
         if (fleeTicks > 0) fleeTicks--;
         if (stealCooldown > 0) stealCooldown--;
+        if (huntCooldown > 0) huntCooldown--;
+        if (eatTicks > 0) { getNavigation().stop(); if (--eatTicks == 0 && getState() == ST_EAT) setState(ST_NORMAL); }
         if (giggleIn > 0 && --giggleIn == 0) { event(EV_GIGGLE); playSound(ModSounds.CAVE_GOBLIN_GIGGLE.get(), 1.0f, 1.0f); }
         if (ringActive && !hasEffect(MobEffects.INVISIBILITY)) ringActive = false;
         // o anel: com varios jogadores por perto ele fica invisivel para furtar
@@ -423,6 +428,39 @@ public class CaveGoblinEntity extends PathfinderMob {
             }
             if (d < 1.6) { g.steal(target); return; }
             if (time % 5 == 0) g.getNavigation().moveTo(target, 0.55);
+        }
+    }
+
+    // Caca ratos: persegue um rato calmo, mata e come (animacao eat). Depois fica um tempo sem fome.
+    static class HuntRatGoal extends Goal {
+        private final CaveGoblinEntity g;
+        @Nullable private LivingEntity prey;
+        private int time;
+        HuntRatGoal(CaveGoblinEntity g) { this.g = g; setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+        @Override public boolean canUse() {
+            if (g.huntCooldown > 0 || g.fleeTicks > 0 || g.eatTicks > 0 || g.getState() != ST_NORMAL || g.tickCount % 20 != 0) return false;
+            prey = g.level().getNearestEntity(LivingEntity.class, net.minecraft.world.entity.ai.targeting.TargetingConditions.forCombat().range(10).selector(CaveGoblinEntity::isPrey),
+                    g, g.getX(), g.getY(), g.getZ(), g.getBoundingBox().inflate(10));
+            return prey != null;
+        }
+        @Override public boolean canContinueToUse() { return prey != null && prey.isAlive() && isPrey(prey) && g.fleeTicks == 0 && time < 300; }
+        @Override public void start() { time = 0; }
+        @Override public void stop() {
+            if (prey != null && !prey.isAlive() && g.distanceToSqr(prey) < 9) {   // pegou: come
+                g.eatTicks = 70;
+                g.setState(ST_EAT);
+                g.getNavigation().stop();
+                g.huntCooldown = 2400;
+            } else g.huntCooldown = 400;
+            prey = null;
+        }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
+        @Override public void tick() {
+            if (prey == null) return;
+            time++;
+            g.getLookControl().setLookAt(prey, 30, 30);
+            if (time % 5 == 0) g.getNavigation().moveTo(prey, 1.25);
+            if (g.distanceToSqr(prey) < 1.6 && time % 12 == 0) { g.swing(net.minecraft.world.InteractionHand.MAIN_HAND); g.doHurtTarget(prey); }
         }
     }
 

@@ -210,6 +210,14 @@ public class ModItems {
     // durabilidade = segundos de invisibilidade (1200 = 20 min); gasta 1 por segundo so enquanto a invisibilidade esta ativa
     public static final DeferredItem<Item> INVISIBLE_RING = ITEMS.register("invisible_ring",
             () -> new Item(new Item.Properties().durability(1200).rarity(Rarity.EPIC)));
+    // Rato: ovo e carne (efeito parecido com a carne podre, mas sacia mais)
+    public static final DeferredItem<Item> RAT_SPAWN_EGG = ITEMS.register("rat_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.RAT, 0x77716D, 0xD8A09C, new Item.Properties()));
+    public static final DeferredItem<Item> RAT_MEAT = ITEMS.register("rat_meat",
+            () -> new Item(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder()
+                    .nutrition(4).saturationModifier(0.4f)   // carne podre: 4 e 0,1
+                    .effect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.HUNGER, 600, 0), 0.8f)
+                    .build())));
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem> EXPLORATION_DIARY = ITEMS.register("exploration_diary",
             () -> new com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.PhotoItem> PHOTO = ITEMS.register("photo",

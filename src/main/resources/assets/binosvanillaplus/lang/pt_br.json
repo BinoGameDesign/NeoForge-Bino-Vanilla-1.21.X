@@ -301,5 +301,14 @@
   "subtitles.binosvanillaplus.cave_goblin.steal": "Goblin das Cavernas furta",
   "subtitles.binosvanillaplus.cave_goblin.giggle": "Goblin das Cavernas dá risadinhas",
   "subtitles.binosvanillaplus.cave_goblin.startled": "Goblin das Cavernas grita de susto",
-  "subtitles.binosvanillaplus.cave_goblin.ring": "Algo desaparece"
+  "subtitles.binosvanillaplus.cave_goblin.ring": "Algo desaparece",
+  "entity.binosvanillaplus.rat": "Rato",
+  "entity.binosvanillaplus.deep_rat": "Rato das Profundezas",
+  "item.binosvanillaplus.rat_spawn_egg": "Ovo Gerador de Rato",
+  "item.binosvanillaplus.rat_meat": "Carne de Rato",
+  "subtitles.binosvanillaplus.rat.ambient": "Rato guincha",
+  "subtitles.binosvanillaplus.rat.hurt": "Rato se machuca",
+  "subtitles.binosvanillaplus.rat.death": "Rato morre",
+  "subtitles.binosvanillaplus.rat.squeak": "Rato guincha",
+  "subtitles.binosvanillaplus.rat.eat": "Rato mordisca"
 }

@@ -31,6 +31,15 @@ public class ModEntities {
                             .clientTrackingRange(8)
                             .build("cave_goblin"));
 
+    // Rato (Exploration): um pouco menor que o coelho; MONSTER so para nascer no escuro das cavernas
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.rat.RatEntity>> RAT =
+            ENTITY_TYPES.register("rat",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.rat.RatEntity>of(com.bino.binosvanillaplus.entity.rat.RatEntity::new, MobCategory.MONSTER)
+                            .sized(0.35f, 0.3f)
+                            .eyeHeight(0.22f)
+                            .clientTrackingRange(8)
+                            .build("rat"));
+
     public static final Supplier<EntityType<CompanionAllayEntity>> COMPANION_ALLAY =
             ENTITY_TYPES.register("companion_allay",
                     () -> EntityType.Builder.<CompanionAllayEntity>of(CompanionAllayEntity::new, MobCategory.MISC)

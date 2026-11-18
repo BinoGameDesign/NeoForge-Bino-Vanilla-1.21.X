@@ -112,6 +112,8 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.EXPLORATION_DIARY);
                         output.accept(ModItems.INVISIBLE_RING);
                         output.accept(ModItems.CAVE_GOBLIN_SPAWN_EGG);
+                        output.accept(ModItems.RAT_MEAT);
+                        output.accept(ModItems.RAT_SPAWN_EGG);
                         output.accept(ModBlocks.DYNAMITE);
                         output.accept(ModBlocks.CAMERA_TRIPOD);
                         output.accept(ModBlocks.FOSSIL_SKULL);
