@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "bites=0": {
+      "model": "binosvanillaplus:block/cheese_0"
+    },
+    "bites=1": {
+      "model": "binosvanillaplus:block/cheese_1"
+    },
+    "bites=2": {
+      "model": "binosvanillaplus:block/cheese_2"
+    },
+    "bites=3": {
+      "model": "binosvanillaplus:block/cheese_3"
+    },
+    "bites=4": {
+      "model": "binosvanillaplus:block/cheese_4"
+    }
+  }
+}

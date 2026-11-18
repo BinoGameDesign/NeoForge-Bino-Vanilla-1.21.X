@@ -137,6 +137,13 @@ public class ModBlocks {
                     .noLootTable()));
 
     // Dinamite (explode pelo Detonador, fogo ou redstone; nao quebra minerios)
+    // Queijo (Exploration): bloco com 5 pedacos; o item "cheese" e o proprio bloco
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.CheeseBlock> CHEESE = registerBlock("cheese",
+            () -> new com.bino.binosvanillaplus.block.custom.CheeseBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.CAKE)));
+    // Caldeirao com leite/queijo (sem item proprio: quebra e devolve o caldeirao)
+    public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.MilkCauldronBlock> MILK_CAULDRON = BLOCKS.register("milk_cauldron",
+            () -> new com.bino.binosvanillaplus.block.custom.MilkCauldronBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.CAULDRON)));
+
     public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.DynamiteBlock> DYNAMITE = registerBlock("dynamite",
             () -> new com.bino.binosvanillaplus.block.custom.DynamiteBlock(BlockBehaviour.Properties.of()
                     .instabreak()

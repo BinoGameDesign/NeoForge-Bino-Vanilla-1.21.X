@@ -1,0 +1,46 @@
+{
+  "variants": {
+    "cook=0,level=1": {
+      "model": "binosvanillaplus:block/milk_cauldron_level1"
+    },
+    "cook=1,level=1": {
+      "model": "binosvanillaplus:block/milk_cauldron_level1"
+    },
+    "cook=2,level=1": {
+      "model": "binosvanillaplus:block/milk_cauldron_level1"
+    },
+    "cook=3,level=1": {
+      "model": "binosvanillaplus:block/milk_cauldron_level1"
+    },
+    "cook=4,level=1": {
+      "model": "binosvanillaplus:block/milk_cauldron_level1"
+    },
+    "cook=5,level=1": {
+      "model": "binosvanillaplus:block/milk_cauldron_level1"
+    },
+    "cook=6,level=1": {
+      "model": "binosvanillaplus:block/cheese_cauldron"
+    },
+    "cook=0,level=2": {
+      "model": "binosvanillaplus:block/milk_cauldron_full"
+    },
+    "cook=1,level=2": {
+      "model": "binosvanillaplus:block/milk_cauldron_full"
+    },
+    "cook=2,level=2": {
+      "model": "binosvanillaplus:block/milk_cauldron_full"
+    },
+    "cook=3,level=2": {
+      "model": "binosvanillaplus:block/milk_cauldron_full"
+    },
+    "cook=4,level=2": {
+      "model": "binosvanillaplus:block/milk_cauldron_full"
+    },
+    "cook=5,level=2": {
+      "model": "binosvanillaplus:block/milk_cauldron_full"
+    },
+    "cook=6,level=2": {
+      "model": "binosvanillaplus:block/cheese_cauldron"
+    }
+  }
+}

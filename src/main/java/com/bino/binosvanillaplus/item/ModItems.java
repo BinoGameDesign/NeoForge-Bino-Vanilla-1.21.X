@@ -218,6 +218,10 @@ public class ModItems {
                     .nutrition(4).saturationModifier(0.4f)   // carne podre: 4 e 0,1
                     .effect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.HUNGER, 600, 0), 0.8f)
                     .build())));
+    // pedaco de queijo (sai do queijo colocado no chao); o queijo inteiro e o item do bloco ModBlocks.CHEESE
+    public static final DeferredItem<Item> CHEESE_SLICE = ITEMS.register("cheese_slice",
+            () -> new Item(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder().nutrition(3).saturationModifier(0.6f).build())));
+    public static final java.util.function.Supplier<Item> CHEESE = () -> com.bino.binosvanillaplus.block.ModBlocks.CHEESE.get().asItem();
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem> EXPLORATION_DIARY = ITEMS.register("exploration_diary",
             () -> new com.bino.binosvanillaplus.item.custom.ExplorationDiaryItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<com.bino.binosvanillaplus.item.custom.PhotoItem> PHOTO = ITEMS.register("photo",

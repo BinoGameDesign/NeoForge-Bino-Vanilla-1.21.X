@@ -119,5 +119,8 @@
   "subtitles.binosvanillaplus.rat.death": "Rat dies",
   "subtitles.binosvanillaplus.rat.squeak": "Rat squeaks",
   "subtitles.binosvanillaplus.rat.eat": "Rat nibbles",
-  "subtitles.binosvanillaplus.rat.attack": "Rat bites"
+  "subtitles.binosvanillaplus.rat.attack": "Rat bites",
+  "block.binosvanillaplus.cheese": "Cheese",
+  "item.binosvanillaplus.cheese_slice": "Cheese Slice",
+  "block.binosvanillaplus.milk_cauldron": "Milk Cauldron"
 }

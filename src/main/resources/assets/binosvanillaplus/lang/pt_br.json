@@ -311,5 +311,8 @@
   "subtitles.binosvanillaplus.rat.death": "Rato morre",
   "subtitles.binosvanillaplus.rat.squeak": "Rato guincha",
   "subtitles.binosvanillaplus.rat.eat": "Rato mordisca",
-  "subtitles.binosvanillaplus.rat.attack": "Rato morde"
+  "subtitles.binosvanillaplus.rat.attack": "Rato morde",
+  "block.binosvanillaplus.cheese": "Queijo",
+  "item.binosvanillaplus.cheese_slice": "Pedaço de Queijo",
+  "block.binosvanillaplus.milk_cauldron": "Caldeirão com Leite"
 }

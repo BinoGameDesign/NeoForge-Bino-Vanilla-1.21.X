@@ -28,6 +28,7 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .add(ModBlocks.FOSSIL_SKULL.get()).add(ModBlocks.FOSSIL_VERTEBRA.get())
                 .add(ModBlocks.FOSSIL_RIB.get()).add(ModBlocks.FOSSIL_LIMB.get());
         tag(BlockTags.MINEABLE_WITH_AXE).add(ModBlocks.CAMERA_TRIPOD.get());
+        tag(BlockTags.MINEABLE_WITH_PICKAXE).add(ModBlocks.MILK_CAULDRON.get());
 
         tag(BlockTags.MINEABLE_WITH_PICKAXE)
                 .add(ModBlocks.RUBI_ORE.get())

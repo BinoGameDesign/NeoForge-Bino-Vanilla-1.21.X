@@ -104,6 +104,8 @@ public class RatEntity extends PathfinderMob {
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
+        goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.TemptGoal(this, 1.0,
+                net.minecraft.world.item.crafting.Ingredient.of(com.bino.binosvanillaplus.item.ModItems.CHEESE_SLICE.get(), com.bino.binosvanillaplus.block.ModBlocks.CHEESE.get()), false));   // queijo na mao atrai
         goalSelector.addGoal(1, new FleeGoal(this));
         goalSelector.addGoal(2, new SleepGoal(this));
         goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.4, true));
@@ -313,7 +315,9 @@ public class RatEntity extends PathfinderMob {
             if (r.getState() != ST_EAT) { r.setState(ST_EAT); r.eatTicks = 60; }
             if (r.eatTicks == 1) {   // terminou de comer: tira um pedaco
                 BlockState s = r.level().getBlockState(cake);
-                if (s.getBlock() instanceof CakeBlock) {
+                if (s.getBlock() instanceof com.bino.binosvanillaplus.block.custom.CheeseBlock) {
+                    com.bino.binosvanillaplus.block.custom.CheeseBlock.takeBite(r.level(), cake, s);
+                } else if (s.getBlock() instanceof CakeBlock) {
                     int bites = s.getValue(CakeBlock.BITES);
                     if (bites < 6) r.level().setBlock(cake, s.setValue(CakeBlock.BITES, bites + 1), 3);
                     else r.level().removeBlock(cake, false);

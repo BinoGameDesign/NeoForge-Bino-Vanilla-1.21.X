@@ -1,1 +1,8 @@
-{"replace": false, "values": ["minecraft:cake", "#minecraft:candle_cakes"]}
+{
+  "replace": false,
+  "values": [
+    "minecraft:cake",
+    "#minecraft:candle_cakes",
+    "binosvanillaplus:cheese"
+  ]
+}

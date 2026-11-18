@@ -66,6 +66,7 @@ public class BinosVanillaMod {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(com.bino.binosvanillaplus.block.custom.MilkCauldronBlock::registerVanillaInteraction);   // leite no caldeirao
 
     }
 
