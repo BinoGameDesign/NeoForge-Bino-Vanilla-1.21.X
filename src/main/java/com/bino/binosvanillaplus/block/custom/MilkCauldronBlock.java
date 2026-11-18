@@ -3,7 +3,12 @@ package com.bino.binosvanillaplus.block.custom;
 import com.bino.binosvanillaplus.block.ModBlocks;
 import com.bino.binosvanillaplus.item.ModItems;
 import com.mojang.serialization.MapCodec;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -30,12 +35,12 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 // Caldeirao com leite. 2 baldes de leite enchem; com fogueira ACESA embaixo o leite vai coalhando (COOK 0..5)
-// e vira queijo (COOK 6, liquido amarelo). Clique direito no queijo pronto: pega o queijo e o caldeirao esvazia.
+// (0-2 leite branco, 3-5 coalhando = creme amarelado) e vira queijo (COOK 6). Clique direito no queijo pronto: pega o queijo e o caldeirao esvazia.
 public class MilkCauldronBlock extends Block {
     public static final MapCodec<MilkCauldronBlock> CODEC = simpleCodec(MilkCauldronBlock::new);
 
     // ====== VALORES QUE VOCE PODE AJUSTAR ======
-    public static final int STEP_TICKS = 600;   // 30 s por etapa; 6 etapas = 3 minutos para virar queijo
+    public static final int STEP_TICKS = 200;   // 10 s por etapa; 6 etapas = 1 minuto para virar queijo
 
     public static final IntegerProperty LEVEL = IntegerProperty.create("level", 1, 2);   // baldes de leite
     public static final IntegerProperty COOK = IntegerProperty.create("cook", 0, 6);     // 6 = queijo pronto
@@ -106,9 +111,35 @@ public class MilkCauldronBlock extends Block {
         return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
+    // Texto de status (usado pelo Jade e pelo clique com a mao vazia)
+    public static List<Component> describe(BlockState state, Level level, BlockPos pos) {
+        List<Component> out = new ArrayList<>();
+        int cook = state.getValue(COOK);
+        if (cook >= READY) { out.add(Component.translatable("tooltip.binosvanillaplus.milk_cauldron.ready").withStyle(ChatFormatting.GOLD)); return out; }
+        if (state.getValue(LEVEL) < 2) { out.add(Component.translatable("tooltip.binosvanillaplus.milk_cauldron.need_milk").withStyle(ChatFormatting.GRAY)); return out; }
+        String phase = cook >= 3 ? "curdling" : "milk";
+        int pct = cook * 100 / READY;
+        out.add(Component.translatable("tooltip.binosvanillaplus.milk_cauldron.phase." + phase, pct).withStyle(ChatFormatting.YELLOW));
+        if (onLitCampfire(level, pos)) {
+            int secs = (READY - cook) * STEP_TICKS / 20;
+            out.add(Component.translatable("tooltip.binosvanillaplus.milk_cauldron.time", secs).withStyle(ChatFormatting.GRAY));
+        } else {
+            out.add(Component.translatable("tooltip.binosvanillaplus.milk_cauldron.need_fire").withStyle(ChatFormatting.RED));
+        }
+        return out;
+    }
+
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (state.getValue(COOK) < READY) return InteractionResult.PASS;
+        if (state.getValue(COOK) < READY) {
+            if (level.isClientSide) {
+                MutableComponent msg = Component.empty();
+                List<Component> lines = describe(state, level, pos);
+                for (int i = 0; i < lines.size(); i++) { if (i > 0) msg.append(" · "); msg.append(lines.get(i)); }
+                player.displayClientMessage(msg, true);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (!level.isClientSide) {
             ItemStack cheese = new ItemStack(ModItems.CHEESE.get());
             if (!player.getInventory().add(cheese)) player.drop(cheese, false);

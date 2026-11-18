@@ -128,5 +128,12 @@
   "subtitles.binosvanillaplus.rat_trap.snap": "Rat trap snaps",
   "item.binosvanillaplus.cooked_rat_meat": "Cooked Rat Meat",
   "block.binosvanillaplus.cage": "Cage",
-  "block.binosvanillaplus.cage.with": "Cage (%s)"
+  "block.binosvanillaplus.cage.with": "Cage (%s)",
+  "tooltip.binosvanillaplus.milk_cauldron.ready": "Cheese ready! Right-click to collect",
+  "tooltip.binosvanillaplus.milk_cauldron.need_milk": "Needs one more milk bucket",
+  "tooltip.binosvanillaplus.milk_cauldron.phase.milk": "Milk heating (%s%%)",
+  "tooltip.binosvanillaplus.milk_cauldron.phase.curdling": "Curdling (%s%%)",
+  "tooltip.binosvanillaplus.milk_cauldron.time": "~%s s left",
+  "tooltip.binosvanillaplus.milk_cauldron.need_fire": "Needs a lit campfire below",
+  "config.jade.plugin_binosvanillaplus.milk_cauldron": "Milk Cauldron"
 }

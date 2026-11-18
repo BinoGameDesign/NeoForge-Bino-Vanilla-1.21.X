@@ -31,13 +31,13 @@
       "model": "binosvanillaplus:block/milk_cauldron_full"
     },
     "cook=3,level=2": {
-      "model": "binosvanillaplus:block/milk_cauldron_full"
+      "model": "binosvanillaplus:block/milk_cauldron_curdling"
     },
     "cook=4,level=2": {
-      "model": "binosvanillaplus:block/milk_cauldron_full"
+      "model": "binosvanillaplus:block/milk_cauldron_curdling"
     },
     "cook=5,level=2": {
-      "model": "binosvanillaplus:block/milk_cauldron_full"
+      "model": "binosvanillaplus:block/milk_cauldron_curdling"
     },
     "cook=6,level=2": {
       "model": "binosvanillaplus:block/cheese_cauldron"

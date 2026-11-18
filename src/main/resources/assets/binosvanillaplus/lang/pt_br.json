@@ -320,5 +320,12 @@
   "subtitles.binosvanillaplus.rat_trap.snap": "Ratoeira fecha",
   "item.binosvanillaplus.cooked_rat_meat": "Carne de Rato Cozida",
   "block.binosvanillaplus.cage": "Gaiola",
-  "block.binosvanillaplus.cage.with": "Gaiola (%s)"
+  "block.binosvanillaplus.cage.with": "Gaiola (%s)",
+  "tooltip.binosvanillaplus.milk_cauldron.ready": "Queijo pronto! Clique direito para pegar",
+  "tooltip.binosvanillaplus.milk_cauldron.need_milk": "Falta mais um balde de leite",
+  "tooltip.binosvanillaplus.milk_cauldron.phase.milk": "Leite esquentando (%s%%)",
+  "tooltip.binosvanillaplus.milk_cauldron.phase.curdling": "Coalhando (%s%%)",
+  "tooltip.binosvanillaplus.milk_cauldron.time": "~%s s restantes",
+  "tooltip.binosvanillaplus.milk_cauldron.need_fire": "Precisa de fogueira acesa embaixo",
+  "config.jade.plugin_binosvanillaplus.milk_cauldron": "Caldeirão com Leite"
 }
