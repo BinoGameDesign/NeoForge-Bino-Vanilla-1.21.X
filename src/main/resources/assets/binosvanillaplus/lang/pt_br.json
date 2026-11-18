@@ -317,5 +317,6 @@
   "block.binosvanillaplus.milk_cauldron": "Caldeirão com Leite",
   "block.binosvanillaplus.rat_trap": "Ratoeira",
   "message.binosvanillaplus.rat_trap_bait": "Isca: %s/%s",
-  "subtitles.binosvanillaplus.rat_trap.snap": "Ratoeira fecha"
+  "subtitles.binosvanillaplus.rat_trap.snap": "Ratoeira fecha",
+  "item.binosvanillaplus.cooked_rat_meat": "Carne de Rato Cozida"
 }

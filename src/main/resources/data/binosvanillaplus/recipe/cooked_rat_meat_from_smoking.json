@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smoking",
+  "category": "food",
+  "ingredient": {
+    "item": "binosvanillaplus:rat_meat"
+  },
+  "result": {
+    "id": "binosvanillaplus:cooked_rat_meat"
+  },
+  "experience": 0.35,
+  "cookingtime": 100
+}
