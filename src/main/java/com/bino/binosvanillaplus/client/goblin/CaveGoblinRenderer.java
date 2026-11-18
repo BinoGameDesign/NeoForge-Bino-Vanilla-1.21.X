@@ -8,11 +8,13 @@ import net.minecraft.resources.ResourceLocation;
 
 public class CaveGoblinRenderer extends MobRenderer<CaveGoblinEntity, CaveGoblinModel> {
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "textures/entity/cave_goblin.png");
+    // piscada: mesma textura com os olhos fechados (pintar a mao para ajustar)
+    private static final ResourceLocation BLINK = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "textures/entity/cave_goblin_blink.png");
 
     public CaveGoblinRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new CaveGoblinModel(ctx.bakeLayer(CaveGoblinModel.LAYER)), 0.35f);
     }
 
     @Override
-    public ResourceLocation getTextureLocation(CaveGoblinEntity entity) { return TEXTURE; }
+    public ResourceLocation getTextureLocation(CaveGoblinEntity entity) { return entity.eyesClosed() ? BLINK : TEXTURE; }
 }

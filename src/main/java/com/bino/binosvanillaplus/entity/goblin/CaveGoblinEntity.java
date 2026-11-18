@@ -86,6 +86,7 @@ public class CaveGoblinEntity extends PathfinderMob {
     public final AnimationState oneShot = new AnimationState();
     public String oneShotName = "";
     private int oneShotEnd;
+    private int blinkIn = 40, blinkEnd;   // piscada por textura (cave_goblin_blink.png), igual ao Fresh Animations
 
     // ---- servidor
     private final NonNullList<ItemStack> sack = NonNullList.withSize(SACK_SIZE, ItemStack.EMPTY);
@@ -208,7 +209,14 @@ public class CaveGoblinEntity extends PathfinderMob {
         };
     }
 
+    // olhos fechados agora? (o renderer troca a textura)
+    public boolean eyesClosed() { return tickCount < blinkEnd || getState() == ST_COWER; }
+
     private void clientAnimations() {
+        if (--blinkIn <= 0) {
+            blinkEnd = tickCount + 3;                                        // 3 ticks de olho fechado
+            blinkIn = random.nextFloat() < 0.2f ? 6 : 50 + random.nextInt(110); // as vezes pisca duas vezes
+        }
         if (oneShot.isStarted() && tickCount >= oneShotEnd) oneShot.stop();
         int st = getState();
         boolean moving = walkAnimation.isMoving();
