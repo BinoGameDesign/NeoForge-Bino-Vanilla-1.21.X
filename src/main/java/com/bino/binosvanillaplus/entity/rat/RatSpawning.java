@@ -93,20 +93,26 @@ public class RatSpawning {
         if (p.isSpectator() || sl.random.nextFloat() >= STRUCT_CHANCE) return;
         BlockPos at = p.blockPosition();
         ResourceKey<Structure> in = null;
-        for (ResourceKey<Structure> k : STRUCTURES) if (sl.structureManager().getStructureWithPieceAt(at, k).isValid()) { in = k; break; }
+        for (ResourceKey<Structure> k : STRUCTURES) if (inside(sl, at, k)) { in = k; break; }
         if (in == null) {
             for (ResourceKey<Structure> k : VILLAGES) {
-                if (sl.structureManager().getStructureWithPieceAt(at, k).isValid()
+                if (inside(sl, at, k)
                         && sl.getEntitiesOfClass(Villager.class, p.getBoundingBox().inflate(48)).isEmpty()) { in = k; break; }   // abandonada
             }
         }
         if (in == null || nearbyRats(sl, at, 32) >= STRUCT_MAX_RATS) return;
         ResourceKey<Structure> key = in;
-        BlockPos spot = findSpot(sl, at, 8, 20, sl.random, q -> sl.structureManager().getStructureWithPieceAt(q, key).isValid());
+        BlockPos spot = findSpot(sl, at, 8, 20, sl.random, q -> inside(sl, q, key));
         if (spot != null) spawnAt(sl, spot, 1 + sl.random.nextInt(2));
     }
 
     // ------------------------------------------------------------------ ajudantes
+    // a posicao esta dentro de uma peca dessa estrutura? (o 1.21.1 pede uma condicao sobre o Holder da estrutura)
+    private static boolean inside(ServerLevel sl, BlockPos pos, ResourceKey<Structure> key) {
+        java.util.function.Predicate<net.minecraft.core.Holder<Structure>> is = h -> h.is(key);
+        return sl.structureManager().getStructureWithPieceAt(pos, is).isValid();
+    }
+
     private static int nearbyRats(ServerLevel sl, BlockPos pos, int r) {
         return sl.getEntitiesOfClass(RatEntity.class, new net.minecraft.world.phys.AABB(pos).inflate(r)).size();
     }
