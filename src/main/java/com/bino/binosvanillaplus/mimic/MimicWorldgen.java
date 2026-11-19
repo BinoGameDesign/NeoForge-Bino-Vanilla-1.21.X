@@ -2,6 +2,7 @@ package com.bino.binosvanillaplus.mimic;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.leveling.ModAttachments;
+import com.bino.binosvanillaplus.leveling.RegionDifficulty;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -21,7 +22,7 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
 import java.util.Set;
 
 // Mimicos que ja nascem com o mundo. Quando um pedaco do mundo acaba de ser GERADO, cada bau com tabela de loot
-// (ainda nao aberto) tem CHANCE de ser um mimico se:
+// (ainda nao aberto) numa area de nivel MIN_LEVEL ou mais tem CHANCE de ser um mimico se:
 //  - estiver no subsolo do Overworld (abaixo da superficie), ou
 //  - for de uma das estruturas da lista (templo do deserto, templo da selva, masmorra, tesouro enterrado,
 //    camaras do julgamento) - essas valem mesmo perto da superficie.
@@ -33,6 +34,7 @@ public final class MimicWorldgen {
     private MimicWorldgen() {}
 
     public static final float CHANCE = 0.20f;
+    public static final int MIN_LEVEL = 15;   // so em areas de nivel 15 para cima
     // quantos blocos abaixo do chao/fundo do mar conta como "subterraneo"
     private static final int DEPTH = 5;
 
@@ -56,6 +58,7 @@ public final class MimicWorldgen {
             boolean underground = level.dimension() == Level.OVERWORLD
                     && p.getY() < chunk.getHeight(Heightmap.Types.OCEAN_FLOOR, p.getX() & 15, p.getZ() & 15) - DEPTH;
             if (!listed && !underground) continue;
+            if (RegionDifficulty.levelAt(level, p) < MIN_LEVEL) continue;
             if (!roll(level, pairKey(chest))) continue;
             chest.setData(ModAttachments.MIMIC, true);
             chunk.setUnsaved(true);

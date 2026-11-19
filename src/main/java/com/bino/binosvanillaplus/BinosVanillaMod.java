@@ -55,6 +55,7 @@ public class BinosVanillaMod {
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
         com.bino.binosvanillaplus.worldgen.ModFeatures.register(modEventBus);   // fosseis gerados no mundo
+        com.bino.binosvanillaplus.loot.AreaChestLoot.register(modEventBus);   // loot de bau melhora com o nivel da area
         com.bino.binosvanillaplus.block.entity.ModBlockEntities.register(modEventBus);   // dono da corda solta
 
         // Durabilidade x1.25 das ferramentas de diamante (evento do barramento do mod)
