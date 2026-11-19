@@ -224,7 +224,9 @@ public final class ChestScene {
     static Vec3 cellPoint(int slot) {
         int c = slot / 27, j = slot % 27, row = j / 9, col = c * 9 + j % 9;
         double hw = halfWidth(), cw = 2 * hw / cols(), rd = 2 * HALF_DEPTH / 3;
-        return local(-hw + (col + 0.5) * cw, FLOOR, -HALF_DEPTH + (row + 0.5) * rd);
+        // colunas em zigue-zague (uma um pouco atras e mais alta): os itens podem ser maiores que a coluna
+        double zig = (col % 2 == 1) ? 1 : 0;
+        return local(-hw + (col + 0.5) * cw, FLOOR + 0.004 * zig, -HALF_DEPTH + (row + 0.5) * rd - 0.045 * zig);
     }
 
     // onde o raio do mouse encontra o fundo do bau (em coordenadas locais {x, z}) ou null
@@ -424,7 +426,7 @@ public final class ChestScene {
                 if (s.isEmpty()) continue;
                 boolean hov = i == hoverSlot && carried().isEmpty();
                 Vec3 at = cellPoint(i).add(0, hov ? 0.035 + Math.sin(now * 5) * 0.006 : 0.01, 0);
-                float k = (float) (cw / 0.5 * 1.9) * (hov ? 1.12f : 1f);
+                float k = (float) (cw * 1.45 / 0.5) * (hov ? 1.15f : 1f);   // item no chao: lado = 0.5 * escala
                 drawItem(ps, buf, s, at, cam, itemYaw + (i * 37 % 11 - 5), -62f, k, light);
             }
         }
