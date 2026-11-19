@@ -213,6 +213,9 @@ public class ModItems {
     // Rato: ovo e carne (efeito parecido com a carne podre, mas sacia mais)
     public static final DeferredItem<Item> RAT_SPAWN_EGG = ITEMS.register("rat_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.RAT, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
+    // Ovo de Mimico: guardar num bau e fechar transforma o bau em mimico (nao invoca nada no chao)
+    public static final DeferredItem<Item> MIMIC_SPAWN_EGG = ITEMS.register("mimic_spawn_egg",
+            () -> new com.bino.binosvanillaplus.mimic.MimicEggItem(new Item.Properties()));
     public static final DeferredItem<Item> DIRE_RAT_SPAWN_EGG = ITEMS.register("dire_rat_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.DIRE_RAT, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
     public static final DeferredItem<Item> RAT_MEAT = ITEMS.register("rat_meat",

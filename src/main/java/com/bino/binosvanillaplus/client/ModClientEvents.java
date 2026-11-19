@@ -56,6 +56,12 @@ public class ModClientEvents {
         event.registerEntityRenderer(ModEntities.CAVE_GOBLIN.get(), com.bino.binosvanillaplus.client.goblin.CaveGoblinRenderer::new);
         event.registerEntityRenderer(ModEntities.RAT.get(), com.bino.binosvanillaplus.client.rat.RatRenderer::new);
         registerDireRat(event);
+        // baus do jogo com os modelos do Bino; mimico revelado
+        event.registerBlockEntityRenderer(net.minecraft.world.level.block.entity.BlockEntityType.CHEST, com.bino.binosvanillaplus.client.chest.BinoChestRenderer::new);
+        event.registerBlockEntityRenderer(net.minecraft.world.level.block.entity.BlockEntityType.TRAPPED_CHEST, com.bino.binosvanillaplus.client.chest.BinoChestRenderer::new);
+        event.registerBlockEntityRenderer(net.minecraft.world.level.block.entity.BlockEntityType.ENDER_CHEST, com.bino.binosvanillaplus.client.chest.BinoChestRenderer::new);
+        event.registerEntityRenderer(ModEntities.MIMIC.get(), com.bino.binosvanillaplus.client.chest.MimicRenderer::new);
+        event.registerEntityRenderer(ModEntities.MIMIC_DOUBLE.get(), com.bino.binosvanillaplus.client.chest.MimicRenderer::new);
         event.registerEntityRenderer(ModEntities.PILLAGER_SMUGGLER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.PillagerSmugglerRenderer::new);
     }
 

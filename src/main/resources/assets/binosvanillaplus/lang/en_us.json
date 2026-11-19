@@ -140,5 +140,10 @@
   "config.jade.plugin_binosvanillaplus.mob_level": "Mob level",
   "entity.binosvanillaplus.dire_rat": "Dire Rat",
   "item.binosvanillaplus.dire_rat_spawn_egg": "Dire Rat Spawn Egg",
-  "entity.binosvanillaplus.deep_dire_rat": "Deep Dire Rat"
+  "entity.binosvanillaplus.deep_dire_rat": "Deep Dire Rat",
+  "item.binosvanillaplus.mimic_spawn_egg": "Mimic Egg",
+  "entity.binosvanillaplus.mimic": "Mimic",
+  "entity.binosvanillaplus.mimic_double": "Large Mimic",
+  "message.binosvanillaplus.mimic_egg_hint": "Put it in a chest and close it: the chest becomes a mimic.",
+  "tooltip.binosvanillaplus.mimic_egg": "Put it in a chest (single or double) and close it."
 }

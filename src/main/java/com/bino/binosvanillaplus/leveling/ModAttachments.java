@@ -35,5 +35,9 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<Boolean>> FACTION_CHECKED = ATTACHMENTS.register("faction_checked",
             () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
 
+    // bau que e' um mimico disfarcado (so o servidor sabe: o bau nao manda isso para o cliente)
+    public static final Supplier<AttachmentType<Boolean>> MIMIC = ATTACHMENTS.register("mimic",
+            () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }

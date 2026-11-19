@@ -332,5 +332,10 @@
   "config.jade.plugin_binosvanillaplus.mob_level": "Nível do mob",
   "entity.binosvanillaplus.dire_rat": "Rato Gigante",
   "item.binosvanillaplus.dire_rat_spawn_egg": "Ovo Gerador de Rato Gigante",
-  "entity.binosvanillaplus.deep_dire_rat": "Rato Gigante das Profundezas"
+  "entity.binosvanillaplus.deep_dire_rat": "Rato Gigante das Profundezas",
+  "item.binosvanillaplus.mimic_spawn_egg": "Ovo de Mímico",
+  "entity.binosvanillaplus.mimic": "Mímico",
+  "entity.binosvanillaplus.mimic_double": "Mímico Grande",
+  "message.binosvanillaplus.mimic_egg_hint": "Guarde num baú e feche: o baú vira um mímico.",
+  "tooltip.binosvanillaplus.mimic_egg": "Guarde num baú (simples ou duplo) e feche."
 }

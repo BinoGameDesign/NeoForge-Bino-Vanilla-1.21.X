@@ -49,6 +49,22 @@ public class ModEntities {
                             .clientTrackingRange(8)
                             .build("dire_rat"));
 
+    // Mimico revelado (o bau que pula e morde): simples e duplo
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.mimic.MimicEntity>> MIMIC =
+            ENTITY_TYPES.register("mimic",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.mimic.MimicEntity>of(com.bino.binosvanillaplus.mimic.MimicEntity::new, MobCategory.MONSTER)
+                            .sized(0.875f, 0.85f)
+                            .eyeHeight(0.6f)
+                            .clientTrackingRange(10)
+                            .build("mimic"));
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.mimic.MimicEntity>> MIMIC_DOUBLE =
+            ENTITY_TYPES.register("mimic_double",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.mimic.MimicEntity>of(com.bino.binosvanillaplus.mimic.MimicEntity::new, MobCategory.MONSTER)
+                            .sized(1.6f, 0.85f)
+                            .eyeHeight(0.6f)
+                            .clientTrackingRange(10)
+                            .build("mimic_double"));
+
     public static final Supplier<EntityType<CompanionAllayEntity>> COMPANION_ALLAY =
             ENTITY_TYPES.register("companion_allay",
                     () -> EntityType.Builder.<CompanionAllayEntity>of(CompanionAllayEntity::new, MobCategory.MISC)

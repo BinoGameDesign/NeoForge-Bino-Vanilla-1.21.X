@@ -24,6 +24,9 @@
     },
     "mixins": [
         "MonsterSpawnLightMixin",
+        "CompoundContainerAccessor",
+        "ContainerMenuMimicMixin",
+        "ChestBlockEntityMimicMixin",
         "LivingEntityElytraMixin",
         "PlayerElytraMixin",
         "VillagerFactionPriceMixin",
