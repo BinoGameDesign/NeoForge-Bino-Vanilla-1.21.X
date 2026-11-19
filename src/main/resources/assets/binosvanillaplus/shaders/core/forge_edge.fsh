@@ -20,7 +20,7 @@ const float GLOW_ALPHA[5] = float[](0.0, 0.18, 0.26, 0.34, 0.45); // brilho
 const int DIRS = 16;
 
 void main() {
-    if (texture(Sampler0, uv).a > 0.0) discard;   // dentro do item: nada
+    if (texture(Sampler0, uv).a > 0.0) discard;   // dentro do item ou do corpo de quem segura: nada
     vec2 px = 1.0 / OutSize;
     float border = BORDER * Scale, glow = GLOW * Scale;
     int maxR = int(ceil(border + glow));
@@ -32,7 +32,7 @@ void main() {
             float ang = 6.2831853 * (float(i) + (r % 2 == 0 ? 0.5 : 0.0)) / float(DIRS);
             vec2 d = vec2(cos(ang), sin(ang)) * float(r);
             vec4 c = texture(Sampler0, uv + d * px);
-            if (c.a > 0.0) { best = float(r); bc = c; bd = d; break; }
+            if (c.a > 0.1) { best = float(r); bc = c; bd = d; break; }   // so item (o corpo tem alfa ~0)
         }
     }
     if (best < 0.0) discard;

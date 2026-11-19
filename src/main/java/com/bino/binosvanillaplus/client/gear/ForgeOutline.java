@@ -122,6 +122,57 @@ public final class ForgeOutline {
         if (n * FLOATS > verts.length) verts = Arrays.copyOf(verts, Math.max(verts.length * 2, n * FLOATS));
     }
 
+    // ---------------------------------------------------------------- bloqueio: corpo de quem segura o item
+    // O corpo entra na mascara so como "parede" (alfa minimo, sem textura): esconde a parte do item que fica atras
+    // dele e impede a borda de ser pintada por cima dele.
+    public static boolean wantsBlocker(net.minecraft.world.entity.LivingEntity e) {
+        if (maskShader == null || irisShadowPass() || e.isInvisible()) return false;
+        return ForgeGlow.tier(e.getMainHandItem()) > 0 || ForgeGlow.tier(e.getOffhandItem()) > 0;
+    }
+
+    private static final BlockerConsumer BLOCKER = new BlockerConsumer();
+
+    public static com.mojang.blaze3d.vertex.VertexConsumer blocker() {
+        BLOCKER.mvp.set(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix());
+        BLOCKER.n = 0;
+        return BLOCKER;
+    }
+
+    // recebe os vertices do modelo (ja com a pose aplicada) e anota cada face de 4
+    private static final class BlockerConsumer implements com.mojang.blaze3d.vertex.VertexConsumer {
+        final Matrix4f mvp = new Matrix4f();
+        final float[] buf = new float[12];
+        int n;
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer addVertex(float x, float y, float z) {
+            buf[n * 3] = x; buf[n * 3 + 1] = y; buf[n * 3 + 2] = z;
+            if (++n == 4) {
+                n = 0;
+                ensure(count + 4);
+                Vector4f p = new Vector4f();
+                boolean ok = true;
+                for (int k = 0; k < 4; k++) {
+                    p.set(buf[k * 3], buf[k * 3 + 1], buf[k * 3 + 2], 1f);
+                    mvp.transform(p);
+                    if (p.w < 0.01f) { ok = false; break; }
+                    int i = (count + k) * FLOATS;
+                    verts[i] = p.x / p.w; verts[i + 1] = p.y / p.w; verts[i + 2] = (p.z / p.w) * 0.5f + 0.5f;
+                    verts[i + 3] = -1f; verts[i + 4] = -1f;          // sem textura
+                    verts[i + 5] = 0f; verts[i + 6] = 0f; verts[i + 7] = 0f; verts[i + 8] = 1f / 255f;
+                }
+                if (ok) count += 4;
+            }
+            return this;
+        }
+
+        @Override public com.mojang.blaze3d.vertex.VertexConsumer setColor(int r, int g, int b, int a) { return this; }
+        @Override public com.mojang.blaze3d.vertex.VertexConsumer setUv(float u, float v) { return this; }
+        @Override public com.mojang.blaze3d.vertex.VertexConsumer setUv1(int u, int v) { return this; }
+        @Override public com.mojang.blaze3d.vertex.VertexConsumer setUv2(int u, int v) { return this; }
+        @Override public com.mojang.blaze3d.vertex.VertexConsumer setNormal(float x, float y, float z) { return this; }
+    }
+
     // item no mundo escondido atras de bloco? (a pose do item e' relativa a camera)
     private static boolean hidden(Minecraft mc, PoseStack.Pose pose) {
         Vector3f p = pose.pose().transformPosition(new Vector3f(0.5f, 0.5f, 0.5f));

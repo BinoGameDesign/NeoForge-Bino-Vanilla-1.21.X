@@ -8,6 +8,7 @@ in vec4 vertexColor;
 out vec4 fragColor;
 
 void main() {
-    if (texture(Sampler0, texCoord0).a < 0.1) discard;   // so o recorte da textura (silhueta)
+    // item: so o recorte da textura (silhueta). Corpo de quem segura (uv < 0): sem textura, so bloqueia
+    if (texCoord0.x >= 0.0 && texture(Sampler0, texCoord0).a < 0.1) discard;
     fragColor = vertexColor;
 }

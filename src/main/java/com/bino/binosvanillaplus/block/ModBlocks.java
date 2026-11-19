@@ -102,20 +102,15 @@ public class ModBlocks {
                             .noOcclusion() // deixa a luz chegar aos cristais
                             .sound(SoundType.STONE)));
 
-    // Bloco de Pedra Filosofal (9 pedras filosofais grandes). Cristal bem translucido, muito refletivo no shader
-    // (philosopher_block_s.png: lisura alta + id de metal, mais que o ferro) e com luz fraca (nivel 6): HalfTransparentBlock (como o
-    // vidro: some a face entre dois blocos iguais) + render_type translucent no modelo + alfa na textura.
+    // Bloco de Pedra Filosofal (9 pedras filosofais grandes). Cristal opaco muito refletivo no shader
+    // (euphoria/terrain/philosopher_block.glsl no Complementary; philosopher_block_s.png em packs LabPBR) e luz fraca (nivel 6).
     public static final DeferredBlock<Block> PHILOSOPHER_BLOCK = registerBlock("philosopher_block",
-            () -> new net.minecraft.world.level.block.HalfTransparentBlock(BlockBehaviour.Properties.of()
+            () -> new Block(BlockBehaviour.Properties.of()
                     .strength(5.0f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.AMETHYST)
                     .lightLevel(st -> 6)   // brilho fraco proprio do cristal
-                    .noOcclusion()
-                    .isValidSpawn((st, lv, pos, type) -> false)
-                    .isRedstoneConductor((st, lv, pos) -> false)
-                    .isSuffocating((st, lv, pos) -> false)
-                    .isViewBlocking((st, lv, pos) -> false)));
+                    .isValidSpawn((st, lv, pos, type) -> false)));
 
     // Mesa de Lapidação (modelo 3D: noOcclusion porque não é um cubo cheio)
     public static final DeferredBlock<Block> LAPIDARY_TABLE = registerBlock("lapidary_table",

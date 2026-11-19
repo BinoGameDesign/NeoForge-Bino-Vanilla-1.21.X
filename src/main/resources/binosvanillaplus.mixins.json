@@ -12,6 +12,7 @@
         "client.VillagerProfessionLayerMixin",
         "client.ClientHooksArmorTextureMixin",
         "client.ItemRendererForgeOutlineMixin",
+        "client.LivingEntityRendererForgeOutlineMixin",
         "client.GuiGraphicsForgeOutlineMixin",
         "client.CameraLapidaryMixin",
         "client.HumanoidModelLapidaryMixin",
