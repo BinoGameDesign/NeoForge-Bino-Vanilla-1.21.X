@@ -61,7 +61,8 @@ public class BinoChestRenderer<T extends BlockEntity & LidBlockEntity> implement
 
         BinoChestModel model = models.get(kind);
         model.reset();
-        float[] last = LAST.computeIfAbsent(be, k -> new float[]{open, 0});
+        final float open0 = open;
+        float[] last = LAST.computeIfAbsent(be, k -> new float[]{open0, 0});
         if (open < last[0] - 1e-4f) last[1] = 1; else if (open > last[0] + 1e-4f) last[1] = 0;
         last[0] = open;
         if (open > 0.001f) {
