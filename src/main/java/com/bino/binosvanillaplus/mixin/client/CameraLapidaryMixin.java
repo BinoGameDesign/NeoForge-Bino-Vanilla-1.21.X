@@ -1,5 +1,6 @@
 package com.bino.binosvanillaplus.mixin.client;
 
+import com.bino.binosvanillaplus.client.bench.BenchScene;
 import com.bino.binosvanillaplus.client.chest.scene.ChestScene;
 import com.bino.binosvanillaplus.client.lapidary.LapidaryScene;
 import net.minecraft.client.Camera;
@@ -25,6 +26,11 @@ public abstract class CameraLapidaryMixin {
         Camera self = (Camera) (Object) this;
         if (LapidaryScene.active()) {
             LapidaryScene.Pose pose = LapidaryScene.override(self.getPosition(), self.getYRot(), self.getXRot());
+            if (pose == null) return;
+            this.setRotation(pose.yaw(), pose.pitch());
+            this.setPosition(pose.pos());
+        } else if (BenchScene.active()) {   // bancada de trabalho / bigorna
+            BenchScene.Pose pose = BenchScene.override(self.getPosition(), self.getYRot(), self.getXRot());
             if (pose == null) return;
             this.setRotation(pose.yaw(), pose.pitch());
             this.setPosition(pose.pos());

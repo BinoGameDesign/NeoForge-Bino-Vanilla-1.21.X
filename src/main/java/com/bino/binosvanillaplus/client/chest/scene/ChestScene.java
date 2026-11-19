@@ -568,7 +568,7 @@ public final class ChestScene {
     // Item "jogado" no bau, virado para quem olha (faceYaw = yaw da camera), como no chao do jogo (contexto GROUND):
     // itens chatos deitados para tras e se sobrepondo (a "bagunca" que da fundo ao bau). Blocos e modelos 3D ficam
     // EM PE (deitados eles apareciam de ponta-cabeca) e um pouco maiores (no chao o jogo os desenha bem menores).
-    static void drawItem(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float faceYaw, float tilt, float scale, int light) {
+    public static void drawItem(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float faceYaw, float tilt, float scale, int light) {
         Minecraft mc = Minecraft.getInstance();
         boolean block = mc.getItemRenderer().getModel(stack, mc.level, null, 0).isGui3d();
         ps.pushPose();

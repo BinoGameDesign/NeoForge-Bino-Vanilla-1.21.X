@@ -150,5 +150,13 @@
   "chest.binosvanillaplus.hint.place": "Click a spot: store  ·  Right click: just one / put back",
   "chest.binosvanillaplus.hint.full": "No room",
   "chest.binosvanillaplus.hint.leave": "Click outside the chest or Esc: close  ·  Open while sneaking for the classic window",
-  "chest.binosvanillaplus.slots": "Chest: %s/%s slots used  ·  %s free"
+  "chest.binosvanillaplus.slots": "Chest: %s/%s slots used  ·  %s free",
+  "bench.binosvanillaplus.crafting.start": "Click an item in the bar to pick it up, then a spot to place it",
+  "bench.binosvanillaplus.crafting.place": "Click: place all  ·  Right click: place one  ·  Right click outside: put back",
+  "bench.binosvanillaplus.crafting.take": "Click the result: craft one  ·  Shift: craft all",
+  "bench.binosvanillaplus.crafting.no": "Can't do that",
+  "bench.binosvanillaplus.anvil.start": "Click an item in the bar to put it on the anvil",
+  "bench.binosvanillaplus.anvil.take": "Click the result to hammer it",
+  "bench.binosvanillaplus.anvil.no": "Can't do that (experience levels?)",
+  "bench.binosvanillaplus.leave": "Click outside or Esc: leave  ·  Click an item on top: take it back  ·  Open while sneaking for the classic window"
 }

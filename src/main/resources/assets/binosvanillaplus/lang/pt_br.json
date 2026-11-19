@@ -342,5 +342,13 @@
   "chest.binosvanillaplus.hint.place": "Clique numa casa: guardar  ·  Botão direito: um só / devolver",
   "chest.binosvanillaplus.hint.full": "Não tem espaço",
   "chest.binosvanillaplus.hint.leave": "Clique fora do baú ou Esc: fechar  ·  Abra agachado para a janela clássica",
-  "chest.binosvanillaplus.slots": "Baú: %s/%s espaços usados  ·  %s livres"
+  "chest.binosvanillaplus.slots": "Baú: %s/%s espaços usados  ·  %s livres",
+  "bench.binosvanillaplus.crafting.start": "Clique num item da barra para pegar e numa casa para colocar",
+  "bench.binosvanillaplus.crafting.place": "Clique: colocar tudo  ·  Botão direito: colocar um  ·  Botão direito fora: devolver",
+  "bench.binosvanillaplus.crafting.take": "Clique no resultado: fabricar um  ·  Shift: fabricar tudo",
+  "bench.binosvanillaplus.crafting.no": "Não dá",
+  "bench.binosvanillaplus.anvil.start": "Clique num item da barra para colocar na bigorna",
+  "bench.binosvanillaplus.anvil.take": "Clique no resultado para martelar",
+  "bench.binosvanillaplus.anvil.no": "Não dá (níveis de experiência?)",
+  "bench.binosvanillaplus.leave": "Clique fora ou Esc: sair  ·  Clique num item do tampo: devolver  ·  Abra agachado para a janela clássica"
 }
