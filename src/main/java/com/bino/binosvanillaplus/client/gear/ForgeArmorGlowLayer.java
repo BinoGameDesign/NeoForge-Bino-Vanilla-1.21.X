@@ -23,8 +23,8 @@ import net.neoforged.neoforge.client.ClientHooks;
 
 import java.util.List;
 
-// Brilho de ressonancia da forja na armadura vestida (ver ForgeGlow): desenha de novo cada peca +4 ou mais,
-// com as partes do modelo um pouco maiores, translucida e acesa na cor principal da peca.
+// Contorno da forja na armadura vestida: cada peca +4 ou mais entra na mascara do contorno (ForgeOutline), com a cor
+// e a faixa da peca; o shader de borda pinta o contorno de 8 px e o brilho em volta da silhueta da armadura.
 public class ForgeArmorGlowLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     private static final EquipmentSlot[] SLOTS = {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD};
     private final HumanoidModel<AbstractClientPlayer> inner, outer;
@@ -52,14 +52,11 @@ public class ForgeArmorGlowLayer extends RenderLayer<AbstractClientPlayer, Playe
             if (model == null) model = innerModel ? inner : outer;
             ((HumanoidModel) getParentModel()).copyPropertiesTo(model);
             visible(model, slot);
-            ResourceLocation tex = ClientHooks.getArmorTexture(player, stack, layers.get(0), innerModel, slot);
-            var vc = buf.getBuffer(RenderType.entityTranslucentEmissive(tex));
-            float a = ForgeGlow.alpha(tier);
-            float[][] shells = {{1.04f, a}, {1.09f + 0.015f * tier, a * 0.45f}};
-            for (float[] sh : shells) {
-                scale(model, sh[0]);
-                model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, ForgeGlow.argb(stack, sh[1]));
-            }
+            // contorno da forja: a peca entra na mascara do contorno (ForgeOutline), um pouco maior que a armadura
+            var vc = ForgeOutline.armor(buf, stack);
+            if (vc == null) { model.setAllVisible(true); continue; }
+            scale(model, 1.02f);
+            model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, -1);
             scale(model, 1f);
             model.setAllVisible(true);
         }

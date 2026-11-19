@@ -160,26 +160,56 @@ public final class ForgeOutline {
         return hit.getType() == HitResult.Type.BLOCK && hit.getLocation().distanceTo(from) < dist - 0.4;
     }
 
-    // ---------------------------------------------------------------- corpo de quem segura (bloqueio)
+    // ---------------------------------------------------------------- corpo de quem segura/veste (bloqueio)
     public static boolean wantsBlocker(LivingEntity e) {
         if (!ready() || e.isInvisible()) return false;
-        return ForgeGlow.tier(e.getMainHandItem()) > 0 || ForgeGlow.tier(e.getOffhandItem()) > 0;
+        if (ForgeGlow.tier(e.getMainHandItem()) > 0 || ForgeGlow.tier(e.getOffhandItem()) > 0) return true;
+        for (ItemStack a : e.getArmorSlots()) if (ForgeGlow.tier(a) > 0) return true;
+        return false;
     }
 
+    // corpo: sem textura (uv < 0) e alfa minimo -> na mascara vira "parede"
     public static VertexConsumer blocker(MultiBufferSource buf) {
-        BLOCKER.out = buf.getBuffer(WORLD);
-        return BLOCKER;
+        return SOLID.to(buf.getBuffer(WORLD), 0f, 0f, 0f, 1f / 255f);
     }
 
-    private static final Blocker BLOCKER = new Blocker();
+    // peca de armadura vestida: o modelo da armadura entra na mascara com a cor e a faixa da peca
+    public static VertexConsumer armor(MultiBufferSource buf, ItemStack stack) {
+        if (!ready()) return null;
+        int tier = ForgeGlow.tier(stack);
+        if (tier == 0) return null;
+        int rgb = ForgeGlow.color(stack.getItem());
+        any = true;
+        return SOLID.to(buf.getBuffer(WORLD), ((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, tier / 4f);
+    }
 
-    // repassa so a posicao; sem textura (uv < 0) e alfa minimo: na mascara vira "parede"
-    private static final class Blocker implements VertexConsumer {
+    private static final Solid SOLID = new Solid();
+
+    // repassa so a posicao, com cor fixa e sem textura; anota a area na tela para o shader da borda
+    private static final class Solid implements VertexConsumer {
         VertexConsumer out;
+        float r, g, b, a;
+        final Matrix4f mvp = new Matrix4f();
+        final Vector4f p = new Vector4f();
+
+        Solid to(VertexConsumer out, float r, float g, float b, float a) {
+            this.out = out; this.r = r; this.g = g; this.b = b; this.a = a;
+            mvp.set(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix());
+            return this;
+        }
 
         @Override
         public VertexConsumer addVertex(float x, float y, float z) {
-            out.addVertex(x, y, z).setUv(-1f, -1f).setColor(0f, 0f, 0f, 1f / 255f);
+            out.addVertex(x, y, z).setUv(-1f, -1f).setColor(r, g, b, a);
+            if (a > 0.1f) {
+                p.set(x, y, z, 1f);
+                mvp.transform(p);
+                if (p.w > 0.01f) {
+                    float sx = p.x / p.w, sy = p.y / p.w;
+                    minX = Math.min(minX, sx); maxX = Math.max(maxX, sx);
+                    minY = Math.min(minY, sy); maxY = Math.max(maxY, sy);
+                }
+            }
             return this;
         }
 
