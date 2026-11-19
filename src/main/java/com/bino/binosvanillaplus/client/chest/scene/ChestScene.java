@@ -233,6 +233,8 @@ public final class ChestScene {
     private static final Map<Integer, double[]> TARGET = new HashMap<>();   // casa -> {x, z, giro}
     private static final Map<Integer, Vec3> SHOWN = new HashMap<>();       // posicao suavizada
     static double itemSize = 0.2;
+    // tamanho maximo de cada item (em blocos): com poucos itens eles cresciam demais e ficavam esquisitos
+    static final double MAX_ITEM = 0.17;
     private static double lastLayout;
 
     static void layout(List<Integer> occupied) {
@@ -243,7 +245,7 @@ public final class ChestScene {
         int cols = Math.max(1, (int) Math.ceil(Math.sqrt(n * w / d)));
         int rws = (int) Math.ceil(n / (double) cols);
         double cw = w / cols, cd = d / rws;
-        itemSize = Mth.clamp(Math.min(cw * 1.35, cd * 1.1), 0.1, 0.3);
+        itemSize = Mth.clamp(Math.min(cw * 1.35, cd * 1.1), 0.1, MAX_ITEM);
         for (int k = 0; k < n; k++) {
             int slot = occupied.get(k), c = k % cols, r = k / cols;
             int inRow = r == rws - 1 ? n - r * cols : cols;
