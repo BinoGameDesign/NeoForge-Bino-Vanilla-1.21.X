@@ -21,10 +21,10 @@ public final class RatModelData {
         head.addOrReplaceChild("teeth_r", CubeListBuilder.create().texOffs(14, 28).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 2.0F, 1.0F, new CubeDeformation(-0.4F)), PartPose.offsetAndRotation(0.0F, 3.1F, -4.9F, 1.0F * DEG, 0.0F, 0.0F));
         PartDefinition whiskers = head.addOrReplaceChild("whiskers", CubeListBuilder.create(), PartPose.offset(0.0F, 1.1F, -5.0F));
         whiskers.addOrReplaceChild("whiskers_r", CubeListBuilder.create().texOffs(26, 13).addBox(-0.5F, -0.5F, -0.5F, 3.0F, 1.0F, 1.0F, new CubeDeformation(-0.4F)), PartPose.offsetAndRotation(-2.8F, -0.6F, 0.0F, 0.0F, 0.0F, 10.0F * DEG));
-        whiskers.addOrReplaceChild("whiskers_r", CubeListBuilder.create().texOffs(26, 13).addBox(-0.5F, -0.5F, -0.5F, 3.0F, 1.0F, 1.0F, new CubeDeformation(-0.4F)), PartPose.offsetAndRotation(-2.6F, 0.6F, 0.0F, 0.0F, 0.0F, -12.5F * DEG));
+        whiskers.addOrReplaceChild("whiskers_r2", CubeListBuilder.create().texOffs(26, 13).addBox(-0.5F, -0.5F, -0.5F, 3.0F, 1.0F, 1.0F, new CubeDeformation(-0.4F)), PartPose.offsetAndRotation(-2.6F, 0.6F, 0.0F, 0.0F, 0.0F, -12.5F * DEG));
         PartDefinition whiskers2 = head.addOrReplaceChild("whiskers2", CubeListBuilder.create(), PartPose.offsetAndRotation(1.897F, 1.0225F, -5.0F, 0.0F, 0.0F, -180.0F * DEG));
         whiskers2.addOrReplaceChild("whiskers_r", CubeListBuilder.create().texOffs(26, 13).addBox(-0.5F, -0.5F, -0.5F, 3.0F, 1.0F, 1.0F, new CubeDeformation(-0.4F)), PartPose.offsetAndRotation(-1.0806F, -0.5786F, 0.0F, 0.0F, 0.0F, 10.0F * DEG));
-        whiskers2.addOrReplaceChild("whiskers_r", CubeListBuilder.create().texOffs(26, 13).addBox(-0.5F, -0.5F, -0.5F, 3.0F, 1.0F, 1.0F, new CubeDeformation(-0.4F)), PartPose.offsetAndRotation(-0.8806F, 0.6214F, 0.0F, 0.0F, 0.0F, -12.5F * DEG));
+        whiskers2.addOrReplaceChild("whiskers_r2", CubeListBuilder.create().texOffs(26, 13).addBox(-0.5F, -0.5F, -0.5F, 3.0F, 1.0F, 1.0F, new CubeDeformation(-0.4F)), PartPose.offsetAndRotation(-0.8806F, 0.6214F, 0.0F, 0.0F, 0.0F, -12.5F * DEG));
         PartDefinition jaw = head.addOrReplaceChild("jaw", CubeListBuilder.create(), PartPose.offset(0.0F, 1.1F, -3.1F));
         jaw.addOrReplaceChild("jaw_r", CubeListBuilder.create().texOffs(51, 25).addBox(-1.5F, -1.0F, -1.5F, 3.0F, 2.0F, 3.0F, new CubeDeformation(-0.7F)), PartPose.offsetAndRotation(0.0F, 0.9F, -1.3F, 9.0F * DEG, 0.0F, 0.0F));
         PartDefinition ear_r = head.addOrReplaceChild("ear_r", CubeListBuilder.create(), PartPose.offset(2.8F, -0.8F, -1.5F));

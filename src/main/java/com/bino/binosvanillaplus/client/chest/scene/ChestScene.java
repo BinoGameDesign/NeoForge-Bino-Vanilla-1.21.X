@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
@@ -38,6 +39,8 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 // Cena "estilo cinema" do bau (mesmo sistema da Mesa de Lapidacao): no lugar da janela, a camera se debruca sobre o
@@ -224,12 +227,58 @@ public final class ChestScene {
     }
 
     // centro da casa do item no fundo do bau
+    // ---------------------------------------------------------------- arrumacao: itens ESPALHADOS pelo fundo
+    // So os itens que existem entram: eles se espalham pelo bau todo (poucos itens = maiores e mais soltos), cada um
+    // com um leve desvio e giro proprios (fixos por casa). Quando um item entra ou sai, os outros deslizam.
+    private static final Map<Integer, double[]> TARGET = new HashMap<>();   // casa -> {x, z, giro}
+    private static final Map<Integer, Vec3> SHOWN = new HashMap<>();       // posicao suavizada
+    static double itemSize = 0.2;
+    private static double lastLayout;
+
+    static void layout(List<Integer> occupied) {
+        TARGET.clear();
+        int n = occupied.size();
+        if (n == 0) return;
+        double w = 2 * halfWidth() - 0.04, d = 2 * HALF_DEPTH;
+        int cols = Math.max(1, (int) Math.ceil(Math.sqrt(n * w / d)));
+        int rws = (int) Math.ceil(n / (double) cols);
+        double cw = w / cols, cd = d / rws;
+        itemSize = Mth.clamp(Math.min(cw * 1.35, cd * 1.1), 0.1, 0.3);
+        for (int k = 0; k < n; k++) {
+            int slot = occupied.get(k), c = k % cols, r = k / cols;
+            int inRow = r == rws - 1 ? n - r * cols : cols;
+            double rowOff = (cols - inRow) * cw / 2;
+            long h = (slot + 1) * 0x9E3779B97F4A7C15L;
+            double jx = (((h >>> 16) & 255) / 255.0 - 0.5) * 0.4 * cw;
+            double jz = (((h >>> 24) & 255) / 255.0 - 0.5) * 0.4 * cd;
+            double yaw = ((h >>> 40) & 63) - 32;
+            TARGET.put(slot, new double[]{-w / 2 + rowOff + (c + 0.5) * cw + jx, -d / 2 + (r + 0.5) * cd + jz, yaw});
+        }
+    }
+
+    private static void smooth() {
+        double now = clock(), dt = Mth.clamp(now - lastLayout, 0, 0.1);
+        lastLayout = now;
+        double a = 1 - Math.exp(-12 * dt);
+        SHOWN.keySet().removeIf(k -> !TARGET.containsKey(k));
+        for (var e : TARGET.entrySet()) {
+            Vec3 t = local(e.getValue()[0], FLOOR, e.getValue()[1]);
+            Vec3 cur = SHOWN.get(e.getKey());
+            SHOWN.put(e.getKey(), cur == null ? t : cur.add(t.subtract(cur).scale(a)));
+        }
+    }
+
+    // onde o item da casa esta no fundo do bau
     static Vec3 cellPoint(int slot) {
-        int c = slot / 27, j = slot % 27, row = j / 9, col = c * 9 + j % 9;
-        double hw = halfWidth(), cw = 2 * hw / cols(), rd = 2 * HALF_DEPTH / 3;
-        // colunas em zigue-zague (uma um pouco atras e mais alta): os itens podem ser maiores que a coluna
-        double zig = (col % 2 == 1) ? 1 : 0;
-        return local(-hw + (col + 0.5) * cw, FLOOR + 0.004 * zig, -HALF_DEPTH + (row + 0.5) * rd - 0.045 * zig);
+        Vec3 v = SHOWN.get(slot);
+        if (v != null) return v;
+        double[] t = TARGET.get(slot);
+        return t != null ? local(t[0], FLOOR, t[1]) : local(0, FLOOR, 0);
+    }
+
+    static float itemYaw(int slot) {
+        double[] t = TARGET.get(slot);
+        return t == null ? 0f : (float) t[2];
     }
 
     // onde o raio do mouse encontra o fundo do bau (em coordenadas locais {x, z}) ou null
@@ -249,13 +298,16 @@ public final class ChestScene {
     public static void updateHover() {
         hoverSlot = -1;
         if (phase != Phase.ACTIVE) return;
-        double[] p = onFloor();
-        if (p == null) return;
-        double hw = halfWidth();
-        int col = (int) Math.floor((p[0] + hw) / (2 * hw / cols()));
-        int row = (int) Math.floor((p[1] + HALF_DEPTH) / (2 * HALF_DEPTH / 3));
-        if (col < 0 || col >= cols() || row < 0 || row > 2) return;
-        hoverSlot = (col / 9) * 27 + row * 9 + col % 9;
+        Vec3[] ray = LapidaryPick.ray();
+        if (ray == null) return;
+        double best = Double.MAX_VALUE;
+        for (int slot : TARGET.keySet()) {
+            Vec3 to = cellPoint(slot).add(0, itemSize * 0.25, 0).subtract(ray[0]);
+            double along = to.dot(ray[1]);
+            if (along <= 0) continue;
+            double off = to.subtract(ray[1].scale(along)).length();
+            if (off < itemSize * 0.6 && off < best) { best = off; hoverSlot = slot; }
+        }
     }
 
     // ---------------------------------------------------------------- camera
@@ -457,9 +509,14 @@ public final class ChestScene {
             snapshot = list;
         }
         boolean showItems = phase != Phase.OUTRO || (!serverClosed && now - phaseAt < 0.2);
+        List<Integer> occ = new ArrayList<>();
+        for (int i = 0; i < snapshot.size(); i++) if (!snapshot.get(i).isEmpty()) occ.add(i);
+        layout(occ);
+        smooth();
+        // luz minima dentro do bau (de noite ou na caverna os itens sumiam no escuro)
+        int itemLight = LightTexture.pack(Math.max(LightTexture.block(light), 11), LightTexture.sky(light));
         if (showItems) {
-            float itemYaw = facing.getOpposite().toYRot();
-            double cw = 2 * halfWidth() / cols();
+            float camYaw = facing.getOpposite().toYRot();
             placing.removeIf(pl -> now - pl.start() > PLACE);
             for (int i = 0; i < snapshot.size(); i++) {
                 ItemStack s = snapshot.get(i);
@@ -467,19 +524,19 @@ public final class ChestScene {
                 if (s.isEmpty() || placing.stream().anyMatch(pl -> pl.slot() == slotI)) continue;
                 boolean hov = i == hoverSlot && carried().isEmpty();
                 Vec3 at = cellPoint(i).add(0, hov ? 0.035 + Math.sin(now * 5) * 0.006 : 0.01, 0);
-                float k = (float) (cw * 1.45 / 0.5) * (hov ? 1.15f : 1f);   // item no chao: lado = 0.5 * escala
-                drawItem(ps, buf, s, at, cam, itemYaw + (i * 37 % 11 - 5), -62f, k, light);
+                float k = (float) (itemSize * 2) * (hov ? 1.15f : 1f);   // item no chao: lado = 0.5 * escala
+                drawItem(ps, buf, s, at, cam, camYaw + itemYaw(i), -62f, k, itemLight);
             }
         }
         ChestHands.render(ps, buf, cam, yaw, light);
-        for (Placing pl : placing) drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, 0.32f, light);
+        for (Placing pl : placing) drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, 0.32f, itemLight);
 
         // itens mandados para o inventario: voam ate a camera
         if (!flying.isEmpty()) {
             flying.removeIf(fl -> now - fl.start() > FLY);
             for (Flying fl : flying) {
                 double u = LapidaryCut.window(now - fl.start(), 0, FLY);
-                drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, 0.3f * (float) (1 - 0.6 * u), light);
+                drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, 0.3f * (float) (1 - 0.6 * u), itemLight);
             }
         }
     }

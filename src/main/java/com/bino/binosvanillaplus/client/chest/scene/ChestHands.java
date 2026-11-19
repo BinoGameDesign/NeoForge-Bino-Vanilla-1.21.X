@@ -36,8 +36,9 @@ final class ChestHands {
         double hw = ChestScene.halfWidth();
         Vec3 towardCam = cam.subtract(ChestScene.center).multiply(1, 0, 1).normalize();
 
-        Vec3 tL = ChestScene.local(-Math.min(0.3, hw * 0.75), 0.56, 0.47);
-        Vec3 tR = ChestScene.local(Math.min(0.3, hw * 0.75), 0.6, 0.5);
+        // descanso: as maos seguram as laterais do bau (fora do caminho dos itens)
+        Vec3 tL = ChestScene.local(-(hw + 0.14), 0.5, 0.22);
+        Vec3 tR = ChestScene.local(hw + 0.14, 0.52, 0.26);
         double omegaR = 15;
         ChestScene.Flying grab = ChestScene.flying.isEmpty() ? null : ChestScene.flying.get(ChestScene.flying.size() - 1);
         ChestScene.Placing put = ChestScene.placing.isEmpty() ? null : ChestScene.placing.get(ChestScene.placing.size() - 1);
