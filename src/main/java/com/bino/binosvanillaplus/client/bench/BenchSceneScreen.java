@@ -63,14 +63,24 @@ public class BenchSceneScreen extends Screen {
         return (float) LapidaryCut.inOutCubic(BenchScene.phase == BenchScene.Phase.ACTIVE ? 1 : BenchScene.weight);
     }
 
-    private int x0() { return width / 2 - (9 * (SLOT + GAP) - GAP + SLOT + GAP) / 2; }
-    private int y0() { return height - BOTTOM - SLOT + (int) ((1 - slide()) * 34); }
+    // bancada: barra VERTICAL na esquerda (a grade fica livre no meio); bigorna: barra embaixo
+    private boolean side() { return BenchScene.kind == BenchScene.Kind.CRAFTING; }
+    private int x0() { return side() ? 10 - (int) ((1 - slide()) * 40) : width / 2 - (9 * (SLOT + GAP) - GAP + SLOT + GAP) / 2; }
+    private int y0() { return side() ? height / 2 - (10 * (SLOT + GAP) - GAP) / 2 : height - BOTTOM - SLOT + (int) ((1 - slide()) * 34); }
 
     private List<Cell> cells() {
         List<Cell> out = new ArrayList<>();
         int inv = BenchScene.invStart(), x0 = x0(), y0 = y0();
-        for (int i = 0; i < 9; i++) out.add(new Cell(x0 + i * (SLOT + GAP), y0, inv + 27 + i));
         float o = open.get(expanded ? 1f : 0f);
+        if (side()) {   // coluna da barra de atalhos; o "+" abre mais 3 colunas a direita
+            for (int i = 0; i < 9; i++) out.add(new Cell(x0, y0 + i * (SLOT + GAP), inv + 27 + i));
+            if (o > 0.02f)
+                for (int r = 0; r < 3; r++)
+                    for (int c = 0; c < 9; c++)
+                        out.add(new Cell(x0 + (int) ((r + 1) * (SLOT + GAP) * o) + (int) (4 * o), y0 + c * (SLOT + GAP), inv + r * 9 + c));
+            return out;
+        }
+        for (int i = 0; i < 9; i++) out.add(new Cell(x0 + i * (SLOT + GAP), y0, inv + 27 + i));
         if (o > 0.02f)
             for (int r = 0; r < 3; r++)
                 for (int c = 0; c < 9; c++)
@@ -78,7 +88,18 @@ public class BenchSceneScreen extends Screen {
         return out;
     }
 
-    private int[] plus() { return new int[]{x0() + 9 * (SLOT + GAP), y0()}; }
+    private int[] plus() { return side() ? new int[]{x0(), y0() + 9 * (SLOT + GAP)} : new int[]{x0() + 9 * (SLOT + GAP), y0()}; }
+
+    // perto da barra (clicar ali nao sai da cena)
+    private boolean nearBar(double mx, double my) {
+        return side() ? mx < barRight() + 12 : my >= plus()[1] - 12;
+    }
+
+    private int barRight() {
+        int r = 0;
+        for (Cell c : cells()) r = Math.max(r, c.x + SLOT);
+        return r;
+    }
 
     private static boolean in(double mx, double my, int x, int y) { return mx >= x && my >= y && mx < x + SLOT && my < y + SLOT; }
 
@@ -148,12 +169,12 @@ public class BenchSceneScreen extends Screen {
 
         // barra do inventario
         List<Cell> cells = cells();
-        int minY = Integer.MAX_VALUE;
-        for (Cell c : cells) minY = Math.min(minY, c.y);
         int[] pl = plus();
-        float bw = 10 * (SLOT + GAP) - GAP + 8, bh = y0() + SLOT - minY + 8;
-        Glass.shadow(g, x0() - 4, minY - 4, bw, bh, 7, 3f, 6f, 0.4f);
-        Glass.panel(g, x0() - 4, minY - 4, bw, bh, 7, Glass.PANEL, BinoUi.MENU_BG);
+        int minX = pl[0], minY = pl[1], maxX = pl[0] + SLOT, maxY = pl[1] + SLOT;
+        for (Cell c : cells) { minX = Math.min(minX, c.x); minY = Math.min(minY, c.y); maxX = Math.max(maxX, c.x + SLOT); maxY = Math.max(maxY, c.y + SLOT); }
+        float bw = maxX - minX + 8, bh = maxY - minY + 8;
+        Glass.shadow(g, minX - 4, minY - 4, bw, bh, 7, 3f, 6f, 0.4f);
+        Glass.panel(g, minX - 4, minY - 4, bw, bh, 7, Glass.PANEL, BinoUi.MENU_BG);
         for (Cell c : cells) {
             ItemStack s = BenchScene.slot(c.slot);
             boolean over = in(mouseX, mouseY, c.x, c.y);
@@ -199,7 +220,7 @@ public class BenchSceneScreen extends Screen {
         for (Cell c : cells())
             if (in(mx, my, c.x, c.y)) { BenchScene.barClick(c.slot, button, hasShiftDown()); return true; }
         BenchScene.updateHover();
-        if (my < plus()[1] - 12 && BenchScene.outside()) { BenchScene.leave(); return true; }
+        if (!nearBar(mx, my) && BenchScene.outside()) { BenchScene.leave(); return true; }
         BenchScene.click(button, hasShiftDown());
         return true;
     }
