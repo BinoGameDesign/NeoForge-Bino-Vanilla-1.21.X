@@ -288,7 +288,7 @@
   "lapidary.binosvanillaplus.hint.press": "Aperte o botão para lapidar  (Shift: lapidar tudo)",
   "lapidary.binosvanillaplus.hint.working": "Lapidando...",
   "lapidary.binosvanillaplus.hint.wrong": "Esse item não vai aí",
-  "lapidary.binosvanillaplus.hint.leave": "Esc ou Sair: fechar  ·  Clique no item da mesa: devolver",
+  "lapidary.binosvanillaplus.hint.leave": "Clique fora da mesa ou Esc: sair  ·  Clique no item da mesa: devolver",
   "lapidary.binosvanillaplus.more": "Mais itens do inventário",
   "lapidary.binosvanillaplus.nothing": "Nada mais para lapidar no inventário",
   "entity.binosvanillaplus.cave_goblin": "Goblin das Cavernas",
@@ -341,7 +341,6 @@
   "chest.binosvanillaplus.hint.take": "Clique num item: pegar (botão direito: metade)  ·  Clique na barra: guardar",
   "chest.binosvanillaplus.hint.place": "Clique numa casa: guardar  ·  Botão direito: um só / devolver",
   "chest.binosvanillaplus.hint.full": "Não tem espaço",
-  "chest.binosvanillaplus.hint.leave": "Esc ou Sair: fechar o baú  ·  Abra agachado para a janela clássica",
-  "scene.binosvanillaplus.leave": "Sair",
+  "chest.binosvanillaplus.hint.leave": "Clique fora do baú ou Esc: fechar  ·  Abra agachado para a janela clássica",
   "chest.binosvanillaplus.slots": "Baú: %s/%s espaços usados  ·  %s livres"
 }

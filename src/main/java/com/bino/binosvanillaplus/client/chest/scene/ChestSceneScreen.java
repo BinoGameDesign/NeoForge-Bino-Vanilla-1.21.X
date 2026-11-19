@@ -24,7 +24,6 @@ public class ChestSceneScreen extends Screen {
     private static final int SLOT = 20, GAP = 2, BOTTOM = 8;
 
     private boolean expanded;
-    private final com.bino.binosvanillaplus.client.lapidary.SceneExitButton exit = new com.bino.binosvanillaplus.client.lapidary.SceneExitButton();
     private final Tween open = new Tween(0f, 90f);
     private final Map<Integer, Tween> hoverAnim = new HashMap<>();
 
@@ -73,7 +72,7 @@ public class ChestSceneScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         Glass.capture();   // vidro dos menus: copia e desfoca a cena atras da barra
         ChestScene.updateHover();
-        boolean ui = overUi(mouseX, mouseY) || exit.hit(font, width, mouseX, mouseY);
+        boolean ui = overUi(mouseX, mouseY);
         if (ui) ChestScene.hoverSlot = -1;
         ChestScene.overBar = ui && ChestScene.phase == ChestScene.Phase.ACTIVE;
         ItemStack tip = ItemStack.EMPTY;
@@ -144,18 +143,18 @@ public class ChestSceneScreen extends Screen {
             BinoUi.text(g, font, s, width / 2f - font.width(s) * sc / 2f, 26, sc, alpha(BinoUi.TEXT_DIM, a * 0.9f * la), true);
         }
 
-        exit.render(g, font, width, mouseX, mouseY, a);
         if (!tip.isEmpty() && ChestScene.carried().isEmpty()) g.renderTooltip(font, tip, mouseX, mouseY);
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
-        if (exit.hit(font, width, mx, my)) { ChestScene.leave(); return true; }
         int[] pl = plus();
         if (in(mx, my, pl[0], pl[1])) { expanded = !expanded; UiSound.click(); return true; }
         for (Cell c : cells())
             if (in(mx, my, c.x, c.y)) { ChestScene.barClick(c.slot, button, hasShiftDown()); return true; }
         ChestScene.updateHover();
+        // clicar fora do bau sai da cena (perto da barra nao conta, para nao sair sem querer)
+        if (my < plus()[1] - 12 && ChestScene.outside()) { ChestScene.leave(); return true; }
         ChestScene.click(button, hasShiftDown());
         return true;
     }

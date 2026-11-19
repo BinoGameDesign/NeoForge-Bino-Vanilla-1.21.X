@@ -21,7 +21,6 @@ public class LapidarySceneScreen extends Screen {
     private static final int SLOT = 20, GAP = 2, PER_ROW = 9, TOP = 8;
 
     private boolean expanded;
-    private final SceneExitButton exit = new SceneExitButton();
     private final Tween open = new Tween(0f, 90f);
     private final Map<Integer, Tween> hoverAnim = new HashMap<>();
 
@@ -84,7 +83,7 @@ public class LapidarySceneScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         Glass.capture();   // vidro dos menus: copia e desfoca a cena atras da barra
         LapidaryScene.updateHover();
-        boolean overUi = overUi(mouseX, mouseY) || exit.hit(font, width, mouseX, mouseY);
+        boolean overUi = overUi(mouseX, mouseY);
         if (overUi) LapidaryScene.hover = LapidaryScene.Target.NONE;
         LapidaryScene.overBar = overUi || mouseY < TOP + SLOT + 10 && LapidaryScene.phase == LapidaryScene.Phase.ACTIVE;
 
@@ -150,7 +149,6 @@ public class LapidarySceneScreen extends Screen {
             BinoUi.text(g, font, leave, width / 2f - font.width(leave) * sc / 2f, height - 22, sc, alpha(BinoUi.TEXT_DIM, a * 0.9f * la), true);
         }
 
-        exit.render(g, font, width, mouseX, mouseY, slide());
         if (!tip.isEmpty()) g.renderTooltip(font, tip, mouseX, mouseY);
     }
 
@@ -163,7 +161,6 @@ public class LapidarySceneScreen extends Screen {
     // ---------------------------------------------------------------- entrada
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
-        if (exit.hit(font, width, mx, my)) { LapidaryScene.leave(); return true; }
         int[] plus = plusButton();
         if (plus != null && in(mx, my, plus[0], plus[1])) {
             expanded = !expanded;
@@ -177,6 +174,8 @@ public class LapidarySceneScreen extends Screen {
             }
         }
         LapidaryScene.updateHover();
+        // clicar fora da mesa sai da cena (perto da barra nao conta, para nao sair sem querer)
+        if (my > TOP + SLOT + 14 && LapidaryScene.outside()) { LapidaryScene.leave(); return true; }
         LapidaryScene.click(button, hasShiftDown());
         return true;
     }

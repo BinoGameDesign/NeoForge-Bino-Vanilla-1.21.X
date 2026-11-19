@@ -400,6 +400,11 @@ public final class LapidaryScene {
         sound(SoundEvents.ITEM_PICKUP, 0.3f, 1.2f);
     }
 
+    // o mouse esta fora da mesa (sem alvo e fora do tampo)?
+    public static boolean outside() {
+        return phase == Phase.ACTIVE && !cutting() && hover == Target.NONE && carried().isEmpty() && onTop() == null;
+    }
+
     // ---------------------------------------------------------------- clique na mesa
     public static void click(int button, boolean shift) {
         if (phase != Phase.ACTIVE || cutting()) return;

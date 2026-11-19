@@ -414,6 +414,13 @@ public final class ChestScene {
         ChestHands.tap();
     }
 
+    // o mouse esta fora do bau (nem item, nem dentro da caixa)?
+    public static boolean outside() {
+        if (phase != Phase.ACTIVE || hoverSlot >= 0 || !carried().isEmpty()) return false;
+        double[] p = onFloor();
+        return p == null || Math.abs(p[0]) > halfWidth() + 0.12 || p[1] < -HALF_DEPTH - 0.12 || p[1] > HALF_DEPTH + 0.18;
+    }
+
     // clique dentro do bau: UM clique pega o item - a mao vai ate ele e traz para o inventario.
     // Botao esquerdo = a pilha toda; direito = metade.
     public static void click(int button, boolean shift) {
