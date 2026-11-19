@@ -45,9 +45,9 @@ public final class DireRatModelData {
         PartDefinition jaw = head.addOrReplaceChild("jaw", CubeListBuilder.create(), PartPose.offset(0.0F, 1.1F, -3.1F));
         jaw.addOrReplaceChild("jaw_r", CubeListBuilder.create().texOffs(51, 25).addBox(-1.5888F, -0.0498F, -1.1286F, 3.0F, 2.0F, 3.0F, new CubeDeformation(-0.7F)), PartPose.offsetAndRotation(0.0888F, 0.5107F, -1.5F, 17.0F * DEG, 0.0F, 0.0F));
         PartDefinition ear_r = head.addOrReplaceChild("ear_r", CubeListBuilder.create(), PartPose.offset(2.8F, -0.8F, -1.5F));
-        ear_r.addOrReplaceChild("ear_r_r", CubeListBuilder.create().texOffs(0, 26).addBox(-2.8F, -2.7F, -0.5F, 4.0F, 4.0F, 1.0F, new CubeDeformation(-0.5F)), PartPose.offsetAndRotation(0.0F, 0.4F, 0.0F, 0.0F, -11.0F * DEG, 7.5F * DEG));
+        ear_r.addOrReplaceChild("ear_r_r", CubeListBuilder.create().texOffs(0, 26).addBox(-2.8F, -2.7F, -0.5F, 4.0F, 4.0F, 1.0F, new CubeDeformation(-0.5F, -0.5F, -0.2F)), PartPose.offsetAndRotation(0.0F, 0.4F, 0.0F, 0.0F, -11.0F * DEG, 7.5F * DEG));
         PartDefinition ear_l = head.addOrReplaceChild("ear_l", CubeListBuilder.create(), PartPose.offset(-1.2F, -1.5F, -1.5F));
-        ear_l.addOrReplaceChild("ear_l_r", CubeListBuilder.create().texOffs(0, 21).addBox(-2.3F, -2.8F, -0.7F, 4.0F, 4.0F, 1.0F, new CubeDeformation(-0.5F)), PartPose.offsetAndRotation(0.0F, 1.1F, 0.0F, 0.0F, 0.0F, -12.5F * DEG));
+        ear_l.addOrReplaceChild("ear_l_r", CubeListBuilder.create().texOffs(0, 21).addBox(-2.3F, -2.8F, -0.7F, 4.0F, 4.0F, 1.0F, new CubeDeformation(-0.5F, -0.5F, -0.2F)), PartPose.offsetAndRotation(0.0F, 1.1F, 0.0F, 0.0F, 0.0F, -12.5F * DEG));
         PartDefinition leg_fl = body.addOrReplaceChild("leg_fl", CubeListBuilder.create().texOffs(13, 15).addBox(-1.4F, 2.2F, -1.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.05F)), PartPose.offset(-1.2F, 0.0F, -4.5F));
         leg_fl.addOrReplaceChild("leg_fl_r", CubeListBuilder.create().texOffs(38, 8).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F, new CubeDeformation(0.05F)), PartPose.offsetAndRotation(-1.1F, 0.0F, 0.0F, 0.0F, 0.0F, -2.0F * DEG));
         leg_fl.addOrReplaceChild("claw_fl_r", CubeListBuilder.create().texOffs(15, 23).addBox(-0.5F, 2.0F, -1.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(-0.15F)), PartPose.offsetAndRotation(-0.9F, 0.5F, -1.1F, 15.0F * DEG, 0.0F, 0.0F));

@@ -115,6 +115,17 @@ public class ChestSceneScreen extends Screen {
         String t = expanded ? "-" : "+";
         BinoUi.text(g, font, t, pl[0] + SLOT / 2f - font.width(t), pl[1] + 3, 2f, BinoUi.TEXT, false);
 
+        // espacos do bau: usados / total (em cima da barra, a esquerda)
+        if (menu != null) {
+            int used = 0, total = ChestScene.chestSlots();
+            for (int i = 0; i < total; i++) if (!menu.getSlot(i).getItem().isEmpty()) used++;
+            String t2 = Component.translatable("chest.binosvanillaplus.slots", used, total, total - used).getString();
+            int tw = (int) (font.width(t2) * 0.75f) + 12, tx = x0() - 4, ty = minY - 4 - 16;
+            BinoUi.round(g, tx, ty, tw, 13, BinoUi.MENU_BG);
+            int col = used >= total ? 0xFFFF7A6B : used >= total * 0.8 ? 0xFFFFD36B : 0xFFFFFFFF;
+            BinoUi.text(g, font, t2, tx + 6, ty + 3, 0.75f, col, false);
+        }
+
         // dicas (no alto, a barra fica embaixo)
         float a = slide(), sc = 0.75f;
         String hint = ChestScene.hint();

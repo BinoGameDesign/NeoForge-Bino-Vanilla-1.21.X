@@ -342,5 +342,6 @@
   "chest.binosvanillaplus.hint.place": "Clique numa casa: guardar  ·  Botão direito: um só / devolver",
   "chest.binosvanillaplus.hint.full": "Não tem espaço",
   "chest.binosvanillaplus.hint.leave": "Esc ou Sair: fechar o baú  ·  Abra agachado para a janela clássica",
-  "scene.binosvanillaplus.leave": "Sair"
+  "scene.binosvanillaplus.leave": "Sair",
+  "chest.binosvanillaplus.slots": "Baú: %s/%s espaços usados  ·  %s livres"
 }

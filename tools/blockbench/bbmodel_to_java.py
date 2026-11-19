@@ -43,7 +43,13 @@ def part(node, parent_var, parent_origin, depth):
         u, v = e.get("uv_offset", [0, 0])
         inf = e.get("inflate", 0) or 0
         mir = ".mirror()" if e.get("mirror_uv") else ""
-        return f".texOffs({u}, {v}){mir}.addBox({f(x)}, {f(y)}, {f(z)}, {f(w)}, {f(h)}, {f(d)}, new CubeDeformation({f(inf)})){'.mirror(false)' if mir else ''}"
+        # orelhas: cubo de 1 px com inflate muito negativo vira uma folha sem espessura; mantem 0,6 px no eixo fino
+        dz = [inf, inf, inf]
+        if e["name"].startswith("ear"):
+            for i, size in enumerate((w, h, d)):
+                if abs(size - 1) < 1e-6 and inf <= -0.4: dz[i] = -0.2
+        deform = f(inf) if dz == [inf, inf, inf] else f"{f(dz[0])}, {f(dz[1])}, {f(dz[2])}"
+        return f".texOffs({u}, {v}){mir}.addBox({f(x)}, {f(y)}, {f(z)}, {f(w)}, {f(h)}, {f(d)}, new CubeDeformation({deform})){'.mirror(false)' if mir else ''}"
     cl = "CubeListBuilder.create()" + "".join(box(e, o) for e in cubes)
     pose = (f"PartPose.offsetAndRotation({f(off[0])}, {f(off[1])}, {f(off[2])}, {rad(-r[0])}, {rad(-r[1])}, {rad(r[2])})"
             if any(abs(x) > 1e-6 for x in r) else f"PartPose.offset({f(off[0])}, {f(off[1])}, {f(off[2])})")

@@ -66,9 +66,9 @@ public class MimicEntity extends Monster {
 
     public static AttributeSupplier.Builder createAttributes(boolean dbl) {
         return Monster.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, dbl ? 70.0 : 40.0)
+                .add(Attributes.MAX_HEALTH, dbl ? 40.0 : 24.0)
                 .add(Attributes.ATTACK_DAMAGE, dbl ? 12.0 : 8.0)
-                .add(Attributes.ARMOR, 6.0)
+                .add(Attributes.ARMOR, 3.0)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.7)
                 .add(Attributes.MOVEMENT_SPEED, 0.25)
                 .add(Attributes.FOLLOW_RANGE, 24.0);

@@ -150,5 +150,6 @@
   "chest.binosvanillaplus.hint.place": "Click a spot: store  ·  Right click: just one / put back",
   "chest.binosvanillaplus.hint.full": "No room",
   "chest.binosvanillaplus.hint.leave": "Esc or Leave: close the chest  ·  Open while sneaking for the classic window",
-  "scene.binosvanillaplus.leave": "Leave"
+  "scene.binosvanillaplus.leave": "Leave",
+  "chest.binosvanillaplus.slots": "Chest: %s/%s slots used  ·  %s free"
 }
