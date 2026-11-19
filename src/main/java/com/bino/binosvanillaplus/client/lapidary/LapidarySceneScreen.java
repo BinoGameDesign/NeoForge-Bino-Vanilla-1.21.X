@@ -1,6 +1,7 @@
 package com.bino.binosvanillaplus.client.lapidary;
 
 import com.bino.binosvanillaplus.client.ui.BinoUi;
+import com.bino.binosvanillaplus.client.ui.Glass;
 import com.bino.binosvanillaplus.client.ui.Tween;
 import com.bino.binosvanillaplus.client.ui.UiSound;
 import net.minecraft.client.Minecraft;
@@ -81,6 +82,7 @@ public class LapidarySceneScreen extends Screen {
     // ---------------------------------------------------------------- desenho
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        Glass.capture();   // vidro dos menus: copia e desfoca a cena atras da barra
         LapidaryScene.updateHover();
         boolean overUi = overUi(mouseX, mouseY) || exit.hit(font, width, mouseX, mouseY);
         if (overUi) LapidaryScene.hover = LapidaryScene.Target.NONE;
@@ -99,10 +101,12 @@ public class LapidarySceneScreen extends Screen {
             if (list.isEmpty()) {
                 String t = Component.translatable("lapidary.binosvanillaplus.nothing").getString();
                 int w = font.width(t) + 16, y0 = TOP + (int) ((1 - slide()) * -34);
-                BinoUi.round(g, width / 2 - w / 2, y0, w, SLOT, BinoUi.MENU_BG);
+                Glass.shadow(g, width / 2f - w / 2f, y0, w, SLOT, 7, 3f, 6f, 0.4f);
+                Glass.panel(g, width / 2f - w / 2f, y0, w, SLOT, 7, Glass.PANEL, BinoUi.MENU_BG);
                 g.drawString(font, t, width / 2 - font.width(t) / 2, y0 + 6, BinoUi.TEXT_DIM, false);
             } else {
-                BinoUi.round(g, minX - 4, minY - 4, maxX - minX + 8, maxY - minY + 8, BinoUi.MENU_BG);
+                Glass.shadow(g, minX - 4, minY - 4, maxX - minX + 8, maxY - minY + 8, 7, 3f, 6f, 0.4f);
+                Glass.panel(g, minX - 4, minY - 4, maxX - minX + 8, maxY - minY + 8, 7, Glass.PANEL, BinoUi.MENU_BG);
             }
         }
 
@@ -114,8 +118,7 @@ public class LapidarySceneScreen extends Screen {
             boolean over = !busy && in(mouseX, mouseY, c.x, c.y);
             float h = hoverAnim.computeIfAbsent(c.slot, k -> new Tween(0f, 70f)).get(over ? 1f : 0f);
             int bg = mix(0xFF2A2E2B, 0xFF484A49, h);
-            BinoUi.round(g, c.x, c.y, SLOT, SLOT, bg);
-            if (h > 0.01f) BinoUi.outline(g, c.x, c.y, SLOT, SLOT, alpha(BinoUi.ACCENT, h * 0.8f));
+            Glass.panel(g, c.x, c.y, SLOT, SLOT, 4, Glass.SLOT.withMilk(0.08f * h).withRim(0.55f + 0.7f * h), bg);
             int lift = Math.round(h);
             g.renderItem(s, c.x + 2, c.y + 2 - lift);
             g.renderItemDecorations(font, s, c.x + 2, c.y + 2 - lift);
@@ -124,7 +127,7 @@ public class LapidarySceneScreen extends Screen {
         if (plus != null) {
             boolean over = in(mouseX, mouseY, plus[0], plus[1]);
             float h = hoverAnim.computeIfAbsent(-1, k -> new Tween(0f, 70f)).get(over ? 1f : 0f);
-            BinoUi.round(g, plus[0], plus[1], SLOT, SLOT, mix(0xFF2A2E2B, 0xFF484A49, h));
+            Glass.panel(g, plus[0], plus[1], SLOT, SLOT, 4, Glass.SLOT.withMilk(0.08f * h).withRim(0.55f + 0.7f * h), mix(0xFF2A2E2B, 0xFF484A49, h));
             String t = expanded ? "-" : "+";
             BinoUi.text(g, font, t, plus[0] + SLOT / 2f - font.width(t), plus[1] + 3, 2f, BinoUi.TEXT, false);
             if (over) g.renderTooltip(font, Component.translatable("lapidary.binosvanillaplus.more"), mouseX, mouseY);

@@ -3,6 +3,7 @@ package com.bino.binosvanillaplus.client.chest.scene;
 import com.bino.binosvanillaplus.client.lapidary.LapidaryCut;
 import com.bino.binosvanillaplus.client.lapidary.LapidaryPick;
 import com.bino.binosvanillaplus.client.ui.BinoUi;
+import com.bino.binosvanillaplus.client.ui.Glass;
 import com.bino.binosvanillaplus.client.ui.Tween;
 import com.bino.binosvanillaplus.client.ui.UiSound;
 import net.minecraft.client.Minecraft;
@@ -70,6 +71,7 @@ public class ChestSceneScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        Glass.capture();   // vidro dos menus: copia e desfoca a cena atras da barra
         ChestScene.updateHover();
         boolean ui = overUi(mouseX, mouseY) || exit.hit(font, width, mouseX, mouseY);
         if (ui) ChestScene.hoverSlot = -1;
@@ -96,14 +98,15 @@ public class ChestSceneScreen extends Screen {
         int minY = Integer.MAX_VALUE;
         for (Cell c : cells) minY = Math.min(minY, c.y);
         int[] pl = plus();
-        BinoUi.round(g, x0() - 4, minY - 4, 10 * (SLOT + GAP) - GAP + 8, y0() + SLOT - minY + 8, BinoUi.MENU_BG);
+        float bw = 10 * (SLOT + GAP) - GAP + 8, bh = y0() + SLOT - minY + 8;
+        Glass.shadow(g, x0() - 4, minY - 4, bw, bh, 7, 3f, 6f, 0.4f);
+        Glass.panel(g, x0() - 4, minY - 4, bw, bh, 7, Glass.PANEL, BinoUi.MENU_BG);
         ChestMenu menu = ChestScene.menu();
         for (Cell c : cells) {
             ItemStack s = menu == null ? ItemStack.EMPTY : menu.getSlot(c.slot).getItem();
             boolean over = in(mouseX, mouseY, c.x, c.y);
             float h = hoverAnim.computeIfAbsent(c.slot, k -> new Tween(0f, 70f)).get(over ? 1f : 0f);
-            BinoUi.round(g, c.x, c.y, SLOT, SLOT, mix(0xFF2A2E2B, 0xFF484A49, h));
-            if (h > 0.01f) BinoUi.outline(g, c.x, c.y, SLOT, SLOT, alpha(BinoUi.ACCENT, h * 0.8f));
+            Glass.panel(g, c.x, c.y, SLOT, SLOT, 4, Glass.SLOT.withMilk(0.08f * h).withRim(0.55f + 0.7f * h), mix(0xFF2A2E2B, 0xFF484A49, h));
             int lift = Math.round(h);
             g.renderItem(s, c.x + 2, c.y + 2 - lift);
             g.renderItemDecorations(font, s, c.x + 2, c.y + 2 - lift);
@@ -111,19 +114,21 @@ public class ChestSceneScreen extends Screen {
         }
         boolean overPlus = in(mouseX, mouseY, pl[0], pl[1]);
         float hp = hoverAnim.computeIfAbsent(-1, k -> new Tween(0f, 70f)).get(overPlus ? 1f : 0f);
-        BinoUi.round(g, pl[0], pl[1], SLOT, SLOT, mix(0xFF2A2E2B, 0xFF484A49, hp));
+        Glass.panel(g, pl[0], pl[1], SLOT, SLOT, 4, Glass.SLOT.withMilk(0.08f * hp).withRim(0.55f + 0.7f * hp), mix(0xFF2A2E2B, 0xFF484A49, hp));
         String t = expanded ? "-" : "+";
         BinoUi.text(g, font, t, pl[0] + SLOT / 2f - font.width(t), pl[1] + 3, 2f, BinoUi.TEXT, false);
 
-        // espacos do bau: usados / total (em cima da barra, a esquerda)
-        if (menu != null) {
+        // espacos do bau "usados/total", em cima dos itens (no fundo do bau, perto da tampa)
+        double[] cp = menu == null || ChestScene.phase != ChestScene.Phase.ACTIVE ? null
+                : LapidaryPick.project(ChestScene.local(0, 0.66, -ChestScene.HALF_DEPTH - 0.06));
+        if (cp != null) {
             int used = 0, total = ChestScene.chestSlots();
             for (int i = 0; i < total; i++) if (!menu.getSlot(i).getItem().isEmpty()) used++;
-            String t2 = Component.translatable("chest.binosvanillaplus.slots", used, total, total - used).getString();
-            int tw = (int) (font.width(t2) * 0.75f) + 12, tx = x0() - 4, ty = minY - 4 - 16;
-            BinoUi.round(g, tx, ty, tw, 13, BinoUi.MENU_BG);
+            String t2 = used + "/" + total;
+            int tw = font.width(t2) + 12, tx = (int) cp[0] - tw / 2, ty = (int) cp[1] - 7;
+            Glass.panel(g, tx, ty, tw, 14, 5, Glass.POPUP, BinoUi.MENU_BG);
             int col = used >= total ? 0xFFFF7A6B : used >= total * 0.8 ? 0xFFFFD36B : 0xFFFFFFFF;
-            BinoUi.text(g, font, t2, tx + 6, ty + 3, 0.75f, col, false);
+            g.drawString(font, t2, tx + 6, ty + 3, col, false);
         }
 
         // dicas (no alto, a barra fica embaixo)

@@ -1,6 +1,7 @@
 package com.bino.binosvanillaplus.client.lapidary;
 
 import com.bino.binosvanillaplus.client.ui.BinoUi;
+import com.bino.binosvanillaplus.client.ui.Glass;
 import com.bino.binosvanillaplus.client.ui.Tween;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,8 +27,9 @@ public final class SceneExitButton {
         int w = w(font), x = screenW - MARGIN - w;
         float h = hover.get(hit(font, screenW, mx, my) ? 1f : 0f);
         int bg = mix(0xD81E211F, 0xF0484A49, h);
-        BinoUi.round(g, x, MARGIN - (int) ((1 - alpha) * 30), w, H, bg);
-        if (h > 0.01f) BinoUi.outline(g, x, MARGIN - (int) ((1 - alpha) * 30), w, H, (((int) (h * 200)) << 24) | 0xFFFFFF);
+        int y = MARGIN - (int) ((1 - alpha) * 30);
+        Glass.shadow(g, x, y, w, H, 6, 2f, 4f, 0.35f);
+        Glass.panel(g, x, y, w, H, 6, Glass.PANEL.withMilk(0.06f * h).withRim(1.0f + 0.7f * h), bg);
         g.drawString(font, label(), x + 8, MARGIN + 5 - (int) ((1 - alpha) * 30), 0xFFFFFFFF, false);
     }
 
