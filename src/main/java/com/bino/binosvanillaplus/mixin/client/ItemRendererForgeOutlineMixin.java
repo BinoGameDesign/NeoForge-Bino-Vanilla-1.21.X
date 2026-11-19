@@ -20,6 +20,6 @@ public abstract class ItemRendererForgeOutlineMixin {
             at = @At("HEAD"), require = 0)
     private void binosvanillaplus$forgeOutline(ItemStack stack, ItemDisplayContext ctx, boolean leftHand, PoseStack ps,
                                                MultiBufferSource buf, int light, int overlay, BakedModel model, CallbackInfo ci) {
-        if (!stack.isEmpty()) ForgeOutline.render(stack, ctx, leftHand, ps, model);
+        if (!stack.isEmpty()) ForgeOutline.render(stack, ctx, leftHand, ps, buf, model);
     }
 }

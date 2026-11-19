@@ -25,6 +25,6 @@ public abstract class LivingEntityRendererForgeOutlineMixin {
     private void binosvanillaplus$forgeOutlineBlocker(LivingEntity entity, float yaw, float partialTick, PoseStack ps,
                                                       MultiBufferSource buf, int light, CallbackInfo ci) {
         if (ForgeOutline.wantsBlocker(entity))
-            model.renderToBuffer(ps, ForgeOutline.blocker(), light, OverlayTexture.NO_OVERLAY, -1);
+            model.renderToBuffer(ps, ForgeOutline.blocker(buf), light, OverlayTexture.NO_OVERLAY, -1);
     }
 }
