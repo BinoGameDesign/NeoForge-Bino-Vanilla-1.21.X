@@ -119,6 +119,7 @@ public class ModCreativeModeTabs {
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.RAT_TRAP);
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.CAGE);
                         output.accept(ModItems.RAT_SPAWN_EGG);
+                        output.accept(ModItems.DIRE_RAT_SPAWN_EGG);
                         output.accept(ModBlocks.DYNAMITE);
                         output.accept(ModBlocks.CAMERA_TRIPOD);
                         output.accept(ModBlocks.FOSSIL_SKULL);

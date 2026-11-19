@@ -123,7 +123,7 @@ public class RatTrapBlock extends BaseEntityBlock {
         if (e instanceof Player p && (p.isCreative() || p.isSpectator())) return;
         RatTrapBlockEntity t = be(level, pos);
         if (t == null) return;
-        if (e instanceof RatEntity rat) {
+        if (e instanceof RatEntity rat && !(e instanceof com.bino.binosvanillaplus.entity.rat.DireRatEntity)) {   // o Rato Atroz so pisa (como os outros mobs)
             if (t.getBait() <= 0) { snap(level, pos, state); return; }
             rat.hurt(level.damageSources().generic(), 100f);   // pego: solta a carne
             level.playSound(null, pos, SoundEvents.TRIPWIRE_CLICK_ON, SoundSource.BLOCKS, 0.8f, 1.6f);

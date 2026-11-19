@@ -12,5 +12,6 @@ public class GoblinClientEvents {
     public static void onLayers(EntityRenderersEvent.RegisterLayerDefinitions e) {
         e.registerLayerDefinition(CaveGoblinModel.LAYER, CaveGoblinModelData::createBodyLayer);
         e.registerLayerDefinition(com.bino.binosvanillaplus.client.rat.RatModel.LAYER, com.bino.binosvanillaplus.client.rat.RatModelData::createBodyLayer);
+        e.registerLayerDefinition(com.bino.binosvanillaplus.client.rat.RatModel.DIRE_LAYER, com.bino.binosvanillaplus.client.rat.DireRatModelData::createBodyLayer);
     }
 }

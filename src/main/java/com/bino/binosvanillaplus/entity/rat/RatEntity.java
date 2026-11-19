@@ -71,6 +71,7 @@ public class RatEntity extends PathfinderMob {
 
     // servidor
     private int swarmTicks, sleepTicks, eatTicks, wantSleep;
+    int rallyTicks;   // chamado por um Rato Atroz para atacar um jogador
 
     public RatEntity(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
@@ -98,9 +99,16 @@ public class RatEntity extends PathfinderMob {
     public int getState() { return entityData.get(STATE); }
     void setState(int s) { if (getState() != s) entityData.set(STATE, s); }
 
-    // bravo: em enxame ou perto de um dire_rat
-    public boolean isAngry() { return swarmTicks > 0 || nearDireRat(); }
-    private boolean nearDireRat() { return false; }   // TODO dire_rat: liga quando o mob existir
+    // bravo: em enxame ou chamado por um Rato Atroz
+    public boolean isAngry() { return swarmTicks > 0 || rallyTicks > 0; }
+
+    // um Rato Atroz agrou esse jogador: os ratos por perto vem junto
+    public static final int RALLY_TICKS = 20 * 30;
+    public void rally(Player p) {
+        rallyTicks = RALLY_TICKS;
+        if (getTarget() != p) setTarget(p);
+        if (getState() == ST_SLEEP || getState() == ST_EAT) setState(ST_NORMAL);
+    }
 
     @Override
     protected void registerGoals() {
@@ -111,7 +119,7 @@ public class RatEntity extends PathfinderMob {
         goalSelector.addGoal(2, new SleepGoal(this));
         goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.4, true));
         goalSelector.addGoal(3, new BaitGoal(this));
-        goalSelector.addGoal(4, new EatCakeGoal(this));
+        goalSelector.addGoal(4, new EatCakeGoal(this, st -> st.is(RatSpawning.RAT_FOOD)));
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -134,7 +142,8 @@ public class RatEntity extends PathfinderMob {
     public void tick() {
         super.tick();
         if (level().isClientSide) { clientTick(); return; }
-        if (swarmTicks > 0 && --swarmTicks == 0) setTarget(null);
+        if (swarmTicks > 0 && --swarmTicks == 0 && rallyTicks == 0) setTarget(null);
+        if (rallyTicks > 0 && --rallyTicks == 0 && swarmTicks == 0) setTarget(null);
         if (eatTicks > 0 && --eatTicks == 0 && getState() == ST_EAT) setState(ST_NORMAL);
         if (getState() == ST_NORMAL && getNavigation().isDone() && getTarget() == null) {
             if (random.nextInt(350) == 0) {
@@ -225,10 +234,13 @@ public class RatEntity extends PathfinderMob {
     // ------------------------------------------------------------------ nascer / salvar
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType type, @Nullable SpawnGroupData data) {
-        entityData.set(VARIANT, blockPosition().getY() < DEEP_Y ? VAR_DEEP : VAR_COMMON);
-        if (type == MobSpawnType.NATURAL && level.getRandom().nextFloat() < SWARM_CHANCE) startSwarm(level);
+        if (hasVariants()) entityData.set(VARIANT, blockPosition().getY() < DEEP_Y ? VAR_DEEP : VAR_COMMON);
+        if (hasVariants() && type == MobSpawnType.NATURAL && level.getRandom().nextFloat() < SWARM_CHANCE) startSwarm(level);
         return super.finalizeSpawn(level, difficulty, type, data);
     }
+
+    // rato comum tem a versao das profundezas e o enxame; o Rato Atroz nao
+    protected boolean hasVariants() { return true; }
 
     // evento raro: ~10 ratos juntos, bravos, atacam jogadores e mobs
     private void startSwarm(ServerLevelAccessor level) {
@@ -291,18 +303,19 @@ public class RatEntity extends PathfinderMob {
         private final RatEntity r;
         @Nullable private BlockPos cake;
         private int time, chew;
-        EatCakeGoal(RatEntity r) { this.r = r; setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+        private final java.util.function.Predicate<BlockState> food;
+        EatCakeGoal(RatEntity r, java.util.function.Predicate<BlockState> food) { this.r = r; this.food = food; setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
         @Override public boolean requiresUpdateEveryTick() { return true; }
         @Override public boolean canUse() {
             if (r.getState() != ST_NORMAL || r.getRandom().nextInt(60) != 0) return false;
             BlockPos base = r.blockPosition();
             for (BlockPos p : BlockPos.betweenClosed(base.offset(-8, -2, -8), base.offset(8, 2, 8))) {
-                if (r.level().getBlockState(p).is(RatSpawning.RAT_FOOD)) { cake = p.immutable(); return true; }
+                if (food.test(r.level().getBlockState(p))) { cake = p.immutable(); return true; }
             }
             return false;
         }
         @Override public boolean canContinueToUse() {
-            return cake != null && time < 400 && r.level().getBlockState(cake).is(RatSpawning.RAT_FOOD) && r.getState() != ST_FLEE;
+            return cake != null && time < 400 && food.test(r.level().getBlockState(cake)) && r.getState() != ST_FLEE;
         }
         @Override public void start() { time = 0; chew = 0; r.getNavigation().moveTo(cake.getX() + 0.5, cake.getY(), cake.getZ() + 0.5, 1.0); }
         @Override public void stop() { cake = null; if (r.getState() == ST_EAT) r.setState(ST_NORMAL); }
@@ -362,5 +375,5 @@ public class RatEntity extends PathfinderMob {
     }
 
     // usado pelo Cave Goblin: rato calmo e presa; rato de enxame assusta
-    public static boolean isEasyPrey(LivingEntity e) { return e instanceof RatEntity r && !r.isAngry(); }
+    public static boolean isEasyPrey(LivingEntity e) { return e instanceof RatEntity r && !(r instanceof DireRatEntity) && !r.isAngry(); }
 }

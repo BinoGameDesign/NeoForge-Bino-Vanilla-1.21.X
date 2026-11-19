@@ -213,6 +213,8 @@ public class ModItems {
     // Rato: ovo e carne (efeito parecido com a carne podre, mas sacia mais)
     public static final DeferredItem<Item> RAT_SPAWN_EGG = ITEMS.register("rat_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.RAT, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
+    public static final DeferredItem<Item> DIRE_RAT_SPAWN_EGG = ITEMS.register("dire_rat_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.DIRE_RAT, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
     public static final DeferredItem<Item> RAT_MEAT = ITEMS.register("rat_meat",
             () -> new com.bino.binosvanillaplus.item.custom.ImmersiveFoodItem(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder()
                     .nutrition(4).saturationModifier(0.4f)   // carne podre: 4 e 0,1

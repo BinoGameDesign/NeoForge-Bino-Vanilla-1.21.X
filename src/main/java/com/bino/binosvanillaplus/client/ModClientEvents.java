@@ -55,7 +55,15 @@ public class ModClientEvents {
         event.registerEntityRenderer(ModEntities.VILLAGER_RAVAGER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.VillagerRavagerRenderer::new);
         event.registerEntityRenderer(ModEntities.CAVE_GOBLIN.get(), com.bino.binosvanillaplus.client.goblin.CaveGoblinRenderer::new);
         event.registerEntityRenderer(ModEntities.RAT.get(), com.bino.binosvanillaplus.client.rat.RatRenderer::new);
+        registerDireRat(event);
         event.registerEntityRenderer(ModEntities.PILLAGER_SMUGGLER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.PillagerSmugglerRenderer::new);
+    }
+
+    // o Rato Atroz e' um RatEntity: usa o renderer de rato com outro modelo/textura
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void registerDireRat(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer((net.minecraft.world.entity.EntityType) ModEntities.DIRE_RAT.get(),
+                ctx -> new com.bino.binosvanillaplus.client.rat.DireRatRenderer((net.minecraft.client.renderer.entity.EntityRendererProvider.Context) ctx));
     }
 
     // cores do ovo do Pillager civil (os outros ovos pintam sozinhos)

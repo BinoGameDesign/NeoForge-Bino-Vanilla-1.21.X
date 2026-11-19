@@ -22,6 +22,11 @@ public class CompanionModEvents {
                             || reason == net.minecraft.world.entity.MobSpawnType.EVENT
                             || (pos.getY() < 40 && !level.canSeeSky(pos) && level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos) == 0)),
                 net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        // Rato Atroz: cavernas escuras ou estruturas dos ratos, so em regiao de nivel 15+ (ver DireRatEntity.checkSpawn)
+        event.register(ModEntities.DIRE_RAT.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
+                net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                com.bino.binosvanillaplus.entity.rat.DireRatEntity::checkSpawn,
+                net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
         // Cave Goblin: so abaixo de Y 0, sem ceu, sem luz de bloco, chao firme (ovos e spawners ignoram a regra de luz/altura)
         event.register(ModEntities.CAVE_GOBLIN.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
                 net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
@@ -44,6 +49,7 @@ public class CompanionModEvents {
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.CAVE_GOBLIN.get(), com.bino.binosvanillaplus.entity.goblin.CaveGoblinEntity.createAttributes().build());
         event.put(ModEntities.RAT.get(), com.bino.binosvanillaplus.entity.rat.RatEntity.createAttributes().build());
+        event.put(ModEntities.DIRE_RAT.get(), com.bino.binosvanillaplus.entity.rat.DireRatEntity.createAttributes().build());
         event.put(ModEntities.COMPANION_ALLAY.get(),
                 Allay.createAttributes()                 // parte dos atributos do Allay normal
                         .add(Attributes.FLYING_SPEED, 0.15)   // 0,1 do Allay normal x 1,5 = 50% mais rápido

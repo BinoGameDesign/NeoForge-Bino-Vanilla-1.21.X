@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "binosvanillaplus:item/dire_rat_spawn_egg"
+  }
+}

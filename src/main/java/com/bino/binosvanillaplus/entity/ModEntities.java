@@ -40,6 +40,15 @@ public class ModEntities {
                             .clientTrackingRange(8)
                             .build("rat"));
 
+    // Rato Atroz (Exploration): o modelo do rato, com o atributo SCALE x2,4 (mais ou menos um porco). Agressivo.
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.rat.DireRatEntity>> DIRE_RAT =
+            ENTITY_TYPES.register("dire_rat",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.rat.DireRatEntity>of(com.bino.binosvanillaplus.entity.rat.DireRatEntity::new, MobCategory.MONSTER)
+                            .sized(0.35f, 0.3f)
+                            .eyeHeight(0.22f)
+                            .clientTrackingRange(8)
+                            .build("dire_rat"));
+
     public static final Supplier<EntityType<CompanionAllayEntity>> COMPANION_ALLAY =
             ENTITY_TYPES.register("companion_allay",
                     () -> EntityType.Builder.<CompanionAllayEntity>of(CompanionAllayEntity::new, MobCategory.MISC)

@@ -14,6 +14,9 @@ import org.joml.Vector3f;
 public class RatModel extends HierarchicalModel<RatEntity> {
     public static final ModelLayerLocation LAYER =
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "rat"), "main");
+    // Rato Atroz: mesma estrutura de ossos (as animacoes sao as do rato), geometria propria (DireRatModelData)
+    public static final ModelLayerLocation DIRE_LAYER =
+            new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "dire_rat"), "main");
     private static final float DEG = (float) (Math.PI / 180.0);
     private static final Vector3f CACHE = new Vector3f();
 

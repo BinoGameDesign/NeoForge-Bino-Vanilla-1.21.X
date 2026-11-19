@@ -137,5 +137,7 @@
   "tooltip.binosvanillaplus.milk_cauldron.need_fire": "Needs a lit campfire below",
   "config.jade.plugin_binosvanillaplus.milk_cauldron": "Milk Cauldron",
   "lookat.binosvanillaplus.mob_level": "Level %s",
-  "config.jade.plugin_binosvanillaplus.mob_level": "Mob level"
+  "config.jade.plugin_binosvanillaplus.mob_level": "Mob level",
+  "entity.binosvanillaplus.dire_rat": "Dire Rat",
+  "item.binosvanillaplus.dire_rat_spawn_egg": "Dire Rat Spawn Egg"
 }
