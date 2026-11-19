@@ -68,10 +68,26 @@ public final class ForgeGlow {
     // Cor do material quando existir o sprite da gema/material (jade_sword -> jade.png, diamond_helmet -> diamond.png):
     // assim todas as pecas de um conjunto brilham igual, mesmo as que tem outras cores no desenho (couro, capuz...).
     // Sem isso, a cor vem do proprio sprite do item.
+    // Materiais do jogo base sem sprite de material (ou com cor dificil de ler: madeira, pedra, ferro...)
+    private static final Map<String, Integer> MATERIAL = Map.ofEntries(
+            Map.entry("wooden", 0xC28A4E),      // madeira
+            Map.entry("stone", 0x9C9C9C),       // pedra
+            Map.entry("iron", 0xD9DEE4),        // ferro
+            Map.entry("chainmail", 0xA9B3BE),   // cota de malha
+            Map.entry("golden", 0xFFD34D),      // ouro
+            Map.entry("leather", 0xB0703E),     // couro
+            Map.entry("turtle", 0x6CC24A),      // tartaruga
+            Map.entry("netherite", 0x8A6F7E),   // netherite
+            Map.entry("diamond", 0x6FF2E8));    // diamante
+
     private static int readColor(Item item) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
         String path = id.getPath();
         int us = path.indexOf('_');
+        if (us > 0 && id.getNamespace().equals("minecraft")) {
+            Integer m = MATERIAL.get(path.substring(0, us));
+            if (m != null) return m;
+        }
         if (us > 0) {
             Integer mat = spriteColor(id.getNamespace(), path.substring(0, us));
             if (mat != null) return mat;
