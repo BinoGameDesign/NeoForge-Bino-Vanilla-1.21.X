@@ -59,7 +59,7 @@ public class ModClientEvents {
         event.registerEntityRenderer(ModEntities.PILLAGER_SMUGGLER.get(), com.bino.binosvanillaplus.client.faction.FactionRenderers.PillagerSmugglerRenderer::new);
     }
 
-    // o Rato Atroz e' um RatEntity: usa o renderer de rato com outro modelo/textura
+    // o Rato Gigante e' um RatEntity: usa o renderer de rato com outro modelo/textura
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void registerDireRat(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer((net.minecraft.world.entity.EntityType) ModEntities.DIRE_RAT.get(),

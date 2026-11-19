@@ -59,7 +59,7 @@ public class RatEntity extends PathfinderMob {
 
     public static final int VAR_COMMON = 0, VAR_DEEP = 1;
     public static final int ST_NORMAL = 0, ST_FLEE = 1, ST_SLEEP = 2, ST_EAT = 3;
-    public static final byte EV_GROOM = 70, EV_STAND = 71, EV_SCRATCH = 72, EV_SNIFF = 73, EV_SQUEAK = 74, EV_ATTACK = 75;
+    public static final byte EV_GROOM = 70, EV_STAND = 71, EV_SCRATCH = 72, EV_SNIFF = 73, EV_SQUEAK = 74, EV_ATTACK = 75, EV_TAIL_WHIP = 76;
 
     private static final EntityDataAccessor<Integer> VARIANT = SynchedEntityData.defineId(RatEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> STATE = SynchedEntityData.defineId(RatEntity.class, EntityDataSerializers.INT);
@@ -71,7 +71,7 @@ public class RatEntity extends PathfinderMob {
 
     // servidor
     private int swarmTicks, sleepTicks, eatTicks, wantSleep;
-    int rallyTicks;   // chamado por um Rato Atroz para atacar um jogador
+    int rallyTicks;   // chamado por um Rato Gigante para atacar um jogador
 
     public RatEntity(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
@@ -99,10 +99,10 @@ public class RatEntity extends PathfinderMob {
     public int getState() { return entityData.get(STATE); }
     void setState(int s) { if (getState() != s) entityData.set(STATE, s); }
 
-    // bravo: em enxame ou chamado por um Rato Atroz
+    // bravo: em enxame ou chamado por um Rato Gigante
     public boolean isAngry() { return swarmTicks > 0 || rallyTicks > 0; }
 
-    // um Rato Atroz agrou esse jogador: os ratos por perto vem junto
+    // um Rato Gigante agrou esse jogador: os ratos por perto vem junto
     public static final int RALLY_TICKS = 20 * 30;
     public void rally(Player p) {
         rallyTicks = RALLY_TICKS;
@@ -187,7 +187,7 @@ public class RatEntity extends PathfinderMob {
     public void handleEntityEvent(byte id) {
         String a = switch (id) {
             case EV_GROOM -> "groom"; case EV_STAND -> "stand_up"; case EV_SCRATCH -> "scratch";
-            case EV_SNIFF -> "sniff"; case EV_SQUEAK -> "squeak"; case EV_ATTACK -> "attack";
+            case EV_SNIFF -> "sniff"; case EV_SQUEAK -> "squeak"; case EV_ATTACK -> "attack"; case EV_TAIL_WHIP -> "tail_whip";
             default -> null;
         };
         if (a == null) { super.handleEntityEvent(id); return; }
@@ -197,7 +197,7 @@ public class RatEntity extends PathfinderMob {
     }
 
     // duracao em ticks; tem que bater com o rat.bbmodel (RatAnimations.lengthTicks)
-    private static int oneShotLength(String a) {
+    protected int oneShotLength(String a) {
         return switch (a) {
             case "groom" -> 64; case "stand_up" -> 68; case "scratch" -> 32;
             case "sniff" -> 40; case "squeak" -> 10; case "attack" -> 9;
@@ -234,13 +234,13 @@ public class RatEntity extends PathfinderMob {
     // ------------------------------------------------------------------ nascer / salvar
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType type, @Nullable SpawnGroupData data) {
-        if (hasVariants()) entityData.set(VARIANT, blockPosition().getY() < DEEP_Y ? VAR_DEEP : VAR_COMMON);
-        if (hasVariants() && type == MobSpawnType.NATURAL && level.getRandom().nextFloat() < SWARM_CHANCE) startSwarm(level);
+        entityData.set(VARIANT, blockPosition().getY() < DEEP_Y ? VAR_DEEP : VAR_COMMON);
+        if (canSwarm() && type == MobSpawnType.NATURAL && level.getRandom().nextFloat() < SWARM_CHANCE) startSwarm(level);
         return super.finalizeSpawn(level, difficulty, type, data);
     }
 
-    // rato comum tem a versao das profundezas e o enxame; o Rato Atroz nao
-    protected boolean hasVariants() { return true; }
+    // so o rato comum chega em enxame (o Rato Gigante nao)
+    protected boolean canSwarm() { return true; }
 
     // evento raro: ~10 ratos juntos, bravos, atacam jogadores e mobs
     private void startSwarm(ServerLevelAccessor level) {

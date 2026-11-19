@@ -140,7 +140,7 @@ public class RatSpawning {
         return sl.structureManager().getStructureWithPieceAt(pos, is).isValid();
     }
 
-    // dentro de uma estrutura onde aparecem ratos (sem as vilas: o Rato Atroz nao nasce no meio dos aldeoes)
+    // dentro de uma estrutura onde aparecem ratos (sem as vilas: o Rato Gigante nao nasce no meio dos aldeoes)
     public static boolean inRatStructure(ServerLevel sl, BlockPos pos) {
         for (ResourceKey<Structure> k : STRUCTURES) if (inside(sl, pos, k)) return true;
         return false;

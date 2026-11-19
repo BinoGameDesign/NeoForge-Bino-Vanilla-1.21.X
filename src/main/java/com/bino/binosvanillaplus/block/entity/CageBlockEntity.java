@@ -46,7 +46,7 @@ public class CageBlockEntity extends BlockEntity {
     // esse bicho cai nessa isca?
     public boolean lures(Entity e) {
         if (bait.isEmpty()) return false;
-        if (e instanceof RatEntity && !(e instanceof com.bino.binosvanillaplus.entity.rat.DireRatEntity)) return isCheese(bait);   // Rato Atroz nao cabe
+        if (e instanceof RatEntity && !(e instanceof com.bino.binosvanillaplus.entity.rat.DireRatEntity)) return isCheese(bait);   // Rato Gigante nao cabe
         if (e instanceof Chicken || e instanceof Parrot) return isSeed(bait);
         return false;
     }

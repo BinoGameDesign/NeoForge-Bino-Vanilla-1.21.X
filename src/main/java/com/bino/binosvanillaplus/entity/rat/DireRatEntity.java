@@ -30,7 +30,9 @@ import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nullable;
 
-// Rato Atroz (Dire Rat): rato do tamanho de um porco, sempre agressivo. Usa o modelo e as animacoes do rato.
+// Rato Gigante (Dire Rat): rato do tamanho de um porco, sempre agressivo. Modelo proprio (dire_rat.bbmodel) com os ossos
+// do rato; tem a versao das profundezas (abaixo de Y -32, como o rato). Ataques: mordida com bote (salta no alvo) e,
+// de vez em quando, chicotada de cauda de medio alcance.
 //  - Nasce nos mesmos lugares que os ratos (cavernas escuras e estruturas), dividindo o limite de monstros,
 //    so em regioes de nivel 15 ou mais.
 //  - Atraido so pelo queijo grande (bloco) no chao; queijo na mao e ratoeira nao atraem.
@@ -41,6 +43,12 @@ public class DireRatEntity extends RatEntity implements Enemy {
     // ====== VALORES QUE VOCE PODE AJUSTAR ======
     public static final double MIN_LEVEL = 15;   // nivel da regiao para nascer
     public static final int RALLY_RANGE = 16;    // ratos a ate tantos blocos vem junto
+    public static final float WHIP_DAMAGE = 6.0f;
+    public static final double WHIP_MIN = 2.2, WHIP_MAX = 4.6;   // alcance da chicotada (blocos)
+    public static final int WHIP_COOLDOWN_MIN = 20 * 7, WHIP_COOLDOWN_MAX = 20 * 15;
+    public static final int BITE_INTERVAL = 14;                  // ticks entre mordidas (zumbi: 20)
+
+    private int whipCooldown = WHIP_COOLDOWN_MIN;
 
     public DireRatEntity(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
@@ -50,15 +58,29 @@ public class DireRatEntity extends RatEntity implements Enemy {
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 16.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.28)
-                .add(Attributes.ATTACK_DAMAGE, 4.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.3)
+                .add(Attributes.ATTACK_DAMAGE, 5.0)
                 .add(Attributes.ARMOR, 2.0)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.2)
-                .add(Attributes.FOLLOW_RANGE, 24.0)
+                .add(Attributes.FOLLOW_RANGE, 32.0)
                 .add(Attributes.SCALE, 2.4);   // rato x2,4 = mais ou menos um porco
     }
 
-    @Override protected boolean hasVariants() { return false; }
+    @Override protected boolean canSwarm() { return false; }
+
+    @Override
+    protected net.minecraft.network.chat.Component getTypeName() {
+        return isDeep() ? net.minecraft.network.chat.Component.translatable("entity.binosvanillaplus.deep_dire_rat") : getType().getDescription();
+    }
+
+    // duracao das animacoes proprias (tem que bater com o dire_rat.bbmodel / DireRatAnimations)
+    @Override
+    protected int oneShotLength(String a) {
+        return switch (a) {
+            case "attack" -> 11; case "tail_whip" -> 20;
+            default -> super.oneShotLength(a);
+        };
+    }
     @Override public boolean isAngry() { return true; }
     @Override public boolean shouldDespawnInPeaceful() { return true; }
     @Override public float getVoicePitch() { return 0.55f + random.nextFloat() * 0.1f; }   // guincho grave
@@ -68,7 +90,11 @@ public class DireRatEntity extends RatEntity implements Enemy {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new FleeGoal(this));
         goalSelector.addGoal(2, new EatCakeGoal(this, st -> st.getBlock() instanceof CheeseBlock));   // so o queijo grande
-        goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.25, true));
+        goalSelector.addGoal(2, new TailWhipGoal(this));
+        goalSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.LeapAtTargetGoal(this, 0.38f));   // bote
+        goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.45, true) {
+            @Override protected int getAttackInterval() { return adjustedTickDelay(BITE_INTERVAL); }
+        });
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -90,6 +116,51 @@ public class DireRatEntity extends RatEntity implements Enemy {
     public void tick() {
         super.tick();
         if (!level().isClientSide && tickCount % 40 == 0 && getTarget() instanceof Player p && p.isAlive()) callRats(p);   // quem chegar depois vem junto
+    }
+
+    // ------------------------------------------------------------------ chicotada de cauda
+    // de vez em quando, com o alvo a media distancia: para, gira o corpo e a cauda varre a frente (~0,5 s depois)
+    static class TailWhipGoal extends net.minecraft.world.entity.ai.goal.Goal {
+        private final DireRatEntity r;
+        private int t;
+        TailWhipGoal(DireRatEntity r) { this.r = r; setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP)); }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
+        @Override public boolean canUse() {
+            if (r.whipCooldown > 0) { r.whipCooldown--; return false; }
+            LivingEntity tg = r.getTarget();
+            if (tg == null || !tg.isAlive() || !r.onGround() || r.getState() != ST_NORMAL) return false;
+            double d = r.distanceTo(tg);
+            return d >= WHIP_MIN && d <= WHIP_MAX && r.hasLineOfSight(tg) && r.getRandom().nextInt(3) == 0;
+        }
+        @Override public boolean canContinueToUse() { return t < 20 && r.isAlive(); }
+        @Override public void start() {
+            t = 0;
+            r.getNavigation().stop();
+            r.event(EV_TAIL_WHIP);
+            r.playSound(com.bino.binosvanillaplus.sound.ModSounds.RAT_SQUEAK.get(), 1.0f, 0.5f);
+        }
+        @Override public void tick() {
+            t++;
+            r.getNavigation().stop();
+            LivingEntity tg = r.getTarget();
+            if (tg != null && t < 8) r.getLookControl().setLookAt(tg, 30, 30);
+            if (t == 10) {   // a cauda passa pela frente: pega quem estiver no alcance
+                r.playSound(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, 1.0f, 0.7f);
+                net.minecraft.world.phys.Vec3 c = r.position();
+                for (LivingEntity e : r.level().getEntitiesOfClass(LivingEntity.class, r.getBoundingBox().inflate(WHIP_MAX),
+                        e -> e != r && e.isAlive() && !(e instanceof RatEntity) && e.distanceTo(r) <= WHIP_MAX)) {
+                    if (e instanceof Player p && (p.isCreative() || p.isSpectator())) continue;
+                    if (e != tg && !(e instanceof Player)) continue;   // so o alvo e jogadores no caminho
+                    if (e.hurt(r.damageSources().mobAttack(r), WHIP_DAMAGE)) {
+                        net.minecraft.world.phys.Vec3 away = e.position().subtract(c).normalize();
+                        e.knockback(1.1, -away.x, -away.z);
+                    }
+                }
+            }
+        }
+        @Override public void stop() {
+            r.whipCooldown = WHIP_COOLDOWN_MIN + r.getRandom().nextInt(WHIP_COOLDOWN_MAX - WHIP_COOLDOWN_MIN);
+        }
     }
 
     private void callRats(Player p) {

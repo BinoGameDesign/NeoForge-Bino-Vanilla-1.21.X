@@ -22,7 +22,7 @@ public class RatWorldEvents {
         if (ent instanceof Cat c) c.goalSelector.addGoal(2, new HuntRatGoal(c));
         else if (ent instanceof Ocelot o) o.goalSelector.addGoal(2, new HuntRatGoal(o));
         else if (ent instanceof IronGolem g) g.goalSelector.addGoal(0, new AvoidEntityGoal<>(g, RatEntity.class, 8.0f, 1.0, 1.3,
-                r -> !(r instanceof com.bino.binosvanillaplus.entity.rat.DireRatEntity)));   // do Rato Atroz o golem nao foge: briga
+                r -> !(r instanceof com.bino.binosvanillaplus.entity.rat.DireRatEntity)));   // do Rato Gigante o golem nao foge: briga
     }
 
     // persegue o rato mais perto (ate 12 blocos), corre atras e da o bote. Gato sentado/domado sentado nao caca.
@@ -36,7 +36,7 @@ public class RatWorldEvents {
             if (cooldown > 0) { cooldown--; return false; }
             if (busy() || cat.getRandom().nextInt(10) != 0) return false;
             prey = cat.level().getNearestEntity(RatEntity.class, net.minecraft.world.entity.ai.targeting.TargetingConditions.forCombat().range(12)
-                            .selector(r -> !(r instanceof com.bino.binosvanillaplus.entity.rat.DireRatEntity)),   // o Rato Atroz e' grande demais
+                            .selector(r -> !(r instanceof com.bino.binosvanillaplus.entity.rat.DireRatEntity)),   // o Rato Gigante e' grande demais
                     cat, cat.getX(), cat.getY(), cat.getZ(), cat.getBoundingBox().inflate(12));
             return prey != null;
         }

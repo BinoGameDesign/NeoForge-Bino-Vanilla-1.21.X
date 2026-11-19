@@ -14,30 +14,46 @@ import org.joml.Vector3f;
 public class RatModel extends HierarchicalModel<RatEntity> {
     public static final ModelLayerLocation LAYER =
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "rat"), "main");
-    // Rato Atroz: mesma estrutura de ossos (as animacoes sao as do rato), geometria propria (DireRatModelData)
+    // Rato Gigante: mesma estrutura de ossos (animacoes proprias em DireRatAnimations), geometria propria (DireRatModelData)
     public static final ModelLayerLocation DIRE_LAYER =
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "dire_rat"), "main");
     private static final float DEG = (float) (Math.PI / 180.0);
     private static final Vector3f CACHE = new Vector3f();
 
+    // animacoes de cada bicho (o Rato Gigante tem mordida propria e a chicotada de cauda)
+    public record Anims(AnimationDefinition idle, AnimationDefinition walk, AnimationDefinition run, AnimationDefinition sleep,
+                        AnimationDefinition eat, AnimationDefinition groom, AnimationDefinition standUp, AnimationDefinition scratch,
+                        AnimationDefinition squeak, AnimationDefinition attack, AnimationDefinition sniff, AnimationDefinition tailWhip) {}
+    public static final Anims RAT_ANIMS = new Anims(RatAnimations.IDLE, RatAnimations.WALK, RatAnimations.RUN, RatAnimations.SLEEP,
+            RatAnimations.EAT, RatAnimations.GROOM, RatAnimations.STAND_UP, RatAnimations.SCRATCH, RatAnimations.SQUEAK,
+            RatAnimations.ATTACK, RatAnimations.SNIFF, RatAnimations.ATTACK);
+    public static final Anims DIRE_ANIMS = new Anims(DireRatAnimations.IDLE, DireRatAnimations.WALK, DireRatAnimations.RUN, DireRatAnimations.SLEEP,
+            DireRatAnimations.EAT, DireRatAnimations.GROOM, DireRatAnimations.STAND_UP, DireRatAnimations.SCRATCH, DireRatAnimations.SQUEAK,
+            DireRatAnimations.ATTACK, DireRatAnimations.SNIFF, DireRatAnimations.TAIL_WHIP);
+
     private final ModelPart top;
     private final ModelPart head;
+    private final Anims a;
 
-    public RatModel(ModelPart top) {
+    public RatModel(ModelPart top) { this(top, RAT_ANIMS); }
+
+    public RatModel(ModelPart top, Anims anims) {
         this.top = top;
+        this.a = anims;
         this.head = top.getChild("root").getChild("body").getChild("head");
     }
 
     @Override public ModelPart root() { return top; }
 
-    private static AnimationDefinition oneShot(String n) {
+    private AnimationDefinition oneShot(String n) {
         return switch (n) {
-            case "groom" -> RatAnimations.GROOM;
-            case "stand_up" -> RatAnimations.STAND_UP;
-            case "scratch" -> RatAnimations.SCRATCH;
-            case "squeak" -> RatAnimations.SQUEAK;
-            case "attack" -> RatAnimations.ATTACK;
-            default -> RatAnimations.SNIFF;
+            case "groom" -> a.groom();
+            case "stand_up" -> a.standUp();
+            case "scratch" -> a.scratch();
+            case "squeak" -> a.squeak();
+            case "attack" -> a.attack();
+            case "tail_whip" -> a.tailWhip();
+            default -> a.sniff();
         };
     }
 
@@ -55,12 +71,12 @@ public class RatModel extends HierarchicalModel<RatEntity> {
 
         float w = Math.min(1.0f, limbSwingAmount * 2.5f);
         switch (st) {
-            case RatEntity.ST_SLEEP -> loop(RatAnimations.SLEEP, ageInTicks, 1f);
-            case RatEntity.ST_EAT -> loop(RatAnimations.EAT, ageInTicks, 1f);
-            case RatEntity.ST_FLEE -> blend(RatAnimations.IDLE, RatAnimations.RUN, ageInTicks, limbSwing, w, 1.0f);
-            default -> blend(RatAnimations.IDLE, RatAnimations.WALK, ageInTicks, limbSwing, w, 2.0f);
+            case RatEntity.ST_SLEEP -> loop(a.sleep(), ageInTicks, 1f);
+            case RatEntity.ST_EAT -> loop(a.eat(), ageInTicks, 1f);
+            case RatEntity.ST_FLEE -> blend(a.idle(), a.run(), ageInTicks, limbSwing, w, 1.0f);
+            default -> blend(a.idle(), a.walk(), ageInTicks, limbSwing, w, 2.0f);
         }
-        if (bite) animate(e.oneShot, RatAnimations.ATTACK, ageInTicks);   // mordida por cima do andar
+        if (bite) animate(e.oneShot, a.attack(), ageInTicks);   // mordida por cima do andar
     }
 
     // loop pelo relogio da entidade (ticks -> ms), com peso

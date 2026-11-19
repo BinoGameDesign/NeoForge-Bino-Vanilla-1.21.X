@@ -330,6 +330,7 @@
   "config.jade.plugin_binosvanillaplus.milk_cauldron": "Caldeirão com Leite",
   "lookat.binosvanillaplus.mob_level": "Nível %s",
   "config.jade.plugin_binosvanillaplus.mob_level": "Nível do mob",
-  "entity.binosvanillaplus.dire_rat": "Rato Atroz",
-  "item.binosvanillaplus.dire_rat_spawn_egg": "Ovo Gerador de Rato Atroz"
+  "entity.binosvanillaplus.dire_rat": "Rato Gigante",
+  "item.binosvanillaplus.dire_rat_spawn_egg": "Ovo Gerador de Rato Gigante",
+  "entity.binosvanillaplus.deep_dire_rat": "Rato Gigante das Profundezas"
 }

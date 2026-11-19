@@ -22,7 +22,7 @@ public class CompanionModEvents {
                             || reason == net.minecraft.world.entity.MobSpawnType.EVENT
                             || (pos.getY() < 40 && !level.canSeeSky(pos) && level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos) == 0)),
                 net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
-        // Rato Atroz: cavernas escuras ou estruturas dos ratos, so em regiao de nivel 15+ (ver DireRatEntity.checkSpawn)
+        // Rato Gigante: cavernas escuras ou estruturas dos ratos, so em regiao de nivel 15+ (ver DireRatEntity.checkSpawn)
         event.register(ModEntities.DIRE_RAT.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
                 net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 com.bino.binosvanillaplus.entity.rat.DireRatEntity::checkSpawn,

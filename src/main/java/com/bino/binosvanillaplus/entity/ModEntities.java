@@ -40,7 +40,7 @@ public class ModEntities {
                             .clientTrackingRange(8)
                             .build("rat"));
 
-    // Rato Atroz (Exploration): o modelo do rato, com o atributo SCALE x2,4 (mais ou menos um porco). Agressivo.
+    // Rato Gigante (Exploration): o modelo do rato, com o atributo SCALE x2,4 (mais ou menos um porco). Agressivo.
     public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.rat.DireRatEntity>> DIRE_RAT =
             ENTITY_TYPES.register("dire_rat",
                     () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.rat.DireRatEntity>of(com.bino.binosvanillaplus.entity.rat.DireRatEntity::new, MobCategory.MONSTER)
