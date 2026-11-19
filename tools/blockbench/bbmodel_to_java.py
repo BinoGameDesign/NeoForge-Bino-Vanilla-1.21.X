@@ -24,6 +24,7 @@ def rad(d):
     return f"{f(d)[:-1]}F * DEG" if abs(float(d)) > 1e-6 else "0.0F"
 
 lines = []
+USED = {}
 def part(node, parent_var, parent_origin, depth):
     g = grp[node["uuid"]]; o = g["origin"]
     if parent_origin is None: off = (-o[0], 24 - o[1], o[2])
@@ -51,6 +52,8 @@ def part(node, parent_var, parent_origin, depth):
         eo, er = e["origin"], e["rotation"]
         eoff = (-(eo[0] - o[0]), -(eo[1] - o[1]), eo[2] - o[2])
         n = re.sub(r"\W", "_", e["name"]) + "_r"
+        k = (var, n); USED[k] = USED.get(k, 0) + 1
+        if USED[k] > 1: n += str(USED[k])   # nomes repetidos (varios "cube" girados): senao o jogo guarda so o ultimo
         lines.append(f"        {var}.addOrReplaceChild(\"{n}\", CubeListBuilder.create(){box(e, eo)}, "
                      f"PartPose.offsetAndRotation({f(eoff[0])}, {f(eoff[1])}, {f(eoff[2])}, {rad(-er[0])}, {rad(-er[1])}, {rad(er[2])}));")
     for c in node["children"]:
