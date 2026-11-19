@@ -108,11 +108,17 @@ public class MimicEntity extends Monster {
         if (t != null && t.isAlive()) face(t);
 
         if (revealT >= 0) {   // revelacao: abre a boca, morde quem tentou pegar o item
-            if (revealT == 0) { event(EV_REVEAL); playSound(SoundEvents.CHEST_OPEN, 1.0f, 0.5f); }
+            if (revealT == 0) {   // o susto: rugido + grunhido grave
+                event(EV_REVEAL);
+                playSound(SoundEvents.CHEST_OPEN, 1.0f, 0.5f);
+                playSound(SoundEvents.RAVAGER_ROAR, 1.6f, 1.2f);
+                playSound(SoundEvents.HOGLIN_ANGRY, 1.2f, 0.5f);
+            }
             if (revealT == REVEAL_TICKS - 4) { event(EV_BITE); }
             if (revealT == REVEAL_TICKS) {
                 playSound(SoundEvents.CHEST_CLOSE, 1.4f, 0.6f);
                 playSound(SoundEvents.PLAYER_ATTACK_CRIT, 1.0f, 0.7f);
+                playSound(SoundEvents.RAVAGER_ATTACK, 1.4f, 0.75f);
                 if (firstVictim != null && firstVictim.isAlive() && distanceTo(firstVictim) < 3.5
                         && firstVictim.hurt(damageSources().mobAttack(this), REVEAL_BITE)) {
                     Vec3 away = firstVictim.position().subtract(position()).normalize();
@@ -137,6 +143,7 @@ public class MimicEntity extends Monster {
         if (d <= REACH && biteCd == 0) {
             event(EV_BITE); biteIn = 4; biteCd = BITE_COOLDOWN;
             playSound(SoundEvents.CHEST_CLOSE, 1.0f, 0.8f);
+            playSound(SoundEvents.HOGLIN_ATTACK, 0.9f, 0.6f + random.nextFloat() * 0.15f);
         } else if (onGround() && hopCd == 0 && d > REACH * 0.8) {   // pulo na direcao do alvo
             Vec3 dir = new Vec3(t.getX() - getX(), 0, t.getZ() - getZ()).normalize();
             double sp = isDouble() ? 0.36 : 0.42;
@@ -144,6 +151,7 @@ public class MimicEntity extends Monster {
             hasImpulse = true;
             event(EV_HOP);
             playSound(SoundEvents.CHEST_OPEN, 0.6f, 0.7f + random.nextFloat() * 0.2f);
+            if (random.nextFloat() < 0.35f) playSound(SoundEvents.HOGLIN_AMBIENT, 0.8f, 0.55f + random.nextFloat() * 0.15f);
             hopCd = 14 + random.nextInt(8);
         }
     }
@@ -184,7 +192,10 @@ public class MimicEntity extends Monster {
     @Override public boolean causeFallDamage(float d, float m, DamageSource s) { return false; }
     @Override protected boolean shouldDespawnInPeaceful() { return false; }
     @Override public boolean removeWhenFarAway(double d) { return false; }
-    @Override @Nullable protected SoundEvent getAmbientSound() { return null; }   // silencioso: e' um bau
+    // depois de revelado: grunhidos graves de monstro
+    @Override @Nullable protected SoundEvent getAmbientSound() { return SoundEvents.RAVAGER_AMBIENT; }
+    @Override public float getVoicePitch() { return 0.6f + random.nextFloat() * 0.15f; }
+    @Override public int getAmbientSoundInterval() { return 100; }
     @Override protected SoundEvent getHurtSound(DamageSource s) { return SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR; }
     @Override protected SoundEvent getDeathSound() { return SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR; }
 

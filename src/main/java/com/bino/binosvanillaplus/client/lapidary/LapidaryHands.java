@@ -109,6 +109,11 @@ public final class LapidaryHands {
             } else if (t >= place && t < place + 0.12) {
                 tR = gems;
             }
+        } else if (LapidaryScene.phase == LapidaryScene.Phase.ACTIVE && !LapidaryScene.placing.isEmpty()) {
+            // levando um item da barra ate a mesa: a mao acompanha o item
+            LapidaryScene.Placing pl = LapidaryScene.placing.get(LapidaryScene.placing.size() - 1);
+            tR = placingAt(pl, cam, yaw, now).add(0, 0.03, 0).add(towardCam.scale(0.04));
+            omegaR = 26;
         } else if (LapidaryScene.phase == LapidaryScene.Phase.ACTIVE) {
             switch (LapidaryScene.hover) {
                 case BUTTON -> tL = p(LapidaryGeo.BUTTON.x - 1.0, LapidaryGeo.BUTTON.y + 0.2, LapidaryGeo.BUTTON.z);
@@ -182,6 +187,14 @@ public final class LapidaryHands {
             }
         }
 
+        // itens indo da barra para a mesa (na mao)
+        if (!LapidaryScene.placing.isEmpty()) {
+            double nowT = LapidaryScene.clock();
+            LapidaryScene.placing.removeIf(pl -> nowT - pl.start() > LapidaryScene.PLACE);
+            for (LapidaryScene.Placing pl : LapidaryScene.placing)
+                item(ps, buf, pl.stack(), placingAt(pl, cam, yaw, nowT), cam, yaw, 0.3f, light);
+        }
+
         // itens voltando para o inventario ao sair
         if (LapidaryScene.phase == LapidaryScene.Phase.OUTRO) {
             double u = LapidaryCut.window(LapidaryScene.clock() - LapidaryScene.phaseAt, 0, LapidaryScene.OUTRO * 0.8);
@@ -193,6 +206,13 @@ public final class LapidaryHands {
                 item(ps, buf, l.stack(), at, cam, yaw, l.size() * 1.6f * (float) (1 - 0.7 * u), light);
             }
         }
+    }
+
+    // onde esta o item que vai da barra (perto da camera, no alto) ate a mesa
+    static Vec3 placingAt(LapidaryScene.Placing pl, Vec3 cam, float yaw, double now) {
+        double u = LapidaryCut.inOutCubic(LapidaryCut.window(now - pl.start(), 0, LapidaryScene.PLACE));
+        Vec3 from = cam.add(forward(yaw).scale(0.45)).add(0, 0.12, 0);
+        return from.add(pl.to().subtract(from).scale(u)).add(0, 0.08 * LapidaryCut.hump(u), 0);
     }
 
     public static void item(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float yaw, float scale, int light) {

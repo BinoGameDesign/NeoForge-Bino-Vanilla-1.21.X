@@ -71,6 +71,11 @@ public final class LapidaryScene {
     static final List<Flying> flying = new ArrayList<>();
     static final double FLY = 0.45;
 
+    // itens que a mao leva da barra ate a mesa (um clique so)
+    record Placing(ItemStack stack, Vec3 to, double start) {}
+    static final List<Placing> placing = new ArrayList<>();
+    static final double PLACE = 0.32;
+
     // itens que estavam na mesa ao sair (voam para a camera)
     record Leaving(ItemStack stack, Vec3 from, float size) {}
     static List<Leaving> leavingItems = List.of();
@@ -100,6 +105,7 @@ public final class LapidaryScene {
         cutAt = -100;
         pile.clear();
         flying.clear();
+        placing.clear();
         lastSlot = -1;
         hintKey = "";
         hintAt = -100;
@@ -370,11 +376,28 @@ public final class LapidaryScene {
         return flint;
     }
 
+    // um clique: o item vai direto para o lugar dele na mesa (silex na ponta do lapidador, minerio no disco),
+    // levado pela mao. Item que nao serve para a mesa: nada acontece.
     public static void barClick(int slot, int button) {
         if (phase != Phase.ACTIVE || cutting()) return;
-        slotClick(slot, button, false);
+        if (!carried().isEmpty()) { slotClick(slot, button, false); lastSlot = slot; return; }   // (sobrou algo na mao)
+        ItemStack s = slot(slot);
+        Target where = s.is(Items.FLINT) ? Target.FLINT : LapidaryMenu.gemFor(s) != null ? Target.ORE : Target.NONE;
+        if (where == Target.NONE || !fits(slot(where == Target.FLINT ? 1 : 0), s)) { deny(); return; }
+        slotClick(slot, 0, true);
         lastSlot = slot;
+        placing.add(new Placing(s.copy(), targetPoint(where, localView()), clock()));
         sound(SoundEvents.ITEM_PICKUP, 0.25f, 1.4f);
+        sound(where == Target.FLINT ? SoundEvents.STONE_PLACE : SoundEvents.DEEPSLATE_PLACE, 0.5f, where == Target.FLINT ? 1.6f : 1.2f);
+    }
+
+    // item da mesa volta para o inventario num clique (voa ate a camera)
+    private static void takeBack(int menuSlot, Target from) {
+        ItemStack s = slot(menuSlot);
+        if (s.isEmpty()) return;
+        flying.add(new Flying(s.copy(), targetPoint(from, localView()), clock()));
+        slotClick(menuSlot, 0, true);
+        sound(SoundEvents.ITEM_PICKUP, 0.3f, 1.2f);
     }
 
     // ---------------------------------------------------------------- clique na mesa
@@ -385,12 +408,12 @@ public final class LapidaryScene {
             case FLINT -> {
                 if (held.is(Items.FLINT)) { slotClick(1, button, false); sound(SoundEvents.STONE_PLACE, 0.6f, 1.6f); }
                 else if (!held.isEmpty()) deny();
-                else if (!slot(1).isEmpty()) slotClick(1, button, false);
+                else takeBack(1, Target.FLINT);
             }
             case ORE -> {
                 if (LapidaryMenu.gemFor(held) != null) { slotClick(0, button, false); sound(SoundEvents.DEEPSLATE_PLACE, 0.6f, 1.2f); }
                 else if (!held.isEmpty()) deny();
-                else if (!slot(0).isEmpty()) slotClick(0, button, false);
+                else takeBack(0, Target.ORE);
             }
             case BUTTON -> {
                 if (!held.isEmpty() || !ready()) { deny(); return; }
@@ -489,7 +512,7 @@ public final class LapidaryScene {
         return held.isEmpty() && ready() ? Target.BUTTON : Target.NONE;
     }
 
-    private static boolean fits(ItemStack there, ItemStack held) {
+    static boolean fits(ItemStack there, ItemStack held) {
         return there.isEmpty() || ItemStack.isSameItemSameComponents(there, held) && there.getCount() < there.getMaxStackSize();
     }
 

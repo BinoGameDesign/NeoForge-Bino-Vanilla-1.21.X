@@ -39,7 +39,17 @@ final class ChestHands {
         Vec3 tL = ChestScene.local(-Math.min(0.3, hw * 0.75), 0.56, 0.47);
         Vec3 tR = ChestScene.local(Math.min(0.3, hw * 0.75), 0.6, 0.5);
         double omegaR = 15;
-        if (ChestScene.phase == ChestScene.Phase.ACTIVE) {
+        ChestScene.Flying grab = ChestScene.flying.isEmpty() ? null : ChestScene.flying.get(ChestScene.flying.size() - 1);
+        ChestScene.Placing put = ChestScene.placing.isEmpty() ? null : ChestScene.placing.get(ChestScene.placing.size() - 1);
+        if (ChestScene.phase == ChestScene.Phase.ACTIVE && put != null) {
+            tR = ChestScene.placingAt(put, cam, yaw, now).add(0, 0.03, 0).add(towardCam.scale(0.04));   // leva o item
+            omegaR = 28;
+        } else if (ChestScene.phase == ChestScene.Phase.ACTIVE && grab != null && now - grab.start() < ChestScene.FLY) {
+            // pega: vai ate o item e volta com ele (o item voa junto ate a camera)
+            double u = now - grab.start();
+            tR = u < 0.1 ? grab.from().add(0, 0.04, 0) : ChestScene.flyingAt(grab, cam, yaw, now).add(0, 0.03, 0);
+            omegaR = 30;
+        } else if (ChestScene.phase == ChestScene.Phase.ACTIVE) {
             Vec3[] ray = ChestScene.overBar ? LapidaryPick.ray() : null;
             if (ray != null) {
                 tR = ray[0].add(ray[1].scale(0.62));   // mouse na barra: a mao vai ate la

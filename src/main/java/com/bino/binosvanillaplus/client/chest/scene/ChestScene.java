@@ -72,6 +72,10 @@ public final class ChestScene {
 
     record Flying(ItemStack stack, Vec3 from, double start) {}
     static final List<Flying> flying = new ArrayList<>();
+    // item que a mao leva da barra ate uma casa do bau (a casa fica vazia ate ele chegar)
+    record Placing(ItemStack stack, int slot, double start) {}
+    static final List<Placing> placing = new ArrayList<>();
+    static final double PLACE = 0.34;
     static final double LEAN = 0.75, OUTRO = 0.6, FLY = 0.42, BITE_HOLD = 1.05, BITE_AT = 0.72;
 
     // medidas do bau (em blocos, a partir do centro do bau; y a partir do chao do bloco)
@@ -114,6 +118,7 @@ public final class ChestScene {
         hoverSlot = lastSlot = -1;
         overBar = false;
         flying.clear();
+        placing.clear();
         snapshot = List.of();
         savedCamera = mc.options.getCameraType();
         if (!savedCamera.isFirstPerson()) mc.options.setCameraType(CameraType.FIRST_PERSON);
@@ -186,9 +191,7 @@ public final class ChestScene {
                 mimicSeenAt = now;
                 holdUntil = now + BITE_HOLD;
                 biteAt = now + BITE_AT;
-                sound(SoundEvents.CHEST_CLOSE, 0.9f, 0.6f);
             }
-            if (biteAt > 0 && now >= biteAt && now - biteAt < 0.06) sound(SoundEvents.EVOKER_FANGS_ATTACK, 0.8f, 0.8f);
             if (now >= holdUntil + OUTRO) finish();
             return;
         }
@@ -276,15 +279,19 @@ public final class ChestScene {
         // mimico: susto quando ele aparece e tremida forte na mordida
         if (mimicSeenAt > 0) {
             double s = t - mimicSeenAt;
-            eye = eye.add(Vec3.atLowerCornerOf(facing.getNormal()).scale(0.12 * LapidaryCut.inOutCubic(s / 0.25)));
-            pitch -= (float) (6 * LapidaryCut.inOutCubic(s / 0.3));
+            // tranco para tras e a cabeca sobe, olhando a boca abrir; tremedeira crescendo ate a mordida
+            eye = eye.add(Vec3.atLowerCornerOf(facing.getNormal()).scale(0.14 * LapidaryCut.inOutCubic(s / 0.18)));
+            pitch -= (float) (8 * LapidaryCut.inOutCubic(s / 0.25));
+            double pre = biteAt > 0 && t < biteAt ? 0.25 + 0.75 * LapidaryCut.window(s, 0, BITE_AT) : 0;
+            yaw += (float) ((Math.sin(t * 43) + Math.sin(t * 71 + 2)) * 0.6 * pre);
+            pitch += (float) ((Math.sin(t * 53 + 1) + Math.sin(t * 31)) * 0.5 * pre);
         }
         if (biteAt > 0 && t >= biteAt) {
-            double k = Math.max(0, 1 - (t - biteAt) / 0.55);
+            double k = Math.max(0, 1 - (t - biteAt) / 0.7);
             k *= k;
-            yaw += (float) ((Math.sin(t * 61) + Math.sin(t * 37 + 1)) * 2.2 * k);
-            pitch += (float) ((Math.sin(t * 57 + 2) + Math.sin(t * 29)) * 1.8 * k);
-            eye = eye.add(0, -0.05 * k, 0);
+            yaw += (float) ((Math.sin(t * 61) + Math.sin(t * 37 + 1)) * 4.5 * k);
+            pitch += (float) ((Math.sin(t * 57 + 2) + Math.sin(t * 29)) * 3.6 * k);
+            eye = eye.add(0, -0.08 * k, 0).add(Vec3.atLowerCornerOf(facing.getNormal()).scale(-0.1 * k));   // a boca puxa
         }
         return new Pose(eye, yaw, pitch);
     }
@@ -307,7 +314,16 @@ public final class ChestScene {
         return new Pose(p, yaw, pitch);
     }
 
-    public static double fov(double vanilla) { return Mth.lerp(weight, vanilla, 56.0); }
+    // zoom do susto: fecha rapido quando o mimico aparece e mais um pouco na mordida
+    public static double fov(double vanilla) {
+        double scene = 56.0;
+        if (mimicSeenAt > 0) {
+            double t = clock();
+            scene *= 1 - 0.30 * LapidaryCut.inOutCubic((t - mimicSeenAt) / 0.2);
+            if (biteAt > 0 && t >= biteAt) scene *= 1 - 0.12 * Math.max(0, 1 - (t - biteAt) / 0.4);
+        }
+        return Mth.lerp(weight, vanilla, scene);
+    }
 
     // ---------------------------------------------------------------- menu
     @Nullable
@@ -336,31 +352,54 @@ public final class ChestScene {
         ChestHands.tap();
     }
 
-    // clique dentro do bau
+    // clique dentro do bau: UM clique pega o item - a mao vai ate ele e traz para o inventario.
+    // Botao esquerdo = a pilha toda; direito = metade.
     public static void click(int button, boolean shift) {
         if (phase != Phase.ACTIVE) return;
         ItemStack held = carried();
-        if (hoverSlot >= 0 && hoverSlot < chestSlots()) {
-            ItemStack there = slot(hoverSlot);
-            if (shift && held.isEmpty()) {
-                if (there.isEmpty()) return;
-                flying.add(new Flying(there.copy(), cellPoint(hoverSlot), clock()));
-                slotClick(hoverSlot, button, true);
-                sound(SoundEvents.ITEM_PICKUP, 0.3f, 1.25f);
-                return;
-            }
-            if (held.isEmpty() && there.isEmpty()) return;
-            slotClick(hoverSlot, button, false);
-            sound(held.isEmpty() ? SoundEvents.ITEM_PICKUP : SoundEvents.BUNDLE_INSERT, 0.35f, 1.2f);
-        } else if (button == 1 && !held.isEmpty()) giveBack();
+        if (!held.isEmpty()) {   // (sobrou algo na mao: poe na casa ou devolve)
+            if (hoverSlot >= 0 && hoverSlot < chestSlots()) slotClick(hoverSlot, button, false);
+            else giveBack();
+            return;
+        }
+        if (hoverSlot < 0 || hoverSlot >= chestSlots()) return;
+        ItemStack there = slot(hoverSlot);
+        if (there.isEmpty()) return;
+        if (button == 1 && there.getCount() > 1) {
+            flying.add(new Flying(there.copyWithCount((there.getCount() + 1) / 2), cellPoint(hoverSlot), clock()));
+            slotClick(hoverSlot, 1, false);   // pega metade...
+            giveBack();                       // ...e guarda no inventario
+        } else {
+            flying.add(new Flying(there.copy(), cellPoint(hoverSlot), clock()));
+            slotClick(hoverSlot, 0, true);
+        }
+        sound(SoundEvents.ITEM_PICKUP, 0.3f, 1.25f);
     }
 
-    // clique na barra do inventario (slot do menu)
+    // clique na barra do inventario: UM clique guarda o item no bau (a mao leva ate a casa onde ele entrou)
     public static void barClick(int slot, int button, boolean shift) {
         if (phase != Phase.ACTIVE) return;
-        slotClick(slot, button, shift);
+        if (!carried().isEmpty()) { slotClick(slot, button, false); lastSlot = slot; return; }
+        ItemStack s = slot(slot);
+        if (s.isEmpty()) return;
+        int n = chestSlots();
+        int[] before = new int[n];
+        for (int i = 0; i < n; i++) before[i] = slot(i).getCount();
+        slotClick(slot, 0, true);
         lastSlot = slot;
-        sound(shift ? SoundEvents.BUNDLE_INSERT : SoundEvents.ITEM_PICKUP, 0.3f, 1.3f);
+        int target = -1;
+        for (int i = 0; i < n && target < 0; i++) if (slot(i).getCount() > before[i]) target = i;
+        if (target < 0) { denyAt = clock(); return; }   // bau cheio
+        placing.add(new Placing(s.copy(), target, clock()));
+        sound(SoundEvents.BUNDLE_INSERT, 0.35f, 1.2f);
+    }
+
+    // posicao do item sendo guardado (da barra, embaixo da camera, ate a casa)
+    static Vec3 placingAt(Placing pl, Vec3 cam, float yaw, double now) {
+        double u = LapidaryCut.inOutCubic(LapidaryCut.window(now - pl.start(), 0, PLACE));
+        Vec3 from = cam.add(LapidaryHands.forward(yaw).scale(0.4)).add(0, -0.3, 0);
+        Vec3 to = cellPoint(pl.slot()).add(0, 0.02, 0);
+        return from.add(to.subtract(from).scale(u)).add(0, 0.12 * LapidaryCut.hump(u), 0);
     }
 
     static void giveBack() {
@@ -383,7 +422,7 @@ public final class ChestScene {
 
     // ---------------------------------------------------------------- dicas
     public static String hint() {
-        if (clock() - denyAt < 1.2) return "chest.binosvanillaplus.hint.full";
+        if (clock() - denyAt < 1.2) return "chest.binosvanillaplus.hint.full";   // (inventario ou bau cheio)
         return carried().isEmpty() ? "chest.binosvanillaplus.hint.take" : "chest.binosvanillaplus.hint.place";
     }
 
@@ -421,9 +460,11 @@ public final class ChestScene {
         if (showItems) {
             float itemYaw = facing.getOpposite().toYRot();
             double cw = 2 * halfWidth() / cols();
+            placing.removeIf(pl -> now - pl.start() > PLACE);
             for (int i = 0; i < snapshot.size(); i++) {
                 ItemStack s = snapshot.get(i);
-                if (s.isEmpty()) continue;
+                final int slotI = i;
+                if (s.isEmpty() || placing.stream().anyMatch(pl -> pl.slot() == slotI)) continue;
                 boolean hov = i == hoverSlot && carried().isEmpty();
                 Vec3 at = cellPoint(i).add(0, hov ? 0.035 + Math.sin(now * 5) * 0.006 : 0.01, 0);
                 float k = (float) (cw * 1.45 / 0.5) * (hov ? 1.15f : 1f);   // item no chao: lado = 0.5 * escala
@@ -431,17 +472,23 @@ public final class ChestScene {
             }
         }
         ChestHands.render(ps, buf, cam, yaw, light);
+        for (Placing pl : placing) drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, 0.32f, light);
 
         // itens mandados para o inventario: voam ate a camera
         if (!flying.isEmpty()) {
-            Vec3 to = cam.add(LapidaryHands.forward(yaw).scale(0.3)).add(0, -0.35, 0);
             flying.removeIf(fl -> now - fl.start() > FLY);
             for (Flying fl : flying) {
                 double u = LapidaryCut.window(now - fl.start(), 0, FLY);
-                Vec3 at = fl.from().add(to.subtract(fl.from()).scale(u * u)).add(0, 0.14 * LapidaryCut.hump(u), 0);
-                drawItem(ps, buf, fl.stack(), at, cam, yaw, -25f, 0.3f * (float) (1 - 0.6 * u), light);
+                drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, 0.3f * (float) (1 - 0.6 * u), light);
             }
         }
+    }
+
+    // item pego: espera a mao chegar (0,1 s) e vai com ela ate perto da camera
+    static Vec3 flyingAt(Flying fl, Vec3 cam, float yaw, double now) {
+        Vec3 to = cam.add(LapidaryHands.forward(yaw).scale(0.3)).add(0, -0.35, 0);
+        double u = LapidaryCut.window(now - fl.start(), 0.1, FLY);
+        return fl.from().add(to.subtract(fl.from()).scale(u * u)).add(0, 0.14 * LapidaryCut.hump(u), 0);
     }
 
     // item "deitado" virado para quem olha (faceYaw = yaw da camera que olha); blocos ganham um pouco mais de tamanho (no chao eles sao bem menores)
