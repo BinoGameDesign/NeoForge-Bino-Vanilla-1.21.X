@@ -29,9 +29,9 @@ public final class LapidaryGeo {
     public static final Vec3 VISOR = new Vec3(1.28, 8.0, 2.65);
     // onde as gemas prontas sao deixadas (junto das gemas de enfeite)
     public static final Vec3 GEMS = new Vec3(10.2, 11.02, 5.6);
-    // maos paradas sobre a mesa
-    public static final Vec3 REST_RIGHT = new Vec3(2.6, 11.5, 13.2);
-    public static final Vec3 REST_LEFT = new Vec3(2.2, 11.2, 1.6);
+    // maos em descanso: nos cantos da mesa do lado do jogador (fora do caminho da cena)
+    public static final Vec3 REST_RIGHT = new Vec3(0.2, 11.0, 16.4);
+    public static final Vec3 REST_LEFT = new Vec3(0.2, 10.8, -0.4);
     // camera da cena (olho) e ponto para onde ela olha; onde o jogador fica de pe
     public static final Vec3 EYE = new Vec3(-5.6, 24.4, 8.0);
     public static final Vec3 LOOK = new Vec3(8.0, 12.0, 8.0);

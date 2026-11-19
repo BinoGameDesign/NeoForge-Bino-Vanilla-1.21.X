@@ -40,6 +40,10 @@ public final class LapidaryHands {
         }
     }
 
+    // braco: espessura (1 = braco do jogador) e comprimento maximo desenhado a partir da mao
+    static final float ARM_THICK = 0.48f;
+    static final double FOREARM = 0.62;
+
     // distancia da camera (em blocos) a que a mao fica quando alcanca a barra de itens
     private static final double BAR_REACH = 0.62;
 
@@ -63,7 +67,7 @@ public final class LapidaryHands {
 
     public static Vec3 shoulder(boolean right, Vec3 cam, float yaw) {
         Vec3 f = forward(yaw);
-        return cam.add(rightOf(f).scale(right ? 0.36 : -0.36)).add(0, -0.44, 0).add(f.scale(0.06));
+        return cam.add(rightOf(f).scale(right ? 0.42 : -0.42)).add(0, -0.6, 0).add(f.scale(0.02));
     }
 
     // mao "guardada" (fora da tela, perto do ombro) para entrar/sair da cena
@@ -121,15 +125,12 @@ public final class LapidaryHands {
                 case FLINT, ORE -> tR = LapidaryScene.targetPoint(LapidaryScene.hover, LapidaryScene.localView())
                         .add(0, LapidaryScene.hover == LapidaryScene.Target.FLINT ? -0.02 : 0.07, 0).add(towardCam.scale(0.05));
                 default -> {
-                    Vec3[] ray = LapidaryScene.overBar ? LapidaryPick.ray() : null;
-                    if (ray != null) {
-                        // mouse sobre a barra de itens: o braco sobe ate la (a mao fica sob o cursor)
-                        tR = ray[0].add(ray[1].scale(BAR_REACH));
-                        omegaR = 18;
-                    } else {
-                        Vec3 top = LapidaryScene.onTop();
-                        if (top != null) tR = top.add(0, 0.07, 0).add(towardCam.scale(0.03));
-                    }
+                    // sem alvo: a mao fica descansando e so "olha" um pouco para onde o mouse esta (antes ela
+                    // seguia o mouse por cima da mesa e ate subia ate a barra, cobrindo a cena inteira)
+                    Vec3 top = LapidaryScene.overBar ? null : LapidaryScene.onTop();
+                    if (top != null) tR = tR.add(top.add(0, 0.07, 0).subtract(tR).scale(0.22));
+                    else if (LapidaryScene.overBar) tR = tR.add(0, 0.03, 0);
+                    omegaR = 9;
                 }
             }
             // toque rapido ao clicar
@@ -233,6 +234,8 @@ public final class LapidaryHands {
         if (!(Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player) instanceof PlayerRenderer renderer)) return;
         Vec3 d = hand.subtract(shoulder);
         if (d.lengthSqr() < 1e-8) return;
+        // so o antebraco (ate ~0,62 bloco da mao): o resto do braco ficava enorme perto da camera
+        if (d.length() > FOREARM) { shoulder = hand.subtract(d.normalize().scale(FOREARM)); d = hand.subtract(shoulder); }
         double length = d.length() + 0.12;
         d = d.normalize();
         Vec3 worldUp = new Vec3(0, 1, 0);
@@ -248,7 +251,7 @@ public final class LapidaryHands {
         ps.pushPose();
         ps.translate(shoulder.x - cam.x, shoulder.y - cam.y, shoulder.z - cam.z);
         ps.mulPose(rot);
-        ps.scale(0.6f, (float) (length * 16.0 / 12.0), 0.6f);
+        ps.scale(ARM_THICK, (float) (length * 16.0 / 12.0), ARM_THICK);
         ps.translate((right ? 5 : -5) / 16f, -0.03f, 0);   // desfaz o pivo do braco no modelo (ombro em x = +-5 px)
         if (right) renderer.renderRightHand(ps, buf, light, player);
         else renderer.renderLeftHand(ps, buf, light, player);

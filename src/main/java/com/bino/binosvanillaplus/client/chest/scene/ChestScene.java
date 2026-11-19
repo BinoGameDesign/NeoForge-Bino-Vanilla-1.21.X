@@ -243,7 +243,7 @@ public final class ChestScene {
         int cols = Math.max(1, (int) Math.ceil(Math.sqrt(n * w / d)));
         int rws = (int) Math.ceil(n / (double) cols);
         double cw = w / cols, cd = d / rws;
-        itemSize = Mth.clamp(Math.min(cw * 1.35, cd * 1.1), 0.1, 0.3);
+        itemSize = Mth.clamp(Math.min(cw * 1.05, cd * 0.9), 0.11, 0.24);
         for (int k = 0; k < n; k++) {
             int slot = occupied.get(k), c = k % cols, r = k / cols;
             int inRow = r == rws - 1 ? n - r * cols : cols;
@@ -312,11 +312,19 @@ public final class ChestScene {
 
     // ---------------------------------------------------------------- camera
     public record Pose(Vec3 pos, float yaw, float pitch) {}
-    private static double parX, parY, lastFrame;
+    private static double parX, parY, lastFrame, focusW;
+    @Nullable private static Vec3 lastFocus;
 
     static Pose scenePose() {
-        Vec3 eye = dbl ? local(0, 1.55, 1.38) : local(0, 1.36, 1.06);
-        Vec3 look = local(0, 0.5, -0.06).subtract(eye);
+        // mais de cima (~53 graus): o fundo do bau aparece inteiro e a tampa aberta nao domina a tela
+        Vec3 eye = dbl ? local(0, 1.78, 0.98) : local(0, 1.56, 0.8);
+        Vec3 lookAt = local(0, 0.5, -0.02);
+        // o olhar acompanha um pouco o item sob o mouse (e o item que a mao esta pegando)
+        Vec3 focus = hoverSlot >= 0 && phase == Phase.ACTIVE ? cellPoint(hoverSlot) : null;
+        focusW += ((focus != null ? 1 : 0) - focusW) * (1 - Math.exp(-5 * Mth.clamp(clock() - lastFrame, 0, 0.1)));
+        if (focus != null) lastFocus = focus;
+        if (lastFocus != null && focusW > 0.001) lookAt = lookAt.add(lastFocus.subtract(lookAt).scale(0.18 * focusW));
+        Vec3 look = lookAt.subtract(eye);
         float yaw = (float) Math.toDegrees(Math.atan2(-look.x, look.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(look.y, Math.hypot(look.x, look.z)));
         double t = clock();
@@ -523,20 +531,20 @@ public final class ChestScene {
                 final int slotI = i;
                 if (s.isEmpty() || placing.stream().anyMatch(pl -> pl.slot() == slotI)) continue;
                 boolean hov = i == hoverSlot && carried().isEmpty();
-                Vec3 at = cellPoint(i).add(0, hov ? 0.035 + Math.sin(now * 5) * 0.006 : 0.01, 0);
-                float k = (float) (itemSize * 2) * (hov ? 1.15f : 1f);   // item no chao: lado = 0.5 * escala
+                Vec3 at = cellPoint(i).add(0, hov ? 0.035 + Math.sin(now * 5) * 0.006 : 0, 0);
+                float k = (float) itemSize * (hov ? 1.12f : 1f);
                 drawItem(ps, buf, s, at, cam, camYaw + itemYaw(i), -62f, k, itemLight);
             }
         }
         ChestHands.render(ps, buf, cam, yaw, light);
-        for (Placing pl : placing) drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, 0.32f, itemLight);
+        for (Placing pl : placing) drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, (float) itemSize, itemLight);
 
         // itens mandados para o inventario: voam ate a camera
         if (!flying.isEmpty()) {
             flying.removeIf(fl -> now - fl.start() > FLY);
             for (Flying fl : flying) {
                 double u = LapidaryCut.window(now - fl.start(), 0, FLY);
-                drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, 0.3f * (float) (1 - 0.6 * u), itemLight);
+                drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, (float) itemSize * (float) (1 - 0.5 * u), itemLight);
             }
         }
     }
@@ -548,16 +556,24 @@ public final class ChestScene {
         return fl.from().add(to.subtract(fl.from()).scale(u * u)).add(0, 0.14 * LapidaryCut.hump(u), 0);
     }
 
-    // item "deitado" virado para quem olha (faceYaw = yaw da camera que olha); blocos ganham um pouco mais de tamanho (no chao eles sao bem menores)
+    // Item com o mesmo "tamanho de icone" do inventario (contexto GUI: todo item, bloco ou modelo especial cabe num
+    // quadrado de 1 unidade), virado para quem olha (faceYaw = yaw da camera). 'at' = ponto no chao embaixo dele.
+    //  - item chato: deitado para tras (tilt), apoiado no chao;
+    //  - bloco / modelo 3D: em pe e sem inclinar (antes os blocos deitavam e apareciam de ponta-cabeca e enormes).
     static void drawItem(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float faceYaw, float tilt, float scale, int light) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getItemRenderer().getModel(stack, mc.level, null, 0).isGui3d()) scale *= 1.7f;
+        boolean block = mc.getItemRenderer().getModel(stack, mc.level, null, 0).isGui3d();
         ps.pushPose();
         ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
         ps.mulPose(Axis.YP.rotationDegrees(180f - faceYaw));
-        ps.mulPose(Axis.XP.rotationDegrees(tilt));
-        ps.scale(scale, scale, scale);
-        mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
+        if (block) {
+            ps.translate(0, scale * 0.42, 0);
+        } else {
+            ps.translate(0, scale * 0.5 * Math.cos(Math.toRadians(Math.abs(tilt))) + 0.004, 0);
+            ps.mulPose(Axis.XP.rotationDegrees(tilt));
+        }
+        ps.scale(scale, scale, scale * (block ? 1 : 0.6f));
+        mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GUI, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
         ps.popPose();
     }
 

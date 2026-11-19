@@ -51,18 +51,18 @@ final class ChestHands {
             tR = u < 0.1 ? grab.from().add(0, 0.04, 0) : ChestScene.flyingAt(grab, cam, yaw, now).add(0, 0.03, 0);
             omegaR = 30;
         } else if (ChestScene.phase == ChestScene.Phase.ACTIVE) {
-            Vec3[] ray = ChestScene.overBar ? LapidaryPick.ray() : null;
-            if (ray != null) {
-                tR = ray[0].add(ray[1].scale(0.62));   // mouse na barra: a mao vai ate la
-                omegaR = 18;
+            if (ChestScene.overBar) {
+                tR = tR.add(0, 0.04, 0);   // mouse na barra: a mao so se prepara (antes ia ate la e cobria tudo)
             } else if (ChestScene.hoverSlot >= 0) {
                 // a mao fica logo na frente e um pouco a direita do item (apontando), sem cobrir ele
                 tR = ChestScene.cellPoint(ChestScene.hoverSlot).add(0, 0.06, 0).add(towardCam.scale(0.11))
                         .add(ChestScene.local(0.035, 0, 0).subtract(ChestScene.center));
                 omegaR = 17;
             } else {
+                // sem item sob o mouse: a mao descansa e so "olha" um pouco para o mouse
                 double[] f = ChestScene.onFloor();
-                if (f != null) tR = ChestScene.local(Mth.clamp(f[0], -hw - 0.1, hw + 0.1), 0.62, Mth.clamp(f[1], -0.3, 0.55));
+                if (f != null) tR = tR.add(ChestScene.local(Mth.clamp(f[0], -hw, hw), 0.62, Mth.clamp(f[1], -0.3, 0.4)).subtract(tR).scale(0.2));
+                omegaR = 9;
             }
             double tap = now - tapAt;
             if (tap >= 0 && tap < 0.18) tR = tR.add(0, -0.035 * LapidaryCut.hump(tap / 0.18), 0);
