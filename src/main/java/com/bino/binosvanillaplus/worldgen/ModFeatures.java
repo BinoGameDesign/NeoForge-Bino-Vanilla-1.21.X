@@ -18,5 +18,8 @@ public class ModFeatures {
     public static final Supplier<Feature<NoneFeatureConfiguration>> FOSSIL_EXPOSED =
             FEATURES.register("fossil_exposed", () -> new FossilFeature(NoneFeatureConfiguration.CODEC, true));
 
+    public static final Supplier<Feature<NoneFeatureConfiguration>> CAVE_CHEST =
+            FEATURES.register("cave_chest", () -> new CaveChestFeature(NoneFeatureConfiguration.CODEC));
+
     public static void register(IEventBus bus) { FEATURES.register(bus); }
 }
