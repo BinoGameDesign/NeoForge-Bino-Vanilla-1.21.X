@@ -60,7 +60,6 @@ public final class DireRatModelData {
         PartDefinition tail_tip = tail.addOrReplaceChild("tail_tip", CubeListBuilder.create().texOffs(20, 8).addBox(-0.5F, -2.4696F, -0.0527F, 1.0F, 1.0F, 4.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, 0.0F, 4.0F, 6.0F * DEG, 0.0F, 0.0F));
         PartDefinition tail_tip2 = tail_tip.addOrReplaceChild("tail_tip2", CubeListBuilder.create(), PartPose.offsetAndRotation(0.0F, 0.0F, 3.5F, 10.0F * DEG, 0.0F, 0.0F));
         tail_tip2.addOrReplaceChild("tail_tip2_r", CubeListBuilder.create().texOffs(20, 8).addBox(-0.5F, -2.3794F, 0.684F, 1.0F, 1.0F, 4.0F, new CubeDeformation(-0.1F)), PartPose.offsetAndRotation(0.0F, 0.0F, -0.4F, 3.0F * DEG, 0.0F, 0.0F));
-        PartDefinition tail_tip3 = tail_tip2.addOrReplaceChild("tail_tip3", CubeListBuilder.create(), PartPose.offset(0.0F, 0.0F, 0.0F));
         return LayerDefinition.create(mesh, 64, 32);
     }
 }
