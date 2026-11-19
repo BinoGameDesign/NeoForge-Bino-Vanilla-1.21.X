@@ -1,6 +1,5 @@
 package com.bino.binosvanillaplus.client.bench;
 
-import com.bino.binosvanillaplus.client.chest.scene.ChestScene;
 import com.bino.binosvanillaplus.client.lapidary.LapidaryCut;
 import com.bino.binosvanillaplus.client.lapidary.LapidaryHands;
 import com.bino.binosvanillaplus.client.lapidary.LapidaryPick;
@@ -57,7 +56,7 @@ import java.util.List;
 //    - Clique num item da barra = vai direto para a bigorna (esquerda, depois direita). Clique no item da bigorna =
 //      volta para o inventario.
 //    - O jogador fica do lado comprido; o item fica DEITADO no meio do topo e o material na ponta direita; o
-//      resultado aparece flutuando sobre a ponta esquerda assim que da para fazer.
+//      resultado aparece flutuando acima do centro assim que da para fazer.
 //    - Clique no resultado = a mao pega o material e raspa por cima do item 3 vezes (faiscas); no fim o item sai.
 //      Custo em niveis aparece em cima do resultado (vermelho = sem niveis / caro demais). Campo de nome no alto.
 //  Sair: clicar fora do bloco ou Esc. Abrir agachado = janela classica.
@@ -264,9 +263,9 @@ public final class BenchScene {
     static Vec3 resultPoint() {
         double t = clock();
         // atras do tampo, baixinho (antes ficava alto demais e saia da tela)
-        // bancada: atras da grade; bigorna: flutuando por cima da ponta esquerda (aparece assim que da para fazer)
+        // bancada: atras da grade; bigorna: flutuando acima do centro (aparece assim que da para fazer)
         return kind == Kind.CRAFTING ? local(0, TOP + 0.2 + Math.sin(t * 2.2) * 0.01, -0.47)
-                : local(-0.42, TOP + 0.24 + Math.sin(t * 2.2) * 0.01, -0.02);
+                : local(-0.04, TOP + 0.34 + Math.sin(t * 2.2) * 0.01, -0.06);   // bigorna: no centro, acima do item
     }
 
     @Nullable
@@ -303,13 +302,15 @@ public final class BenchScene {
         if (phase != Phase.ACTIVE || hover >= 0 || !carried().isEmpty() || strikeAt > 0) return false;
         double[] p = onTop();
         double hx = 0.6, hz = kind == Kind.ANVIL ? 0.42 : 0.6;
-        if (p == null) return LapidaryPick.mouseNdc()[1] < 0.35;   // olhando para o alto (camera levantada) nao sai
+        if (p == null) return lookUp < 0.05 && LapidaryPick.mouseNdc()[1] < EDGE;   // olhando para o alto nao sai
         return Math.abs(p[0]) > hx || Math.abs(p[1]) > hz;
     }
 
     // ---------------------------------------------------------------- camera
     public record Pose(Vec3 pos, float yaw, float pitch) {}
     private static double parX, parY, lastFrame, focusW, lookUp;
+    // olhar para cima: so com o mouse encostado na borda de cima da tela; saiu da borda, a camera volta sozinha
+    static final double EDGE = 0.9;
     @Nullable private static Vec3 lastFocus;
 
     static Pose scenePose() {
@@ -331,7 +332,7 @@ public final class BenchScene {
         yaw += (float) (Math.sin(t * 0.61) * 0.16 + parX * 1.1);
         pitch += (float) (Math.sin(t * 0.83 + 1.1) * 0.13 - parY * 0.8);
         // mouse perto do alto da tela: a camera levanta e olha para cima (ate ~32 graus)
-        lookUp += ((phase == Phase.ACTIVE ? Mth.clamp((ndc[1] - 0.45) / 0.5, 0, 1) : 0) - lookUp) * (1 - Math.exp(-3.5 * dt));
+        lookUp += ((phase == Phase.ACTIVE && ndc[1] > EDGE ? 1 : 0) - lookUp) * (1 - Math.exp(-3.5 * dt));
         pitch -= (float) (32 * LapidaryCut.inOutCubic(lookUp));
         // vibracao leve durante a raspada
         if (strikeAt > 0 && t - strikeAt > SCRAPE_START) {
@@ -533,8 +534,10 @@ public final class BenchScene {
                 // icone do inventario, deitado e bem maior (na bigorna o item fica ao longo dela)
                 float k = (kind == Kind.CRAFTING ? 0.2f : s == 0 ? 0.46f : 0.28f) * (h ? 1.08f : 1f);
                 Vec3 at = slotPoint(s).add(0, h ? 0.02 + Math.sin(now * 5) * 0.004 : 0, 0);
-                float iy = kind == Kind.ANVIL && s == 0 ? faceYaw - 45f : faceYaw + (s * 29 % 9 - 4);
-                drawIcon(ps, buf, st, at, cam, iy, -90f, k, itemLight);
+                float iy = faceYaw + (kind == Kind.ANVIL ? 0 : s * 29 % 9 - 4);
+                // bigorna: o icone (diagonal, ponta no canto de cima a direita) gira 45 graus no proprio plano e fica
+                // na horizontal, ao longo da bigorna, com a ponta para a direita
+                drawIcon(ps, buf, st, at, cam, iy, -90f, kind == Kind.ANVIL && s == 0 ? -45f : 0f, k, itemLight);
             }
             // resultado girando, com um leve "pulo" quando o mouse esta em cima
             ItemStack r = slot(resultSlot());
@@ -568,6 +571,11 @@ public final class BenchScene {
     // 'size' = lado do icone em blocos; 'at' = ponto no tampo (ou onde ele flutua). Itens chatos deitam com o angulo
     // 'tilt' (-90 = deitado no tampo); blocos ficam em pe como miniatura.
     static void drawIcon(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float faceYaw, float tilt, float size, int light) {
+        drawIcon(ps, buf, stack, at, cam, faceYaw, tilt, 0f, size, light);
+    }
+
+    // 'roll' = giro do icone no proprio plano (depois de deitar)
+    static void drawIcon(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float faceYaw, float tilt, float roll, float size, int light) {
         Minecraft mc = Minecraft.getInstance();
         boolean block = stack.getItem() instanceof net.minecraft.world.item.BlockItem
                 && mc.getItemRenderer().getModel(stack, mc.level, null, 0).isGui3d();
@@ -580,6 +588,7 @@ public final class BenchScene {
         } else {
             ps.translate(0, 0.004, 0);
             ps.mulPose(Axis.XP.rotationDegrees(tilt));
+            if (roll != 0) ps.mulPose(Axis.ZP.rotationDegrees(roll));
         }
         ps.scale(size, size, block ? size : size * 0.5f);
         mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GUI, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
