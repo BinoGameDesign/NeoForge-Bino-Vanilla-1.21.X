@@ -40,9 +40,9 @@ public final class LapidaryHands {
         }
     }
 
-    // braco: espessura (1 = braco do jogador) e comprimento maximo desenhado a partir da mao
-    static final float ARM_THICK = 0.48f;
-    static final double FOREARM = 0.62;
+    // braco: espessura (1 = braco do jogador). O braco inteiro e' desenhado (cortar no antebraco deixava a ponta
+    // aberta aparecendo); os ombros ficam baixos e para fora, entao so o fim do braco entra na tela.
+    static final float ARM_THICK = 0.5f;
 
     // distancia da camera (em blocos) a que a mao fica quando alcanca a barra de itens
     private static final double BAR_REACH = 0.62;
@@ -234,8 +234,6 @@ public final class LapidaryHands {
         if (!(Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player) instanceof PlayerRenderer renderer)) return;
         Vec3 d = hand.subtract(shoulder);
         if (d.lengthSqr() < 1e-8) return;
-        // so o antebraco (ate ~0,62 bloco da mao): o resto do braco ficava enorme perto da camera
-        if (d.length() > FOREARM) { shoulder = hand.subtract(d.normalize().scale(FOREARM)); d = hand.subtract(shoulder); }
         double length = d.length() + 0.12;
         d = d.normalize();
         Vec3 worldUp = new Vec3(0, 1, 0);

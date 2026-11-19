@@ -125,10 +125,8 @@ public class ChestSceneScreen extends Screen {
             int used = 0, total = ChestScene.chestSlots();
             for (int i = 0; i < total; i++) if (!menu.getSlot(i).getItem().isEmpty()) used++;
             String t2 = used + "/" + total;
-            int tw = font.width(t2) + 12, tx = (int) cp[0] - tw / 2, ty = (int) cp[1] - 7;
-            Glass.panel(g, tx, ty, tw, 14, 5, Glass.POPUP, BinoUi.MENU_BG);
             int col = used >= total ? 0xFFFF7A6B : used >= total * 0.8 ? 0xFFFFD36B : 0xFFFFFFFF;
-            g.drawString(font, t2, tx + 6, ty + 3, col, false);
+            g.drawString(font, t2, (int) cp[0] - font.width(t2) / 2, (int) cp[1] - 4, col, true);   // so o numero
         }
 
         // dicas (no alto, a barra fica embaixo)

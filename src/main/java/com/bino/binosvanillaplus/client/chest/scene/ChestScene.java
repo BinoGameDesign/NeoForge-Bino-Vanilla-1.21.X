@@ -243,7 +243,7 @@ public final class ChestScene {
         int cols = Math.max(1, (int) Math.ceil(Math.sqrt(n * w / d)));
         int rws = (int) Math.ceil(n / (double) cols);
         double cw = w / cols, cd = d / rws;
-        itemSize = Mth.clamp(Math.min(cw * 1.05, cd * 0.9), 0.11, 0.24);
+        itemSize = Mth.clamp(Math.min(cw * 1.35, cd * 1.1), 0.1, 0.3);
         for (int k = 0; k < n; k++) {
             int slot = occupied.get(k), c = k % cols, r = k / cols;
             int inRow = r == rws - 1 ? n - r * cols : cols;
@@ -532,19 +532,19 @@ public final class ChestScene {
                 if (s.isEmpty() || placing.stream().anyMatch(pl -> pl.slot() == slotI)) continue;
                 boolean hov = i == hoverSlot && carried().isEmpty();
                 Vec3 at = cellPoint(i).add(0, hov ? 0.035 + Math.sin(now * 5) * 0.006 : 0, 0);
-                float k = (float) itemSize * (hov ? 1.12f : 1f);
+                float k = (float) (itemSize * 2) * (hov ? 1.15f : 1f);   // item no chao: lado = 0.5 * escala
                 drawItem(ps, buf, s, at, cam, camYaw + itemYaw(i), -62f, k, itemLight);
             }
         }
         ChestHands.render(ps, buf, cam, yaw, light);
-        for (Placing pl : placing) drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, (float) itemSize, itemLight);
+        for (Placing pl : placing) drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, 0.32f, itemLight);
 
         // itens mandados para o inventario: voam ate a camera
         if (!flying.isEmpty()) {
             flying.removeIf(fl -> now - fl.start() > FLY);
             for (Flying fl : flying) {
                 double u = LapidaryCut.window(now - fl.start(), 0, FLY);
-                drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, (float) itemSize * (float) (1 - 0.5 * u), itemLight);
+                drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, 0.3f * (float) (1 - 0.6 * u), itemLight);
             }
         }
     }
@@ -556,24 +556,19 @@ public final class ChestScene {
         return fl.from().add(to.subtract(fl.from()).scale(u * u)).add(0, 0.14 * LapidaryCut.hump(u), 0);
     }
 
-    // Item com o mesmo "tamanho de icone" do inventario (contexto GUI: todo item, bloco ou modelo especial cabe num
-    // quadrado de 1 unidade), virado para quem olha (faceYaw = yaw da camera). 'at' = ponto no chao embaixo dele.
-    //  - item chato: deitado para tras (tilt), apoiado no chao;
-    //  - bloco / modelo 3D: em pe e sem inclinar (antes os blocos deitavam e apareciam de ponta-cabeca e enormes).
+    // Item "jogado" no bau, virado para quem olha (faceYaw = yaw da camera), como no chao do jogo (contexto GROUND):
+    // itens chatos deitados para tras e se sobrepondo (a "bagunca" que da fundo ao bau). Blocos e modelos 3D ficam
+    // EM PE (deitados eles apareciam de ponta-cabeca) e um pouco maiores (no chao o jogo os desenha bem menores).
     static void drawItem(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float faceYaw, float tilt, float scale, int light) {
         Minecraft mc = Minecraft.getInstance();
         boolean block = mc.getItemRenderer().getModel(stack, mc.level, null, 0).isGui3d();
         ps.pushPose();
         ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
         ps.mulPose(Axis.YP.rotationDegrees(180f - faceYaw));
-        if (block) {
-            ps.translate(0, scale * 0.42, 0);
-        } else {
-            ps.translate(0, scale * 0.5 * Math.cos(Math.toRadians(Math.abs(tilt))) + 0.004, 0);
-            ps.mulPose(Axis.XP.rotationDegrees(tilt));
-        }
-        ps.scale(scale, scale, scale * (block ? 1 : 0.6f));
-        mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GUI, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
+        if (block) scale *= 1.4f;
+        else ps.mulPose(Axis.XP.rotationDegrees(tilt));
+        ps.scale(scale, scale, scale);
+        mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
         ps.popPose();
     }
 
