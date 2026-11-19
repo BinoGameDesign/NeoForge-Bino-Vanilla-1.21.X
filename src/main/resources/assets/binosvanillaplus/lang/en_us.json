@@ -145,5 +145,9 @@
   "entity.binosvanillaplus.mimic": "Mimic",
   "entity.binosvanillaplus.mimic_double": "Large Mimic",
   "message.binosvanillaplus.mimic_egg_hint": "Put it in a chest and close it: the chest becomes a mimic.",
-  "tooltip.binosvanillaplus.mimic_egg": "Put it in a chest (single or double) and close it."
+  "tooltip.binosvanillaplus.mimic_egg": "Put it in a chest (single or double) and close it.",
+  "chest.binosvanillaplus.hint.take": "Click: take  ·  Shift + click: send to inventory",
+  "chest.binosvanillaplus.hint.place": "Click a spot: store  ·  Right click: just one / put back",
+  "chest.binosvanillaplus.hint.full": "Inventory full",
+  "chest.binosvanillaplus.hint.leave": "Esc: close the chest  ·  Open while sneaking for the classic window"
 }

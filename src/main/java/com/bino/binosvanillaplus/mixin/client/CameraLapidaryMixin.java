@@ -1,5 +1,6 @@
 package com.bino.binosvanillaplus.mixin.client;
 
+import com.bino.binosvanillaplus.client.chest.scene.ChestScene;
 import com.bino.binosvanillaplus.client.lapidary.LapidaryScene;
 import net.minecraft.client.Camera;
 import net.minecraft.world.entity.Entity;
@@ -21,11 +22,17 @@ public abstract class CameraLapidaryMixin {
     @Inject(method = "setup", at = @At("TAIL"))
     private void binosvanillaplus$lapidaryScene(BlockGetter level, Entity entity, boolean detached, boolean thirdPersonReverse,
                                                 float partialTick, CallbackInfo ci) {
-        if (!LapidaryScene.active()) return;
         Camera self = (Camera) (Object) this;
-        LapidaryScene.Pose pose = LapidaryScene.override(self.getPosition(), self.getYRot(), self.getXRot());
-        if (pose == null) return;
-        this.setRotation(pose.yaw(), pose.pitch());
-        this.setPosition(pose.pos());
+        if (LapidaryScene.active()) {
+            LapidaryScene.Pose pose = LapidaryScene.override(self.getPosition(), self.getYRot(), self.getXRot());
+            if (pose == null) return;
+            this.setRotation(pose.yaw(), pose.pitch());
+            this.setPosition(pose.pos());
+        } else if (ChestScene.active()) {   // cena do bau (mesmo esquema)
+            ChestScene.Pose pose = ChestScene.override(self.getPosition(), self.getYRot(), self.getXRot());
+            if (pose == null) return;
+            this.setRotation(pose.yaw(), pose.pitch());
+            this.setPosition(pose.pos());
+        }
     }
 }

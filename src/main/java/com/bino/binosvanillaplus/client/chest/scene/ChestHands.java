@@ -1,0 +1,80 @@
+package com.bino.binosvanillaplus.client.chest.scene;
+
+import com.bino.binosvanillaplus.client.lapidary.LapidaryCut;
+import com.bino.binosvanillaplus.client.lapidary.LapidaryHands;
+import com.bino.binosvanillaplus.client.lapidary.LapidaryPick;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
+
+// Bracos da cena do bau (mesmo desenho dos da Mesa de Lapidacao: skin do jogador, mola suave).
+// Esquerda: segura a borda da frente do bau. Direita: segue o mouse dentro do bau / sobe ate a barra / leva o item.
+// Se o bau era um mimico, as duas maos fogem na hora.
+final class ChestHands {
+    private ChestHands() {}
+
+    private static final LapidaryHands.Spring RIGHT = new LapidaryHands.Spring(), LEFT = new LapidaryHands.Spring();
+    private static double tapAt = -100, lastFrame;
+
+    static void begin() {
+        RIGHT.init = LEFT.init = false;
+        lastFrame = ChestScene.clock();
+    }
+
+    static void tap() { tapAt = ChestScene.clock(); }
+
+    static void render(PoseStack ps, MultiBufferSource buf, Vec3 cam, float yaw, int light) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null) return;
+        double now = ChestScene.clock();
+        double dt = Mth.clamp(now - lastFrame, 0, 0.1);
+        lastFrame = now;
+        double hw = ChestScene.halfWidth();
+        Vec3 towardCam = cam.subtract(ChestScene.center).multiply(1, 0, 1).normalize();
+
+        Vec3 tL = ChestScene.local(-Math.min(0.3, hw * 0.75), 0.56, 0.47);
+        Vec3 tR = ChestScene.local(Math.min(0.3, hw * 0.75), 0.6, 0.5);
+        double omegaR = 15;
+        if (ChestScene.phase == ChestScene.Phase.ACTIVE) {
+            Vec3[] ray = ChestScene.overBar ? LapidaryPick.ray() : null;
+            if (ray != null) {
+                tR = ray[0].add(ray[1].scale(0.62));   // mouse na barra: a mao vai ate la
+                omegaR = 18;
+            } else if (ChestScene.hoverSlot >= 0) {
+                tR = ChestScene.cellPoint(ChestScene.hoverSlot).add(0, 0.08, 0).add(towardCam.scale(0.04));
+                omegaR = 17;
+            } else {
+                double[] f = ChestScene.onFloor();
+                if (f != null) tR = ChestScene.local(Mth.clamp(f[0], -hw - 0.1, hw + 0.1), 0.62, Mth.clamp(f[1], -0.3, 0.55));
+            }
+            double tap = now - tapAt;
+            if (tap >= 0 && tap < 0.18) tR = tR.add(0, -0.035 * LapidaryCut.hump(tap / 0.18), 0);
+        }
+
+        double w = ChestScene.weight;
+        if (ChestScene.phase == ChestScene.Phase.OUTRO)
+            w = ChestScene.serverClosed ? 0 : Math.min(w, 1 - LapidaryCut.window(now - ChestScene.phaseAt, 0, 0.45));
+        Vec3 hR = LapidaryHands.hidden(true, cam, yaw), hL = LapidaryHands.hidden(false, cam, yaw);
+        tR = hR.add(tR.subtract(hR).scale(w));
+        tL = hL.add(tL.subtract(hL).scale(w));
+        double b = Math.sin(now * 1.7) * 0.004;
+        boolean flee = ChestScene.serverClosed;
+        RIGHT.step(tR.add(0, b, 0), dt, flee ? 30 : omegaR);
+        LEFT.step(tL.add(0, -b, 0), dt, flee ? 30 : 15);
+
+        Vec3 f = LapidaryHands.forward(yaw);
+        if (w > 0.02 || RIGHT.pos.distanceToSqr(hR) > 0.001) {
+            LapidaryHands.arm(ps, buf, cam, RIGHT.pos, LapidaryHands.shoulder(true, cam, yaw), true, light, f, player);
+            LapidaryHands.arm(ps, buf, cam, LEFT.pos, LapidaryHands.shoulder(false, cam, yaw), false, light, f, player);
+        }
+        ItemStack held = ChestScene.carried();
+        if (!held.isEmpty() && ChestScene.phase != ChestScene.Phase.OUTRO) {
+            Vec3 dir = RIGHT.pos.subtract(LapidaryHands.shoulder(true, cam, yaw)).normalize();
+            LapidaryHands.item(ps, buf, held, RIGHT.pos.add(dir.scale(0.035)).add(0, -0.025, 0), cam, yaw, 0.36f, light);
+        }
+    }
+}

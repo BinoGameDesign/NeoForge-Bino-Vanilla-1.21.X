@@ -47,5 +47,16 @@ public final class LapidaryPick {
         return new Vec3[]{origin, dir};
     }
 
+    // ponto do mundo -> pixel da tela da GUI {x, y} (ou null se estiver atras da camera)
+    @Nullable
+    public static double[] project(Vec3 world) {
+        if (!valid) return null;
+        Vector4f v = VIEW_PROJ.transform(new Vector4f((float) (world.x - camera.x), (float) (world.y - camera.y), (float) (world.z - camera.z), 1f));
+        if (v.w <= 1e-4) return null;
+        Minecraft mc = Minecraft.getInstance();
+        double gw = mc.getWindow().getGuiScaledWidth(), gh = mc.getWindow().getGuiScaledHeight();
+        return new double[]{(v.x / v.w * 0.5 + 0.5) * gw, (0.5 - v.y / v.w * 0.5) * gh};
+    }
+
     public static void invalidate() { valid = false; }
 }

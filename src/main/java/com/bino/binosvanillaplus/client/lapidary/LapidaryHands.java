@@ -23,11 +23,11 @@ import org.joml.Vector3f;
 public final class LapidaryHands {
     private LapidaryHands() {}
 
-    private static final class Spring {
-        Vec3 pos = Vec3.ZERO, vel = Vec3.ZERO;
-        boolean init;
+    public static final class Spring {
+        public Vec3 pos = Vec3.ZERO, vel = Vec3.ZERO;
+        public boolean init;
 
-        void step(Vec3 target, double dt, double omega) {
+        public void step(Vec3 target, double dt, double omega) {
             if (!init) { pos = target; vel = Vec3.ZERO; init = true; return; }
             // mola criticamente amortecida, em passos pequenos
             int n = Math.max(1, (int) Math.ceil(dt / (1 / 120.0)));
@@ -54,20 +54,20 @@ public final class LapidaryHands {
     static void tap() { tapAt = LapidaryScene.clock(); }
 
     // ---------------------------------------------------------------- referencias da camera
-    static Vec3 forward(float yaw) {
+    public static Vec3 forward(float yaw) {
         double r = Math.toRadians(yaw);
         return new Vec3(-Math.sin(r), 0, Math.cos(r));
     }
 
-    static Vec3 rightOf(Vec3 fwd) { return new Vec3(-fwd.z, 0, fwd.x); }
+    public static Vec3 rightOf(Vec3 fwd) { return new Vec3(-fwd.z, 0, fwd.x); }
 
-    static Vec3 shoulder(boolean right, Vec3 cam, float yaw) {
+    public static Vec3 shoulder(boolean right, Vec3 cam, float yaw) {
         Vec3 f = forward(yaw);
         return cam.add(rightOf(f).scale(right ? 0.36 : -0.36)).add(0, -0.44, 0).add(f.scale(0.06));
     }
 
     // mao "guardada" (fora da tela, perto do ombro) para entrar/sair da cena
-    static Vec3 hidden(boolean right, Vec3 cam, float yaw) {
+    public static Vec3 hidden(boolean right, Vec3 cam, float yaw) {
         return shoulder(right, cam, yaw).add(forward(yaw).scale(0.1)).add(0, -0.08, 0);
     }
 
@@ -195,7 +195,7 @@ public final class LapidaryHands {
         }
     }
 
-    private static void item(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float yaw, float scale, int light) {
+    public static void item(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float yaw, float scale, int light) {
         Minecraft mc = Minecraft.getInstance();
         ps.pushPose();
         ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
@@ -208,7 +208,7 @@ public final class LapidaryHands {
 
     // braco com a skin: o modelo do braco (12 px de comprimento, para +y) e' girado para apontar do ombro ate a mao
     // e esticado ate o comprimento certo
-    private static void arm(PoseStack ps, MultiBufferSource buf, Vec3 cam, Vec3 hand, Vec3 shoulder, boolean right, int light,
+    public static void arm(PoseStack ps, MultiBufferSource buf, Vec3 cam, Vec3 hand, Vec3 shoulder, boolean right, int light,
                             Vec3 forward, LocalPlayer player) {
         if (!(Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player) instanceof PlayerRenderer renderer)) return;
         Vec3 d = hand.subtract(shoulder);

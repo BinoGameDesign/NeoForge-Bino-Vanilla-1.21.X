@@ -337,5 +337,9 @@
   "entity.binosvanillaplus.mimic": "Mímico",
   "entity.binosvanillaplus.mimic_double": "Mímico Grande",
   "message.binosvanillaplus.mimic_egg_hint": "Guarde num baú e feche: o baú vira um mímico.",
-  "tooltip.binosvanillaplus.mimic_egg": "Guarde num baú (simples ou duplo) e feche."
+  "tooltip.binosvanillaplus.mimic_egg": "Guarde num baú (simples ou duplo) e feche.",
+  "chest.binosvanillaplus.hint.take": "Clique: pegar  ·  Shift + clique: mandar para o inventário",
+  "chest.binosvanillaplus.hint.place": "Clique numa casa: guardar  ·  Botão direito: um só / devolver",
+  "chest.binosvanillaplus.hint.full": "Inventário cheio",
+  "chest.binosvanillaplus.hint.leave": "Esc: fechar o baú  ·  Abra agachado para a janela clássica"
 }
