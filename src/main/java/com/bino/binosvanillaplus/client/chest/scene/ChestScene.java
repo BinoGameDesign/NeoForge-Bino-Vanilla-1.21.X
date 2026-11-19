@@ -260,7 +260,7 @@ public final class ChestScene {
     private static double parX, parY, lastFrame;
 
     static Pose scenePose() {
-        Vec3 eye = dbl ? local(0, 1.45, 1.22) : local(0, 1.24, 0.92);
+        Vec3 eye = dbl ? local(0, 1.55, 1.38) : local(0, 1.36, 1.06);
         Vec3 look = local(0, 0.5, -0.06).subtract(eye);
         float yaw = (float) Math.toDegrees(Math.atan2(-look.x, look.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(look.y, Math.hypot(look.x, look.z)));

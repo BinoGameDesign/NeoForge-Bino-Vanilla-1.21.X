@@ -45,7 +45,9 @@ final class ChestHands {
                 tR = ray[0].add(ray[1].scale(0.62));   // mouse na barra: a mao vai ate la
                 omegaR = 18;
             } else if (ChestScene.hoverSlot >= 0) {
-                tR = ChestScene.cellPoint(ChestScene.hoverSlot).add(0, 0.08, 0).add(towardCam.scale(0.04));
+                // a mao fica logo na frente e um pouco a direita do item (apontando), sem cobrir ele
+                tR = ChestScene.cellPoint(ChestScene.hoverSlot).add(0, 0.06, 0).add(towardCam.scale(0.11))
+                        .add(ChestScene.local(0.035, 0, 0).subtract(ChestScene.center));
                 omegaR = 17;
             } else {
                 double[] f = ChestScene.onFloor();
