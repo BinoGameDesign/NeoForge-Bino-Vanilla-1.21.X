@@ -3,7 +3,6 @@ package com.bino.binosvanillaplus.client.gear;
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -31,18 +30,21 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.ClientHooks;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 // Contorno da forja (+4, +6, +8, +10): silhueta 2D na TELA, como o contorno "brilhando" dos mobs, mas feito por nos
 // (vale tambem para o item na mao em primeira pessoa e funciona com shaderpack). Codigo proprio.
-//  1) Cada item forjado desenhado em 3D (mao, chao, moldura) e' desenhado TAMBEM numa textura escondida (a mascara),
-//     com uma cor lisa: rgb = cor do item, alfa = faixa (+4 = 0.25 ... +10 = 1.0).
-//  2) Antes do HUD, o shader forge_edge le a mascara e pinta na tela os pixels de fora da silhueta que estao a ate
-//     N pixels dela (N pela faixa). Cor: degrade branco (cima-direita) -> cor do item.
+//  1) Durante o quadro, cada item forjado desenhado em 3D (mao, chao, moldura) so e' ANOTADO: os vertices ja
+//     convertidos para coordenadas de tela, com uma cor lisa (rgb = cor do item, alfa = faixa). Nada e' desenhado no
+//     meio da renderizacao do mundo (isso atrapalhava o shaderpack: personagem sumia).
+//  2) Antes do HUD: a silhueta anotada vai para uma textura escondida (mascara) e o shader forge_edge pinta em volta
+//     dela uma borda de 8 px (degrade branco -> cor) e um brilho suave na cor do item.
 // Item no mundo atras de parede nao ganha contorno (teste de visao da camera ate o item).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public final class ForgeOutline {
@@ -50,71 +52,74 @@ public final class ForgeOutline {
 
     public static ShaderInstance maskShader, edgeShader;   // registrados em MapClientEvents.registerShaders
 
+    private static final float MARGIN_PX = 8f + 18f + 2f;   // borda + brilho (forge_edge.fsh), em 1080p
+    private static final int FLOATS = 9;                     // x y z u v r g b a
+
+    private static float[] verts = new float[FLOATS * 4 * 256];
+    private static int count;                                // vertices anotados
+    private static float minX, minY, maxX, maxY;             // area na tela (-1..1)
     private static RenderTarget mask;
-    private static boolean dirty, handStarted;
     private static final ByteBufferBuilder BYTES = new ByteBufferBuilder(1 << 16);
     private static final RandomSource RANDOM = RandomSource.create();
 
-    // ---------------------------------------------------------------- 1) mascara
+    // ---------------------------------------------------------------- 1) anotar
     public static void render(ItemStack stack, ItemDisplayContext ctx, boolean leftHand, PoseStack ps, BakedModel model) {
         if (ctx == ItemDisplayContext.GUI || ctx == ItemDisplayContext.NONE) return;   // icone: ForgeIconOutline
         int tier = ForgeGlow.tier(stack);
         if (tier == 0 || model == null || model.isCustomRenderer() || maskShader == null) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mask == null || irisShadowPass()) return;
+        if (mc.level == null || irisShadowPass()) return;
 
         ps.pushPose();
         BakedModel shown = ClientHooks.handleCameraTransforms(ps, model, ctx, leftHand);
         ps.translate(-0.5f, -0.5f, -0.5f);
         PoseStack.Pose pose = ps.last();
-        if (!ctx.firstPerson() && hidden(mc, pose)) { ps.popPose(); return; }
-
-        int rgb = ForgeGlow.color(stack.getItem());
-        float r = ((rgb >> 16) & 255) / 255f, g = ((rgb >> 8) & 255) / 255f, b = (rgb & 255) / 255f, a = tier / 4f;
-        BufferBuilder bb = new BufferBuilder(BYTES, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        for (BakedModel pass : shown.getRenderPasses(stack, true)) {
-            for (Direction d : Direction.values()) quads(bb, pose, pass, d, r, g, b, a);
-            quads(bb, pose, pass, null, r, g, b, a);
+        boolean hand = ctx.firstPerson();
+        if (hand || !hidden(mc, pose)) {
+            Matrix4f mvp = new Matrix4f(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix()).mul(pose.pose());
+            int rgb = ForgeGlow.color(stack.getItem());
+            float r = ((rgb >> 16) & 255) / 255f, g = ((rgb >> 8) & 255) / 255f, b = (rgb & 255) / 255f, a = tier / 4f;
+            for (BakedModel pass : shown.getRenderPasses(stack, true)) {
+                for (Direction d : Direction.values()) quads(mvp, pass, d, hand, r, g, b, a);
+                quads(mvp, pass, null, hand, r, g, b, a);
+            }
         }
         ps.popPose();
-        MeshData mesh = bb.build();
-        if (mesh == null) return;
-
-        // desenha ja, na mascara, e devolve tudo como estava (inclusive o framebuffer do Iris, se houver)
-        int prevDraw = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING), prevRead = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
-        mask.bindWrite(false);
-        if (ctx.firstPerson() && !handStarted) {   // a mao usa outra projecao: zera so a profundidade da mascara
-            handStarted = true;
-            RenderSystem.depthMask(true);
-            RenderSystem.clearDepth(1.0);
-            RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
-        }
-        RenderSystem.setShader(() -> maskShader);
-        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
-        RenderSystem.disableBlend();
-        RenderSystem.disableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(GL11.GL_LEQUAL);
-        RenderSystem.depthMask(true);
-        BufferUploader.drawWithShader(mesh);
-        RenderSystem.enableCull();
-        GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, prevDraw);
-        GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, prevRead);
-        dirty = true;
     }
 
-    private static void quads(BufferBuilder bb, PoseStack.Pose pose, BakedModel model, Direction side, float r, float g, float b, float a) {
+    private static void quads(Matrix4f mvp, BakedModel model, Direction side, boolean hand, float r, float g, float b, float a) {
         RANDOM.setSeed(42L);
+        Vector4f p = new Vector4f();
         for (BakedQuad q : model.getQuads(null, side, RANDOM)) {
             int[] v = q.getVertices();
             int stride = v.length / 4;
-            for (int k = 0; k < 4; k++) {
+            int start = count;
+            ensure(count + 4);
+            boolean ok = true;
+            for (int k = 0; k < 4 && ok; k++) {
                 int o = k * stride;
-                bb.addVertex(pose, Float.intBitsToFloat(v[o]), Float.intBitsToFloat(v[o + 1]), Float.intBitsToFloat(v[o + 2]))
-                        .setUv(Float.intBitsToFloat(v[o + 4]), Float.intBitsToFloat(v[o + 5]))
-                        .setColor(r, g, b, a);
+                p.set(Float.intBitsToFloat(v[o]), Float.intBitsToFloat(v[o + 1]), Float.intBitsToFloat(v[o + 2]), 1f);
+                mvp.transform(p);
+                if (p.w < 0.01f) { ok = false; break; }   // atras da camera: pula a face
+                float x = p.x / p.w, y = p.y / p.w, z = p.z / p.w;
+                z = hand ? z * 0.5f - 0.5f : z * 0.5f + 0.5f;   // mao sempre na frente do mundo
+                int i = (start + k) * FLOATS;
+                verts[i] = x; verts[i + 1] = y; verts[i + 2] = z;
+                verts[i + 3] = Float.intBitsToFloat(v[o + 4]); verts[i + 4] = Float.intBitsToFloat(v[o + 5]);
+                verts[i + 5] = r; verts[i + 6] = g; verts[i + 7] = b; verts[i + 8] = a;
             }
+            if (!ok) continue;
+            for (int k = 0; k < 4; k++) {
+                int i = (start + k) * FLOATS;
+                minX = Math.min(minX, verts[i]); maxX = Math.max(maxX, verts[i]);
+                minY = Math.min(minY, verts[i + 1]); maxY = Math.max(maxY, verts[i + 1]);
+            }
+            count += 4;
         }
+    }
+
+    private static void ensure(int n) {
+        if (n * FLOATS > verts.length) verts = Arrays.copyOf(verts, Math.max(verts.length * 2, n * FLOATS));
     }
 
     // item no mundo escondido atras de bloco? (a pose do item e' relativa a camera)
@@ -129,51 +134,74 @@ public final class ForgeOutline {
         return hit.getType() == HitResult.Type.BLOCK && hit.getLocation().distanceTo(from) < dist - 0.4;
     }
 
-    // ---------------------------------------------------------------- inicio do quadro: limpa a mascara
+    // ---------------------------------------------------------------- inicio do quadro
     @SubscribeEvent
     public static void onFrame(RenderFrameEvent.Pre event) {
-        Minecraft mc = Minecraft.getInstance();
-        RenderTarget main = mc.getMainRenderTarget();
-        if (mask == null) {
-            mask = new TextureTarget(main.width, main.height, true, Minecraft.ON_OSX);
-        } else if (mask.width != main.width || mask.height != main.height) {
-            mask.resize(main.width, main.height, Minecraft.ON_OSX);
-        }
-        mask.setClearColor(0f, 0f, 0f, 0f);
-        mask.clear(Minecraft.ON_OSX);
-        main.bindWrite(true);
-        dirty = false;
-        handStarted = false;
+        count = 0;
+        minX = minY = Float.MAX_VALUE;
+        maxX = maxY = -Float.MAX_VALUE;
     }
 
-    // ---------------------------------------------------------------- 2) borda na tela (antes do HUD)
+    // ---------------------------------------------------------------- 2) mascara + borda (antes do HUD)
     @SubscribeEvent
     public static void onGui(RenderGuiEvent.Pre event) {
-        if (!dirty || edgeShader == null || mask == null) return;
-        dirty = false;
+        if (count == 0 || maskShader == null || edgeShader == null) return;
         Minecraft mc = Minecraft.getInstance();
         RenderTarget main = mc.getMainRenderTarget();
+        if (mask == null) mask = new TextureTarget(main.width, main.height, true, Minecraft.ON_OSX);
+        else if (mask.width != main.width || mask.height != main.height) mask.resize(main.width, main.height, Minecraft.ON_OSX);
+
+        // mascara
+        mask.setClearColor(0f, 0f, 0f, 0f);
+        mask.clear(Minecraft.ON_OSX);
+        mask.bindWrite(true);
+        BufferBuilder bb = new BufferBuilder(BYTES, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        for (int v = 0; v < count; v++) {
+            int i = v * FLOATS;
+            bb.addVertex(verts[i], verts[i + 1], verts[i + 2]).setUv(verts[i + 3], verts[i + 4])
+                    .setColor(verts[i + 5], verts[i + 6], verts[i + 7], verts[i + 8]);
+        }
+        MeshData mesh = bb.build();
+        if (mesh != null) {
+            RenderSystem.setShader(() -> maskShader);
+            RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+            RenderSystem.disableBlend();
+            RenderSystem.disableCull();
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.depthMask(true);
+            BufferUploader.drawWithShader(mesh);
+        }
+
+        // borda + brilho, so na area em volta dos itens
         main.bindWrite(true);
-        RenderSystem.setShader(() -> edgeShader);
-        RenderSystem.setShaderTexture(0, mask.getColorTextureId());
-        edgeShader.safeGetUniform("OutSize").set((float) main.width, (float) main.height);
-        edgeShader.safeGetUniform("Scale").set(Math.max(0.6f, main.height / 1080f));
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.depthMask(false);
-        BufferBuilder bb = new BufferBuilder(BYTES, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
-        bb.addVertex(-1f, -1f, 0f);
-        bb.addVertex(1f, -1f, 0f);
-        bb.addVertex(1f, 1f, 0f);
-        bb.addVertex(-1f, 1f, 0f);
-        BufferUploader.drawWithShader(bb.buildOrThrow());
+        float scale = Math.max(0.6f, main.height / 1080f);
+        float mx = MARGIN_PX * scale * 2f / main.width, my = MARGIN_PX * scale * 2f / main.height;
+        float x0 = Math.max(-1f, minX - mx), x1 = Math.min(1f, maxX + mx), y0 = Math.max(-1f, minY - my), y1 = Math.min(1f, maxY + my);
+        if (x0 < x1 && y0 < y1) {
+            RenderSystem.setShader(() -> edgeShader);
+            RenderSystem.setShaderTexture(0, mask.getColorTextureId());
+            edgeShader.safeGetUniform("OutSize").set((float) main.width, (float) main.height);
+            edgeShader.safeGetUniform("Scale").set(scale);
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(false);
+            BufferBuilder q = new BufferBuilder(BYTES, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+            q.addVertex(x0, y0, 0f);
+            q.addVertex(x1, y0, 0f);
+            q.addVertex(x1, y1, 0f);
+            q.addVertex(x0, y1, 0f);
+            BufferUploader.drawWithShader(q.buildOrThrow());
+        }
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
+        RenderSystem.enableCull();
         RenderSystem.disableBlend();
+        count = 0;
     }
 
-    // ---------------------------------------------------------------- Iris: nao desenhar na passada de sombra
+    // ---------------------------------------------------------------- Iris: nao anotar na passada de sombra
     private static Object irisApi;
     private static Method irisShadow;
     private static boolean irisChecked;
