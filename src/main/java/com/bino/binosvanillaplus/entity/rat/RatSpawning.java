@@ -126,7 +126,7 @@ public class RatSpawning {
                 BlockPos q = new BlockPos(x, at.getY() + dy, z);
                 if (q.getY() >= CAVE_MAX_Y || !sl.getBlockState(q).isAir() || !sl.getBlockState(q.above()).isAir()) continue;
                 if (!sl.getBlockState(q.below()).isFaceSturdy(sl, q.below(), net.minecraft.core.Direction.UP) || !sl.getFluidState(q).isEmpty()) continue;
-                if (sl.canSeeSky(q) || sl.getBrightness(LightLayer.BLOCK, q) > 0) continue;
+                if (sl.canSeeSky(q) || (sl.getBrightness(LightLayer.BLOCK, q) > 0 && !com.bino.binosvanillaplus.util.SpawnLight.onlyIgnoredLight(sl, q))) continue;
                 spawnAt(sl, q, 1 + sl.random.nextInt(3), MobSpawnType.NATURAL);   // natural: pode virar o enxame raro
                 return;
             }
