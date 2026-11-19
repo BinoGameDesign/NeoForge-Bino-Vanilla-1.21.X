@@ -19,6 +19,8 @@ public class HeldToolModel extends BakedModelWrapper<BakedModel> {
         this.solid = solid;
     }
 
+    public BakedModel solid() { return solid; }
+
     @Override
     public BakedModel applyTransform(ItemDisplayContext context, PoseStack poseStack, boolean leftHand) {
         BakedModel chosen = use3D(context, poseStack) ? solid : originalModel;

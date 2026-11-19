@@ -29,8 +29,8 @@ import java.util.Map;
 public final class ForgeIconOutline {
     private ForgeIconOutline() {}
 
-    private record Outline(ResourceLocation tex, int w, int h, int[] sparks) {}
-    private static final Outline NONE = new Outline(null, 0, 0, new int[0]);
+    private record Outline(ResourceLocation tex, int w, int h, int[] sparks, NativeImage img) {}
+    private static final Outline NONE = new Outline(null, 0, 0, new int[0], null);
     private static final Map<Item, Outline> CACHE = new HashMap<>();
 
     // opacidade do contorno por faixa (+4, +6, +8, +10); os brilhos piscando aparecem a partir do +8
@@ -70,6 +70,12 @@ public final class ForgeIconOutline {
 
     public static void clearCache() { CACHE.clear(); }
 
+    // Imagem do contorno (sprite + 1 pixel de cada lado, com o degrade) para o contorno 3D dos itens 2D (ForgeOutline).
+    // null se o item nao tem sprite proprio.
+    public static NativeImage image(Item item) {
+        return CACHE.computeIfAbsent(item, ForgeIconOutline::build).img();
+    }
+
     // ---------------------------------------------------------------- montar a textura
     private static Outline build(Item item) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
@@ -93,7 +99,7 @@ public final class ForgeIconOutline {
                     "forge_outline/" + id.getNamespace() + "/" + id.getPath());
             int w = out.getWidth(), h = out.getHeight();
             Minecraft.getInstance().getTextureManager().register(tex, new DynamicTexture(out));
-            return new Outline(tex, w, h, sparks);
+            return new Outline(tex, w, h, sparks, out);
         } catch (Exception e) {
             return NONE;
         }
