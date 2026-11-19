@@ -15,13 +15,12 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
 // Bracos da cena da bancada / bigorna (mesmo desenho dos outros). Em descanso, nas laterais do bloco; a direita vai
-// ate o que esta sob o mouse, leva/traz itens e, na bigorna, segura um martelo (a maca do jogo) e bate duas vezes.
+// ate o que esta sob o mouse, leva/traz itens e, na bigorna, pega o material e raspa por cima do item.
 final class BenchHands {
     private BenchHands() {}
 
     private static final LapidaryHands.Spring RIGHT = new LapidaryHands.Spring(), LEFT = new LapidaryHands.Spring();
     private static double tapAt = -100, lastFrame;
-    private static ItemStack hammer = ItemStack.EMPTY;   // criado so na hora (nunca no carregamento da classe)
 
     static void begin() { RIGHT.init = LEFT.init = false; lastFrame = BenchScene.clock(); }
 
@@ -44,13 +43,10 @@ final class BenchHands {
 
         if (BenchScene.phase == BenchScene.Phase.ACTIVE) {
             if (strike >= 0) {
-                // martelada: sobe, desce na bigorna, sobe de novo e desce (as batidas coincidem com as faiscas)
-                Vec3 hit = BenchScene.local(0.05, BenchScene.TOP + 0.08, 0.06);
-                double s = strike / BenchScene.STRIKE;
-                double up = s < 0.42 ? LapidaryCut.hump(s / 0.42) : s < 0.82 ? LapidaryCut.hump((s - 0.42) / 0.40) : 0;
-                tR = hit.add(0, 0.28 * up, 0).add(towardCam.scale(0.06 * up));
-                omegaR = 34;
-                tL = BenchScene.local(-0.3, BenchScene.TOP + 0.03, 0.16);   // esquerda segura a peca
+                // raspada: a mao pega o material na ponta e passa por cima do item; a esquerda segura o item
+                tR = BenchScene.scrapePoint(strike).add(0, 0.05, 0).add(towardCam.scale(0.05));
+                omegaR = 30;
+                tL = BenchScene.local(-0.4, BenchScene.TOP + 0.03, 0.14);
             } else if (put != null) {
                 tR = BenchScene.placingAt(put, cam, yaw, now).add(0, 0.03, 0).add(towardCam.scale(0.04));
                 omegaR = 28;
@@ -87,24 +83,19 @@ final class BenchHands {
             LapidaryHands.arm(ps, buf, cam, RIGHT.pos, LapidaryHands.shoulder(true, cam, yaw), true, light, f, player);
             LapidaryHands.arm(ps, buf, cam, LEFT.pos, LapidaryHands.shoulder(false, cam, yaw), false, light, f, player);
         }
+        // item na mao: na ponta do punho (antes ficava escondido dentro da mao)
         Vec3 dir = RIGHT.pos.subtract(LapidaryHands.shoulder(true, cam, yaw)).normalize();
-        if (strike >= 0) {
-            // martelo na mao: cabo seguindo o braco, cabeca para baixo
+        ItemStack held = strike >= 0 && strike >= BenchScene.SCRAPE_START * 0.6 ? BenchScene.slot(1) : BenchScene.carried();
+        if (!held.isEmpty() && BenchScene.phase != BenchScene.Phase.OUTRO) {
             Minecraft mc = Minecraft.getInstance();
-            Vec3 at = RIGHT.pos.add(dir.scale(0.05));
+            Vec3 at = RIGHT.pos.add(dir.scale(0.15)).add(0, -0.02, 0);
             ps.pushPose();
             ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
             ps.mulPose(Axis.YP.rotationDegrees(180f - yaw));
-            ps.mulPose(Axis.XP.rotationDegrees(-70f));
-            ps.mulPose(Axis.ZP.rotationDegrees(-45f));
-            ps.scale(0.5f, 0.5f, 0.5f);
-            if (hammer.isEmpty()) hammer = new ItemStack(Items.MACE);
-            mc.getItemRenderer().renderStatic(hammer, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
+            ps.mulPose(Axis.XP.rotationDegrees(strike >= 0 ? -70f : -20f));
+            ps.scale(0.2f, 0.2f, 0.2f);
+            mc.getItemRenderer().renderStatic(held, ItemDisplayContext.GUI, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
             ps.popPose();
-        } else {
-            ItemStack held = BenchScene.carried();
-            if (!held.isEmpty() && BenchScene.phase != BenchScene.Phase.OUTRO)
-                LapidaryHands.item(ps, buf, held, RIGHT.pos.add(dir.scale(0.035)).add(0, -0.025, 0), cam, yaw, 0.36f, light);
         }
     }
 }

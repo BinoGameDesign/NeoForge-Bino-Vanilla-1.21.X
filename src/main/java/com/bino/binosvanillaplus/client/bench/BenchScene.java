@@ -56,8 +56,9 @@ import java.util.List;
 //  BIGORNA: item da esquerda e da direita deitados no topo; o resultado flutua acima.
 //    - Clique num item da barra = vai direto para a bigorna (esquerda, depois direita). Clique no item da bigorna =
 //      volta para o inventario.
-//    - Clique no resultado = a mao pega um martelo e bate duas vezes (faiscas); na batida o item sai. Custo em niveis
-//      aparece em cima do resultado (vermelho = sem niveis suficientes / caro demais). Campo de nome no alto.
+//    - O jogador fica do lado comprido; o item fica DEITADO no meio do topo e o material na ponta direita.
+//    - Clique no resultado = a mao pega o material e raspa por cima do item 3 vezes (faiscas); no fim o item sai.
+//      Custo em niveis aparece em cima do resultado (vermelho = sem niveis / caro demais). Campo de nome no alto.
 //  Sair: clicar fora do bloco ou Esc. Abrir agachado = janela classica.
 public final class BenchScene {
     private BenchScene() {}
@@ -71,7 +72,10 @@ public final class BenchScene {
     static Direction side = Direction.NORTH;   // lado do bloco onde o jogador esta
     static Vec3 center = Vec3.ZERO;
     static double phaseAt, activeAt = -100, denyAt = -100, strikeAt = -100;
-    static boolean leaving, strikeAll, struck;
+    static boolean leaving, strikeAll;
+    static int lastPass;
+    static final double SCRAPE_START = 0.22;   // a mao pega o material antes de raspar
+    static final int SCRAPES = 3;
     @Nullable static CameraType savedCamera;
     @Nullable static BlockPos lastClicked;
     private static double clickedAt = -100;
@@ -84,7 +88,7 @@ public final class BenchScene {
     static final List<Flying> flying = new ArrayList<>();
     record Placing(ItemStack stack, int slot, double start) {}
     static final List<Placing> placing = new ArrayList<>();
-    static final double LEAN = 0.75, OUTRO = 0.6, FLY = 0.42, PLACE = 0.34, STRIKE = 0.62;
+    static final double LEAN = 0.75, OUTRO = 0.6, FLY = 0.42, PLACE = 0.34, STRIKE = 1.25;   // STRIKE = tempo da raspada na bigorna
     static final double TOP = 1.0;   // altura do tampo (bancada e bigorna)
 
     public static double clock() { return LapidaryRemote.clock(); }
@@ -120,7 +124,7 @@ public final class BenchScene {
         double dx = player.getX() - center.x, dz = player.getZ() - center.z;
         if (kind == Kind.ANVIL) {
             // o topo da bigorna e' comprido de lado: o jogador fica de frente para o lado comprido
-            Direction f = st.getValue(AnvilBlock.FACING);
+            Direction f = st.getValue(AnvilBlock.FACING).getClockWise();
             side = (f.getStepX() * dx + f.getStepZ() * dz) >= 0 ? f : f.getOpposite();
         } else side = Direction.getNearest(dx, 0, dz);
         if (side.getAxis() == Direction.Axis.Y) side = Direction.NORTH;
@@ -192,11 +196,16 @@ public final class BenchScene {
             player.yBodyRot = yaw;
             player.setXRot(45f);
         }
-        // martelada da bigorna: na 2a batida o item sai
+        // raspada da bigorna: a mao passa o material por cima do item 3 vezes (faisca e som a cada passada)
         if (strikeAt > 0) {
             double t = now - strikeAt;
-            if (!struck && t >= STRIKE * 0.42) { sparks(); sound(SoundEvents.ANVIL_PLACE, 0.25f, 1.6f); struck = true; }
-            if (t >= STRIKE * 0.82) {
+            int pass = (int) Math.floor(Math.max(0, t - SCRAPE_START) / ((STRIKE * 0.88 - SCRAPE_START) / SCRAPES));
+            if (t >= SCRAPE_START && pass > lastPass && pass <= SCRAPES) {
+                lastPass = pass;
+                sparks();
+                sound(SoundEvents.GRINDSTONE_USE, 0.35f, 1.4f + pass * 0.08f);
+            }
+            if (t >= STRIKE * 0.9) {
                 sparks();
                 ItemStack r = slot(resultSlot());
                 if (!r.isEmpty()) flying.add(new Flying(r.copy(), resultPoint(), now));
@@ -237,13 +246,25 @@ public final class BenchScene {
             int i = slot - 1, r = i / 3, c = i % 3;
             return local((c - 1) * CELL, TOP + 0.002, (r - 1) * CELL);
         }
-        return local(slot == 0 ? -0.22 : 0.22, TOP + 0.002, 0.0);
+        // bigorna: o item deitado no meio do topo; o material descansa na ponta direita
+        return slot == 0 ? local(-0.04, TOP + 0.002, 0.02) : local(0.38, TOP + 0.002, 0.0);
+    }
+
+    // posicao da mao/material durante a raspada (vai e volta por cima do item)
+    static Vec3 scrapePoint(double t) {
+        if (t < SCRAPE_START) return slotPoint(1).add(0, 0.05, 0);
+        double u = (t - SCRAPE_START) / (STRIKE * 0.88 - SCRAPE_START);
+        double ph = Mth.clamp(u, 0, 1) * SCRAPES;
+        double tri = 1 - Math.abs((ph % 1.0) * 2 - 1);     // 0 -> 1 -> 0 em cada passada
+        return local(-0.26 + 0.42 * tri, TOP + 0.045 + 0.012 * Math.sin(ph * Math.PI * 2), 0.02);
     }
 
     // resultado: flutua acima do bloco, um pouco para tras
     static Vec3 resultPoint() {
         double t = clock();
-        return local(0, TOP + (kind == Kind.CRAFTING ? 0.42 : 0.36) + Math.sin(t * 2.2) * 0.012, kind == Kind.CRAFTING ? -0.16 : -0.02);
+        // atras do tampo, baixinho (antes ficava alto demais e saia da tela)
+        return kind == Kind.CRAFTING ? local(0, TOP + 0.16 + Math.sin(t * 2.2) * 0.01, -0.47)
+                : local(0, TOP + 0.22 + Math.sin(t * 2.2) * 0.01, -0.36);
     }
 
     @Nullable
@@ -265,27 +286,28 @@ public final class BenchScene {
         if (!slot(resultSlot()).isEmpty()) {
             Vec3 to = resultPoint().subtract(ray[0]);
             double along = to.dot(ray[1]);
-            if (along > 0 && to.subtract(ray[1].scale(along)).length() < 0.14) { hover = resultSlot(); return; }
+            if (along > 0 && to.subtract(ray[1].scale(along)).length() < 0.17) { hover = resultSlot(); return; }
         }
         double[] p = onTop();
         if (p == null) return;
         if (kind == Kind.CRAFTING) {
             int c = (int) Math.floor((p[0] + 1.5 * CELL) / CELL), r = (int) Math.floor((p[1] + 1.5 * CELL) / CELL);
             if (c >= 0 && c < 3 && r >= 0 && r < 3) hover = 1 + r * 3 + c;
-        } else if (Math.abs(p[0]) < 0.48 && Math.abs(p[1]) < 0.3) hover = p[0] < 0 ? 0 : 1;
+        } else if (Math.abs(p[0]) < 0.52 && Math.abs(p[1]) < 0.34) hover = p[0] < 0.25 ? 0 : 1;
     }
 
     // fora do bloco (para sair clicando fora)
     public static boolean outside() {
         if (phase != Phase.ACTIVE || hover >= 0 || !carried().isEmpty() || strikeAt > 0) return false;
         double[] p = onTop();
-        double hz = kind == Kind.ANVIL ? 0.42 : 0.6;
-        return p == null || Math.abs(p[0]) > 0.6 || Math.abs(p[1]) > hz;
+        double hx = 0.6, hz = kind == Kind.ANVIL ? 0.42 : 0.6;
+        if (p == null) return LapidaryPick.mouseNdc()[1] < 0.35;   // olhando para o alto (camera levantada) nao sai
+        return Math.abs(p[0]) > hx || Math.abs(p[1]) > hz;
     }
 
     // ---------------------------------------------------------------- camera
     public record Pose(Vec3 pos, float yaw, float pitch) {}
-    private static double parX, parY, lastFrame, focusW;
+    private static double parX, parY, lastFrame, focusW, lookUp;
     @Nullable private static Vec3 lastFocus;
 
     static Pose scenePose() {
@@ -306,12 +328,14 @@ public final class BenchScene {
         eye = eye.add(0, Math.sin(t * 1.3) * 0.0035, 0);
         yaw += (float) (Math.sin(t * 0.61) * 0.16 + parX * 1.1);
         pitch += (float) (Math.sin(t * 0.83 + 1.1) * 0.13 - parY * 0.8);
-        // tranco das marteladas
-        if (strikeAt > 0) {
-            double s = t - strikeAt;
-            double k = LapidaryCut.hump(LapidaryCut.window(s, STRIKE * 0.40, STRIKE * 0.55)) + LapidaryCut.hump(LapidaryCut.window(s, STRIKE * 0.80, STRIKE * 0.98));
-            pitch += (float) (k * 1.4);
-            yaw += (float) (Math.sin(t * 57) * 0.5 * k);
+        // mouse perto do alto da tela: a camera levanta e olha para cima (ate ~32 graus)
+        lookUp += ((phase == Phase.ACTIVE ? Mth.clamp((ndc[1] - 0.45) / 0.5, 0, 1) : 0) - lookUp) * (1 - Math.exp(-3.5 * dt));
+        pitch -= (float) (32 * LapidaryCut.inOutCubic(lookUp));
+        // vibracao leve durante a raspada
+        if (strikeAt > 0 && t - strikeAt > SCRAPE_START) {
+            double k = 1 - LapidaryCut.window(t - strikeAt, STRIKE * 0.85, STRIKE);
+            yaw += (float) (Math.sin(t * 47) * 0.18 * k);
+            pitch += (float) (Math.sin(t * 53 + 1) * 0.15 * k);
         }
         return new Pose(eye, yaw, pitch);
     }
@@ -389,8 +413,9 @@ public final class BenchScene {
         ItemStack held = carried();
         int rs = resultSlot();
         if (hover == rs) {
-            if (!held.isEmpty() || !canTake()) { deny(); return; }
-            if (kind == Kind.ANVIL) { strikeAt = clock(); struck = false; strikeAll = shift; sound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.4f, 0.8f); return; }
+            if (!held.isEmpty()) giveBack();   // algo na mao: guarda antes de fabricar
+            if (!carried().isEmpty() || !canTake()) { deny(); return; }
+            if (kind == Kind.ANVIL) { strikeAt = clock(); lastPass = 0; strikeAll = shift; sound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.4f, 0.8f); return; }
             ItemStack r = slot(rs);
             flying.add(new Flying(r.copy(), resultPoint(), clock()));
             if (shift) slotClick(rs, 0, true);               // fabrica tudo
@@ -501,22 +526,25 @@ public final class BenchScene {
                 ItemStack st = slot(s);
                 final int si = s;
                 if (st.isEmpty() || placing.stream().anyMatch(pl -> pl.slot() == si)) continue;
+                if (kind == Kind.ANVIL && s == 1 && strikeAt > 0) continue;   // o material esta na mao
                 boolean h = s == hover && carried().isEmpty();
-                float k = (kind == Kind.CRAFTING ? 0.34f : 0.4f) * (h ? 1.12f : 1f);
-                Vec3 at = slotPoint(s).add(0, h ? 0.03 + Math.sin(now * 5) * 0.005 : 0, 0);
-                ChestScene.drawItem(ps, buf, st, at, cam, faceYaw + (s * 29 % 9 - 4), -74f, k, itemLight);
+                float k = (kind == Kind.CRAFTING ? 0.34f : s == 0 ? 0.55f : 0.32f) * (h ? 1.1f : 1f);
+                Vec3 at = slotPoint(s).add(0, h ? 0.02 + Math.sin(now * 5) * 0.004 : 0, 0);
+                float iy = kind == Kind.ANVIL && s == 0 ? faceYaw + 45f : faceYaw + (s * 29 % 9 - 4);   // na bigorna, deitado ao longo dela
+                ChestScene.drawItem(ps, buf, st, at, cam, iy, -86f, k, itemLight);
             }
             // resultado girando, com um leve "pulo" quando o mouse esta em cima
             ItemStack r = slot(resultSlot());
-            if (!r.isEmpty() && !(kind == Kind.ANVIL && strikeAt > 0 && now - strikeAt > STRIKE * 0.82)) {
+            if (!r.isEmpty() && !(kind == Kind.ANVIL && strikeAt > 0)) {
+                // contexto GUI: o item fica CENTRADO no ponto (o mesmo ponto que o mouse usa para clicar)
                 Vec3 at = resultPoint();
-                float k = hover == resultSlot() ? 0.5f : 0.42f;
+                float k = hover == resultSlot() ? 0.24f : 0.2f;
                 ps.pushPose();
                 ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
                 ps.mulPose(Axis.YP.rotationDegrees((float) (now * 70 % 360)));
                 ps.scale(k, k, k);
                 int lr = canTake() ? LightTexture.FULL_BRIGHT : itemLight;
-                mc.getItemRenderer().renderStatic(r, ItemDisplayContext.GROUND, lr, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
+                mc.getItemRenderer().renderStatic(r, ItemDisplayContext.GUI, lr, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
                 ps.popPose();
             }
         }
@@ -553,7 +581,7 @@ public final class BenchScene {
     static void sparks() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        Vec3 c = local(0, TOP + 0.02, 0);
+        Vec3 c = strikeAt > 0 ? scrapePoint(clock() - strikeAt) : local(0, TOP + 0.02, 0);
         for (int i = 0; i < 14; i++) {
             double vx = (mc.level.random.nextDouble() - 0.5) * 0.25, vy = 0.12 + mc.level.random.nextDouble() * 0.18, vz = (mc.level.random.nextDouble() - 0.5) * 0.25;
             mc.level.addParticle(i % 3 == 0 ? ParticleTypes.LAVA : ParticleTypes.ELECTRIC_SPARK, c.x, c.y, c.z, vx, vy, vz);

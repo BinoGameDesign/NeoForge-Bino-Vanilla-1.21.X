@@ -314,7 +314,7 @@ public final class ChestScene {
 
     // ---------------------------------------------------------------- camera
     public record Pose(Vec3 pos, float yaw, float pitch) {}
-    private static double parX, parY, lastFrame, focusW;
+    private static double parX, parY, lastFrame, focusW, lookUp;
     @Nullable private static Vec3 lastFocus;
 
     static Pose scenePose() {
@@ -338,6 +338,9 @@ public final class ChestScene {
         eye = eye.add(0, Math.sin(t * 1.3) * 0.0035, 0);
         yaw += (float) (Math.sin(t * 0.61) * 0.16 + parX * 1.1);
         pitch += (float) (Math.sin(t * 0.83 + 1.1) * 0.13 - parY * 0.8);
+        // mouse perto do alto da tela: a camera levanta e olha para cima
+        lookUp += ((phase == Phase.ACTIVE ? Mth.clamp((ndc[1] - 0.45) / 0.5, 0, 1) : 0) - lookUp) * (1 - Math.exp(-3.5 * dt));
+        pitch -= (float) (32 * LapidaryCut.inOutCubic(lookUp));
         // mimico: susto quando ele aparece e tremida forte na mordida
         if (mimicSeenAt > 0) {
             double s = t - mimicSeenAt;
@@ -418,7 +421,8 @@ public final class ChestScene {
     public static boolean outside() {
         if (phase != Phase.ACTIVE || hoverSlot >= 0 || !carried().isEmpty()) return false;
         double[] p = onFloor();
-        return p == null || Math.abs(p[0]) > halfWidth() + 0.12 || p[1] < -HALF_DEPTH - 0.12 || p[1] > HALF_DEPTH + 0.18;
+        if (p == null) return LapidaryPick.mouseNdc()[1] < 0.35;   // olhando para o alto nao sai
+        return Math.abs(p[0]) > halfWidth() + 0.12 || p[1] < -HALF_DEPTH - 0.12 || p[1] > HALF_DEPTH + 0.18;
     }
 
     // clique dentro do bau: UM clique pega o item - a mao vai ate ele e traz para o inventario.
