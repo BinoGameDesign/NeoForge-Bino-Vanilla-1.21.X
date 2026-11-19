@@ -68,6 +68,9 @@ public class MapClientEvents {
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "forge_mask"), DefaultVertexFormat.POSITION_TEX_COLOR),
                 s -> com.bino.binosvanillaplus.client.gear.ForgeOutline.maskShader = s);
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "forge_mask_ndc"), DefaultVertexFormat.POSITION_TEX_COLOR),
+                s -> com.bino.binosvanillaplus.client.gear.ForgeOutline.maskNdcShader = s);
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "forge_edge"), DefaultVertexFormat.POSITION),
                 s -> com.bino.binosvanillaplus.client.gear.ForgeOutline.edgeShader = s);
     }
