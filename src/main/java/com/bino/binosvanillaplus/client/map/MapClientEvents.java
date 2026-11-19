@@ -63,6 +63,13 @@ public class MapClientEvents {
         event.registerShader(new ShaderInstance(event.getResourceProvider(),
                         ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "bino_figure"), DefaultVertexFormat.NEW_ENTITY),
                 s -> com.bino.binosvanillaplus.client.inventory.BendyPlayer.shader = s);
+        // contorno da forja (mascara + borda na tela)
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "forge_mask"), DefaultVertexFormat.POSITION_TEX_COLOR),
+                s -> com.bino.binosvanillaplus.client.gear.ForgeOutline.maskShader = s);
+        event.registerShader(new ShaderInstance(event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "forge_edge"), DefaultVertexFormat.POSITION),
+                s -> com.bino.binosvanillaplus.client.gear.ForgeOutline.edgeShader = s);
     }
 
     // (o ponto de morte agora vem do servidor: ver GraveMarkPayload / MapWaypoints.onGraveMark)
