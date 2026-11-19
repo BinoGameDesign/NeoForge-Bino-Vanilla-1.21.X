@@ -21,6 +21,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -69,6 +70,10 @@ public final class ForgeOutline {
     private static int prevDraw, prevRead;
 
     private static RenderType maskType(String name, int depthFunc) {
+        return maskType(name, depthFunc, TextureAtlas.LOCATION_BLOCKS);
+    }
+
+    private static RenderType maskType(String name, int depthFunc, ResourceLocation texture) {
         return new RenderType("binosvanillaplus_forge_mask_" + name, DefaultVertexFormat.POSITION_TEX_COLOR,
                 VertexFormat.Mode.QUADS, 4096, false, false,
                 () -> {
@@ -76,7 +81,7 @@ public final class ForgeOutline {
                     prevRead = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
                     mask.bindWrite(false);
                     RenderSystem.setShader(() -> maskShader);
-                    RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+                    RenderSystem.setShaderTexture(0, texture);
                     RenderSystem.disableBlend();
                     RenderSystem.disableCull();
                     RenderSystem.enableDepthTest();
@@ -170,18 +175,23 @@ public final class ForgeOutline {
 
     // corpo: sem textura (uv < 0) e alfa minimo -> na mascara vira "parede"
     public static VertexConsumer blocker(MultiBufferSource buf) {
-        return SOLID.to(buf.getBuffer(WORLD), 0f, 0f, 0f, 1f / 255f);
+        return SOLID.to(buf.getBuffer(WORLD), 0f, 0f, 0f, 1f / 255f).keepUv(false);
     }
 
-    // peca de armadura vestida: o modelo da armadura entra na mascara com a cor e a faixa da peca
-    public static VertexConsumer armor(MultiBufferSource buf, ItemStack stack) {
+    // peca de armadura vestida: o modelo da armadura entra na mascara com a cor e a faixa da peca, usando a textura da
+    // armadura so para o recorte (partes vazadas da textura ficam fora da silhueta)
+    public static VertexConsumer armor(MultiBufferSource buf, ItemStack stack, ResourceLocation texture) {
         if (!ready()) return null;
         int tier = ForgeGlow.tier(stack);
         if (tier == 0) return null;
         int rgb = ForgeGlow.color(stack.getItem());
         any = true;
-        return SOLID.to(buf.getBuffer(WORLD), ((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, tier / 4f);
+        RenderType type = ARMOR_TYPES.computeIfAbsent(texture, t -> maskType("armor_" + t.getNamespace() + "_" + t.getPath(), GL11.GL_LEQUAL, t));
+        return SOLID.to(buf.getBuffer(type), ((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, tier / 4f)
+                .keepUv(true);
     }
+
+    private static final java.util.Map<ResourceLocation, RenderType> ARMOR_TYPES = new java.util.HashMap<>();
 
     private static final Solid SOLID = new Solid();
 
@@ -189,6 +199,7 @@ public final class ForgeOutline {
     private static final class Solid implements VertexConsumer {
         VertexConsumer out;
         float r, g, b, a;
+        boolean keepUv;
         final Matrix4f mvp = new Matrix4f();
         final Vector4f p = new Vector4f();
 
@@ -198,9 +209,13 @@ public final class ForgeOutline {
             return this;
         }
 
+        Solid keepUv(boolean keep) { this.keepUv = keep; return this; }
+
         @Override
         public VertexConsumer addVertex(float x, float y, float z) {
-            out.addVertex(x, y, z).setUv(-1f, -1f).setColor(r, g, b, a);
+            // com textura: a uv chega depois (setUv); sem textura: uv < 0 ja aqui
+            out.addVertex(x, y, z).setColor(r, g, b, a);
+            if (!keepUv) out.setUv(-1f, -1f);
             if (a > 0.1f) {
                 p.set(x, y, z, 1f);
                 mvp.transform(p);
@@ -214,7 +229,7 @@ public final class ForgeOutline {
         }
 
         @Override public VertexConsumer setColor(int r, int g, int b, int a) { return this; }
-        @Override public VertexConsumer setUv(float u, float v) { return this; }
+        @Override public VertexConsumer setUv(float u, float v) { if (keepUv) out.setUv(u, v); return this; }
         @Override public VertexConsumer setUv1(int u, int v) { return this; }
         @Override public VertexConsumer setUv2(int u, int v) { return this; }
         @Override public VertexConsumer setNormal(float x, float y, float z) { return this; }

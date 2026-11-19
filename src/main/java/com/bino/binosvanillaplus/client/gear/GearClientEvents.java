@@ -52,8 +52,22 @@ public final class GearClientEvents {
         for (PlayerSkin.Model model : event.getSkins()) {
             if (event.getSkin(model) instanceof PlayerRenderer renderer) {
                 renderer.addLayer(new HelmetLampLayer(renderer));
-                renderer.addLayer(new ForgeArmorGlowLayer(renderer, event.getContext()));   // brilho da forja +4 na armadura
+                renderer.addLayer(new ForgeArmorGlowLayer<>(renderer, event.getContext()));   // contorno da forja na armadura
             }
+        }
+        // mobs humanoides que vestem armadura (zumbi, esqueleto, piglin, vindicador...): contorno da armadura forjada
+        for (net.minecraft.world.entity.EntityType<?> type : event.getEntityTypes()) {
+            addArmorOutline(event, type);
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void addArmorOutline(EntityRenderersEvent.AddLayers event, net.minecraft.world.entity.EntityType<?> type) {
+        var r = event.getRenderer(type);
+        if (r instanceof net.minecraft.client.renderer.entity.LivingEntityRenderer lr
+                && lr.getModel() instanceof net.minecraft.client.model.HumanoidModel
+                && !(r instanceof PlayerRenderer)) {
+            lr.addLayer(new ForgeArmorGlowLayer(lr, event.getContext()));
         }
     }
 }
