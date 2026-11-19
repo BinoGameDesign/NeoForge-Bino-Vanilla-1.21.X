@@ -79,7 +79,7 @@ final class BenchHands {
         LEFT.step(tL.add(0, -b, 0), dt, omegaL);
 
         Vec3 f = LapidaryHands.forward(yaw);
-        if (w > 0.02 || RIGHT.pos.distanceToSqr(hR) > 0.001) {
+        if (BenchScene.phase != BenchScene.Phase.OUTRO && (w > 0.02 || RIGHT.pos.distanceToSqr(hR) > 0.001)) {   // na saida somem
             LapidaryHands.arm(ps, buf, cam, RIGHT.pos, LapidaryHands.shoulder(true, cam, yaw), true, light, f, player);
             LapidaryHands.arm(ps, buf, cam, LEFT.pos, LapidaryHands.shoulder(false, cam, yaw), false, light, f, player);
         }
@@ -87,15 +87,8 @@ final class BenchHands {
         Vec3 dir = RIGHT.pos.subtract(LapidaryHands.shoulder(true, cam, yaw)).normalize();
         ItemStack held = strike >= 0 && strike >= BenchScene.SCRAPE_START * 0.6 ? BenchScene.slot(1) : BenchScene.carried();
         if (!held.isEmpty() && BenchScene.phase != BenchScene.Phase.OUTRO) {
-            Minecraft mc = Minecraft.getInstance();
-            Vec3 at = RIGHT.pos.add(dir.scale(0.15)).add(0, -0.02, 0);
-            ps.pushPose();
-            ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
-            ps.mulPose(Axis.YP.rotationDegrees(180f - yaw));
-            ps.mulPose(Axis.XP.rotationDegrees(strike >= 0 ? -70f : -20f));
-            ps.scale(0.2f, 0.2f, 0.2f);
-            mc.getItemRenderer().renderStatic(held, ItemDisplayContext.GUI, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
-            ps.popPose();
+            Vec3 at = RIGHT.pos.add(dir.scale(0.1)).add(0, 0.07, 0).add(towardCam.scale(0.05));
+            BenchScene.drawIcon(ps, buf, held, at, cam, yaw, strike >= 0 ? -60f : -25f, 0.2f, BenchScene.boostLight(light));
         }
     }
 }

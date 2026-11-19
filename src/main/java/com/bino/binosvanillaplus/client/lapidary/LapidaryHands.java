@@ -158,7 +158,7 @@ public final class LapidaryHands {
         update(cam, yaw);
         int light = LevelRenderer.getLightColor(mc.level, LapidaryScene.pos.above());
         Vec3 f = forward(yaw);
-        if (LapidaryScene.weight > 0.02 || LapidaryScene.phase != LapidaryScene.Phase.OUTRO) {
+        if (LapidaryScene.phase != LapidaryScene.Phase.OUTRO) {   // na saida os bracos somem (a camera volta e eles esticavam)
             arm(ps, buf, cam, RIGHT.pos, shoulder(true, cam, yaw), true, light, f, player);
             arm(ps, buf, cam, LEFT.pos, shoulder(false, cam, yaw), false, light, f, player);
         }

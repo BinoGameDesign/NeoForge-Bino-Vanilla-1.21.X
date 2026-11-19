@@ -80,7 +80,7 @@ final class ChestHands {
         LEFT.step(tL.add(0, -b, 0), dt, flee ? 30 : 15);
 
         Vec3 f = LapidaryHands.forward(yaw);
-        if (w > 0.02 || RIGHT.pos.distanceToSqr(hR) > 0.001) {
+        if (ChestScene.phase != ChestScene.Phase.OUTRO && (w > 0.02 || RIGHT.pos.distanceToSqr(hR) > 0.001)) {   // na saida somem
             LapidaryHands.arm(ps, buf, cam, RIGHT.pos, LapidaryHands.shoulder(true, cam, yaw), true, light, f, player);
             LapidaryHands.arm(ps, buf, cam, LEFT.pos, LapidaryHands.shoulder(false, cam, yaw), false, light, f, player);
         }

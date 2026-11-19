@@ -56,7 +56,8 @@ import java.util.List;
 //  BIGORNA: item da esquerda e da direita deitados no topo; o resultado flutua acima.
 //    - Clique num item da barra = vai direto para a bigorna (esquerda, depois direita). Clique no item da bigorna =
 //      volta para o inventario.
-//    - O jogador fica do lado comprido; o item fica DEITADO no meio do topo e o material na ponta direita.
+//    - O jogador fica do lado comprido; o item fica DEITADO no meio do topo e o material na ponta direita; o
+//      resultado aparece flutuando sobre a ponta esquerda assim que da para fazer.
 //    - Clique no resultado = a mao pega o material e raspa por cima do item 3 vezes (faiscas); no fim o item sai.
 //      Custo em niveis aparece em cima do resultado (vermelho = sem niveis / caro demais). Campo de nome no alto.
 //  Sair: clicar fora do bloco ou Esc. Abrir agachado = janela classica.
@@ -247,7 +248,7 @@ public final class BenchScene {
             return local((c - 1) * CELL, TOP + 0.002, (r - 1) * CELL);
         }
         // bigorna: o item deitado no meio do topo; o material descansa na ponta direita
-        return slot == 0 ? local(-0.04, TOP + 0.002, 0.02) : local(0.38, TOP + 0.002, 0.0);
+        return slot == 0 ? local(-0.04, TOP + 0.004, 0.02) : local(0.36, TOP + 0.004, 0.02);
     }
 
     // posicao da mao/material durante a raspada (vai e volta por cima do item)
@@ -263,8 +264,9 @@ public final class BenchScene {
     static Vec3 resultPoint() {
         double t = clock();
         // atras do tampo, baixinho (antes ficava alto demais e saia da tela)
-        return kind == Kind.CRAFTING ? local(0, TOP + 0.16 + Math.sin(t * 2.2) * 0.01, -0.47)
-                : local(0, TOP + 0.22 + Math.sin(t * 2.2) * 0.01, -0.36);
+        // bancada: atras da grade; bigorna: flutuando por cima da ponta esquerda (aparece assim que da para fazer)
+        return kind == Kind.CRAFTING ? local(0, TOP + 0.2 + Math.sin(t * 2.2) * 0.01, -0.47)
+                : local(-0.42, TOP + 0.24 + Math.sin(t * 2.2) * 0.01, -0.02);
     }
 
     @Nullable
@@ -528,17 +530,18 @@ public final class BenchScene {
                 if (st.isEmpty() || placing.stream().anyMatch(pl -> pl.slot() == si)) continue;
                 if (kind == Kind.ANVIL && s == 1 && strikeAt > 0) continue;   // o material esta na mao
                 boolean h = s == hover && carried().isEmpty();
-                float k = (kind == Kind.CRAFTING ? 0.34f : s == 0 ? 0.55f : 0.32f) * (h ? 1.1f : 1f);
+                // icone do inventario, deitado e bem maior (na bigorna o item fica ao longo dela)
+                float k = (kind == Kind.CRAFTING ? 0.2f : s == 0 ? 0.46f : 0.28f) * (h ? 1.08f : 1f);
                 Vec3 at = slotPoint(s).add(0, h ? 0.02 + Math.sin(now * 5) * 0.004 : 0, 0);
-                float iy = kind == Kind.ANVIL && s == 0 ? faceYaw + 45f : faceYaw + (s * 29 % 9 - 4);   // na bigorna, deitado ao longo dela
-                ChestScene.drawItem(ps, buf, st, at, cam, iy, -86f, k, itemLight);
+                float iy = kind == Kind.ANVIL && s == 0 ? faceYaw - 45f : faceYaw + (s * 29 % 9 - 4);
+                drawIcon(ps, buf, st, at, cam, iy, -90f, k, itemLight);
             }
             // resultado girando, com um leve "pulo" quando o mouse esta em cima
             ItemStack r = slot(resultSlot());
             if (!r.isEmpty() && !(kind == Kind.ANVIL && strikeAt > 0)) {
                 // contexto GUI: o item fica CENTRADO no ponto (o mesmo ponto que o mouse usa para clicar)
                 Vec3 at = resultPoint();
-                float k = hover == resultSlot() ? 0.24f : 0.2f;
+                float k = (kind == Kind.ANVIL ? 0.3f : 0.26f) * (hover == resultSlot() ? 1.15f : 1f);
                 ps.pushPose();
                 ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
                 ps.mulPose(Axis.YP.rotationDegrees((float) (now * 70 % 360)));
@@ -549,14 +552,38 @@ public final class BenchScene {
             }
         }
         BenchHands.render(ps, buf, cam, yaw, light);
-        for (Placing pl : placing) ChestScene.drawItem(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, 0.32f, itemLight);
+        for (Placing pl : placing) drawIcon(ps, buf, pl.stack(), placingAt(pl, cam, yaw, now), cam, yaw, -30f, 0.2f, itemLight);
         if (!flying.isEmpty()) {
             flying.removeIf(fl -> now - fl.start() > FLY);
             for (Flying fl : flying) {
                 double u = LapidaryCut.window(now - fl.start(), 0, FLY);
-                ChestScene.drawItem(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, 0.3f * (float) (1 - 0.6 * u), itemLight);
+                drawIcon(ps, buf, fl.stack(), flyingAt(fl, cam, yaw, now), cam, yaw, -25f, 0.2f * (float) (1 - 0.5 * u), itemLight);
             }
         }
+    }
+
+    public static int boostLight(int light) { return LightTexture.pack(Math.max(LightTexture.block(light), 11), LightTexture.sky(light)); }
+
+    // Item com o visual do INVENTARIO (contexto GUI: o icone 2D, mesmo de ferramentas que tem modelo 3D na mao).
+    // 'size' = lado do icone em blocos; 'at' = ponto no tampo (ou onde ele flutua). Itens chatos deitam com o angulo
+    // 'tilt' (-90 = deitado no tampo); blocos ficam em pe como miniatura.
+    static void drawIcon(PoseStack ps, MultiBufferSource buf, ItemStack stack, Vec3 at, Vec3 cam, float faceYaw, float tilt, float size, int light) {
+        Minecraft mc = Minecraft.getInstance();
+        boolean block = stack.getItem() instanceof net.minecraft.world.item.BlockItem
+                && mc.getItemRenderer().getModel(stack, mc.level, null, 0).isGui3d();
+        ps.pushPose();
+        ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
+        ps.mulPose(Axis.YP.rotationDegrees(180f - faceYaw));
+        if (block) {
+            ps.translate(0, size * 0.4, 0);
+            size *= 0.85f;
+        } else {
+            ps.translate(0, 0.004, 0);
+            ps.mulPose(Axis.XP.rotationDegrees(tilt));
+        }
+        ps.scale(size, size, block ? size : size * 0.5f);
+        mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GUI, light, OverlayTexture.NO_OVERLAY, ps, buf, mc.level, 0);
+        ps.popPose();
     }
 
     private static void quad(VertexConsumer vc, Matrix4f m, Vec3 cam, Vec3 c, double h, int alpha) {
