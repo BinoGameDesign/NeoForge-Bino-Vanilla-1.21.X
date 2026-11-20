@@ -56,6 +56,35 @@ public final class HitFx {
         if (HITS.size() > 256) HITS.entrySet().removeIf(en -> Util.getMillis() - en.getValue().at() > 2000);
     }
 
+    public static final long REACT_MS = 320;
+
+    // forca da reacao ao golpe agora (0..1): sobe rapido e volta devagar
+    public static float react(LivingEntity e) {
+        Hit h = HITS.get(e.getId());
+        if (h == null) return 0;
+        double u = (Util.getMillis() - h.at()) / (double) REACT_MS;
+        if (u >= 1 || u < 0) return 0;
+        return (float) (u < 0.15 ? u / 0.15 : Math.pow(1 - (u - 0.15) / 0.85, 2));
+    }
+
+    // de que lado veio o golpe, em relacao ao mob: +1 = da direita, -1 = da esquerda
+    public static float side(LivingEntity e) {
+        Hit h = HITS.get(e.getId());
+        if (h == null) return 0;
+        double y = Math.toRadians(e.yBodyRot);
+        double rx = -Math.cos(y), rz = -Math.sin(y);    // direita do mob
+        return (float) -(h.dx() * rx + h.dz() * rz);
+    }
+
+    // golpe de frente (+1) ou por tras (-1)
+    public static float front(LivingEntity e) {
+        Hit h = HITS.get(e.getId());
+        if (h == null) return 1;
+        double y = Math.toRadians(e.yBodyRot);
+        double fx = -Math.sin(y), fz = Math.cos(y);     // frente do mob
+        return (float) -(h.dx() * fx + h.dz() * fz);
+    }
+
     // flash branco agora?
     public static boolean flashing(LivingEntity e) {
         Hit h = HITS.get(e.getId());
@@ -74,6 +103,12 @@ public final class HitFx {
         }
         e.getPoseStack().pushPose();
         if (k > 0) e.getPoseStack().translate(h.dx() * RECOIL * k, 0.02 * k, h.dz() * RECOIL * k);
+        // corpo inteiro: inclina para tras (na direcao do golpe, girando nos pes) e amassa um pouquinho
+        float r = react(e.getEntity());
+        if (r > 0 && h != null && (h.dx() != 0 || h.dz() != 0)) {
+            e.getPoseStack().mulPose(new org.joml.Quaternionf().rotateAxis((float) Math.toRadians(12 * r), (float) h.dz(), 0f, (float) -h.dx()));
+            e.getPoseStack().scale(1 + 0.05f * r, 1 - 0.07f * r, 1 + 0.05f * r);
+        }
     }
 
     @SubscribeEvent

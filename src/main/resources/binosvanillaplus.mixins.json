@@ -19,7 +19,10 @@
         "client.PlayerRendererHandArmorMixin",
         "client.HumanoidModelEatMixin",
         "client.LivingEntityHitFxMixin",
-        "client.LivingEntityRendererFlashMixin"
+        "client.LivingEntityRendererFlashMixin",
+        "client.LivingEntityRendererHitReactMixin",
+        "client.ModelPartAccessor",
+        "client.AgeableListModelAccessor"
     ],
     "injectors": {
         "defaultRequire": 1
