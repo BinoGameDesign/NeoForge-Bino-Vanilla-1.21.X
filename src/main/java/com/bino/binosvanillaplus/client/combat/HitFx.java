@@ -147,6 +147,25 @@ public final class HitFx {
         e.setRoll((float) (e.getRoll() + Math.sin(s * 70 + 1) * 0.7 * k));
     }
 
+    // golpe num bloco que esta DEBAIXO d'agua: a lamina bate na agua primeiro
+    @SubscribeEvent
+    public static void onSwingBlock(PlayerInteractEvent.LeftClickBlock e) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || e.getEntity() != p || !e.getLevel().isClientSide() || e.getAction() != PlayerInteractEvent.LeftClickBlock.Action.START) return;
+        if (CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
+        Vec3 at = CombatEvents.waterInFront(p);
+        if (at == null) return;
+        waterFx(p, at);
+        PacketDistributor.sendToServer(new SwingPayload(true, at.x, at.y, at.z));
+    }
+
+    private static void waterFx(LocalPlayer p, Vec3 at) {
+        p.level().playLocalSound(at.x, at.y, at.z, ModSounds.HIT_WATER.get(), SoundSource.PLAYERS, 0.9f, 0.9f + p.getRandom().nextFloat() * 0.2f, false);
+        for (int i = 0; i < 12; i++)
+            p.level().addParticle(ParticleTypes.SPLASH, at.x + (p.getRandom().nextDouble() - 0.5) * 0.5, at.y + 0.1, at.z + (p.getRandom().nextDouble() - 0.5) * 0.5, 0, 0.2, 0);
+    }
+
     // ---------------------------------------------------------------- golpe no ar ou na agua
     @SubscribeEvent
     public static void onSwingEmpty(PlayerInteractEvent.LeftClickEmpty e) {
@@ -154,17 +173,11 @@ public final class HitFx {
         LocalPlayer p = mc.player;
         if (p == null || e.getEntity() != p) return;
         CombatEvents.Weapon w = CombatEvents.weapon(p.getMainHandItem());
-        if (w == CombatEvents.Weapon.NONE || p.getAttackStrengthScale(0.5f) < 0.3f) return;
+        if (w == CombatEvents.Weapon.NONE) return;   // (o jogo zera a carga do ataque logo antes deste evento)
         // a mira bate na agua dentro do alcance?
-        double reach = p.entityInteractionRange();
-        Vec3 eye = p.getEyePosition(), end = eye.add(p.getLookAngle().scale(reach));
-        BlockHitResult hit = p.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.ANY, p));
-        boolean water = hit.getType() == HitResult.Type.BLOCK && p.level().getFluidState(hit.getBlockPos()).is(FluidTags.WATER);
-        if (water) {
-            Vec3 at = hit.getLocation();
-            p.level().playLocalSound(at.x, at.y, at.z, ModSounds.HIT_WATER.get(), SoundSource.PLAYERS, 0.9f, 0.9f + p.getRandom().nextFloat() * 0.2f, false);
-            for (int i = 0; i < 12; i++)
-                p.level().addParticle(ParticleTypes.SPLASH, at.x + (p.getRandom().nextDouble() - 0.5) * 0.5, at.y + 0.1, at.z + (p.getRandom().nextDouble() - 0.5) * 0.5, 0, 0.2, 0);
+        Vec3 at = CombatEvents.waterInFront(p);
+        if (at != null) {
+            waterFx(p, at);
             PacketDistributor.sendToServer(new SwingPayload(true, at.x, at.y, at.z));
         } else {
             p.level().playLocalSound(p.getX(), p.getEyeY(), p.getZ(), w == CombatEvents.Weapon.SWORD ? ModSounds.SWORD_SWING.get() : ModSounds.AXE_SWING.get(),

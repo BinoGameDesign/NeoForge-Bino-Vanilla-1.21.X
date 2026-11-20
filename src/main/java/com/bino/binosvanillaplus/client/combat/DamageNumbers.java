@@ -39,6 +39,7 @@ public final class DamageNumbers {
 
     private static final class Num {
         final int entityId; final byte kind;
+        boolean gray;
         float amount; long born, popAt;
         final Vec3 origin; final double side, up;
         Num(int id, byte kind, float amount, Vec3 origin) {
@@ -69,9 +70,26 @@ public final class DamageNumbers {
                 }
             }
         }
-        Vec3 at = e.position().add((RND.nextDouble() - 0.5) * e.getBbWidth() * 0.6, e.getBbHeight() * 0.8 + 0.15, (RND.nextDouble() - 0.5) * e.getBbWidth() * 0.6);
-        NUMS.add(new Num(p.entityId(), p.kind(), p.amount(), at));
+        // nasce acima da cabeca (antes ficava dentro do mob)
+        Vec3 at = e.position().add((RND.nextDouble() - 0.5) * e.getBbWidth() * 0.5, e.getBbHeight() + 0.35, (RND.nextDouble() - 0.5) * e.getBbWidth() * 0.5);
+        Num n = new Num(p.entityId(), p.kind(), p.amount(), at);
+        // lugar branco (neve, gelo, quartzo...): o numero branco vira cinza para aparecer
+        if (p.kind() == CombatEvents.KIND_PHYSICAL && whiteAround(mc.level, e.blockPosition())) n.gray = true;
+        NUMS.add(n);
         if (NUMS.size() > 80) NUMS.remove(0);
+    }
+
+    private static boolean whiteAround(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
+        if (level.getBiome(pos).value().coldEnoughToSnow(pos) && level.canSeeSky(pos)) return true;   // bioma de neve
+        for (int dy = 0; dy >= -2; dy--) {
+            net.minecraft.world.level.block.state.BlockState st = level.getBlockState(pos.offset(0, dy, 0));
+            if (st.isAir()) continue;
+            return st.is(net.minecraft.tags.BlockTags.SNOW) || st.is(net.minecraft.tags.BlockTags.ICE)
+                    || st.is(net.minecraft.world.level.block.Blocks.QUARTZ_BLOCK) || st.is(net.minecraft.world.level.block.Blocks.CALCITE)
+                    || st.is(net.minecraft.world.level.block.Blocks.WHITE_CONCRETE) || st.is(net.minecraft.world.level.block.Blocks.WHITE_WOOL)
+                    || st.is(net.minecraft.world.level.block.Blocks.POWDER_SNOW);
+        }
+        return false;
     }
 
     private static int color(byte k) {
@@ -131,16 +149,16 @@ public final class DamageNumbers {
             ps.mulPose(cam.rotation());
             ps.scale(s, -s, s);   // igual a placa de nome do jogo (Y invertido)
             String str = text(n);
-            int col = (a << 24) | color(n.kind);
-            int outline = (a << 24);
+            int col = (a << 24) | (n.gray ? 0x7C7C7C : color(n.kind));
             float x = -font.width(str) / 2f;
-            font.drawInBatch8xOutline(Component.literal(str).getVisualOrderText(), x, 0, col, outline, ps.last().pose(), buf, LightTexture.FULL_BRIGHT);
+            // sem contorno (so o texto, brilhando sozinho)
+            font.drawInBatch(str, x, 0, col, false, ps.last().pose(), buf, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             if (n.kind == CombatEvents.KIND_CRIT) {   // "Critical" pequeno logo acima
                 ps.pushPose();
                 ps.translate(0, -7, 0);
                 ps.scale(0.6f, 0.6f, 0.6f);
                 String c = "Critical";
-                font.drawInBatch8xOutline(Component.literal(c).getVisualOrderText(), -font.width(c) / 2f, 0, col, outline, ps.last().pose(), buf, LightTexture.FULL_BRIGHT);
+                font.drawInBatch(c, -font.width(c) / 2f, 0, col, false, ps.last().pose(), buf, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
                 ps.popPose();
             }
             ps.popPose();

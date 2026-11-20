@@ -122,12 +122,22 @@ public final class CombatEvents {
     // esquiva (armadura de rubi): "Miss" (chamado por quem cancela o dano)
     public static void miss(LivingEntity e) { send(e, 0, KIND_MISS); }
 
+    // a mira (dentro do alcance) bate primeiro na agua? devolve o ponto, ou null
+    @Nullable
+    public static Vec3 waterInFront(net.minecraft.world.entity.player.Player p) {
+        Vec3 eye = p.getEyePosition(), end = eye.add(p.getLookAngle().scale(p.entityInteractionRange()));
+        var hit = p.level().clip(new net.minecraft.world.level.ClipContext(eye, end, net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                net.minecraft.world.level.ClipContext.Fluid.ANY, p));
+        if (hit.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK) return null;
+        return p.level().getFluidState(hit.getBlockPos()).is(net.minecraft.tags.FluidTags.WATER) ? hit.getLocation() : null;
+    }
+
     // ---------------------------------------------------------------- golpe em bloco (coisa dura)
     @SubscribeEvent
     public static void onHitBlock(PlayerInteractEvent.LeftClickBlock e) {
         if (!(e.getLevel() instanceof ServerLevel level) || e.getAction() != PlayerInteractEvent.LeftClickBlock.Action.START) return;
         Weapon w = weapon(e.getItemStack());
-        if (w == Weapon.NONE) return;
+        if (w == Weapon.NONE || waterInFront(e.getEntity()) != null) return;   // bloco debaixo d'agua: o som e' o da agua
         BlockPos pos = e.getPos();
         Direction face = e.getFace() != null ? e.getFace() : Direction.UP;
         Vec3 p = Vec3.atCenterOf(pos).add(face.getStepX() * 0.52, face.getStepY() * 0.52, face.getStepZ() * 0.52);
