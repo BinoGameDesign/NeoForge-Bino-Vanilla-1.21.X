@@ -505,6 +505,7 @@ public final class CombatMoves {
             airHits = 0; airStart = now(); launchAt = now();
         }
         if (a.move == CombatMove.METEOR) { Vec3 d = p.getDeltaMovement(); p.setDeltaMovement(d.x * 0.3, -1.1, d.z * 0.3); }   // mergulho
+        else if (a.move.aerial() && !p.onGround()) { Vec3 d = p.getDeltaMovement(); p.setDeltaMovement(d.x, Math.max(d.y, 0.16), d.z); }   // sobe junto com o mob
         if (a.move.serverHit(a.heavy)) {   // o servidor faz o dano; aqui so o peso
             boolean big = a.move == CombatMove.JUMP || a.move == CombatMove.JUDGMENT || a.move == CombatMove.METEOR;
             HitFx.kick(big ? 1.4f : 1.1f);

@@ -46,6 +46,21 @@ public final class CombatMovesServer {
     private static CombatMove hitting;   // golpe do servidor que esta batendo agora (para a postura)
     static final Map<UUID, Long> STAB = new HashMap<>();   // mob -> tick em que levou uma estocada (morte "com stab")
     private static final Map<UUID, Long> JUGGLE = new HashMap<>();   // mob no malabarismo: sem empurrao do golpe
+    private record Hover(LivingEntity mob, long until, double targetY) {}
+    private static final Map<UUID, Hover> HOVER = new HashMap<>();   // mob no malabarismo subindo ate a altura alvo
+
+    // o mob no malabarismo esta "congelado" (Posture.freeze, sem IA nem gravidade); aqui ele sobe suave ate a altura
+    @SubscribeEvent
+    public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) {
+        if (HOVER.isEmpty()) return;
+        for (java.util.Iterator<Hover> it = HOVER.values().iterator(); it.hasNext(); ) {
+            Hover h = it.next();
+            LivingEntity m = h.mob();
+            if (!m.isAlive() || m.isRemoved() || m.level().getGameTime() > h.until()) { it.remove(); continue; }
+            double dy = net.minecraft.util.Mth.clamp((h.targetY() - m.getY()) * 0.35, -0.04, 0.3);
+            if (Math.abs(dy) > 1e-3) m.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(0, dy, 0));
+        }
+    }
 
     @SubscribeEvent
     public static void onKnockback(net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent e) {
@@ -128,13 +143,16 @@ public final class CombatMovesServer {
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         CombatMove cur = hitting != null ? hitting : RECENT.containsKey(p.getUUID()) ? RECENT.get(p.getUUID()).move() : null;
         if (cur != null && stabMove(cur, axe) && (hitting != null || recentLight(p) != null)) STAB.put(v.getUUID(), v.level().getGameTime());
-        // malabarismo (estilo Kingdom Hearts): mob atingido NO AR fica parado no ar um instante, sem ser empurrado,
-        // para o combo continuar pegando
-        if (!v.onGround() && !v.isInWater() && !v.onClimbable() && !(v instanceof net.minecraft.world.entity.FlyingMob)) {
-            v.setDeltaMovement(v.getDeltaMovement().x * 0.2, 0.06, v.getDeltaMovement().z * 0.2);
+        // malabarismo (estilo Kingdom Hearts / Devil May Cry): mob atingido NO AR, ou atingido pelo combo aereo, fica no
+        // ar sem ser empurrado e SOBE um pouco a cada golpe, acompanhando a altura do jogador (o combo continua pegando)
+        boolean airCombo = !p.onGround() && cur != null && (cur.aerial() || cur == CombatMove.LAUNCHER);
+        if ((!v.onGround() || airCombo) && !v.isInWater() && !v.onClimbable() && !(v instanceof net.minecraft.world.entity.FlyingMob)) {
+            v.setDeltaMovement(v.getDeltaMovement().x * 0.2, 0, v.getDeltaMovement().z * 0.2);
             v.hurtMarked = true;
             Posture.freeze(v, 9);
             JUGGLE.put(v.getUUID(), v.level().getGameTime() + 2);
+            double ty = Math.max(v.getY() + 0.4, p.getY() + 0.3);
+            HOVER.put(v.getUUID(), new Hover(v, v.level().getGameTime() + 9, Math.min(ty, v.getY() + 1.3)));
         }
     }
 

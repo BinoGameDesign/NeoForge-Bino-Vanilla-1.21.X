@@ -118,6 +118,8 @@ public final class ShoulderCam {
     }
 
     private static final ResourceLocation CROSSHAIR = ResourceLocation.withDefaultNamespace("hud/crosshair");
+    private static double crossX = Double.NaN, crossY = Double.NaN;
+    private static long crossMs;
 
     private static void renderCrosshair(GuiGraphics g, DeltaTracker dt) {
         Minecraft mc = Minecraft.getInstance();
@@ -141,7 +143,14 @@ public final class ShoulderCam {
         if (v.z > -0.05f) return;
         int w = g.guiWidth(), h = g.guiHeight();
         double focal = (h / 2.0) / Math.tan(Math.toRadians(fov) / 2);
-        int x = (int) Math.round(w / 2.0 + v.x / -v.z * focal), y = (int) Math.round(h / 2.0 - v.y / -v.z * focal);
+        double tx = w / 2.0 + v.x / -v.z * focal, ty = h / 2.0 - v.y / -v.z * focal;
+        // a mira desliza ate o ponto (sem pular quando passa de um bloco longe para um mob perto)
+        long now = Util.getMillis();
+        double k = crossMs == 0 || Double.isNaN(crossX) ? 1 : 1 - Math.exp(-Math.min(0.1, (now - crossMs) / 1000.0) * 16);
+        crossMs = now;
+        crossX += (tx - crossX) * k; crossY += (ty - crossY) * k;
+        if (Double.isNaN(crossX) || Math.abs(crossX - tx) > w) { crossX = tx; crossY = ty; }
+        int x = (int) Math.round(crossX), y = (int) Math.round(crossY);
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR,
                 GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);   // como a mira do jogo (inverte a cor)
