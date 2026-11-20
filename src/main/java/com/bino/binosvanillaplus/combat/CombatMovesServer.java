@@ -50,12 +50,12 @@ public final class CombatMovesServer {
         if (w == CombatEvents.Weapon.NONE) return;
         boolean axe = w == CombatEvents.Weapon.AXE;
         CombatMove move = CombatMove.of(m.move());
+        float delay = p.getCurrentItemAttackStrengthDelay();
         if (move.visualOnly()) {   // so animacao (avanco); parry, Issen etc. vem por CombatActionPayload
             PacketDistributor.sendToPlayersTrackingEntity(p, new MoveBroadcastPayload(p.getId(), m.move(), m.heavy(),
                     MoveTiming.lengthMs(move, m.heavy(), axe, delay)));
             return;
         }
-        float delay = p.getCurrentItemAttackStrengthDelay();
         long now = p.level().getGameTime();
         if (move.serverHit(m.heavy())) {
             if (now < HEAVY_READY.getOrDefault(p.getUUID(), 0L)) return;   // ainda recarregando
