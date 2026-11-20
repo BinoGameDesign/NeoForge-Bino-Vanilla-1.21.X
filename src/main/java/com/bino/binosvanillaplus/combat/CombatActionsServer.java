@@ -44,6 +44,37 @@ public final class CombatActionsServer {
 
     private record RushHit(UUID player, int mobId, long at, int left) {}
     private record StabHit(UUID player, int mobId, long at, boolean axe) {}
+    private record ArrowParry(long until, boolean perfect) {}
+    private static final Map<UUID, ArrowParry> ARROWS = new HashMap<>();
+
+    // flecha (ou outro projetil) chegando em quem esta aparando, de frente: rebate. Perfeito = volta para quem atirou
+    @SubscribeEvent
+    public static void onProjectile(net.neoforged.neoforge.event.entity.ProjectileImpactEvent e) {
+        if (!(e.getRayTraceResult() instanceof net.minecraft.world.phys.EntityHitResult eh) || !(eh.getEntity() instanceof ServerPlayer p)) return;
+        ArrowParry a = ARROWS.get(p.getUUID());
+        if (a == null || p.level().getGameTime() > a.until() || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
+        var proj = e.getProjectile();
+        Vec3 v = proj.getDeltaMovement();
+        if (v.lengthSqr() < 1e-4 || p.getLookAngle().dot(v.normalize().reverse()) < 0.25) return;   // tem que estar de frente
+        e.setCanceled(true);
+        ARROWS.remove(p.getUUID());
+        ServerLevel level = p.serverLevel();
+        Entity shooter = proj.getOwner();
+        double speed = v.length();
+        Vec3 nv;
+        if (a.perfect() && shooter != null && shooter.isAlive() && shooter.distanceToSqr(p) < 48 * 48) {
+            nv = shooter.getEyePosition().add(0, -0.2, 0).subtract(proj.position()).normalize().scale(Math.max(1.6, speed));
+            if (proj instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow) arrow.setCritArrow(true);
+        } else nv = v.scale(-0.45).add((level.random.nextDouble() - 0.5) * 0.3, 0.25, (level.random.nextDouble() - 0.5) * 0.3);
+        proj.setDeltaMovement(nv);
+        proj.setOwner(p);
+        proj.hurtMarked = true;
+        Vec3 at = proj.position();
+        level.sendParticles(ModParticles.PARRY_SPARK.get(), at.x, at.y, at.z, a.perfect() ? 24 : 12, 0.05, 0.05, 0.05, 0.4);
+        level.sendParticles(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, 0, a.perfect() ? 1.0 : 0.6, 0, 0, 1.0);
+        level.playSound(null, at.x, at.y, at.z, a.perfect() ? ModSounds.PARRY_PERFECT.get() : ModSounds.PARRY.get(), SoundSource.PLAYERS, 1.0f, 1.15f);
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new CombatFxPayload(CombatFxPayload.PARRY, p.getId(), proj.getId(), 0f));
+    }
     private static final List<StabHit> STABS = new ArrayList<>();
 
     // jogador atras do mob (fora do campo de visao dele)
@@ -59,9 +90,15 @@ public final class CombatActionsServer {
         boolean weapon = CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE;
         boolean shield = p.getOffhandItem().getItem() instanceof net.minecraft.world.item.ShieldItem;
         if (!p.isAlive() || !weapon && !(shield && m.kind() == CombatActionPayload.PARRY)) return;
+        long now = p.level().getGameTime();
+        if (m.kind() == CombatActionPayload.ARROW_PARRY) {   // aparar flecha/projetil: vale por alguns ticks
+            if (!weapon) return;
+            ARROWS.put(p.getUUID(), new ArrowParry(now + 7 + Telegraphs.grace(p), m.flag()));
+            CombatMovesServer.broadcast(p, CombatMove.PARRY, false);
+            return;
+        }
         Entity ent = p.level().getEntity(m.target());
         if (!(ent instanceof LivingEntity target) || !target.isAlive()) return;
-        long now = p.level().getGameTime();
         switch (m.kind()) {
             case CombatActionPayload.PARRY -> {
                 if (target.distanceToSqr(p) < 8 * 8) Telegraphs.claim(p, target.getId(), weapon && m.flag());   // escudo: so parry normal

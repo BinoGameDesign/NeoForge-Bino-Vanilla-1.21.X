@@ -17,11 +17,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class CameraRollMixin {
     @Shadow protected abstract void setPosition(Vec3 pos);
     @Shadow public abstract Vec3 getPosition();
+    @Shadow protected abstract void setRotation(float yRot, float xRot);
 
     @Inject(method = "setup", at = @At("TAIL"))
     private void binosvanillaplus$rollDrop(BlockGetter level, Entity entity, boolean detached, boolean thirdPersonReverse,
                                            float partialTick, CallbackInfo ci) {
-        if (detached || !(entity instanceof Player p)) return;
+        if (!(entity instanceof Player p)) return;
+        float[] cine = com.bino.binosvanillaplus.client.combat.CombatMoves.cinemaCam(p, partialTick);   // facada pelas costas: camera de lado
+        if (cine != null) {
+            setPosition(new Vec3(cine[0], cine[1], cine[2]));
+            setRotation(cine[3], cine[4]);
+            return;
+        }
+        if (detached) return;
         float d = DodgeRoll.cameraDrop(p) + com.bino.binosvanillaplus.client.combat.CombatMoves.cameraDrop(p);
         float f = com.bino.binosvanillaplus.client.combat.CombatMoves.cameraForward(p);
         if (d < 0.001f && Math.abs(f) < 0.001f) return;

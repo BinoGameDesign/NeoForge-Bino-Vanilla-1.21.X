@@ -108,6 +108,7 @@ public final class CombatEvents {
         Vec3 c = v.getBoundingBox().getCenter();
         float w = v.getBbWidth(), h = v.getBbHeight();
         level.sendParticles(ModParticles.DEATH_PUFF.get(), c.x, c.y, c.z, (int) Math.min(18, 6 + w * h * 4), w * 0.35, h * 0.3, w * 0.35, 0.02);
+        level.sendParticles(ParticleTypes.SOUL, c.x, c.y + h * 0.2, c.z, 2 + (int) Math.min(3, w * h), w * 0.25, h * 0.15, w * 0.25, 0.015);   // almas subindo
     }
 
     static byte kind(DamageSource src, LivingEntity victim) {

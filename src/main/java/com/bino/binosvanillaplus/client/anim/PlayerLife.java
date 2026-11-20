@@ -51,8 +51,7 @@ public final class PlayerLife {
                 m.leftArm.zRot -= 0.05f + 0.06f * amt;
             }
             if (p.isSprinting()) {   // correndo: inclinado, bracos fortes
-                m.body.xRot += 0.22f * amt;
-                m.head.xRot -= 0.12f * amt;
+                // (a inclinacao da corrida e' do corpo todo, em onRenderPre: so o tronco separava das pernas)
                 if (!busyArms) {
                     m.rightArm.xRot += Mth.cos(phase + Mth.PI) * 0.45f * amt - 0.2f * amt;
                     m.leftArm.xRot += Mth.cos(phase) * 0.45f * amt - 0.2f * amt;

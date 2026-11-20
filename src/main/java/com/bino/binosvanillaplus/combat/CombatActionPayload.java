@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 
 // cliente -> servidor: acoes especiais do combate (target = id do mob; flag = parry perfeito)
 public record CombatActionPayload(byte kind, int target, boolean flag) implements CustomPacketPayload {
-    public static final byte PARRY = 0, ISSEN = 1, RUSH = 2, CRITICAL = 3, BACKSTAB = 4;
+    public static final byte PARRY = 0, ISSEN = 1, RUSH = 2, CRITICAL = 3, BACKSTAB = 4, ARROW_PARRY = 5;
     public static final Type<CombatActionPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "combat_action"));
     public static final StreamCodec<ByteBuf, CombatActionPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BYTE, CombatActionPayload::kind, ByteBufCodecs.VAR_INT, CombatActionPayload::target,

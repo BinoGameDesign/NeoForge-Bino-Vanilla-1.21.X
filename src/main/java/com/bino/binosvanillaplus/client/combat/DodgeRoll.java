@@ -251,7 +251,7 @@ public final class DodgeRoll {
         if (k <= 0.001f) return;
         m.head.xRot = Mth.lerp(k, m.head.xRot, 0.85f);
         m.head.yRot = Mth.lerp(k, m.head.yRot, 0f);
-        m.body.xRot = Mth.lerp(k, m.body.xRot, 0.55f);
+        // (o tronco nao inclina sozinho; a cambalhota e' do corpo todo)
         m.body.yRot = Mth.lerp(k, m.body.yRot, 0f);
         m.rightArm.x = Mth.lerp(k, m.rightArm.x, -5f); m.rightArm.z = Mth.lerp(k, m.rightArm.z, 0f);
         m.leftArm.x = Mth.lerp(k, m.leftArm.x, 5f); m.leftArm.z = Mth.lerp(k, m.leftArm.z, 0f);

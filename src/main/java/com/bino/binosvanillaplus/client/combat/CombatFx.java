@@ -54,8 +54,27 @@ public final class CombatFx {
     private static final Map<Integer, Post> POSTURE = new HashMap<>();
     private static final Set<Integer> KNEELING = new HashSet<>();
     private static final Map<Integer, Long> GLINT2 = new HashMap<>();   // segundo brilho, logo antes do golpe
-    record Death(int kind, float dx, float dz) {}
+    // estado da morte (fisica simples no cliente: o corpo tomba com o impulso do golpe, quica e escorrega)
+    static final class Death {
+        final int kind; final float dx, dz;
+        float ang, angV, slide, slideV, spin, spinV, y, vy, tumble, tumbleV;
+        boolean landed; long last;
+        Death(int kind, float dx, float dz, java.util.Random r) {
+            this.kind = kind; this.dx = dx; this.dz = dz;
+            this.spinV = (r.nextFloat() - 0.5f) * 70f;
+            switch (kind) {
+                case 0 -> { angV = 120f + r.nextFloat() * 60f; slideV = 2.4f; }
+                case 1 -> { angV = 0f; slideV = 0f; spinV *= 0.3f; }
+                case 3 -> { vy = 7f; slideV = 5f; tumbleV = 520f + r.nextFloat() * 200f; spinV *= 3f; }
+                default -> { }
+            }
+        }
+        int kind() { return kind; }
+        float dx() { return dx; }
+        float dz() { return dz; }
+    }
     private static final Map<Integer, Death> DEATHS = new HashMap<>();
+    private static final java.util.Random RANDOM = new java.util.Random();
     private static Window issen, rush;
     private static long flashAt = -100000, dodgeAt = -100000, letterboxAt = -100000, slashAt = -100000, zoomAt = -100000;
     private static float flashPower;
@@ -117,7 +136,7 @@ public final class CombatFx {
             case CombatFxPayload.DEATH -> {
                 KNEELING.remove(m.a()); POSTURE.remove(m.a()); INCOMING.remove(m.a());
                 float r = m.f() * Mth.DEG_TO_RAD;
-                DEATHS.put(m.a(), new Death(m.b(), Mth.cos(r), Mth.sin(r)));
+                DEATHS.put(m.a(), new Death(m.b(), Mth.cos(r), Mth.sin(r), RANDOM));
             }
             case CombatFxPayload.CRITICAL -> {
                 POSTURE.remove(m.b()); KNEELING.remove(m.b());
@@ -247,78 +266,105 @@ public final class CombatFx {
         return 90f - 9f * Mth.sin(Mth.PI * (a - 0.8f) / 0.2f);                 // bate no chao e quica um pouco
     }
 
-    // Morte (mod Combat): o mob fica 2 s (LivingEntityDeathMixin) e some com o "puf". Animacoes do corpo inteiro:
-    //  0 normal (golpe, flecha, mob): cambaleia para tras, na direcao do golpe, e cai de costas quicando
-    //  1 com stab (morto por estocada): treme espetado, cai de joelhos e tomba para a frente, em cima de quem matou
-    //  2 queimado (fogo, lava, raio): se debate, encolhe e desaba no lugar
-    //  3 explosao: e' arremessado girando e cai longe
-    //  4 afogado/sufocado: amolece devagar e deita de lado, afundando um pouco
-    //  5 outras (queda, fome, veneno...): cambaleia de um lado para o outro e cai de lado
+    // Morte (mod Combat): o mob fica 2 s (LivingEntityDeathMixin) e some com o "puf" e almas subindo.
+    // O corpo gira em volta da BORDA de baixo do lado para onde cai (assim deita em cima do chao, sem atravessar).
+    //  0 golpe/flecha/mob: fisica - o impulso do golpe tomba o corpo, ele acelera caindo, quica no chao e escorrega
+    //  1 stab: treme espetado, a lamina sai (tranco), cai de joelhos e entao tomba para a frente (fisica)
+    //  2 queimado: se debate, encolhe e desaba de lado
+    //  3 explosao: arremessado girando no ar (fisica), cai e deita
+    //  4 afogado/sufocado: amolece devagar e deita de lado
+    //  5 outras: cambaleia e cai de lado
+    private static void step(Death d, float h, float tSec) {
+        long now = now();
+        float dt = d.last == 0 ? 0f : Mth.clamp((now - d.last) / 1000f, 0f, 0.05f);
+        d.last = now;
+        d.spin += d.spinV * dt;
+        d.spinV *= (float) Math.exp(-3 * dt);
+        if (d.kind == 3 && !d.landed) {   // no ar
+            d.vy -= 26f * dt;
+            d.y += d.vy * dt;
+            d.slide += d.slideV * dt;
+            d.tumble += d.tumbleV * dt;
+            if (d.y <= 0 && d.vy < 0) { d.y = 0; d.landed = true; d.ang = 80f; d.angV = 60f; d.slideV *= 0.4f; }
+            return;
+        }
+        boolean fallNow = d.kind == 0 || d.kind == 3 || d.kind == 1 && tSec > 0.95f;
+        if (d.kind == 1 && tSec > 0.95f && d.angV == 0f && d.ang < 1f) d.angV = 50f;
+        if (!fallNow) return;
+        if (d.ang < 90f) {
+            d.angV += (700f * Mth.sin(d.ang * Mth.DEG_TO_RAD) + 40f) * dt;   // gravidade derruba mais rapido quanto mais inclinado
+            d.ang += d.angV * dt;
+            if (d.ang >= 90f) {   // bateu no chao: quica um pouco
+                d.ang = 90f;
+                d.angV = Math.abs(d.angV) > 60f ? -d.angV * 0.28f : 0f;
+                d.slideV *= 0.5f;
+            }
+        } else if (d.angV != 0f) {
+            d.angV += 700f * dt;
+            d.ang += d.angV * dt;
+            if (d.ang >= 90f) { d.ang = 90f; d.angV = Math.abs(d.angV) > 40f ? -d.angV * 0.25f : 0f; }
+        }
+        d.slide += d.slideV * dt;
+        d.slideV *= (float) Math.exp(-(d.ang > 80f ? 7f : 2.5f) * dt);   // deitado escorrega pouco
+    }
+
+    // gira o corpo em volta da borda de baixo do lado (fx, fz) para onde ele cai
+    private static void fallAbout(PoseStack ps, float deg, float fx, float fz, float half) {
+        ps.translate(fx * half, 0, fz * half);
+        rot(ps, deg, fz, -fx);
+        ps.translate(-fx * half, 0, -fz * half);
+    }
+
     private static boolean deathPose(RenderLivingEvent.Pre<?, ?> e) {
         LivingEntity le = e.getEntity();
         Death d = DEATHS.get(le.getId());
         if (d == null || le.deathTime <= 0) return false;
         float t = Mth.clamp((le.deathTime - 1 + e.getPartialTick()) / 40f, 0f, 1f);
+        float tSec = (le.deathTime - 1 + e.getPartialTick()) / 20f;
         float tm = (le.tickCount + e.getPartialTick());
+        float h = le.getBbHeight(), half = le.getBbWidth() * 0.5f;
+        step(d, h, tSec);
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
-        float h = le.getBbHeight();
-        float ax = d.dz(), az = -d.dx();          // eixo: cair NA direcao do golpe
         float sx = -d.dz(), sz = d.dx();          // de lado
+        ps.translate(d.dx() * d.slide, d.y, d.dz() * d.slide);
+        ps.mulPose(Axis.YP.rotationDegrees(d.spin));
         switch (d.kind()) {
-            case 1 -> {   // stab: espetado -> treme -> lamina sai -> joelhos -> tomba para a frente
-                float lurch = smooth(t / 0.08f) * (1 - smooth((t - 0.08f) / 0.2f));          // empurrao da estocada
-                float shake = t > 0.06f && t < 0.38f ? 1f - (t - 0.06f) / 0.32f : 0f;
-                float pull = smooth((t - 0.36f) / 0.06f) * (1 - smooth((t - 0.42f) / 0.1f));   // a lamina sai: tranco para tras
-                float knees = smooth((t - 0.45f) / 0.18f);
-                float j = Mth.sin(tm * 2.8f) * 4f * shake;
-                ps.translate(d.dx() * -0.12f * lurch, 0.08f * lurch - h * 0.2f * knees, d.dz() * -0.12f * lurch);
-                rot(ps, j, sx, sz);
-                float ang = -(14f * lurch + 6f * shake) + 12f * pull - 22f * knees - fall((t - 0.62f) / 0.25f) * 0.75f;
-                rot(ps, ang, ax, az);
-                if (t > 0.9f) ps.translate(0, -0.04f * smooth((t - 0.9f) / 0.1f), 0);
+            case 1 -> {   // stab
+                float lurch = smooth(t / 0.06f) * (1 - smooth((t - 0.06f) / 0.15f));
+                float shake = t > 0.05f && t < 0.32f ? 1f - (t - 0.05f) / 0.27f : 0f;
+                float pull = smooth((t - 0.3f) / 0.05f) * (1 - smooth((t - 0.35f) / 0.08f));
+                float knees = smooth((t - 0.38f) / 0.1f);
+                ps.translate(d.dx() * -0.1f * lurch, 0.06f * lurch - h * 0.12f * knees * (1 - smooth(d.ang / 60f)), d.dz() * -0.1f * lurch);
+                rot(ps, Mth.sin(tm * 2.8f) * 4f * shake, sx, sz);
+                // tomba para a frente (para quem matou), em volta da borda da frente
+                fallAbout(ps, 14f * lurch - 10f * pull + 20f * knees * (1 - smooth(d.ang / 40f)) + d.ang, -d.dx(), -d.dz(), half);
             }
-            case 2 -> {   // queimado: se debate, encolhe e desaba
+            case 2 -> {   // queimado
                 float writhe = t < 0.5f ? 1f - t / 0.5f : 0f;
                 rot(ps, Mth.sin(tm * 1.9f) * 14f * writhe, sx, sz);
-                rot(ps, Mth.sin(tm * 1.3f) * 8f * writhe, ax, az);
                 float melt = smooth((t - 0.35f) / 0.5f);
-                ps.scale(1f + 0.15f * melt, 1f - 0.55f * melt, 1f + 0.15f * melt);
-                rot(ps, fall((t - 0.55f) / 0.35f) * 0.9f, sx, sz);
+                ps.scale(1f + 0.15f * melt, 1f - 0.45f * melt, 1f + 0.15f * melt);
+                fallAbout(ps, fall((t - 0.55f) / 0.35f) * 0.9f, sx, sz, half);
             }
-            case 3 -> {   // explosao: arremessado girando
-                float fly = smooth(t / 0.45f);
-                float arc = Mth.sin(Mth.PI * Math.min(1f, t / 0.45f));
-                ps.translate(d.dx() * 2.2f * fly, 1.1f * arc, d.dz() * 2.2f * fly);
-                float spin = t < 0.45f ? 540f * smooth(t / 0.45f) : 540f;
-                ps.translate(0, h * 0.5f, 0);
-                rot(ps, spin, ax, az);
-                ps.translate(0, -h * 0.5f, 0);
-                if (t >= 0.45f) rot(ps, 90f - 10f * Mth.sin(Mth.PI * Mth.clamp((t - 0.45f) / 0.15f, 0f, 1f)), ax, az);
+            case 3 -> {   // explosao
+                if (!d.landed) {
+                    ps.translate(0, h * 0.5f, 0);
+                    rot(ps, d.tumble, d.dz(), -d.dx());
+                    ps.translate(0, -h * 0.5f, 0);
+                } else fallAbout(ps, d.ang, d.dx(), d.dz(), half);
             }
-            case 4 -> {   // afogado: amolece e deita de lado devagar
+            case 4 -> {   // afogado
                 float k = smooth(t / 0.8f);
-                ps.translate(0, -0.25f * k, 0);
-                rot(ps, 90f * k + Mth.sin(tm * 0.5f) * 4f * (1 - k), sx, sz);
+                if (le.isInWater()) ps.translate(0, -0.25f * k, 0);
+                fallAbout(ps, 90f * k + Mth.sin(tm * 0.5f) * 4f * (1 - k), sx, sz, half);
             }
-            case 5 -> {   // outras: cambaleia e cai de lado
-                float wob = t < 0.4f ? Mth.sin(tm * 0.9f) * 12f * (1 - t / 0.4f) : 0f;
+            case 5 -> {   // outras
+                float wob = t < 0.4f ? Mth.sin(tm * 0.9f) * 11f * (1 - t / 0.4f) : 0f;
                 rot(ps, wob, sx, sz);
-                rot(ps, fall((t - 0.3f) / 0.45f), sx, sz);
+                fallAbout(ps, fall((t - 0.3f) / 0.45f), sx, sz, half);
             }
-            default -> {  // normal: tranco -> cambaleia dois passos -> joelhos cedem girando -> cai de costas -> estremece
-                float jolt = smooth(t / 0.07f) * (1 - smooth((t - 0.07f) / 0.25f));
-                float step = smooth((t - 0.05f) / 0.3f);
-                float buckle = smooth((t - 0.33f) / 0.15f);
-                float twist = 40f * smooth((t - 0.38f) / 0.3f);
-                float wob = t < 0.36f ? Mth.sin(tm * 1.1f) * 11f * (1 - step) : 0f;
-                ps.translate(d.dx() * 0.6f * step, 0.05f * jolt - h * 0.16f * buckle * (1 - smooth((t - 0.5f) / 0.15f)), d.dz() * 0.6f * step);
-                ps.mulPose(Axis.YP.rotationDegrees(twist));
-                rot(ps, wob, sx, sz);
-                float ang = 22f * jolt - 15f * buckle * (1 - smooth((t - 0.48f) / 0.08f)) + fall((t - 0.48f) / 0.26f);
-                if (t > 0.8f) ang += Mth.sin((t - 0.8f) * 60f) * 2.5f * (1 - (t - 0.8f) / 0.2f);   // estremece no chao
-                rot(ps, ang, ax, az);
-            }
+            default -> fallAbout(ps, d.ang, d.dx(), d.dz(), half);   // fisica
         }
         return true;
     }

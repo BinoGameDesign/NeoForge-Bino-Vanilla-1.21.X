@@ -136,6 +136,47 @@ public final class CombatMoves {
     private static long cinemaRestore;
     private static net.minecraft.client.CameraType savedCamera;
 
+    // projetil vindo em voce e quase chegando: {id, 1 se perfeito} ou null
+    private static int[] arrowIncoming(LocalPlayer p) {
+        int best = -1; double bestEta = 330;
+        Vec3 c = p.getBoundingBox().getCenter();
+        for (net.minecraft.world.entity.projectile.Projectile pr : p.level().getEntitiesOfClass(
+                net.minecraft.world.entity.projectile.Projectile.class, p.getBoundingBox().inflate(12), pr -> pr.getOwner() != p && pr.isAlive())) {
+            Vec3 v = pr.getDeltaMovement();
+            double sp = v.length();
+            if (sp < 0.3) continue;   // parado (flecha cravada)
+            Vec3 to = c.subtract(pr.position());
+            double d = to.length();
+            if (d < 1e-3 || v.dot(to) / (sp * d) < 0.85) continue;
+            double eta = d / sp * 50;   // ms ate chegar
+            if (eta < bestEta) { bestEta = eta; best = pr.getId(); }
+        }
+        return best == -1 ? null : new int[]{best, bestEta <= 130 ? 1 : 0};
+    }
+
+    // camera de cinema da facada pelas costas: de lado, mostrando voce e o mob, girando devagar
+    private static int cinemaTarget = -1;
+    private static long cinemaStart;
+
+    public static float[] cinemaCam(Player p, float pt) {
+        if (cinemaRestore == 0 || cinemaTarget == -1 || p != Minecraft.getInstance().player) return null;
+        Entity t = p.level().getEntity(cinemaTarget);
+        if (t == null) return null;
+        Vec3 a = p.getPosition(pt), b = t.getPosition(pt);
+        Vec3 dir = b.subtract(a).multiply(1, 0, 1);
+        if (dir.lengthSqr() < 1e-4) dir = p.getLookAngle().multiply(1, 0, 1);
+        dir = dir.normalize();
+        Vec3 side = new Vec3(-dir.z, 0, dir.x);
+        float k = Mth.clamp((now() - cinemaStart) / 1400f, 0f, 1f);
+        double ang = -0.55 + 0.7 * k;   // gira de leve durante a cena
+        Vec3 mid = a.add(b).scale(0.5).add(0, 1.0, 0);
+        Vec3 cam = mid.add(side.scale(3.3 * Math.cos(ang))).add(dir.scale(3.3 * Math.sin(ang))).add(0, 0.7, 0);
+        Vec3 d = mid.subtract(cam);
+        float yaw = (float) (Math.toDegrees(Math.atan2(d.z, d.x)) - 90.0);
+        float pitch = (float) -Math.toDegrees(Math.atan2(d.y, Math.sqrt(d.x * d.x + d.z * d.z)));
+        return new float[]{(float) cam.x, (float) cam.y, (float) cam.z, yaw, pitch};
+    }
+
     // mob de costas para voce (voce fora do campo de visao dele)
     static boolean behind(Player p, LivingEntity t) {
         double y = Math.toRadians(t.yBodyRot);
@@ -224,6 +265,13 @@ public final class CombatMoves {
                 special(p, CombatMove.PARRY, CombatActionPayload.PARRY, mob, perfect, now);
                 return;
             }
+            // flecha (ou outro projetil) chegando: apara (perfeito = volta para quem atirou)
+            int[] arrow = arrowIncoming(p);
+            if (arrow != null) {
+                cancel(e);
+                special(p, CombatMove.PARRY, CombatActionPayload.ARROW_PARRY, arrow[0], arrow[1] == 1, now);
+                return;
+            }
             if (onBlock || !inCombat(p, now)) return;   // descascar tronco etc.
             if (p.isShiftKeyDown() && p.getOffhandItem().getItem() instanceof ShieldItem) return;   // defender com escudo
             cancel(e);
@@ -244,8 +292,10 @@ public final class CombatMoves {
         lastCombat = now;
         lastMoveEnd = now + len;
         if (m == CombatMove.CRITICAL) step(p, 0.12, 0);
-        if (m == CombatMove.BACKSTAB) {   // mostra a cena em terceira pessoa e volta para a camera de antes
+        if (m == CombatMove.BACKSTAB) {   // mostra a cena de lado e volta para a camera de antes
             Minecraft mc = Minecraft.getInstance();
+            cinemaTarget = target;
+            cinemaStart = now;
             if (cinemaRestore == 0) savedCamera = mc.options.getCameraType();
             if (mc.options.getCameraType().isFirstPerson()) mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
             cinemaRestore = now + len + 150;
@@ -400,6 +450,7 @@ public final class CombatMoves {
         long now = now();
         if (cinemaRestore > 0 && now >= cinemaRestore) {
             cinemaRestore = 0;
+            cinemaTarget = -1;
             if (savedCamera != null && mc.options.getCameraType() != savedCamera) mc.options.setCameraType(savedCamera);
             savedCamera = null;
         }
@@ -881,8 +932,7 @@ public final class CombatMoves {
 
         float tw = (float) Math.toRadians(v[MoveAnims.TW]) * side;
         m.body.yRot = Mth.lerp(w, m.body.yRot, tw);
-        float cr = v[MoveAnims.CR] * w;
-        m.body.xRot = Mth.lerp(w, m.body.xRot, cr * 0.3f);
+        float cr = v[MoveAnims.CR] * w;   // (o tronco nao inclina sozinho: no modelo do jogo os bracos e a cabeca nao acompanham)
         float by = m.body.yRot;
         m.rightArm.z = Mth.sin(by) * 5f; m.rightArm.x = -Mth.cos(by) * 5f;
         m.leftArm.z = -Mth.sin(by) * 5f; m.leftArm.x = Mth.cos(by) * 5f;
@@ -899,13 +949,13 @@ public final class CombatMoves {
         ModelPart front = right ? m.rightLeg : m.leftLeg, back = right ? m.leftLeg : m.rightLeg;
         float st = v[MoveAnims.ST];
         if (p.onGround()) {
-            front.xRot = Mth.lerp(w, front.xRot, -st * 0.75f - cr * 0.55f);
-            back.xRot = Mth.lerp(w, back.xRot, st * 0.55f + cr * 0.3f);
+            front.xRot = Mth.lerp(w, front.xRot, -st * 0.42f - cr * 0.25f);
+            back.xRot = Mth.lerp(w, back.xRot, st * 0.32f + cr * 0.15f);
             front.zRot = Mth.lerp(w, front.zRot, 0.06f * side);
             back.zRot = Mth.lerp(w, back.zRot, -0.06f * side);
         } else {   // no ar: joelhos para cima (encolhido)
-            front.xRot = Mth.lerp(w, front.xRot, -0.9f);
-            back.xRot = Mth.lerp(w, back.xRot, -0.4f);
+            front.xRot = Mth.lerp(w, front.xRot, -0.55f);
+            back.xRot = Mth.lerp(w, back.xRot, 0.2f);
         }
     }
 
@@ -922,11 +972,11 @@ public final class CombatMoves {
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
         PUSHED.add(p.getId());
-        ps.translate(0, (v[MoveAnims.HOP] - v[MoveAnims.CR] * 0.28f) * w, 0);
+        ps.translate(0, (v[MoveAnims.HOP] - v[MoveAnims.CR] * 0.12f) * w, 0);
         ps.mulPose(Axis.YP.rotationDegrees(-yaw));
         ps.translate(0, 0, v[MoveAnims.DX] * w);                  // corpo vai a frente
         ps.mulPose(Axis.YP.rotationDegrees(-(v[MoveAnims.SP] % 360f)));
-        ps.mulPose(Axis.XP.rotationDegrees(v[MoveAnims.LN] * 0.5f * w));   // inclina a partir dos pes
+        ps.mulPose(Axis.XP.rotationDegrees(v[MoveAnims.LN] * 0.3f * w));   // inclina a partir dos pes (o corpo todo junto)
         float flip = v[MoveAnims.FL] % 360f, roll = v[MoveAnims.RL] * w;
         if (Math.abs(flip) > 0.01f || Math.abs(roll) > 0.01f) {   // cambalhota/tombo em volta do meio do corpo
             ps.translate(0, 0.9f, 0);
