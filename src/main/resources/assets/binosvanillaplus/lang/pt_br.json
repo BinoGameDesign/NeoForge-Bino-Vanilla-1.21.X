@@ -367,5 +367,13 @@
   "combat.binosvanillaplus.combo.tempest": "Tempestade!",
   "combat.binosvanillaplus.combo.lumberjack": "Lenhador!",
   "combat.binosvanillaplus.combo.judgment": "Juízo!",
-  "combat.binosvanillaplus.combo.guard_break": "Quebra-Guarda!"
+  "combat.binosvanillaplus.combo.guard_break": "Quebra-Guarda!",
+  "subtitles.binosvanillaplus.combat.parry": "Lâmina apara o golpe",
+  "subtitles.binosvanillaplus.combat.parry_perfect": "Aparada perfeita",
+  "combat.binosvanillaplus.combo.launcher": "Lança-Céu!",
+  "combat.binosvanillaplus.combo.aerial": "Combo Aéreo!",
+  "combat.binosvanillaplus.combo.meteor": "Meteoro!",
+  "combat.binosvanillaplus.combo.dance": "Dança!",
+  "combat.binosvanillaplus.combo.dash": "Avanço!",
+  "combat.binosvanillaplus.combo.pierce": "Perfurador!"
 }

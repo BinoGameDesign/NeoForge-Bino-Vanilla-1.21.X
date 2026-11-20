@@ -46,14 +46,16 @@ public final class CombatActionsServer {
     private static final List<RushHit> RUSHES = new ArrayList<>();
 
     public static void onAction(ServerPlayer p, CombatActionPayload m) {
-        if (CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE || !p.isAlive()) return;
+        boolean weapon = CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE;
+        boolean shield = p.getOffhandItem().getItem() instanceof net.minecraft.world.item.ShieldItem;
+        if (!p.isAlive() || !weapon && !(shield && m.kind() == CombatActionPayload.PARRY)) return;
         Entity ent = p.level().getEntity(m.target());
         if (!(ent instanceof LivingEntity target) || !target.isAlive()) return;
         long now = p.level().getGameTime();
         switch (m.kind()) {
             case CombatActionPayload.PARRY -> {
-                if (target.distanceToSqr(p) < 8 * 8) Telegraphs.claim(p, target.getId(), m.flag());
-                CombatMovesServer.broadcast(p, CombatMove.PARRY, false);
+                if (target.distanceToSqr(p) < 8 * 8) Telegraphs.claim(p, target.getId(), weapon && m.flag());   // escudo: so parry normal
+                if (weapon) CombatMovesServer.broadcast(p, CombatMove.PARRY, false);
             }
             case CombatActionPayload.ISSEN -> {
                 Window w = ISSEN.remove(p.getUUID());
@@ -100,8 +102,8 @@ public final class CombatActionsServer {
         away = away.lengthSqr() < 1e-4 ? p.getLookAngle() : away.normalize();
         mob.knockback(perfect ? 0.8 : 0.55, -away.x, -away.z);
         Posture.add(mob, Posture.max(mob) * (perfect ? 0.5f : 0.3f));
-        level.playSound(null, mid.x, mid.y, mid.z, ModSounds.SWORD_HIT_HARD.get(), SoundSource.PLAYERS, 1.1f, perfect ? 1.35f : 1.1f);
-        level.playSound(null, mid.x, mid.y, mid.z, SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, perfect ? 0.45f : 0.25f, 1.9f);
+        level.playSound(null, mid.x, mid.y, mid.z, perfect ? ModSounds.PARRY_PERFECT.get() : ModSounds.PARRY.get(), SoundSource.PLAYERS, 1.1f,
+                0.95f + level.random.nextFloat() * 0.1f);
         level.sendParticles(ModParticles.PARRY_SPARK.get(), mid.x, mid.y, mid.z, perfect ? 30 : 16, 0.05, 0.05, 0.05, 0.45);
         level.sendParticles(ModParticles.IMPACT_STAR.get(), mid.x, mid.y, mid.z, 0, perfect ? 1.6 : 1.0, 0, 0, 1.0);
         if (perfect) {

@@ -50,7 +50,11 @@ public final class CombatMovesServer {
         if (w == CombatEvents.Weapon.NONE) return;
         boolean axe = w == CombatEvents.Weapon.AXE;
         CombatMove move = CombatMove.of(m.move());
-        if (move.visualOnly()) return;   // esses vem por CombatActionPayload
+        if (move.visualOnly()) {   // so animacao (avanco); parry, Issen etc. vem por CombatActionPayload
+            PacketDistributor.sendToPlayersTrackingEntity(p, new MoveBroadcastPayload(p.getId(), m.move(), m.heavy(),
+                    MoveTiming.lengthMs(move, m.heavy(), axe, delay)));
+            return;
+        }
         float delay = p.getCurrentItemAttackStrengthDelay();
         long now = p.level().getGameTime();
         if (move.serverHit(m.heavy())) {
@@ -102,6 +106,10 @@ public final class CombatMovesServer {
         if (hitting != null) mult = hitting.posture();
         else if (!ownHit) { Recent r = recentLight(p); if (r != null) mult = r.move().posture(); }
         Posture.add(v, e.getNewDamage() * mult);
+        // combo aereo: o mob atingido no ar fica parado no ar um instante (malabarismo, estilo Kingdom Hearts)
+        Recent r = RECENT.get(p.getUUID());
+        if (!p.onGround() && r != null && (r.move().aerial() || r.move() == CombatMove.LAUNCHER)
+                && p.level().getGameTime() - r.tick() < 40) Posture.freeze(v, 7);
     }
 
     // golpe do servidor: na hora do impacto, acerta quem estiver no arco a frente (ou em volta, nas pancadas no chao)
@@ -114,11 +122,15 @@ public final class CombatMovesServer {
         if (!p.isAlive() || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
         ServerLevel level = p.serverLevel();
         CombatMove mv = pd.move();
-        boolean slam = mv == CombatMove.JUMP || (mv == CombatMove.JUDGMENT && pd.axe());
+        boolean slam = mv == CombatMove.JUMP || mv == CombatMove.METEOR || (mv == CombatMove.JUDGMENT && pd.axe());
+        boolean around = slam || mv == CombatMove.DANCE;
         double reach = switch (mv) {
-            case FORWARD -> 3.9; case ROLL_THRUST -> 4.0; case JUDGMENT -> 3.8; case GUARD_BREAK -> 3.0; default -> 3.2;
+            case FORWARD -> 3.9; case ROLL_THRUST -> 4.0; case JUDGMENT -> 3.8; case GUARD_BREAK, LAUNCHER -> 3.0;
+            case PIERCE -> 4.6; case METEOR, DANCE -> 3.4; default -> 3.2;
         };
-        double cone = mv == CombatMove.JUDGMENT ? -0.2 : mv == CombatMove.ROLL_THRUST || mv == CombatMove.FORWARD ? 0.6 : 0.35;
+        double cone = switch (mv) {
+            case JUDGMENT -> -0.2; case ROLL_THRUST, FORWARD -> 0.6; case PIERCE -> 0.85; case LAUNCHER -> 0.45; default -> 0.35;
+        };
         float dmg = (float) p.getAttributeValue(Attributes.ATTACK_DAMAGE) * mv.damage(true, pd.axe());
         Vec3 look = p.getLookAngle().multiply(1, 0, 1).normalize();
         boolean hitAny = false;
@@ -127,16 +139,25 @@ public final class CombatMovesServer {
             Vec3 to = t.position().subtract(p.position());
             double d = to.horizontalDistance();
             if (d > reach + t.getBbWidth() * 0.5 || Math.abs(to.y) > 2.5) continue;
-            if (!slam && d > 0.6 && to.multiply(1, 0, 1).normalize().dot(look) < cone) continue;
+            if (!around && d > 0.6 && to.multiply(1, 0, 1).normalize().dot(look) < cone) continue;
             if (!p.hasLineOfSight(t)) continue;
             ownHit = true; hitting = mv;
             boolean ok = t.hurt(p.damageSources().playerAttack(p), dmg);
             ownHit = false; hitting = null;
             if (ok) {
                 hitAny = true;
-                Vec3 push = slam ? to.multiply(1, 0, 1).normalize() : look;
-                if (mv == CombatMove.GUARD_BREAK) Posture.freeze(t, 10);   // atordoa (o resto do combo pega)
-                else t.knockback(pd.axe() ? 0.9 : 0.7, -push.x, -push.z);
+                Vec3 out = to.multiply(1, 0, 1);
+                Vec3 push = around && out.lengthSqr() > 1e-4 ? out.normalize() : look;
+                if (mv == CombatMove.LAUNCHER) {   // Lanca-Ceu: joga o mob para cima (o jogador pula atras)
+                    t.setDeltaMovement(push.x * 0.15, 0.95, push.z * 0.15);
+                    t.hurtMarked = true;
+                } else if (mv == CombatMove.GUARD_BREAK) {
+                    if (pd.axe()) { t.setDeltaMovement(push.x * 0.1, 0.7, push.z * 0.1); t.hurtMarked = true; }   // cabo no queixo: levanta
+                    else Posture.freeze(t, 10);   // estocada com o ombro: atordoa (o resto do combo pega)
+                } else if (mv == CombatMove.PIERCE && pd.axe()) {   // ombrada: derruba
+                    t.knockback(1.2, -push.x, -push.z);
+                    Posture.freeze(t, 12);
+                } else t.knockback(pd.axe() ? 0.9 : 0.7, -push.x, -push.z);
                 if (slam) t.setDeltaMovement(t.getDeltaMovement().add(0, 0.25, 0));
                 Vec3 c = t.getBoundingBox().getCenter();
                 level.sendParticles(ModParticles.IMPACT_STAR.get(), c.x, c.y, c.z, 0, 1.4, 0, 0, 1.0);

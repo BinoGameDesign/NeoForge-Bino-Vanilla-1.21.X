@@ -336,5 +336,27 @@
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.combat.hit_water"
+  },
+  "combat.parry": {
+    "sounds": [
+      {
+        "name": "binosvanillaplus:combat/parry1"
+      },
+      {
+        "name": "binosvanillaplus:combat/parry2"
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.combat.parry"
+  },
+  "combat.parry_perfect": {
+    "sounds": [
+      {
+        "name": "binosvanillaplus:combat/parry_perfect1"
+      },
+      {
+        "name": "binosvanillaplus:combat/parry_perfect2"
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.combat.parry_perfect"
   }
 }

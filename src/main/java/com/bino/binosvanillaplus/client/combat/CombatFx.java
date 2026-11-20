@@ -46,7 +46,7 @@ import java.util.Set;
 public final class CombatFx {
     private CombatFx() {}
 
-    record Incoming(int target, long hitAt) {}
+    record Incoming(int target, long hitAt, boolean red) {}
     record Window(int mobId, long until) {}
     record Post(float frac, boolean broken, long at) {}
 
@@ -69,13 +69,14 @@ public final class CombatFx {
         boolean mine = m.a() == me.getId();
         switch (m.kind()) {
             case CombatFxPayload.TELEGRAPH -> {
-                INCOMING.put(m.a(), new Incoming(m.b(), now + (long) m.f()));
+                boolean red = m.f() < 0;   // vermelho: nao da parry, so esquiva
+                INCOMING.put(m.a(), new Incoming(m.b(), now + (long) Math.abs(m.f()), red));
                 Entity mob = mc.level.getEntity(m.a());
                 if (mob != null) {
                     Vec3 at = mob.getEyePosition().add(mob.getLookAngle().scale(0.45)).add(0, -0.25, 0);
-                    mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, 0.65, 1, 0);   // 1 = dourada
+                    mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, red ? 0.85 : 0.65, red ? 2 : 1, 0);   // 1 dourada, 2 vermelha
                     if (m.b() == me.getId())
-                        mc.level.playLocalSound(at.x, at.y, at.z, ModSounds.SWORD_SWING.get(), SoundSource.HOSTILE, 0.35f, 2.0f, false);
+                        mc.level.playLocalSound(at.x, at.y, at.z, ModSounds.SWORD_SWING.get(), SoundSource.HOSTILE, red ? 0.6f : 0.35f, red ? 0.7f : 2.0f, false);
                 }
             }
             case CombatFxPayload.PARRY -> {
@@ -127,13 +128,16 @@ public final class CombatFx {
     // ------------------------------------------------------------------ consultas do CombatMoves
 
     // golpe vindo em mim agora? (mob id, ou -1). perfeito = bem na hora
-    static int parryTarget(LocalPlayer p, long now) {
+    static int parryTarget(LocalPlayer p, long now) { return parryTarget(p, now, 240); }
+
+    // window = quanto antes do golpe ainda vale (escudo tem janela maior)
+    static int parryTarget(LocalPlayer p, long now, long window) {
         int best = -1; long bestD = Long.MAX_VALUE;
         for (Map.Entry<Integer, Incoming> en : INCOMING.entrySet()) {
             Incoming in = en.getValue();
-            if (in.target() != p.getId()) continue;
+            if (in.target() != p.getId() || in.red()) continue;
             long d = in.hitAt() - now;
-            if (d < -70 || d > 240) continue;
+            if (d < -70 || d > window) continue;
             if (Math.abs(d) < bestD) { bestD = Math.abs(d); best = en.getKey(); }
         }
         return best;

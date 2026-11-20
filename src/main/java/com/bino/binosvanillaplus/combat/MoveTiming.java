@@ -14,9 +14,11 @@ public final class MoveTiming {
             case TEMPEST -> 820; case JUDGMENT -> 1000; case GUARD_BREAK -> 640; case BREAK_1 -> 400; case BREAK_2 -> 560;
             case ROLL_SLASH -> 480; case ROLL_THRUST -> 620;
             case PARRY -> 320; case ISSEN -> 560; case RUSH -> 700; case CRITICAL -> 900;
+            case DASH -> 300; case DASH_SLASH -> 460; case PIERCE -> 620; case LAUNCHER -> 600;
+            case AIR_1 -> 380; case AIR_2 -> 380; case AIR_3 -> 480; case METEOR -> 700; case DANCE -> 820;
         };
         if (heavy && (m == CombatMove.JUMP || m == CombatMove.FORWARD)) base += 220;   // versao pesada: preparacao maior
-        if (axe && m != CombatMove.PARRY && m != CombatMove.ISSEN && m != CombatMove.RUSH) base = (int) (base * 1.15f);
+        if (axe && m != CombatMove.PARRY && m != CombatMove.ISSEN && m != CombatMove.RUSH && m != CombatMove.DASH) base = (int) (base * 1.15f);
         if (m.vanillaHit(heavy)) {
             int cd = (int) (delayTicks * 50f * (m == CombatMove.TEMPEST ? 1.2f : 1f));
             base = Math.max(base, Math.min(cd, 1400));
@@ -31,6 +33,8 @@ public final class MoveTiming {
             case TEMPEST -> 0.6f; case JUDGMENT -> 0.66f; case GUARD_BREAK -> 0.45f;
             case ROLL_SLASH -> 0.3f; case ROLL_THRUST -> 0.4f;
             case PARRY -> 0.2f; case ISSEN -> 0.25f; case RUSH -> 0.1f; case CRITICAL -> 0.55f;
+            case DASH -> 0.5f; case DASH_SLASH -> 0.3f; case PIERCE -> 0.4f; case LAUNCHER -> 0.45f;
+            case AIR_3 -> 0.4f; case METEOR -> 0.45f; case DANCE -> 0.55f;
             default -> 0.34f;
         };
     }

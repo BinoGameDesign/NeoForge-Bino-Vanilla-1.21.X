@@ -48,6 +48,8 @@ public class ModSounds {
     public static final Supplier<SoundEvent> AXE_HIT = register("combat.axe_hit");
     public static final Supplier<SoundEvent> AXE_HIT_HARD = register("combat.axe_hit_hard");
     public static final Supplier<SoundEvent> HIT_WATER = register("combat.hit_water");
+    public static final Supplier<SoundEvent> PARRY = register("combat.parry");
+    public static final Supplier<SoundEvent> PARRY_PERFECT = register("combat.parry_perfect");
 
     private static Supplier<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name)));

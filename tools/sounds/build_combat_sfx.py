@@ -64,3 +64,18 @@ for i, n in enumerate(["sword_clash.2", "sword_clash.4", "sword_clash.8"]):
 save("axe_hit_hard1", mix(S["chop"], pitch(S["sword_clash.4"], 0.66) * 0.55, thud(0.3, 120, 0.04, 0.5)))
 save("axe_hit_hard2", mix(pitch(S["chop"], 0.92), pitch(S["sword_clash.5"], 0.62) * 0.5))
 save("axe_hit_hard3", mix(S["chop"], pitch(S["sword_clash.2"], 0.7) * 0.45, thud(0.25, 110, 0.035, 0.5)))
+
+# parry (20/11): choque de lamina + "ting" metalico agudo; o perfeito tem pancada grave e eco (o som mais marcante)
+def ting(sec, f, decay, amp):
+    t = np.arange(int(SR * sec)) / SR
+    return amp * (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * 2.76 * f * t) + 0.22 * np.sin(2 * np.pi * 5.4 * f * t)) * np.exp(-t / decay)
+
+def echo(x, delay, fb, n):
+    d = int(delay * SR); y = np.zeros(len(x) + d * n); y[:len(x)] += x
+    for k in range(1, n + 1): y[k * d:k * d + len(x)] += x * (fb ** k)
+    return y
+
+save("parry1", mix(S["sword_clash.5"], ting(0.6, 2200, 0.10, 0.30)), 0.9)
+save("parry2", mix(pitch(S["sword_clash.4"], 1.08), ting(0.6, 2500, 0.10, 0.30)), 0.9)
+save("parry_perfect1", echo(mix(S["sword_clash.8"], ting(1.2, 3100, 0.32, 0.55), thud(0.3, 90, 0.05, 0.5)), 0.11, 0.38, 4), 0.95)
+save("parry_perfect2", echo(mix(pitch(S["sword_clash.2"], 1.1), ting(1.2, 2800, 0.32, 0.55), thud(0.3, 85, 0.05, 0.5)), 0.11, 0.38, 4), 0.95)

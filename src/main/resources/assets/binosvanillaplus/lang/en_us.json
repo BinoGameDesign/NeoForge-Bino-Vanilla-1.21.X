@@ -175,5 +175,13 @@
   "combat.binosvanillaplus.combo.tempest": "Tempest!",
   "combat.binosvanillaplus.combo.lumberjack": "Lumberjack!",
   "combat.binosvanillaplus.combo.judgment": "Judgment!",
-  "combat.binosvanillaplus.combo.guard_break": "Guard Break!"
+  "combat.binosvanillaplus.combo.guard_break": "Guard Break!",
+  "subtitles.binosvanillaplus.combat.parry": "Blade parries",
+  "subtitles.binosvanillaplus.combat.parry_perfect": "Perfect parry",
+  "combat.binosvanillaplus.combo.launcher": "Sky Launcher!",
+  "combat.binosvanillaplus.combo.aerial": "Aerial Combo!",
+  "combat.binosvanillaplus.combo.meteor": "Meteor!",
+  "combat.binosvanillaplus.combo.dance": "Dance!",
+  "combat.binosvanillaplus.combo.dash": "Dash Strike!",
+  "combat.binosvanillaplus.combo.pierce": "Piercer!"
 }

@@ -67,6 +67,7 @@ public final class DodgeRoll {
     private static final Map<Integer, Roll> ROLLS = new HashMap<>();
     private static final Set<Integer> PUSHED = new HashSet<>();
     private static long readyAt, lastRollEnd = -100000;
+    private static int chain;   // rolamentos emendados (para a Danca: R R P)
 
     private static long now() { return System.currentTimeMillis(); }
 
@@ -79,6 +80,8 @@ public final class DodgeRoll {
     public static boolean rolling(Player p) { return get(p) != null; }
 
     // acabou de rolar (para o Contra-Rolamento / Saida de Cacador)
+    static int chain() { return chain; }
+
     static boolean justRolled(Player p, long now) { return p == Minecraft.getInstance().player && now - lastRollEnd < 450 && now >= lastRollEnd - 120; }
 
     // ------------------------------------------------------------------ curvas
@@ -128,6 +131,7 @@ public final class DodgeRoll {
         int len = back ? BACK_MS : ROLL_MS;
         ROLLS.put(p.getId(), new Roll(now, yaw, back, len, dir, new boolean[1]));
         readyAt = now + len - 60;
+        chain = now - lastRollEnd < 350 ? chain + 1 : 1;
         lastRollEnd = now + len;
         p.setSprinting(false);
         CombatMoves.cancel(p);

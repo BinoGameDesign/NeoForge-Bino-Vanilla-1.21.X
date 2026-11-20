@@ -24,6 +24,7 @@ public abstract class MeleeAttackGoalTelegraphMixin {
     @Shadow protected abstract void resetAttackCooldown();
 
     @Unique private long binosvanillaplus$windupStart = -1, binosvanillaplus$hitAt = -1;
+    @Unique private boolean binosvanillaplus$red;
 
     @Inject(method = "checkAndPerformAttack", at = @At("HEAD"), cancellable = true, require = 0)
     private void binosvanillaplus$telegraph(LivingEntity target, CallbackInfo ci) {
@@ -35,14 +36,15 @@ public abstract class MeleeAttackGoalTelegraphMixin {
             if (!canPerformAttack(target)) return;   // o jogo tambem nao bateria
             binosvanillaplus$windupStart = now;
             binosvanillaplus$hitAt = now + Telegraphs.WINDUP + Telegraphs.grace(p);
-            Telegraphs.start(this.mob, p);
+            binosvanillaplus$red = Telegraphs.rollRed(this.mob);
+            Telegraphs.start(this.mob, p, binosvanillaplus$red);
             ci.cancel();
             return;
         }
         if (now < binosvanillaplus$hitAt) { ci.cancel(); return; }   // segurando o golpe
         long start = binosvanillaplus$windupStart;
         binosvanillaplus$windupStart = -1;
-        if (Telegraphs.tryParry(this.mob, p, start)) {   // aparado: nao bate
+        if (Telegraphs.tryParry(this.mob, p, start, binosvanillaplus$red)) {   // aparado: nao bate
             resetAttackCooldown();
             this.mob.swing(InteractionHand.MAIN_HAND);
             ci.cancel();

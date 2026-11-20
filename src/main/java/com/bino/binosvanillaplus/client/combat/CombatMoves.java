@@ -102,6 +102,14 @@ public final class CombatMoves {
     private static int hudStep; private static long hudAt; private static String hudName;
     private static long punchAt = -100000; private static float punchPower;
     private static ItemStack lastHeld = ItemStack.EMPTY; private static long equipAt = -100000;
+    // fase 4: avanco (W W), Lanca-Ceu (P segurado), combo aereo
+    private static final double[] DASH_SPEED = {0.70, 0.78, 0.74, 0.60, 0.40, 0.20};
+    private static long dashStart = -100000, dashReady, lastFwdTap = -100000, pendingLLP, airStart;
+    private static Vec3 dashDir = Vec3.ZERO;
+    private static boolean wasFwd;
+    private static long useDownAt;   // segurando o direito (o jogo repete o clique: ignorar a repeticao)
+    private static int airHits;
+    private static final Map<Integer, Deque<TrailPt>> TP_TRAIL = new HashMap<>();
 
     private record TrailPt(Vector3f base, Vector3f tip, long t) {}
     private static final Deque<TrailPt> TRAIL = new ArrayDeque<>();
@@ -115,8 +123,21 @@ public final class CombatMoves {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         if (p == null || mc.screen != null || e.getHand() != InteractionHand.MAIN_HAND) return;
+        // escudo na outra mao (agachado, ou sem arma): o escudo sobe normal e, se um golpe com aviso estiver chegando,
+        // vira parry (janela maior que a da arma, sem Issen)
+        if (e.isUseItem() && p.getOffhandItem().getItem() instanceof ShieldItem
+                && (p.isShiftKeyDown() || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE)) {
+            int mob = CombatFx.parryTarget(p, now(), 320);
+            if (mob != -1) {
+                CombatFx.consumeIncoming(mob);
+                PacketDistributor.sendToServer(new CombatActionPayload(CombatActionPayload.PARRY, mob, false));
+            }
+            return;
+        }
         if (CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
         if (!e.isAttack() && !e.isUseItem()) return;
+        if (e.isUseItem() && useDownAt > 0 && now() - useDownAt > 150
+                && !(mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK)) { cancel(e); return; }   // repeticao de quem segura
         if (DodgeRoll.rolling(p)) { e.setCanceled(true); e.setSwingHand(false); return; }
         long now = now();
         Active cur = ACTIVE.get(p.getId());
@@ -168,7 +189,8 @@ public final class CombatMoves {
     }
 
     private static void request(LocalPlayer p, boolean heavy, Active cur, long now) {
-        if (cur == null || cur.done(now)) begin(p, heavy, now);
+        if (pendingLLP > 0) return;   // decidindo Quebra-Guarda x Lanca-Ceu
+        if (cur == null || cur.done(now) || cur.move == CombatMove.DASH) begin(p, heavy, now);
         else if (cur.u(now) >= 0.25f) queued = heavy;   // guarda o proximo (encadeia quando este acabar)
     }
 
@@ -193,8 +215,13 @@ public final class CombatMoves {
         CombatMove t = tree(s);
         boolean signature = t != null && (t.closesCombo() || t == CombatMove.GUARD_BREAK);   // golpes com nome mandam
         if (!signature) {
-            if (DodgeRoll.justRolled(p, now)) return heavy ? CombatMove.ROLL_THRUST : CombatMove.ROLL_SLASH;
-            if (!p.onGround() && !p.isInWater() && !p.onClimbable()) return CombatMove.JUMP;
+            if (now - dashStart < DASH_SPEED.length * 50L + 450) return heavy ? CombatMove.PIERCE : CombatMove.DASH_SLASH;
+            if (DodgeRoll.justRolled(p, now))
+                return heavy ? (DodgeRoll.chain() >= 2 ? CombatMove.DANCE : CombatMove.ROLL_THRUST) : CombatMove.ROLL_SLASH;
+            if (!p.onGround() && !p.isInWater() && !p.onClimbable()) {   // no ar: combo aereo / Meteoro
+                if (heavy) return airHits >= 1 ? CombatMove.METEOR : CombatMove.JUMP;
+                return airHits == 0 ? CombatMove.AIR_1 : airHits == 1 ? CombatMove.AIR_2 : airHits == 2 ? CombatMove.AIR_3 : CombatMove.JUMP;
+            }
             if (p.isSprinting()) return CombatMove.FORWARD;
         }
         return t;
@@ -211,6 +238,11 @@ public final class CombatMoves {
         CombatMove m = route(p, s, heavy, now);
         if (m == null) { s = String.valueOf(c); m = route(p, s, heavy, now); }
         if (m == null) return;
+        if (m == CombatMove.GUARD_BREAK) { pendingLLP = now; return; }   // segurou o direito? (onFrame decide)
+        start(p, heavy, axe, s, m, now);
+    }
+
+    private static void start(LocalPlayer p, boolean heavy, boolean axe, String s, CombatMove m, long now) {
         boolean serverHit = m.serverHit(heavy);
         if (serverHit && !Stamina.use(Stamina.HEAVY)) return;   // sem folego para o pesado
         int len = MoveTiming.lengthMs(m, heavy, axe, p.getCurrentItemAttackStrengthDelay());
@@ -220,6 +252,13 @@ public final class CombatMoves {
         seq = m.closesCombo() ? "" : s;
         hudStep = s.length(); hudAt = now;
         hudName = m.closesCombo() || m == CombatMove.GUARD_BREAK ? comboName(m, axe) : null;
+        if (m.aerial()) {
+            airHits++;
+            if (airStart == 0) airStart = now;
+            Vec3 d = p.getDeltaMovement();
+            p.setDeltaMovement(d.x, Math.max(d.y, 0.12), d.z);   // um respiro no ar
+        }
+        if (m == CombatMove.METEOR) { Vec3 d = p.getDeltaMovement(); p.setDeltaMovement(d.x, Math.max(d.y, 0.2), d.z); }
         impulse(p, m, heavy, axe);
         PacketDistributor.sendToServer(new MovePayload((byte) m.ordinal(), heavy, (byte) s.length()));
     }
@@ -230,6 +269,12 @@ public final class CombatMoves {
                     : Component.translatableWithFallback("combat.binosvanillaplus.combo.tempest", "Tempestade!").getString();
             case JUDGMENT -> Component.translatableWithFallback("combat.binosvanillaplus.combo.judgment", "Juizo!").getString();
             case GUARD_BREAK, BREAK_2 -> Component.translatableWithFallback("combat.binosvanillaplus.combo.guard_break", "Quebra-Guarda!").getString();
+            case LAUNCHER -> Component.translatableWithFallback("combat.binosvanillaplus.combo.launcher", "Lanca-Ceu!").getString();
+            case AIR_3 -> Component.translatableWithFallback("combat.binosvanillaplus.combo.aerial", "Combo Aereo!").getString();
+            case METEOR -> Component.translatableWithFallback("combat.binosvanillaplus.combo.meteor", "Meteoro!").getString();
+            case DANCE -> Component.translatableWithFallback("combat.binosvanillaplus.combo.dance", "Danca!").getString();
+            case DASH_SLASH -> Component.translatableWithFallback("combat.binosvanillaplus.combo.dash", "Avanco!").getString();
+            case PIERCE -> Component.translatableWithFallback("combat.binosvanillaplus.combo.pierce", "Perfurador!").getString();
             default -> null;
         };
     }
@@ -245,7 +290,10 @@ public final class CombatMoves {
             case TEMPEST -> { fwd = axe ? 0.25 : 0.35; up = axe ? 0 : 0.42; }
             case JUDGMENT -> { fwd = axe ? 0.2 : -0.35; up = axe ? 0.55 : 0.45; }
             case BREAK_1, BREAK_2 -> { fwd = 0.1; up = axe ? 0.35 : 0; }
-            case JUMP -> fwd = 0;
+            case JUMP, AIR_1, AIR_2, AIR_3, METEOR -> fwd = 0;
+            case DASH_SLASH -> fwd = 0.35;
+            case PIERCE -> fwd = axe ? 0.6 : 0.7;
+            case DANCE, LAUNCHER -> fwd = 0.1;
             default -> fwd = p.onGround() ? (heavy ? 0.12 : 0.06) : 0;
         }
         step(p, fwd, up);
@@ -283,6 +331,16 @@ public final class CombatMoves {
         LocalPlayer p = mc.player;
         if (p == null) return;
         long now = now();
+        if (p.onGround() && (airHits > 0 || airStart > 0) && (ACTIVE.get(p.getId()) == null || !ACTIVE.get(p.getId()).move.aerial())) { airHits = 0; airStart = 0; }
+        if (pendingLLP > 0) {   // L L P: soltou = Quebra-Guarda; segurou 0,2 s = Lanca-Ceu
+            boolean held = mc.options.keyUse.isDown();
+            if (!held || now - pendingLLP >= 200) {
+                pendingLLP = 0;
+                boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+                if (CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE)
+                    start(p, true, axe, "LLP", held ? CombatMove.LAUNCHER : CombatMove.GUARD_BREAK, now);
+            }
+        }
         Active a = ACTIVE.get(p.getId());
         if (a == null) { queued = null; return; }
         if (!a.hitDone && a.u(now) >= MoveTiming.impact(a.move)) { a.hitDone = true; impact(mc, p, a); }
@@ -293,8 +351,14 @@ public final class CombatMoves {
 
     private static void impact(Minecraft mc, LocalPlayer p, Active a) {
         if (a.move.visualOnly()) return;   // o servidor resolve (parry, Issen, Rajada, critico)
+        if (a.move == CombatMove.LAUNCHER) {   // pula atras do mob
+            Vec3 d = p.getDeltaMovement();
+            p.setDeltaMovement(d.x, 0.62, d.z);
+            airHits = 0; airStart = now();
+        }
+        if (a.move == CombatMove.METEOR) { Vec3 d = p.getDeltaMovement(); p.setDeltaMovement(d.x * 0.3, -1.1, d.z * 0.3); }   // mergulho
         if (a.move.serverHit(a.heavy)) {   // o servidor faz o dano; aqui so o peso
-            boolean big = a.move == CombatMove.JUMP || a.move == CombatMove.JUDGMENT;
+            boolean big = a.move == CombatMove.JUMP || a.move == CombatMove.JUDGMENT || a.move == CombatMove.METEOR;
             HitFx.kick(big ? 1.4f : 1.1f);
             punchAt = now(); punchPower = big ? 1f : 0.7f;
             p.level().playLocalSound(p.getX(), p.getEyeY(), p.getZ(), a.axe ? ModSounds.AXE_SWING.get() : ModSounds.SWORD_SWING.get(),
@@ -336,7 +400,66 @@ public final class CombatMoves {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) {
-        ACTIVE.clear(); PUSHED.clear(); TRAIL.clear(); seq = ""; queued = null;
+        ACTIVE.clear(); PUSHED.clear(); TRAIL.clear(); TP_TRAIL.clear(); seq = ""; queued = null; pendingLLP = 0; airHits = 0; airStart = 0;
+    }
+
+    // ================================================================== avanco (W W) e flutuar no combo aereo
+
+    @SubscribeEvent
+    public static void onClientTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post e) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null) return;
+        boolean fwd = mc.options.keyUp.isDown();
+        long now = now();
+        if (fwd && !wasFwd && mc.screen == null) {
+            if (now - lastFwdTap < 260) tryDash(p, now);
+            lastFwdTap = now;
+        }
+        wasFwd = fwd;
+        if (mc.options.keyUse.isDown()) { if (useDownAt == 0) useDownAt = now; } else useDownAt = 0;
+    }
+
+    private static void tryDash(LocalPlayer p, long now) {
+        if (now < dashReady || !p.onGround() || p.isShiftKeyDown() || p.isInWater() || p.isPassenger() || p.isFallFlying()
+                || DodgeRoll.rolling(p) || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE || !inCombat(p, now)) return;
+        if (!Stamina.use(15)) return;
+        Vec3 look = p.getLookAngle();
+        Vec3 flat = new Vec3(look.x, 0, look.z);
+        if (flat.lengthSqr() < 1e-4) return;
+        dashDir = flat.normalize();
+        dashStart = now;
+        dashReady = now + 650;
+        boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+        int len = MoveTiming.lengthMs(CombatMove.DASH, false, axe, p.getCurrentItemAttackStrengthDelay());
+        ACTIVE.put(p.getId(), new Active(CombatMove.DASH, false, axe, now, len));
+        queued = null;
+        holdCombo(now + len);
+        p.level().playLocalSound(p.getX(), p.getY() + 0.5, p.getZ(), ModSounds.SWORD_SWING.get(), SoundSource.PLAYERS, 0.5f, 0.6f, false);
+        var st = p.level().getBlockState(p.blockPosition().below());
+        if (!st.isAir()) for (int i = 0; i < 6; i++)
+            p.level().addParticle(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.BLOCK, st),
+                    p.getX(), p.getY() + 0.05, p.getZ(), -dashDir.x * 0.2, 0.1, -dashDir.z * 0.2);
+        PacketDistributor.sendToServer(new MovePayload((byte) CombatMove.DASH.ordinal(), false, (byte) 0));
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTick(net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre e) {
+        if (!(e.getEntity() instanceof LocalPlayer p) || p != Minecraft.getInstance().player) return;
+        long now = now();
+        int i = (int) ((now - dashStart) / 50);
+        if (i >= 0 && i < DASH_SPEED.length) {
+            Vec3 d = p.getDeltaMovement();
+            p.setDeltaMovement(dashDir.x * DASH_SPEED[i], d.y, dashDir.z * DASH_SPEED[i]);
+        }
+        // combo aereo: cai bem devagar enquanto golpeia (no maximo ~1,3 s no ar)
+        Active a = ACTIVE.get(p.getId());
+        if (a != null && !a.done(now) && !p.onGround() && airStart > 0 && now - airStart < 1300
+                && (a.move.aerial() || a.move == CombatMove.LAUNCHER && a.hitDone)) {
+            Vec3 d = p.getDeltaMovement();
+            if (d.y < -0.03) p.setDeltaMovement(d.x, -0.03, d.z);
+            p.fallDistance = 0;
+        }
     }
 
     // ================================================================== pose
@@ -473,6 +596,74 @@ public final class CombatMoves {
         vc.addVertex(t1.x, t1.y, t1.z).setColor(r, g, b, a1);
         vc.addVertex(t0.x, t0.y, t0.z).setColor(r, g, b, a0);
         vc.addVertex(b0.x, b0.y, b0.z).setColor(r, g, b, 0);
+    }
+
+    // ------------------------------------------------------------------ rastro da lamina em terceira pessoa
+
+    // base e ponta da lamina no mundo, a partir da mesma pose (mao vista "dos olhos", no sentido do corpo)
+    private static Vec3[] bladeWorld(Player p, float[] v, float pt) {
+        float side = p.getMainArm() == HumanoidArm.RIGHT ? 1f : -1f;
+        float yaw = (Mth.rotLerp(pt, p.yBodyRotO, p.yBodyRot) + v[MoveAnims.SP] % 360f) * Mth.DEG_TO_RAD;
+        Vec3 fwd = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw)), right = new Vec3(-Mth.cos(yaw), 0, -Mth.sin(yaw)), up = new Vec3(0, 1, 0);
+        Vec3 eye = p.getPosition(pt).add(0, p.getBbHeight() * 0.83 + v[MoveAnims.HOP] - v[MoveAnims.CR] * 0.28, 0).add(fwd.scale(v[MoveAnims.DX]));
+        Vec3 hand = eye.add(right.scale(v[MoveAnims.HX] * side)).add(up.scale(v[MoveAnims.HY])).add(fwd.scale(-v[MoveAnims.HZ]));
+        Vector3f bd = bladeDir(v[MoveAnims.AY] * side, v[MoveAnims.AP]);
+        Vec3 blade = right.scale(bd.x).add(up.scale(bd.y)).add(fwd.scale(-bd.z));
+        return new Vec3[]{hand.add(blade.scale(0.3)), hand.add(blade.scale(1.0))};
+    }
+
+    @SubscribeEvent
+    public static void onWorld(net.neoforged.neoforge.client.event.RenderLevelStageEvent e) {
+        if (e.getStage() != net.neoforged.neoforge.client.event.RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        long now = now();
+        float pt = e.getPartialTick().getGameTimeDeltaPartialTick(false);
+        boolean fp = mc.options.getCameraType().isFirstPerson();
+        for (Map.Entry<Integer, Active> en : ACTIVE.entrySet()) {
+            Active a = en.getValue();
+            if (a.done(now) || mc.player != null && en.getKey() == mc.player.getId() && fp) continue;
+            if (!(mc.level.getEntity(en.getKey()) instanceof Player pl) || !MoveAnims.striking(a.keys, a.u(now))) continue;
+            float[] v = pose(a, now);
+            if (Math.abs(v[MoveAnims.FL] % 360f) > 1 || Math.abs(v[MoveAnims.RL]) > 1) continue;   // de cabeca para baixo: sem rastro
+            Vec3[] bt = bladeWorld(pl, v, pt);
+            TP_TRAIL.computeIfAbsent(en.getKey(), k -> new ArrayDeque<>())
+                    .addLast(new TrailPt(bt[0].toVector3f(), bt[1].toVector3f(), now));
+        }
+        if (TP_TRAIL.isEmpty()) return;
+        var cam = e.getCamera().getPosition();
+        PoseStack ps = e.getPoseStack();
+        ps.pushPose();
+        ps.translate(-cam.x, -cam.y, -cam.z);
+        Matrix4f m = ps.last().pose();
+        MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
+        VertexConsumer vc = buf.getBuffer(RenderType.lightning());
+        for (Iterator<Map.Entry<Integer, Deque<TrailPt>>> it = TP_TRAIL.entrySet().iterator(); it.hasNext(); ) {
+            Deque<TrailPt> d = it.next().getValue();
+            d.removeIf(t -> now - t.t() > TRAIL_MS);
+            if (d.isEmpty()) { it.remove(); continue; }
+            TrailPt prev = null;
+            for (TrailPt t : d) {
+                if (prev != null && prev.tip().distanceSquared(t.tip()) > 1e-6) {
+                    int a0 = (int) (150 * (1 - (now - prev.t()) / (float) TRAIL_MS)), a1 = (int) (150 * (1 - (now - t.t()) / (float) TRAIL_MS));
+                    quadW(vc, m, prev.base(), prev.tip(), t.tip(), t.base(), a0, a1);
+                }
+                prev = t;
+            }
+        }
+        ps.popPose();
+        buf.endBatch(RenderType.lightning());
+    }
+
+    private static void quadW(VertexConsumer vc, Matrix4f m, Vector3f b0, Vector3f t0, Vector3f t1, Vector3f b1, int a0, int a1) {
+        vc.addVertex(m, b0.x, b0.y, b0.z).setColor(240, 245, 255, 0);
+        vc.addVertex(m, t0.x, t0.y, t0.z).setColor(240, 245, 255, a0);
+        vc.addVertex(m, t1.x, t1.y, t1.z).setColor(240, 245, 255, a1);
+        vc.addVertex(m, b1.x, b1.y, b1.z).setColor(240, 245, 255, 0);
+        vc.addVertex(m, b1.x, b1.y, b1.z).setColor(240, 245, 255, 0);
+        vc.addVertex(m, t1.x, t1.y, t1.z).setColor(240, 245, 255, a1);
+        vc.addVertex(m, t0.x, t0.y, t0.z).setColor(240, 245, 255, a0);
+        vc.addVertex(m, b0.x, b0.y, b0.z).setColor(240, 245, 255, 0);
     }
 
     // camera segue o quadril: torce/tomba (roll), inclina, e acompanha cambalhotas de leve (sem enjoar)
