@@ -50,6 +50,8 @@ public final class CombatAI {
     private static final Map<UUID, Map<Integer, Long>> TOKENS = new HashMap<>();
     // mob -> tick ate quando esta recuando depois de atacar
     private static final Map<Integer, Long> RECOVER = new HashMap<>();
+    // mob -> tick ate quando fica rodeando ("estudando" o jogador) antes de entrar para o golpe
+    private static final Map<Integer, Long> STALK = new HashMap<>();
 
     private static Map<Integer, Long> tokens(ServerPlayer p) {
         Map<Integer, Long> m = TOKENS.computeIfAbsent(p.getUUID(), k -> new HashMap<>());
@@ -80,6 +82,7 @@ public final class CombatAI {
         long now = mob.level().getGameTime();
         long until = now + 16 + mob.getRandom().nextInt(17);
         RECOVER.put(mob.getId(), until);
+        STALK.remove(mob.getId());   // depois do recuo, rodeia de novo antes do proximo golpe
         tokens(p).computeIfPresent(mob.getId(), (k, v) -> Math.min(v, until));
         if (RECOVER.size() > 512) RECOVER.values().removeIf(t -> t < now);
     }
@@ -172,6 +175,7 @@ public final class CombatAI {
             DODGE_READY.values().removeIf(t -> t < now - 1200);
             HOP_READY.values().removeIf(t -> t < now - 1200);
             if (RECOVER.size() > 64) RECOVER.values().removeIf(t -> t < now);
+            if (STALK.size() > 64) STALK.values().removeIf(t -> t < now - 600);
         }
     }
 
@@ -242,7 +246,8 @@ public final class CombatAI {
         TOKENS.remove(e.getEntity().getUUID()); LAST_POS.remove(e.getEntity().getUUID()); VEL.remove(e.getEntity().getUUID());
     }
 
-    // rodeia o jogador (esperando a vez) ou recua andando de lado (depois de atacar)
+    // rodeia o jogador: antes de cada golpe (estudando, 0,75 a 2,3 s; as vezes entra direto), esperando a vez (sem ficha)
+    // ou recuando depois de atacar. Anda em volta do jogador pelo caminho do jogo (nao cai de barranco), olhando para ele.
     static final class CircleGoal extends Goal {
         private final PathfinderMob mob;
         private float side;
@@ -261,10 +266,17 @@ public final class CombatAI {
         private boolean wanted() {
             ServerPlayer p = target();
             if (p == null || Posture.busy(mob) || mob.isPassenger() || mob.isInWater()) return false;
-            double d2 = mob.distanceToSqr(p);
-            if (d2 > ENGAGE * ENGAGE) return false;
+            if (mob.distanceToSqr(p) > ENGAGE * ENGAGE || !mob.hasLineOfSight(p)) return false;
             if (recovering(mob)) return true;
-            return !free(p, mob);   // sem ficha: espera a vez rodeando
+            if (tokens(p).containsKey(mob.getId())) return false;   // ja esta no golpe
+            if (!free(p, mob)) return true;                          // sem ficha: espera a vez
+            long now = mob.level().getGameTime();
+            Long st = STALK.get(mob.getId());
+            if (st == null) {   // chegou perto: estuda um pouco antes de entrar (25% entra direto)
+                st = mob.getRandom().nextFloat() < 0.25f ? now : now + 15 + mob.getRandom().nextInt(31);
+                STALK.put(mob.getId(), st);
+            }
+            return now < st;
         }
 
         @Override public boolean canUse() { return wanted(); }
@@ -274,58 +286,45 @@ public final class CombatAI {
         @Override public void start() {
             time = 0;
             switchIn = 30 + mob.getRandom().nextInt(40);
-            mob.getNavigation().stop();
         }
 
-        @Override public void stop() {
-            mob.getMoveControl().strafe(0, 0);
-            mob.setXxa(0); mob.setZza(0);
-        }
+        @Override public void stop() { mob.getNavigation().stop(); }
 
         @Override public void tick() {
             ServerPlayer p = target();
             if (p == null) return;
-            time++;
             mob.getLookControl().setLookAt(p, 30f, 30f);
-            mob.lookAt(p, 30f, 30f);
-            double d = mob.distanceTo(p);
+            if (--switchIn <= 0) { side = -side; switchIn = 30 + mob.getRandom().nextInt(50); }
+            if (time++ % 5 != 0 && !mob.getNavigation().isDone()) return;
             boolean back = recovering(mob);
-            double want = back ? 3.2 : CIRCLE_RADIUS;
-            float fwd;
-            if (back && time < 8) fwd = -0.7f;                // passos para tras logo depois do golpe
-            else if (d < want - 0.6) fwd = -0.5f;
-            else if (d > want + 0.9) fwd = 0.55f;
-            else fwd = 0f;
-            if (--switchIn <= 0 || mob.horizontalCollision) {   // troca de lado de vez em quando ou ao bater em algo
-                side = -side;
-                switchIn = 30 + mob.getRandom().nextInt(50);
+            Vec3 rel = mob.position().subtract(p.position()).multiply(1, 0, 1);
+            if (rel.lengthSqr() < 1e-4) rel = new Vec3(1, 0, 0);
+            double ang = Math.atan2(rel.z, rel.x);
+            // espalha: anda para o lado contrario do aliado mais perto (o grupo se distribui em volta)
+            Mob ally = nearestAlly(p);
+            if (ally != null) {
+                Vec3 ar = ally.position().subtract(p.position());
+                double diff = Mth.wrapDegrees(Math.toDegrees(ang - Math.atan2(ar.z, ar.x)));
+                if (Math.abs(diff) < 60) side = diff >= 0 ? 1f : -1f;
             }
-            // os que esperam se espalham: quem esta perto de outro mob anda para longe dele
-            float s = side * (back ? 0.45f : 0.5f);
-            Vec3 away = spread(p);
-            if (away != null) s += (float) Mth.clamp(away.dot(right(p)), -0.4, 0.4);
-            mob.getMoveControl().strafe(fwd, Mth.clamp(s, -0.7f, 0.7f));
+            double r = back ? 3.4 : CIRCLE_RADIUS;
+            Vec3 to;
+            if (back && time < 10) to = mob.position().add(rel.normalize().scale(2.5));   // passos para tras logo depois do golpe
+            else {
+                double a = ang + side * 0.55;
+                to = p.position().add(Math.cos(a) * r, 0, Math.sin(a) * r);
+            }
+            if (!mob.getNavigation().moveTo(to.x, p.getY(), to.z, back ? 1.0 : 0.85)) side = -side;   // sem caminho: outro lado
         }
 
-        // direita do mob olhando para o jogador
-        private Vec3 right(ServerPlayer p) {
-            Vec3 to = p.position().subtract(mob.position()).multiply(1, 0, 1);
-            if (to.lengthSqr() < 1e-4) return Vec3.ZERO;
-            to = to.normalize();
-            return new Vec3(-to.z, 0, to.x);
-        }
-
-        // empurrao para longe do mob aliado mais perto (a menos de 2,5 blocos)
-        private Vec3 spread(ServerPlayer p) {
+        private Mob nearestAlly(ServerPlayer p) {
             Mob near = null;
-            double best = 2.5 * 2.5;
-            for (Mob o : mob.level().getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(2.5), o -> o != mob && o.getTarget() == p)) {
+            double best = 4.0 * 4.0;
+            for (Mob o : mob.level().getEntitiesOfClass(Mob.class, mob.getBoundingBox().inflate(4.0), o -> o != mob && o.getTarget() == p)) {
                 double d2 = o.distanceToSqr(mob);
                 if (d2 < best) { best = d2; near = o; }
             }
-            if (near == null) return null;
-            Vec3 a = mob.position().subtract(near.position()).multiply(1, 0, 1);
-            return a.lengthSqr() < 1e-4 ? null : a.normalize();
+            return near;
         }
     }
 }
