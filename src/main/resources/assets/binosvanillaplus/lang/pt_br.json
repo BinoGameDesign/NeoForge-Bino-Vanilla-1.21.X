@@ -354,5 +354,12 @@
   "gui.binosvanillaplus.inv.unequip": "Desequipar",
   "gui.binosvanillaplus.inv.unequip_tip": "O item volta para o inventário",
   "tooltip.binosvanillaplus.flashlight.use_pet": "Botão direito: liga/desliga. Entregue ao pet (botão direito nele): ele aponta a luz para onde você olha.",
-  "message.binosvanillaplus.pet_warn": "⚠ Perigo chegando: %s"
+  "message.binosvanillaplus.pet_warn": "⚠ Perigo chegando: %s",
+  "subtitles.binosvanillaplus.combat.sword_swing": "Espada corta o ar",
+  "subtitles.binosvanillaplus.combat.sword_hit": "Espada acerta",
+  "subtitles.binosvanillaplus.combat.sword_hit_hard": "Espada bate em algo duro",
+  "subtitles.binosvanillaplus.combat.axe_swing": "Machado corta o ar",
+  "subtitles.binosvanillaplus.combat.axe_hit": "Machado acerta",
+  "subtitles.binosvanillaplus.combat.axe_hit_hard": "Machado bate em algo duro",
+  "subtitles.binosvanillaplus.combat.hit_water": "Golpe na água"
 }

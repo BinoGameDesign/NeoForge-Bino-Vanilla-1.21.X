@@ -56,6 +56,12 @@ public class ModNetwork {
         registrar.playToClient(GraveMarkPayload.TYPE, GraveMarkPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.map.MapWaypoints.onGraveMark(payload)));
 
+        // mod Combat: numeros de dano (servidor -> clientes) e golpe no ar/agua (cliente -> servidor)
+        registrar.playToClient(com.bino.binosvanillaplus.combat.DamageNumberPayload.TYPE, com.bino.binosvanillaplus.combat.DamageNumberPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.DamageNumbers.receive(payload)));
+        registrar.playToServer(com.bino.binosvanillaplus.combat.SwingPayload.TYPE, com.bino.binosvanillaplus.combat.SwingPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatEvents.onSwing((ServerPlayer) context.player(), payload)));
+
         // lanterna do capacete (tecla)
         registrar.playToServer(HelmetLampTogglePayload.TYPE, HelmetLampTogglePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> toggleHelmetLamp((ServerPlayer) context.player())));

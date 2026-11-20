@@ -162,5 +162,12 @@
   "gui.binosvanillaplus.inv.unequip": "Unequip",
   "gui.binosvanillaplus.inv.unequip_tip": "The item goes back to your inventory",
   "tooltip.binosvanillaplus.flashlight.use_pet": "Right click: on/off. Give it to your pet (right click it): it points the light where you look.",
-  "message.binosvanillaplus.pet_warn": "⚠ Danger approaching: %s"
+  "message.binosvanillaplus.pet_warn": "⚠ Danger approaching: %s",
+  "subtitles.binosvanillaplus.combat.sword_swing": "Sword swishes",
+  "subtitles.binosvanillaplus.combat.sword_hit": "Sword hits",
+  "subtitles.binosvanillaplus.combat.sword_hit_hard": "Sword strikes something hard",
+  "subtitles.binosvanillaplus.combat.axe_swing": "Axe swishes",
+  "subtitles.binosvanillaplus.combat.axe_hit": "Axe hits",
+  "subtitles.binosvanillaplus.combat.axe_hit_hard": "Axe strikes something hard",
+  "subtitles.binosvanillaplus.combat.hit_water": "Water splashes"
 }

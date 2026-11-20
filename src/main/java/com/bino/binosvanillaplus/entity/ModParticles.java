@@ -23,6 +23,10 @@ public class ModParticles {
     public static final Supplier<SimpleParticleType> SLEEP_Z =
             PARTICLE_TYPES.register("sleep_z", () -> new SimpleParticleType(false));
 
+    // mod Combat: faisca do golpe (voa na direcao do golpe, cai e apaga)
+    public static final Supplier<SimpleParticleType> HIT_SPARK =
+            PARTICLE_TYPES.register("hit_spark", () -> new SimpleParticleType(true));
+
     public static void register(IEventBus eventBus) {
         PARTICLE_TYPES.register(eventBus);
     }

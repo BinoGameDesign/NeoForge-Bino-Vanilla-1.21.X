@@ -17,7 +17,9 @@
         "client.CameraLapidaryMixin",
         "client.HumanoidModelLapidaryMixin",
         "client.PlayerRendererHandArmorMixin",
-        "client.HumanoidModelEatMixin"
+        "client.HumanoidModelEatMixin",
+        "client.LivingEntityHitFxMixin",
+        "client.LivingEntityRendererFlashMixin"
     ],
     "injectors": {
         "defaultRequire": 1

@@ -64,6 +64,7 @@ public class GemArmorEvents {
 
         if (hasFullSet(player, ModArmorMaterials.RUBI) && player.getRandom().nextFloat() < RUBI_DODGE_CHANCE) {
             event.setCanceled(true);   // cancelar = o dano não acontece
+            com.bino.binosvanillaplus.combat.CombatEvents.miss(player);   // numero "Miss" em cima do jogador
 
             // Um som e uma nuvenzinha para você perceber que desviou
             ServerLevel level = player.serverLevel();

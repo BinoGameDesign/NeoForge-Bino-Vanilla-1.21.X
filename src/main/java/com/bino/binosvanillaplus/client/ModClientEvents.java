@@ -84,6 +84,7 @@ public class ModClientEvents {
     @SubscribeEvent
     public static void registerParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SLEEP_Z.get(), com.bino.binosvanillaplus.client.SleepZParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.HIT_SPARK.get(), com.bino.binosvanillaplus.client.combat.HitSparkParticle.Provider::new);   // mod Combat
         event.registerSpriteSet(ModParticles.PINK_HEART.get(), sprites -> {
             HeartParticle.Provider base = new HeartParticle.Provider(sprites);
             // Cria o coração normal e encolhe pela metade (0.5). Mude o número para ajustar o tamanho.
