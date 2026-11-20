@@ -35,9 +35,10 @@ public abstract class MeleeAttackGoalTelegraphMixin {
         if (binosvanillaplus$windupStart < 0) {
             if (!canPerformAttack(target)) return;   // o jogo tambem nao bateria
             binosvanillaplus$windupStart = now;
-            binosvanillaplus$hitAt = now + Telegraphs.WINDUP + Telegraphs.grace(p);
+            int wind = Telegraphs.windup(this.mob);
+            binosvanillaplus$hitAt = now + wind + Telegraphs.grace(p);
             binosvanillaplus$red = Telegraphs.rollRed(this.mob);
-            Telegraphs.start(this.mob, p, binosvanillaplus$red);
+            Telegraphs.start(this.mob, p, wind, binosvanillaplus$red);
             ci.cancel();
             return;
         }

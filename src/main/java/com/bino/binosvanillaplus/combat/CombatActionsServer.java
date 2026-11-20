@@ -152,6 +152,7 @@ public final class CombatActionsServer {
     // ---------------------------------------------------------------- parry (chamado por Telegraphs)
     // zone: 0 branco (so bloqueia), 1 amarelo (atordoa + postura), 2 azul (Issen na hora)
     static void parried(ServerPlayer p, LivingEntity mob, int zone) {
+        if (mob instanceof net.minecraft.world.entity.monster.Creeper c) { CreeperParry.parried(p, c, zone); return; }   // explosao
         ServerLevel level = p.serverLevel();
         Vec3 mid = p.getEyePosition().add(mob.getEyePosition()).scale(0.5);
         Vec3 away = mob.position().subtract(p.position()).multiply(1, 0, 1);

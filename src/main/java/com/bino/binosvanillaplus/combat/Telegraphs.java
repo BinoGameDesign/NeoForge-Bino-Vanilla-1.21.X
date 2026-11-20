@@ -39,6 +39,15 @@ public final class Telegraphs {
         PacketDistributor.sendToPlayersTrackingEntity(mob, new CombatFxPayload(CombatFxPayload.TELEGRAPH, mob.getId(), target.getId(), red ? -ms : ms));
     }
 
+    // tempo de preparo variado (estilo Elden Ring: nao da para aparar no ritmo, tem que olhar o golpe):
+    //  30% rapido (0,4 s), 40% normal (0,55 s), 30% atrasado (0,8 a 1,05 s, o mob segura o golpe no alto)
+    public static int windup(Mob mob) {
+        float r = mob.getRandom().nextFloat();
+        if (r < 0.3f) return 8;
+        if (r < 0.7f) return WINDUP;
+        return 16 + mob.getRandom().nextInt(6);
+    }
+
     // ataque vermelho (so esquiva): mobs fortes (nivel 20+ ou 50+ de vida maxima), 30% das vezes
     public static boolean rollRed(Mob mob) {
         boolean strong = com.bino.binosvanillaplus.leveling.MobLevels.get(mob) >= 20 || mob.getMaxHealth() >= 50;

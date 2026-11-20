@@ -56,7 +56,7 @@ public final class HitReact {
         float dk = CombatFx.deathLimbs(e);
         if (dk > 0.001f) { deathLimbs(model, e, dk); return; }
         float[] atk = CombatFx.attackPhase(e);
-        if (atk != null) attackLimbs(model, atk[0], atk[1]);
+        if (atk != null) attackLimbs(model, atk[0], atk[1], (int) atk[2]);
         if (k <= 0.001f) return;
         float side = HitFx.side(e), front = HitFx.front(e);
         if (model instanceof HitReactive hr && hr.hitReact(k, side, front)) return;
@@ -93,21 +93,51 @@ public final class HitReact {
         return parts;
     }
 
-    // golpe do MOB (com o aviso do parry): no preparo os bracos sobem por cima da cabeca e a cabeca vai para tras;
-    // no golpe os bracos descem com tudo para a frente e a cabeca acompanha. Mob sem bracos (aranha, lobo...) usa
-    // so a cabeca e o corpo inteiro (CombatFx.onLivingPre).
-    private static void attackLimbs(EntityModel<?> model, float raise, float strike) {
-        float w = Math.max(raise, strike);
+    // golpe do MOB (com o aviso do parry), por estilo:
+    //  0 por cima: os dois bracos sobem por cima da cabeca e descem com tudo; cabeca vai para tras e acompanha;
+    //  1 varrida: o braco direito abre para tras e para o lado e cruza na frente; o outro equilibra;
+    //  2 bote/estocada: bracos recolhidos baixos e disparam retos para a frente; cabeca abaixa e avanca;
+    //  3 creeper: so a cabeca encolhe e estica.
+    // Mob sem bracos (aranha, lobo...) usa a cabeca/cauda e o corpo inteiro (CombatFx.onLivingPre).
+    private static void attackLimbs(EntityModel<?> model, float raise, float strike, int style) {
+        float w = Math.min(1f, Math.max(raise, strike));
         if (w <= 0.001f) return;
-        float tx = (raise * -2.6f + strike * -0.5f) / (raise + strike);   // braco: alvo entre "la em cima" e "batendo na frente"
+        float sum = Math.max(1e-3f, raise + strike);
         for (Map.Entry<ModelPart, Kind> en : parts(model).entrySet()) {
             ModelPart p = en.getKey();
-            switch (en.getValue()) {
-                case ARM_L -> rot(p, (tx - p.xRot) * w, 0, -0.22f * raise);
-                case ARM_R -> rot(p, (tx - p.xRot) * w, 0, 0.22f * raise);
-                case HEAD -> rot(p, -0.3f * raise + 0.32f * strike, 0, 0);
-                case TAIL -> rot(p, -0.45f * raise + 0.2f * strike, 0, 0);
-                default -> {}
+            Kind k = en.getValue();
+            switch (style) {
+                case 1 -> {   // varrida
+                    switch (k) {
+                        case ARM_R -> rot(p, (-1.5f - p.xRot) * w, 1.05f * raise - 0.95f * strike, 0.55f * raise);
+                        case ARM_L -> rot(p, (-0.7f - p.xRot) * w, -0.3f * raise, -0.35f * w);
+                        case HEAD -> rot(p, -0.1f * raise, -0.35f * raise + 0.4f * strike, 0);
+                        case TAIL -> rot(p, -0.3f * raise, 0.5f * raise - 0.5f * strike, 0);
+                        default -> {}
+                    }
+                }
+                case 2 -> {   // bote
+                    float tx = (raise * -0.45f + strike * -1.7f) / sum;
+                    switch (k) {
+                        case ARM_L -> rot(p, (tx - p.xRot) * w, 0.15f * strike, -0.12f * raise);
+                        case ARM_R -> rot(p, (tx - p.xRot) * w, -0.15f * strike, 0.12f * raise);
+                        case HEAD -> rot(p, 0.18f * raise + 0.22f * strike, 0, 0);
+                        case TAIL -> rot(p, -0.5f * raise, 0, 0);
+                        case EAR -> rot(p, 0.35f * raise, 0, 0);
+                        default -> {}
+                    }
+                }
+                case 3 -> { if (k == Kind.HEAD) rot(p, 0.25f * raise - 0.3f * strike, 0, 0); }
+                default -> {   // por cima
+                    float tx = (raise * -2.75f + strike * -0.45f) / sum;
+                    switch (k) {
+                        case ARM_L -> rot(p, (tx - p.xRot) * w, 0, -0.25f * raise);
+                        case ARM_R -> rot(p, (tx - p.xRot) * w, 0, 0.25f * raise);
+                        case HEAD -> rot(p, -0.32f * raise + 0.34f * strike, 0, 0);
+                        case TAIL -> rot(p, -0.45f * raise + 0.2f * strike, 0, 0);
+                        default -> {}
+                    }
+                }
             }
         }
     }

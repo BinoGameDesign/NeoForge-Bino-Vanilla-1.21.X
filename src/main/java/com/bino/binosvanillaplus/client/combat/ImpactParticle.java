@@ -13,12 +13,18 @@ import net.minecraft.util.Mth;
 //  - estrela de 4 pontas: estoura grande em ~0,05 s e encolhe sumindo (branca, amarelando no fim)
 //  - anel: abre rapido a partir do ponto e some
 // O tamanho vem na velocidade X (o servidor manda com contagem 0); velocidade Y = 1 dourada/amarela, 2 vermelha, 4 azul clara (brilho do parry).
+// Velocidade Z = 1: tamanho de verdade no mundo (brilho do parry: perto da camera fica MAIOR na tela, longe menor).
 public class ImpactParticle extends TextureSheetParticle {
-    private final boolean ring, gold, red, blue;
+    private final boolean ring, gold, red, blue, exact;
     private final float base;
 
     protected ImpactParticle(ClientLevel level, double x, double y, double z, double scale, double tint, SpriteSet sprites, boolean ring) {
+        this(level, x, y, z, scale, tint, 0, sprites, ring);
+    }
+
+    protected ImpactParticle(ClientLevel level, double x, double y, double z, double scale, double tint, double flag, SpriteSet sprites, boolean ring) {
         super(level, x, y, z, 0, 0, 0);
+        this.exact = flag > 0.5;
         this.xd = this.yd = this.zd = 0;
         this.gravity = 0;
         this.hasPhysics = false;
@@ -39,6 +45,10 @@ public class ImpactParticle extends TextureSheetParticle {
         float t = Mth.clamp((age + pt) / lifetime, 0f, 1f);
         float s = ring ? base * (0.25f + 0.95f * (1 - (1 - t) * (1 - t)))
                 : t < 0.2f ? base * 1.25f * (t / 0.2f) : base * (1.25f - 0.75f * (t - 0.2f) / 0.8f);
+        if (exact) {   // so some se estiver literalmente dentro da camera
+            var cam = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+            return cam.distanceToSqr(x, y, z) < 0.35 * 0.35 ? 0f : s;
+        }
         return s * near(x, y, z);
     }
 
@@ -66,7 +76,7 @@ public class ImpactParticle extends TextureSheetParticle {
         public StarProvider(SpriteSet sprites) { this.sprites = sprites; }
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double vx, double vy, double vz) {
-            return new ImpactParticle(level, x, y, z, vx, vy, sprites, false);
+            return new ImpactParticle(level, x, y, z, vx, vy, vz, sprites, false);
         }
     }
 
@@ -75,7 +85,7 @@ public class ImpactParticle extends TextureSheetParticle {
         public RingProvider(SpriteSet sprites) { this.sprites = sprites; }
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double vx, double vy, double vz) {
-            return new ImpactParticle(level, x, y, z, vx, vy, sprites, true);
+            return new ImpactParticle(level, x, y, z, vx, vy, vz, sprites, true);
         }
     }
 }

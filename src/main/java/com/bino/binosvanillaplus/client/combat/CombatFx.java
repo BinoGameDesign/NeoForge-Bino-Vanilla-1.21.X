@@ -99,11 +99,13 @@ public final class CombatFx {
                 long wind = (long) Math.abs(m.f());
                 INCOMING.put(m.a(), new Incoming(m.b(), now + wind, red, com.bino.binosvanillaplus.combat.ParryZones.window(wind)));
                 Entity mob = mc.level.getEntity(m.a());
-                ATTACKS.put(m.a(), new long[]{now, now + wind});
+                // estilo do golpe (so visual): 0 por cima, 1 de lado (varrida), 2 estocada/bote. Creeper so incha.
+                long style = mob instanceof net.minecraft.world.entity.monster.Creeper ? 3 : RANDOM.nextInt(3);
+                ATTACKS.put(m.a(), new long[]{now, now + wind, style});
                 if (mob != null) {
                     Vec3 at = attackPoint(mc, mob);
                     // anel abrindo na hora que o mob comeca a preparar o golpe (aviso mais visivel)
-                    mc.level.addParticle(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, red ? 1.3 : 1.0, red ? 2 : 0, 0);
+                    mc.level.addParticle(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, (red ? 1.3 : 1.0) * glintSize(mob), red ? 2 : 0, 1);
                     if (m.b() == me.getId())
                         mc.level.playLocalSound(at.x, at.y, at.z, ModSounds.SWORD_SWING.get(), SoundSource.HOSTILE, red ? 0.6f : 0.35f, red ? 0.7f : 2.0f, false);
                 }
@@ -178,19 +180,36 @@ public final class CombatFx {
 
     public static int deathKind(LivingEntity e) { Death d = DEATHS.get(e.getId()); return d == null ? -1 : d.kind(); }
 
-    // golpe do mob agora: {preparo 0..1, golpe 0..1} ou null. Preparo cresce ate a hora do golpe; o golpe desce rapido
-    // (0,11 s) e volta devagar (0,3 s).
+    // tamanho do brilho pelo tamanho do mob (aranha/zumbi ~1, devastador/golem bem maior, rato menor)
+    static float glintSize(Entity mob) {
+        return Mth.clamp((float) Math.sqrt(mob.getBbWidth() * mob.getBbHeight()) / 1.08f, 0.7f, 2.4f);
+    }
+
+    // golpe do mob agora (estilo Elden Ring): {preparo, golpe, estilo} ou null.
+    //  preparo: sobe RAPIDO ate ~85% (antecipacao), depois segura subindo devagar (golpe atrasado: treme segurando),
+    //           e nos ultimos 0,09 s puxa mais um pouco para tras (o "sinal" de que vai soltar);
+    //  golpe:   solta muito rapido (0,08 s), segura o fim do movimento (0,1 s) e volta devagar (0,3 s).
     public static float[] attackPhase(LivingEntity e) {
         long[] a = ATTACKS.get(e.getId());
         if (a == null || e.deathTime > 0) return null;
+        if (e instanceof net.minecraft.world.entity.monster.Creeper cr && cr.getSwellDir() <= 0) return null;   // desistiu de explodir
         long now = now();
+        float style = a[2];
+        long wind = Math.max(1, a[1] - a[0]);
         if (now < a[1]) {
-            float u = (now - a[0]) / (float) Math.max(1, a[1] - a[0]);
-            return new float[]{smooth(u), 0f};
+            float el = now - a[0], left = a[1] - now;
+            float fast = Math.min(wind * 0.35f, 260f);
+            float r;
+            if (el < fast) { float k = el / fast; r = 0.85f * (1 - (1 - k) * (1 - k) * (1 - k)); }   // sobe rapido
+            else r = 0.85f + 0.15f * smooth((el - fast) / Math.max(1f, wind - fast - 90f));               // segura subindo
+            if (left < 90) r += 0.12f * smooth(1 - left / 90f);                                            // puxa para tras
+            if (wind > 700 && el > fast) r += 0.025f * Mth.sin(el * 0.09f);                                // atrasado: treme segurando
+            return new float[]{r, 0f, style};
         }
         float t = now - a[1];
-        if (t < 110) { float k = smooth(t / 110f); return new float[]{1 - k, k}; }
-        if (t < 410) return new float[]{0f, 1 - smooth((t - 110) / 300f)};
+        if (t < 80) { float k = t / 80f; k = k * k; return new float[]{1.12f * (1 - k), k * 1.1f, style}; }   // solta
+        if (t < 180) return new float[]{0f, 1.1f - 0.1f * (t - 80) / 100f, style};                           // segura o fim
+        if (t < 480) return new float[]{0f, 1 - smooth((t - 180) / 300f), style};                            // volta
         return null;
     }
 
@@ -269,9 +288,11 @@ public final class CombatFx {
             if (now > in.hitAt()) continue;
             Entity mob = mc.level.getEntity(en.getKey());
             if (mob == null) continue;
+            if (mob instanceof net.minecraft.world.entity.monster.Creeper cr && cr.getSwellDir() <= 0) continue;   // parou de inchar
             Vec3 at = attackPoint(mc, mob);
             int z = zoneOf(in, now);
-            mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, in.red() ? 1.25 : z == -1 ? 0.7 : 1.05, in.red() ? 2 : tint(Math.max(0, z)), 0);
+            float gs = glintSize(mob);
+            mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, (in.red() ? 1.15 : z == -1 ? 0.6 : 0.95) * gs, in.red() ? 2 : tint(Math.max(0, z)), 1);
         }
         // flechas/projeteis vindo em mim: o brilho vai na ponta, com a cor da janela
         if (mc.player != null) {
@@ -288,7 +309,7 @@ public final class CombatFx {
                 if (eta > com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS) continue;
                 // azul = a mira esta em cima dele (aparar agora devolve ao atirador); branco = so apara
                 boolean aimed = CombatMoves.aimedAt(mc.player, pr);
-                mc.level.addParticle(ModParticles.IMPACT_STAR.get(), pr.getX(), pr.getY(), pr.getZ(), aimed ? 0.9 : 0.7, aimed ? 4 : 0, 0);
+                mc.level.addParticle(ModParticles.IMPACT_STAR.get(), pr.getX(), pr.getY(), pr.getZ(), aimed ? 0.75 : 0.55, aimed ? 4 : 0, 1);
             }
         }
         DEATHS.keySet().removeIf(id -> mc.level.getEntity(id) == null);
@@ -437,11 +458,22 @@ public final class CombatFx {
         }
         float[] at = attackPhase(le);
         if (at == null) return;
-        float lean = -11f * at[0] + 15f * at[1];   // graus: negativo = para tras
+        float r = at[0], st = at[1];
+        int style = (int) at[2];
+        // por estilo: inclinacao (graus, negativo = para tras), giro do tronco (graus), avanco (blocos), agachar (blocos)
+        float lean, twist, fwd, dip;
+        switch (style) {
+            case 1 -> { lean = -4f * r + 7f * st; twist = 30f * r - 38f * st; fwd = 0.22f * st; dip = 0.03f * r; }   // varrida
+            case 2 -> { lean = -7f * r + 16f * st; twist = 0f; fwd = 0.6f * st; dip = 0.1f * r; }                     // bote
+            case 3 -> { lean = -6f * r + 8f * st; twist = 0f; fwd = 0.1f * st; dip = 0.06f * r; }                     // creeper
+            default -> { lean = -13f * r + 19f * st; twist = 0f; fwd = 0.3f * st; dip = 0.02f * r; }                 // por cima
+        }
+        float h = le.getBbHeight() / 1.95f;   // mobs grandes: movimento proporcional
         float fx = -Mth.sin(yaw), fz = Mth.cos(yaw);
         ps.pushPose();
         PUSHED.add(le.getId());
-        ps.translate(fx * 0.28f * at[1], 0, fz * 0.28f * at[1]);   // o corpo vai para a frente no golpe
+        ps.translate(fx * fwd * h, -dip * h, fz * fwd * h);   // o corpo vai para a frente no golpe
+        if (twist != 0f) ps.mulPose(com.mojang.math.Axis.YP.rotationDegrees(twist));
         ps.mulPose(new org.joml.Quaternionf().rotationAxis(lean * Mth.DEG_TO_RAD, Mth.cos(yaw), 0, Mth.sin(yaw)));
     }
 

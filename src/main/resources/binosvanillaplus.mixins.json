@@ -34,6 +34,7 @@
     },
     "mixins": [
         "MonsterSpawnLightMixin",
+        "CreeperAccessor",
         "CompoundContainerAccessor",
         "ContainerMenuMimicMixin",
         "ChestBlockEntityMimicMixin",
