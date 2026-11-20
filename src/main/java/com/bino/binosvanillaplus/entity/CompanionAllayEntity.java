@@ -309,6 +309,7 @@ public class CompanionAllayEntity extends Allay {
         Vec3 slot = slot(owner);
         Vec3 guide = guidePoint(owner);     // com bussola: vai na frente, mostrando o caminho
         if (guide != null) slot = guide;
+        guiding = guide == null ? null : guide.add(guide.subtract(owner.position().add(0, 1.6, 0)).normalize().scale(6)).add(0, -0.6, 0);
 
         boolean carrying = !this.carriedStacks.isEmpty() || this.carriedXp > 0;
         // tarefa pedida pelo dono (aperta botao/alavanca) tem prioridade sobre buscar drops
@@ -402,6 +403,8 @@ public class CompanionAllayEntity extends Allay {
             lookAt = owner.getEyePosition();
         } else if (fetchTarget != null) {
             lookAt = fetchTarget;
+        } else if (guiding != null) {
+            lookAt = guiding;   // com a bussola: olha para o caminho, nao para o jogador
         } else if (CompanionAllayManager.isFrontCamera(owner.getUUID())) {
             lookAt = null;
         } else {
@@ -586,6 +589,8 @@ public class CompanionAllayEntity extends Allay {
         if (t.isEmpty()) this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         CompanionAllayManager.setTool(owner, t);
     }
+
+    @Nullable private Vec3 guiding;   // ponto a frente, na direcao do destino da bussola (para onde ele olha)
 
     // ---- usos de cada item (chamado a cada tick, no servidor)
     private int toolCd;
