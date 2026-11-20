@@ -62,6 +62,11 @@ neoForge {
             client()
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Nome do jogador no runClient (para dois PCs jogarem juntos com nomes diferentes).
+            // Defina mc_user=SeuNome no gradle.properties da pasta do usuario (C:/Users/<voce>/.gradle/gradle.properties),
+            // que nao vai para o GitHub. Sem isso o nome fica "Dev".
+            def mcUser = project.findProperty('mc_user')
+            if (mcUser) programArguments.addAll '--username', mcUser.toString()
         }
 
         server {
