@@ -55,7 +55,7 @@ public class MimicEntity extends Monster {
 
     public final AnimationState reveal = new AnimationState(), bite = new AnimationState(), hop = new AnimationState();
     private final List<ItemStack> loot = new ArrayList<>();
-    private int revealT = -1, biteIn = -1, hopCd, biteCd, idle;
+    private int revealT = -1, biteIn = -1, hopCd, biteCd, idle, hideTicks;
     @Nullable private Player firstVictim;
 
     public MimicEntity(EntityType<? extends Monster> type, Level level) {
@@ -140,6 +140,34 @@ public class MimicEntity extends Monster {
         }
         idle = 0;
         double d = distanceTo(t);
+        // ferido (menos de 30% de vida): foge pulando e, se conseguir sumir da vista do alvo, volta a ser bau
+        // (disfarce de novo, esperando a proxima vitima). O duplo e' pesado demais para isso: so foge.
+        if (getHealth() < getMaxHealth() * 0.3f) {
+            boolean watched = com.bino.binosvanillaplus.entity.ai.StealthAI.isWatchedBy(this, t);
+            if (!isDouble() && onGround() && d > 7 && !watched) {
+                if (++hideTicks > 30) { becomeChest(); return; }
+            } else hideTicks = 0;
+            if (onGround() && hopCd == 0 && d < 14) {
+                Vec3 dir = new Vec3(getX() - t.getX(), 0, getZ() - t.getZ()).normalize();
+                setDeltaMovement(dir.x * 0.45, 0.42, dir.z * 0.45);
+                hasImpulse = true;
+                event(EV_HOP);
+                playSound(SoundEvents.CHEST_OPEN, 0.6f, 1.1f);
+                hopCd = 10 + random.nextInt(6);
+            }
+            return;
+        }
+        hideTicks = 0;
+        // bote: perto do alvo e com o pulo pronto, de vez em quando da um salto rapido e ja morde no ar
+        if (d > REACH && d < 4.5 && onGround() && hopCd == 0 && biteCd == 0 && random.nextInt(4) == 0 && hasLineOfSight(t)) {
+            Vec3 dir = new Vec3(t.getX() - getX(), 0, t.getZ() - getZ()).normalize();
+            setDeltaMovement(dir.x * 0.7, 0.36, dir.z * 0.7);
+            hasImpulse = true;
+            event(EV_BITE); biteIn = 6; biteCd = BITE_COOLDOWN;
+            playSound(SoundEvents.RAVAGER_ROAR, 0.5f, 1.6f);
+            hopCd = 20;
+            return;
+        }
         if (d <= REACH && biteCd == 0) {
             event(EV_BITE); biteIn = 4; biteCd = BITE_COOLDOWN;
             playSound(SoundEvents.CHEST_CLOSE, 1.0f, 0.8f);

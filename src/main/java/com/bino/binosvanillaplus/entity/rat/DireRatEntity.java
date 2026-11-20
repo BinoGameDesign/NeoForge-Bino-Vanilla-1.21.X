@@ -24,6 +24,7 @@ import net.minecraft.world.entity.animal.Ocelot;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.AABB;
@@ -89,8 +90,10 @@ public class DireRatEntity extends RatEntity implements Enemy {
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new FleeGoal(this));
+        goalSelector.addGoal(1, new RetreatGoal(this));   // muito ferido: recua para o escuro e manda os ratos na frente
         goalSelector.addGoal(2, new EatCakeGoal(this, st -> st.getBlock() instanceof CheeseBlock));   // so o queijo grande
         goalSelector.addGoal(2, new TailWhipGoal(this));
+        goalSelector.addGoal(3, new StalkGoal(this));   // encarado de longe: rodeia no escuro e espera a brecha
         goalSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.LeapAtTargetGoal(this, 0.38f));   // bote
         goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.45, true) {
             @Override protected int getAttackInterval() { return adjustedTickDelay(BITE_INTERVAL); }
@@ -116,7 +119,79 @@ public class DireRatEntity extends RatEntity implements Enemy {
     public void tick() {
         super.tick();
         if (!level().isClientSide && tickCount % 40 == 0 && getTarget() instanceof Player p && p.isAlive()) callRats(p);   // quem chegar depois vem junto
+        if (stalkCooldown > 0) stalkCooldown--;
+        if (retreatCooldown > 0) retreatCooldown--;
     }
+
+    // ------------------------------------------------------------------ IA de caca
+    // Espreita: se o alvo esta olhando para ele de media distancia, nao avanca de peito aberto; anda de lado em volta
+    // do alvo (preferindo o escuro), rosnando, e ataca quando o alvo vira as costas, chega perto ou o tempo acaba.
+    static class StalkGoal extends net.minecraft.world.entity.ai.goal.Goal {
+        private final DireRatEntity r;
+        private int time, unseen, dir = 1, repath;
+        StalkGoal(DireRatEntity r) { this.r = r; setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+        private boolean watchedFar() {
+            LivingEntity t = r.getTarget();
+            if (t == null || !t.isAlive()) return false;
+            double d = r.distanceTo(t);
+            return d > 5.5 && d < 15 && com.bino.binosvanillaplus.entity.ai.StealthAI.isWatchedBy(r, t);
+        }
+        @Override public boolean canUse() { return r.stalkCooldown == 0 && r.getRandom().nextInt(10) == 0 && watchedFar(); }
+        @Override public boolean canContinueToUse() {
+            LivingEntity t = r.getTarget();
+            return t != null && t.isAlive() && time < 140 && unseen < 12 && r.distanceTo(t) > 4.5;
+        }
+        @Override public void start() { time = 0; unseen = 0; repath = 0; dir = r.getRandom().nextBoolean() ? 1 : -1; r.playSound(net.minecraft.sounds.SoundEvents.WOLF_GROWL, 0.8f, 0.6f); }
+        @Override public void stop() { r.stalkCooldown = 100 + r.getRandom().nextInt(100); r.getNavigation().stop(); }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
+        @Override public void tick() {
+            LivingEntity t = r.getTarget();
+            if (t == null) return;
+            time++;
+            r.getLookControl().setLookAt(t, 30f, 30f);
+            unseen = com.bino.binosvanillaplus.entity.ai.StealthAI.isWatchedBy(r, t) ? 0 : unseen + 1;
+            if (--repath <= 0) {
+                repath = 15;
+                Vec3 step = com.bino.binosvanillaplus.entity.ai.StealthAI.circleStep(r, t, 8.0, dir);
+                if (step == null) { dir = -dir; return; }
+                r.getNavigation().moveTo(step.x, step.y, step.z, 1.0);
+            }
+            if (r.getRandom().nextInt(60) == 0) r.playSound(net.minecraft.sounds.SoundEvents.WOLF_GROWL, 0.6f, 0.55f);
+        }
+    }
+
+    // Recuo: abaixo de 30% de vida foge para o escuro (longe da vista do alvo), chama os ratos para cobrir e se recupera
+    // aos poucos; volta para a briga com mais da metade da vida (ou depois de ~12 s).
+    static class RetreatGoal extends net.minecraft.world.entity.ai.goal.Goal {
+        private final DireRatEntity r;
+        private int time, repath;
+        RetreatGoal(DireRatEntity r) { this.r = r; setFlags(java.util.EnumSet.of(Flag.MOVE)); }
+        @Override public boolean canUse() {
+            return r.retreatCooldown == 0 && r.getTarget() != null && r.getHealth() < r.getMaxHealth() * 0.3f;
+        }
+        @Override public boolean canContinueToUse() {
+            return r.getTarget() != null && time < 240 && r.getHealth() < r.getMaxHealth() * 0.55f;
+        }
+        @Override public void start() {
+            time = 0; repath = 0;
+            r.playSound(net.minecraft.sounds.SoundEvents.FOX_SCREECH, 1.0f, 0.5f);
+            if (r.getTarget() instanceof Player p) r.callRats(p);
+        }
+        @Override public void stop() { r.retreatCooldown = 600; r.getNavigation().stop(); }
+        @Override public void tick() {
+            LivingEntity t = r.getTarget();
+            if (t == null) return;
+            time++;
+            if (time % 20 == 0) r.heal(1.0f);
+            if (--repath <= 0 || r.getNavigation().isDone()) {
+                repath = 20;
+                Vec3 spot = com.bino.binosvanillaplus.entity.ai.StealthAI.fleeSpot(r, t.position(), t, 14);
+                if (spot != null) r.getNavigation().moveTo(spot.x, spot.y, spot.z, 1.5);
+            }
+        }
+    }
+
+    int stalkCooldown, retreatCooldown;
 
     // ------------------------------------------------------------------ chicotada de cauda
     // de vez em quando, com o alvo a media distancia: para, gira o corpo e a cauda varre a frente (~0,5 s depois)
@@ -163,7 +238,7 @@ public class DireRatEntity extends RatEntity implements Enemy {
         }
     }
 
-    private void callRats(Player p) {
+    void callRats(Player p) {
         if (p.isCreative() || p.isSpectator()) return;
         for (RatEntity r : level().getEntitiesOfClass(RatEntity.class, new AABB(blockPosition()).inflate(RALLY_RANGE),
                 r -> !(r instanceof DireRatEntity) && r.isAlive())) r.rally(p);

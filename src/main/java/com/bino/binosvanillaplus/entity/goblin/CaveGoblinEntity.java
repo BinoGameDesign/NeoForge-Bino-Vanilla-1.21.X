@@ -131,6 +131,7 @@ public class CaveGoblinEntity extends PathfinderMob {
         goalSelector.addGoal(4, new EatMeatGoal(this));
         goalSelector.addGoal(4, new HuntRatGoal(this));
         goalSelector.addGoal(4, new SeekDarknessGoal(this));
+        goalSelector.addGoal(4, new WatchGoal(this));   // se esconde no escuro e vigia o jogador de longe
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -379,7 +380,9 @@ public class CaveGoblinEntity extends PathfinderMob {
             if (t == null) return;
             if (--repath <= 0 || g.getNavigation().isDone()) {
                 repath = 10;
-                Vec3 away = DefaultRandomPos.getPosAway(g, 16, 7, t.position());
+                // foge para o escuro e, se der, para fora da vista de quem assustou
+                Vec3 away = com.bino.binosvanillaplus.entity.ai.StealthAI.fleeSpot(g, t.position(), t instanceof LivingEntity le ? le : null, 16);
+                if (away == null) away = DefaultRandomPos.getPosAway(g, 16, 7, t.position());
                 if (away != null) g.getNavigation().moveTo(away.x, away.y, away.z, 1.5);
             }
             boolean cornered = g.getNavigation().isDone() && g.distanceToSqr(t) < 9;
@@ -429,6 +432,67 @@ public class CaveGoblinEntity extends PathfinderMob {
             }
             if (d < 1.6) { g.steal(target); return; }
             if (time % 5 == 0) g.getNavigation().moveTo(target, 0.55);
+        }
+    }
+
+    // Vigia de longe: acha um canto escuro a 8-14 blocos do jogador (de preferencia fora da vista dele) e fica la
+    // espiando, quietinho. Se o jogador chegar perto, encarar ele por um tempo ou se passar muito tempo, troca de
+    // esconderijo sem fazer barulho (as vezes com uma risadinha). Quando o jogador vira de costas, o StealGoal
+    // (prioridade maior) assume e ele tenta o furto.
+    static class WatchGoal extends Goal {
+        private final CaveGoblinEntity g;
+        @Nullable private Player watched;
+        @Nullable private Vec3 spot;
+        private int stay, seenFor, time, moves;
+        WatchGoal(CaveGoblinEntity g) { this.g = g; setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK)); }
+
+        private static boolean valid(Player p) { return p.isAlive() && !p.isCreative() && !p.isSpectator(); }
+
+        @Override public boolean canUse() {
+            if (g.fleeTicks > 0 || g.eatTicks > 0 || g.getState() != ST_NORMAL || g.tickCount % 20 != 0) return false;
+            Player p = g.level().getNearestPlayer(g.getX(), g.getY(), g.getZ(), 24, e -> e instanceof Player pl && valid(pl));
+            if (p == null) return false;
+            spot = com.bino.binosvanillaplus.entity.ai.StealthAI.watchSpot(g, p, 8, 14);
+            watched = p;
+            return spot != null;
+        }
+        @Override public boolean canContinueToUse() {
+            return watched != null && valid(watched) && g.fleeTicks == 0 && g.eatTicks == 0 && time < 1600 && g.distanceToSqr(watched) < 30 * 30;
+        }
+        @Override public void start() {
+            time = 0; seenFor = 0; moves = 0;
+            g.setState(ST_STALK);
+            go();
+        }
+        private void go() {
+            stay = 100 + g.getRandom().nextInt(160);
+            if (spot != null) g.getNavigation().moveTo(spot.x, spot.y, spot.z, 0.9);
+        }
+        @Override public void stop() {
+            watched = null; spot = null;
+            if (g.getState() == ST_STALK) g.setState(ST_NORMAL);
+            g.getNavigation().stop();
+        }
+        @Override public boolean requiresUpdateEveryTick() { return true; }
+        @Override public void tick() {
+            if (watched == null) return;
+            time++;
+            g.getLookControl().setLookAt(watched, 20f, 20f);
+            boolean arrived = g.getNavigation().isDone();
+            if (arrived) {
+                stay--;
+                if (g.getRandom().nextInt(90) == 0) g.event(EV_LOOK);   // espia em volta
+            }
+            seenFor = g.isSeenBy(watched) ? seenFor + 1 : Math.max(0, seenFor - 1);
+            double d = g.distanceTo(watched);
+            if (d < 6.5 || seenFor > 30 || stay <= 0) {
+                if (seenFor > 30 && d < 12 && g.getRandom().nextInt(3) == 0) g.giggleIn = 8;   // pego espiando: risadinha e some
+                Vec3 next = com.bino.binosvanillaplus.entity.ai.StealthAI.watchSpot(g, watched, 9, 15);
+                seenFor = 0;
+                if (next == null || ++moves > 8) { g.runFrom(watched, 60); return; }
+                spot = next;
+                go();
+            }
         }
     }
 

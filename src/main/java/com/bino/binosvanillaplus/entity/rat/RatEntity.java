@@ -142,6 +142,7 @@ public class RatEntity extends PathfinderMob {
     public void tick() {
         super.tick();
         if (level().isClientSide) { clientTick(); return; }
+        if (alarmTicks > 0) alarmTicks--;
         if (swarmTicks > 0 && --swarmTicks == 0 && rallyTicks == 0) setTarget(null);
         if (rallyTicks > 0 && --rallyTicks == 0 && swarmTicks == 0) setTarget(null);
         if (eatTicks > 0 && --eatTicks == 0 && getState() == ST_EAT) setState(ST_NORMAL);
@@ -271,12 +272,53 @@ public class RatEntity extends PathfinderMob {
 
     // ================================================================== OBJETIVOS
 
-    // foge correndo (estado FLEE escolhe a animacao de correr)
+    // Foge correndo (estado FLEE escolhe a animacao de correr) para o ESCURO e para fora da vista de quem assustou.
+    // Quando um rato se assusta, os ratos calmos por perto tambem fogem (alarme do grupo).
     static class FleeGoal extends AvoidEntityGoal<LivingEntity> {
         private final RatEntity r;
         FleeGoal(RatEntity r) { super(r, LivingEntity.class, 6.0f, 1.2, 1.6, r::scares); this.r = r; }
-        @Override public void start() { super.start(); r.setState(ST_FLEE); }
+        @Override public boolean canUse() {
+            boolean own = super.canUse();
+            if (!own) {   // nao viu nada, mas um vizinho deu o alarme
+                LivingEntity a = r.alarmTicks > 0 ? r.alarmFrom() : null;
+                if (a == null) return false;
+                toAvoid = a;
+            }
+            Vec3 spot = com.bino.binosvanillaplus.entity.ai.StealthAI.fleeSpot(r, toAvoid.position(), toAvoid, 12);
+            if (spot != null) {
+                var p = pathNav.createPath(spot.x, spot.y, spot.z, 0);
+                if (p != null) path = p;
+            }
+            return path != null;
+        }
+        @Override public void start() {
+            super.start();
+            r.setState(ST_FLEE);
+            if (r.alarmTicks <= 0 && toAvoid != null)   // so quem viu da o alarme (nao fica em cadeia infinita)
+                for (RatEntity o : r.level().getEntitiesOfClass(RatEntity.class, r.getBoundingBox().inflate(8),
+                        o -> o != r && !o.isAngry() && o.alarmTicks <= 0))
+                    o.alarm(toAvoid);
+        }
         @Override public void stop() { super.stop(); if (r.getState() == ST_FLEE) r.setState(ST_NORMAL); }
+    }
+
+    // alarme do grupo: foge de 'e' por alguns segundos mesmo sem ter visto
+    int alarmTicks;
+    @Nullable private java.util.UUID alarmId;
+    void alarm(LivingEntity e) {
+        alarmTicks = 60;
+        alarmId = e.getUUID();
+        if (getState() == ST_SLEEP || getState() == ST_EAT) setState(ST_NORMAL);
+    }
+    @Nullable LivingEntity alarmFrom() {
+        if (alarmId == null || !(level() instanceof net.minecraft.server.level.ServerLevel sl)) return null;
+        return sl.getEntity(alarmId) instanceof LivingEntity le && le.isAlive() ? le : null;
+    }
+
+    // ao passear, prefere cantos escuros
+    @Override
+    public float getWalkTargetValue(BlockPos pos, net.minecraft.world.level.LevelReader level) {
+        return -level.getMaxLocalRawBrightness(pos);
     }
 
     // cochilo: quando esta calmo e sem ninguem por perto; acorda com barulho de gente chegando ou dano
