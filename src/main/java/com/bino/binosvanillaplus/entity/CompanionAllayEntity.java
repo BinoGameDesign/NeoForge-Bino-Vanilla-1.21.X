@@ -1,5 +1,8 @@
 package com.bino.binosvanillaplus.entity;
 
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -269,6 +272,7 @@ public class CompanionAllayEntity extends Allay {
             return;
         }
 
+        hideWith(owner);
         updateAnchor(owner);
         Vec3 slot = slot(owner);
 
@@ -334,7 +338,7 @@ public class CompanionAllayEntity extends Allay {
 
         steerTo(goal, maxSpeed, smooth);
         faceCamera(owner, tasking ? Vec3.atCenterOf(this.taskPos == null ? this.blockPosition() : this.taskPos) : target);
-        updateLight(server);
+        if (hidden) clearLight(); else updateLight(server);   // dono invisivel: o pet nao ilumina
 
         // A cada 1 segundo: guarda o nome dado com a etiqueta (ignora o nome padrão traduzido)
         if (this.tickCount % 20 == 0 && this.hasCustomName()
@@ -491,6 +495,25 @@ public class CompanionAllayEntity extends Allay {
         drop.setDeltaMovement(Vec3.ZERO);
         drop.setDefaultPickUpDelay();
         this.level().addFreshEntity(drop);
+    }
+
+    // ---------- Invisibilidade junto com o dono ----------
+    // Qualquer invisibilidade do dono (pocao, Anel da Invisibilidade, comando...) vale para o pet: ele fica invisivel,
+    // sem som e sem luz, para nao denunciar onde o jogador esta. A invisibilidade do pet e' curta e renovada a cada
+    // tick enquanto o dono estiver invisivel; quando o dono aparece, o pet aparece junto.
+    private boolean hidden;
+
+    private void hideWith(Player owner) {
+        boolean hide = owner.isInvisible() || owner.hasEffect(MobEffects.INVISIBILITY);
+        if (hide) {
+            MobEffectInstance cur = this.getEffect(MobEffects.INVISIBILITY);
+            if (cur == null || cur.getDuration() < 20)
+                this.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 40, 0, true, false, false));
+        } else if (this.hidden) {
+            this.removeEffect(MobEffects.INVISIBILITY);
+        }
+        if (hide != this.hidden) this.setSilent(hide);
+        this.hidden = hide;
     }
 
     // ---------- Luz (bloco invisível que acompanha o pet) ----------

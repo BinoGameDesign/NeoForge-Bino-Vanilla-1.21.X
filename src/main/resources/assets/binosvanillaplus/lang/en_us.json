@@ -158,5 +158,7 @@
   "bench.binosvanillaplus.anvil.start": "Click an item in the bar to put it on the anvil",
   "bench.binosvanillaplus.anvil.take": "Click the result to hammer it",
   "bench.binosvanillaplus.anvil.no": "Can't do that (experience levels?)",
-  "bench.binosvanillaplus.leave": "Click outside or Esc: leave  ·  Click an item on top: take it back  ·  Open while sneaking for the classic window"
+  "bench.binosvanillaplus.leave": "Click outside or Esc: leave  ·  Click an item on top: take it back  ·  Open while sneaking for the classic window",
+  "gui.binosvanillaplus.inv.unequip": "Unequip",
+  "gui.binosvanillaplus.inv.unequip_tip": "The item goes back to your inventory"
 }

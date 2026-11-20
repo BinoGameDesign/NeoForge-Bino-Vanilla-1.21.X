@@ -350,5 +350,7 @@
   "bench.binosvanillaplus.anvil.start": "Clique num item da barra para colocar na bigorna",
   "bench.binosvanillaplus.anvil.take": "Clique no resultado para martelar",
   "bench.binosvanillaplus.anvil.no": "Não dá (níveis de experiência?)",
-  "bench.binosvanillaplus.leave": "Clique fora ou Esc: sair  ·  Clique num item do tampo: devolver  ·  Abra agachado para a janela clássica"
+  "bench.binosvanillaplus.leave": "Clique fora ou Esc: sair  ·  Clique num item do tampo: devolver  ·  Abra agachado para a janela clássica",
+  "gui.binosvanillaplus.inv.unequip": "Desequipar",
+  "gui.binosvanillaplus.inv.unequip_tip": "O item volta para o inventário"
 }

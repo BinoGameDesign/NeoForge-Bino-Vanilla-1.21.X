@@ -367,7 +367,9 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
         int over = drawPopup(g, mx, my);
-        if (over >= 0) compareTooltip(g, menu.slots.get(over).getItem(), menu.slots.get(popupSlot).getItem(), popupSlot);
+        if (over == UNEQUIP) tipAt(g, List.of(t("unequip"), t("unequip_tip").withStyle(net.minecraft.ChatFormatting.GRAY)),
+                popupRect[0] + popupRect[2] + 8, popupRect[1]);
+        else if (over >= 0) compareTooltip(g, menu.slots.get(over).getItem(), menu.slots.get(popupSlot).getItem(), popupSlot);
         else if (popupRect != null && hoveredSlot != null && hoveredSlot.index == popupSlot) {
             if (hoveredSlot.hasItem()) {   // o item equipado: tooltip do outro lado, sem cobrir a lista
                 float[] r = screenRect(popupSlot);
@@ -382,6 +384,8 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     // ---------------------------------------------------------------- aba Armadura: itens do inventario que servem no slot
 
     private int popupSlot = -1;
+    // celula especial da lista: tirar o item equipado (volta para o inventario)
+    private static final int UNEQUIP = -2;
     private float[] popupRect;
     private final List<int[]> popupCells = new ArrayList<>();   // {indice do slot do inventario, x, y}
 
@@ -393,6 +397,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     private List<Integer> candidates(int target) {
         Slot t = menu.slots.get(target);
         List<Integer> out = new ArrayList<>();
+        if (t.hasItem() && t.mayPickup(minecraft.player)) out.add(UNEQUIP);   // primeira celula: desequipar
         for (int i = BinoInventoryMenu.MAIN; i < BinoInventoryMenu.OFFHAND; i++) {
             net.minecraft.world.item.ItemStack st = menu.slots.get(i).getItem();
             if (st.isEmpty()) continue;
@@ -444,9 +449,14 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             if (Glass.available()) Glass.panel(g, ax + (cx + 1 - ax) * bloom, ay + (cy + 1 - ay) * bloom, (cell - 2) * bloom, (cell - 2) * bloom, 3 * bloom,
                     Glass.SLOT.withMilk(hov ? 0.10f : 0f).withRim(hov ? 1.2f : 0.55f), 0xFF2A2D2B);
             else round(g, cx + 1, cy + 1, cell - 2, cell - 2, 2, hov ? 0xFF5B5E5C : 0xFF2A2D2B);
-            net.minecraft.world.item.ItemStack st = menu.slots.get(list.get(k)).getItem();
-            g.renderItem(st, cx + 2, cy + 2);
-            g.renderItemDecorations(font, st, cx + 2, cy + 2);
+            if (list.get(k) == UNEQUIP) {   // "x" claro: tirar o item
+                String x = "\u2715";
+                g.drawString(font, x, cx + cell / 2 - font.width(x) / 2, cy + cell / 2 - 4, hov ? 0xFFFF8A80 : 0xFFE0E0E0, false);
+            } else {
+                net.minecraft.world.item.ItemStack st = menu.slots.get(list.get(k)).getItem();
+                g.renderItem(st, cx + 2, cy + 2);
+                g.renderItemDecorations(font, st, cx + 2, cy + 2);
+            }
             popupCells.add(new int[]{list.get(k), cx, cy});
             if (hov) over = list.get(k);
         }
@@ -566,6 +576,12 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             if (mx >= c[1] && mx < c[1] + 20 && my >= c[2] && my < c[2] + 20) {
                 var gm = minecraft.gameMode;
                 int id = menu.containerId;
+                if (c[0] == UNEQUIP) {   // desequipar: o item volta para o inventario (shift-clique no slot)
+                    gm.handleInventoryMouseClick(id, popupSlot, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, minecraft.player);
+                    pinned = -1;
+                    UiSound.click();
+                    return true;
+                }
                 gm.handleInventoryMouseClick(id, c[0], 0, net.minecraft.world.inventory.ClickType.PICKUP, minecraft.player);
                 gm.handleInventoryMouseClick(id, popupSlot, 0, net.minecraft.world.inventory.ClickType.PICKUP, minecraft.player);
                 if (!menu.getCarried().isEmpty()) gm.handleInventoryMouseClick(id, c[0], 0, net.minecraft.world.inventory.ClickType.PICKUP, minecraft.player);
