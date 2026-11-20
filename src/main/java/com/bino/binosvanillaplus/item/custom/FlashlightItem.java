@@ -16,7 +16,7 @@ import net.minecraft.world.level.Level;
 import java.util.List;
 
 // Lanterna de luz focalizada: ilumina so para onde o jogador olha (ver gear/FlashlightManager).
-// Botao direito liga e desliga. Tambem pode ir no capacete (capacete + lanterna na bancada).
+// Botao direito liga e desliga. (Nao vai mais no capacete; pode ser entregue ao pet, que aponta o feixe.)
 public class FlashlightItem extends Item {
     public FlashlightItem(Properties properties) { super(properties); }
 
@@ -36,7 +36,7 @@ public class FlashlightItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable(isOn(stack) ? "tooltip.binosvanillaplus.flashlight.on" : "tooltip.binosvanillaplus.flashlight.off")
                 .withStyle(isOn(stack) ? ChatFormatting.YELLOW : ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.binosvanillaplus.flashlight.use").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("tooltip.binosvanillaplus.flashlight.use_pet").withStyle(ChatFormatting.DARK_GRAY));
     }
 
     @Override

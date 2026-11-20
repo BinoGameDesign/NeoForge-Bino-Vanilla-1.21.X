@@ -160,5 +160,6 @@
   "bench.binosvanillaplus.anvil.no": "Can't do that (experience levels?)",
   "bench.binosvanillaplus.leave": "Click outside or Esc: leave  ·  Click an item on top: take it back  ·  Open while sneaking for the classic window",
   "gui.binosvanillaplus.inv.unequip": "Unequip",
-  "gui.binosvanillaplus.inv.unequip_tip": "The item goes back to your inventory"
+  "gui.binosvanillaplus.inv.unequip_tip": "The item goes back to your inventory",
+  "tooltip.binosvanillaplus.flashlight.use_pet": "Right click: on/off. Give it to your pet (right click it): it points the light where you look."
 }

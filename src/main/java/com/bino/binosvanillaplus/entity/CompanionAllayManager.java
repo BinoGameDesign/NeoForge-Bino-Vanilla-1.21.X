@@ -1,5 +1,7 @@
 package com.bino.binosvanillaplus.entity;
 
+import net.minecraft.world.item.ItemStack;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -79,6 +81,7 @@ public class CompanionAllayManager {
         pet.setCustomNameVisible(true);
 
         pet.setColorIndex(getColor(player));        // aplica a cor guardada (-1 = original)
+        pet.setTool(getTool(player));               // item que o jogador entregou (tocha, lanterna)
 
         level.addFreshEntity(pet);
         PETS.put(player.getUUID(), pet.getUUID());
@@ -151,6 +154,19 @@ public class CompanionAllayManager {
             color = player.getPersistentData().getInt(COLOR_KEY);
         }
         return color == null ? -1 : color;
+    }
+
+    // ---------- Item entregue ao pet (tocha, lanterna...) — guardado nos dados do jogador ----------
+    private static final String TOOL_KEY = "binosvanillaplus_pet_tool";
+
+    public static void setTool(Player player, ItemStack tool) {
+        if (tool.isEmpty()) player.getPersistentData().remove(TOOL_KEY);
+        else player.getPersistentData().put(TOOL_KEY, tool.save(player.registryAccess()));
+    }
+
+    public static ItemStack getTool(Player player) {
+        if (!player.getPersistentData().contains(TOOL_KEY)) return ItemStack.EMPTY;
+        return ItemStack.parse(player.registryAccess(), player.getPersistentData().getCompound(TOOL_KEY)).orElse(ItemStack.EMPTY);
     }
 
     // ---------- Aviso de inventário cheio ----------

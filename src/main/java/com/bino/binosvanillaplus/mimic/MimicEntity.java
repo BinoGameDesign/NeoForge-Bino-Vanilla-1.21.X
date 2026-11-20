@@ -104,7 +104,13 @@ public class MimicEntity extends Monster {
     @Override
     public void tick() {
         super.tick();
-        if (level().isClientSide) return;
+        if (level().isClientSide) {
+            // debaixo d'agua: bolhas saindo da boca
+            if (isInWater() && random.nextFloat() < 0.35f)
+                level().addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE, getX() + (random.nextDouble() - 0.5) * 0.6,
+                        getY() + getBbHeight() * 0.7, getZ() + (random.nextDouble() - 0.5) * 0.6, 0, 0.08, 0);
+            return;
+        }
         LivingEntity t = getTarget();
         boolean fleeing = t != null && revealT < 0 && getHealth() < getMaxHealth() * 0.3f;
         if (t != null && t.isAlive()) { if (fleeing) faceAway(t); else face(t); }   // fugindo: de costas para o alvo

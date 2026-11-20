@@ -13,7 +13,7 @@ import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 
-// Capacete + Lanterna (em qualquer lugar da mesa) = capacete com a lanterna na lateral.
+// (desativado em 20/11) Capacete + Lanterna = capacete com a lanterna na lateral.
 // Capacete com lanterna SOZINHO na mesa = devolve a lanterna (o capacete volta sem ela).
 public class HelmetLampRecipe extends CustomRecipe {
     public HelmetLampRecipe(CraftingBookCategory category) { super(category); }
@@ -38,7 +38,9 @@ public class HelmetLampRecipe extends CustomRecipe {
     public boolean matches(CraftingInput in, Level level) {
         ItemStack[] p = parts(in);
         if (p == null) return false;
-        return p[1].isEmpty() ? hasLamp(p[0]) : !hasLamp(p[0]);
+        // (20/11) a lanterna NAO vai mais no capacete: so sobrou o caminho de volta, para tirar a lanterna de
+        // capacetes antigos que ja tinham ela
+        return p[1].isEmpty() && hasLamp(p[0]);
     }
 
     @Override

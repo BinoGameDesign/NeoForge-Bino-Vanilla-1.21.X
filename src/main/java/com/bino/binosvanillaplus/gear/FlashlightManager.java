@@ -66,23 +66,27 @@ public final class FlashlightManager {
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) { ACTIVE.remove(event.getEntity().getUUID()); }
 
-    private static void update(ServerPlayer p) {
-        ServerLevel level = p.serverLevel();
-        Vec3 eye = p.getEyePosition(), look = p.getLookAngle();
+    private static void update(ServerPlayer p) { beam(p.getUUID(), p.serverLevel(), p, p.getEyePosition(), p.getLookAngle()); }
+
+    // Feixe saindo de 'eye' na direcao 'look', guardado sob 'key' (o jogador ou o pet que segura a lanterna).
+    public static void beam(UUID key, ServerLevel level, net.minecraft.world.entity.Entity src, Vec3 eye, Vec3 look) {
         Vec3 right = look.cross(new Vec3(0, 1, 0));
         right = right.lengthSqr() < 1.0e-4 ? new Vec3(1, 0, 0) : right.normalize();
         Vec3 up = right.cross(look).normalize();
 
         Map<BlockPos, Integer> want = new HashMap<>();
-        cast(level, p, eye, look, 15, true, want);
+        cast(level, src, eye, look, 15, true, want);
         double[][] offs = {{SPREAD, 0}, {-SPREAD, 0}, {0, SPREAD * 0.8}, {0, -SPREAD * 0.8}};
-        for (double[] o : offs) cast(level, p, eye, look.add(right.scale(o[0])).add(up.scale(o[1])).normalize(), 12, false, want);
+        for (double[] o : offs) cast(level, src, eye, look.add(right.scale(o[0])).add(up.scale(o[1])).normalize(), 12, false, want);
 
         for (Map.Entry<BlockPos, Integer> e : want.entrySet()) place(level, e.getKey(), e.getValue());
-        ACTIVE.put(p.getUUID(), new Lit(level.dimension(), new HashSet<>(want.keySet())));
+        ACTIVE.put(key, new Lit(level.dimension(), new HashSet<>(want.keySet())));
     }
 
-    private static void cast(ServerLevel level, ServerPlayer p, Vec3 eye, Vec3 dir, int light, boolean center, Map<BlockPos, Integer> want) {
+    // apaga o feixe guardado sob 'key' (as luzes somem sozinhas quando ninguem mais pede)
+    public static void stop(UUID key) { ACTIVE.remove(key); }
+
+    private static void cast(ServerLevel level, net.minecraft.world.entity.Entity p, Vec3 eye, Vec3 dir, int light, boolean center, Map<BlockPos, Integer> want) {
         Vec3 end = eye.add(dir.scale(RANGE));
         BlockHitResult hit = level.clip(new ClipContext(eye, end, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, p));
         double len = hit.getType() == HitResult.Type.MISS ? RANGE : hit.getLocation().distanceTo(eye) - 0.6;

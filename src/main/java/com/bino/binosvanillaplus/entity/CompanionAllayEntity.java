@@ -71,6 +71,7 @@ public class CompanionAllayEntity extends Allay {
     private double lastOwnerX, lastOwnerZ;                 // posição anterior do dono (detecta movimento)
     private int farTicks;                                  // tempo longe do dono sem chegar perto
     private BlockPos lightPos = null;                      // onde está o bloco de luz invisível
+    private int lightLevel = LIGHT_LEVEL;                  // nivel da luz colocada (tocha deixa mais forte)
     private BlockPos taskPos = null;                       // bloco que o dono pediu para apertar (Alt + botão direito)
     private net.minecraft.core.Direction taskFace = net.minecraft.core.Direction.UP;
     private int taskTicks = 0;
@@ -208,6 +209,35 @@ public class CompanionAllayEntity extends Allay {
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
+        // ----- PEGAR DE VOLTA o item equipado: agachado + botão direito com a mão vazia -----
+        if (player.isShiftKeyDown() && stack.isEmpty() && !this.tool.isEmpty()) {
+            if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
+            if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
+            ItemStack back = this.tool.copy();
+            setTool(ItemStack.EMPTY);
+            this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            CompanionAllayManager.setTool(player, ItemStack.EMPTY);
+            if (!player.getInventory().add(back)) player.drop(back, false);
+            this.level().playSound(null, getX(), getY(), getZ(), SoundEvents.ALLAY_ITEM_TAKEN, SoundSource.NEUTRAL, 1.0f, 1.0f);
+            return InteractionResult.sidedSuccess(false);
+        }
+
+        // ----- ENTREGAR um item que o pet sabe usar (tocha, lanterna) -----
+        if (usable(stack)) {
+            if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
+            if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
+            ItemStack old = this.tool;
+            ItemStack give = stack.copyWithCount(1);
+            if (give.getItem() instanceof com.bino.binosvanillaplus.item.custom.FlashlightItem)
+                give.set(com.bino.binosvanillaplus.item.ModDataComponents.FLASHLIGHT_ON.get(), true);   // ja chega ligada
+            if (!player.getAbilities().instabuild) stack.shrink(1);
+            setTool(give);
+            CompanionAllayManager.setTool(player, give);
+            if (!old.isEmpty() && !player.getInventory().add(old)) player.drop(old, false);   // troca: devolve o anterior
+            this.level().playSound(null, getX(), getY(), getZ(), SoundEvents.ALLAY_ITEM_GIVEN, SoundSource.NEUTRAL, 1.0f, 1.0f);
+            return InteractionResult.sidedSuccess(false);
+        }
+
         // ----- CARINHO: botão direito com as DUAS mãos vazias -----
         if (player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
             if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);   // só o balanço do braço
@@ -280,7 +310,8 @@ public class CompanionAllayEntity extends Allay {
         // tarefa pedida pelo dono (aperta botao/alavanca) tem prioridade sobre buscar drops
         if (this.taskPos != null && (++this.taskTicks > 200 || this.taskPos.distSqr(owner.blockPosition()) > 40 * 40)) this.taskPos = null;
         boolean tasking = this.taskPos != null && !carrying;
-        Vec3 target = carrying || tasking ? null : findTarget(server, owner);
+        // com um item equipado (tocha, lanterna) ele nao busca drops
+        Vec3 target = carrying || tasking || !this.tool.isEmpty() ? null : findTarget(server, owner);
 
         Vec3 goal;
         double maxSpeed;
@@ -339,6 +370,7 @@ public class CompanionAllayEntity extends Allay {
         steerTo(goal, maxSpeed, smooth);
         faceCamera(owner, tasking ? Vec3.atCenterOf(this.taskPos == null ? this.blockPosition() : this.taskPos) : target);
         if (hidden) clearLight(); else updateLight(server);   // dono invisivel: o pet nao ilumina
+        useTool(server, owner, carrying);
 
         // A cada 1 segundo: guarda o nome dado com a etiqueta (ignora o nome padrão traduzido)
         if (this.tickCount % 20 == 0 && this.hasCustomName()
@@ -512,20 +544,61 @@ public class CompanionAllayEntity extends Allay {
         } else if (this.hidden) {
             this.removeEffect(MobEffects.INVISIBILITY);
         }
-        if (hide != this.hidden) this.setSilent(hide);
         this.hidden = hide;
+    }
+
+    // ---------- Item entregue pelo dono ----------
+    // Tocha/lanterna (o bloco) = ilumina forte em volta. Lanterna de mao (a do mod) = aponta o feixe para onde o dono
+    // esta olhando. Com item equipado o pet nao busca drops. O item fica guardado nos dados do jogador
+    // (CompanionAllayManager), porque o pet e' recriado ao entrar no jogo.
+    private ItemStack tool = ItemStack.EMPTY;
+
+    public ItemStack getTool() { return tool; }
+
+    public void setTool(ItemStack t) {
+        this.tool = t.copy();
+        if (this.carriedStacks.isEmpty()) this.setItemInHand(InteractionHand.MAIN_HAND, this.tool.copy());
+    }
+
+    // o que da para entregar
+    public static boolean usable(ItemStack s) {
+        return s.is(Items.TORCH) || s.is(Items.SOUL_TORCH) || s.is(Items.LANTERN) || s.is(Items.SOUL_LANTERN)
+                || s.getItem() instanceof com.bino.binosvanillaplus.item.custom.FlashlightItem;
+    }
+
+    private int toolLight() {
+        if (tool.is(Items.TORCH) || tool.is(Items.LANTERN)) return 14;
+        if (tool.is(Items.SOUL_TORCH) || tool.is(Items.SOUL_LANTERN)) return 10;
+        return LIGHT_LEVEL;
+    }
+
+    private boolean holdsFlashlight() { return tool.getItem() instanceof com.bino.binosvanillaplus.item.custom.FlashlightItem; }
+
+    private void useTool(ServerLevel server, Player owner, boolean carrying) {
+        if (!tool.isEmpty() && !carrying && !ItemStack.matches(getMainHandItem(), tool)) setItemInHand(InteractionHand.MAIN_HAND, tool.copy());
+        if (!holdsFlashlight() || hidden) { com.bino.binosvanillaplus.gear.FlashlightManager.stop(getUUID()); return; }
+        if (this.tickCount % 3 != 0) return;
+        // aponta para onde o dono esta olhando (o ponto que o olhar do dono acerta, ate 30 blocos)
+        Vec3 eye = owner.getEyePosition(), end = eye.add(owner.getLookAngle().scale(30));
+        var hit = server.clip(new net.minecraft.world.level.ClipContext(eye, end, net.minecraft.world.level.ClipContext.Block.VISUAL,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, owner));
+        Vec3 from = this.position().add(0, 0.35, 0);
+        Vec3 dir = hit.getLocation().subtract(from);
+        if (dir.lengthSqr() < 1.0e-3) return;
+        com.bino.binosvanillaplus.gear.FlashlightManager.beam(getUUID(), server, this, from, dir.normalize());
     }
 
     // ---------- Luz (bloco invisível que acompanha o pet) ----------
 
     private void updateLight(ServerLevel server) {
         BlockPos pos = this.blockPosition();
-        if (pos.equals(this.lightPos)) return;
+        if (pos.equals(this.lightPos) && this.lightLevel == toolLight()) return;
         clearLight();
         if (server.getBlockState(pos).isAir()) {
             // UPDATE_CLIENTS = não dispara atualização de vizinhos (não ativa observadores)
+            this.lightLevel = toolLight();
             server.setBlock(pos, Blocks.LIGHT.defaultBlockState()
-                    .setValue(BlockStateProperties.LEVEL, LIGHT_LEVEL), Block.UPDATE_CLIENTS);
+                    .setValue(BlockStateProperties.LEVEL, this.lightLevel), Block.UPDATE_CLIENTS);
             this.lightPos = pos;
         }
     }
@@ -533,7 +606,7 @@ public class CompanionAllayEntity extends Allay {
     private void clearLight() {
         if (this.lightPos != null) {
             BlockState state = this.level().getBlockState(this.lightPos);
-            if (state.is(Blocks.LIGHT) && state.getValue(BlockStateProperties.LEVEL) == LIGHT_LEVEL) {
+            if (state.is(Blocks.LIGHT) && state.getValue(BlockStateProperties.LEVEL) == this.lightLevel) {
                 this.level().setBlock(this.lightPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
             }
             this.lightPos = null;
@@ -551,6 +624,7 @@ public class CompanionAllayEntity extends Allay {
             this.carriedStacks.clear();
             this.carriedXp = 0;
             clearLight();
+            com.bino.binosvanillaplus.gear.FlashlightManager.stop(getUUID());
         }
         super.remove(reason);
     }

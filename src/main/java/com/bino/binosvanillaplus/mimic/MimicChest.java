@@ -133,7 +133,8 @@ public final class MimicChest {
     // ---------------------------------------------------------------- pista: respiracao
     @SubscribeEvent
     public static void onTick(LevelTickEvent.Post e) {
-        if (!(e.getLevel() instanceof ServerLevel sl) || sl.getGameTime() % 20 != 0) return;
+        if (!(e.getLevel() instanceof ServerLevel sl) || sl.getGameTime() % 5 != 0) return;
+        boolean breathTick = sl.getGameTime() % 20 == 0;
         for (ServerPlayer p : sl.players()) {
             if (p.isSpectator()) continue;
             int cx = p.getBlockX() >> 4, cz = p.getBlockZ() >> 4;
@@ -142,11 +143,26 @@ public final class MimicChest {
                     if (!sl.hasChunk(cx + dx, cz + dz)) continue;
                     LevelChunk ch = sl.getChunk(cx + dx, cz + dz);
                     for (BlockEntity be : ch.getBlockEntities().values()) {
-                        if (!isMimic(be) || be.getBlockPos().distToCenterSqr(p.position()) > 36) continue;
+                        if (!isMimic(be)) continue;
+                        double dsq = be.getBlockPos().distToCenterSqr(p.position());
+                        // debaixo d'agua: solta bolhas pela fresta da tampa (mesmo disfarcado de bau)
+                        if (dsq < 24 * 24 && underwater(sl, be.getBlockPos()) && sl.random.nextFloat() < 0.6f) {
+                            BlockPos bp = be.getBlockPos();
+                            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.BUBBLE, bp.getX() + 0.5, bp.getY() + 0.8, bp.getZ() + 0.5,
+                                    1 + sl.random.nextInt(3), 0.25, 0.05, 0.25, 0.02);
+                        }
+                        if (!breathTick || dsq > 36) continue;
                         if (sl.random.nextFloat() < BREATH_CHANCE) sl.blockEvent(be.getBlockPos(), be.getBlockState().getBlock(), EVENT_BREATH, 0);
                     }
                 }
         }
+    }
+
+    private static boolean underwater(ServerLevel sl, BlockPos p) {
+        BlockState st = sl.getBlockState(p);
+        boolean logged = st.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.WATERLOGGED)
+                && st.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.WATERLOGGED);
+        return logged || sl.getFluidState(p.above()).is(net.minecraft.tags.FluidTags.WATER);
     }
 
     // cliente: quando cada bau comecou a respirar (ms); o renderizador do bau usa

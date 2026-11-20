@@ -352,5 +352,6 @@
   "bench.binosvanillaplus.anvil.no": "Não dá (níveis de experiência?)",
   "bench.binosvanillaplus.leave": "Clique fora ou Esc: sair  ·  Clique num item do tampo: devolver  ·  Abra agachado para a janela clássica",
   "gui.binosvanillaplus.inv.unequip": "Desequipar",
-  "gui.binosvanillaplus.inv.unequip_tip": "O item volta para o inventário"
+  "gui.binosvanillaplus.inv.unequip_tip": "O item volta para o inventário",
+  "tooltip.binosvanillaplus.flashlight.use_pet": "Botão direito: liga/desliga. Entregue ao pet (botão direito nele): ele aponta a luz para onde você olha."
 }
