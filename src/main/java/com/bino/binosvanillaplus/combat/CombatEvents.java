@@ -93,12 +93,15 @@ public final class CombatEvents {
         send(victim, e.getNewDamage(), crit ? KIND_CRIT : kind(src, victim));
     }
 
-    // dificuldade: monstros batem mais forte nos jogadores (o nivel do mob multiplica por cima, em MobLevels)
+    // dificuldade: monstros batem mais forte nos jogadores CORPO A CORPO (o nivel do mob multiplica por cima, em MobLevels).
+    // Flechas, bolas de fogo e outros projeteis ficam com o dano normal.
     public static final float MOB_DAMAGE_MULT = 1.5f;
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onMobHit(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent e) {
-        if (e.getEntity() instanceof net.minecraft.world.entity.player.Player && e.getSource().getEntity() instanceof net.minecraft.world.entity.monster.Enemy)
+        var src = e.getSource();
+        if (src.getDirectEntity() instanceof net.minecraft.world.entity.projectile.Projectile || src.is(net.minecraft.tags.DamageTypeTags.IS_PROJECTILE)) return;
+        if (e.getEntity() instanceof net.minecraft.world.entity.player.Player && src.getEntity() instanceof net.minecraft.world.entity.monster.Enemy)
             e.setAmount(e.getAmount() * MOB_DAMAGE_MULT);
     }
 

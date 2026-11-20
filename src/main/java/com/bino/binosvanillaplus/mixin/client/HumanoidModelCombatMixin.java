@@ -20,6 +20,8 @@ public abstract class HumanoidModelCombatMixin<T extends LivingEntity> {
             com.bino.binosvanillaplus.client.anim.PlayerLife.pose((HumanoidModel<?>) (Object) this, p, limbSwing, limbSwingAmount, ageInTicks);   // andar, correr, parado, no ar
             CombatMoves.posePlayer((HumanoidModel<?>) (Object) this, p);
             com.bino.binosvanillaplus.client.combat.DodgeRoll.posePlayer((HumanoidModel<?>) (Object) this, p);   // rolamento por cima
+            HumanoidModel<?> m = (HumanoidModel<?>) (Object) this;
+            m.hat.copyFrom(m.head);   // a camada do cabelo/chapeu segue a cabeca (o jogo copia antes deste ponto)
         }
     }
 }

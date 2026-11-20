@@ -36,6 +36,9 @@ public final class PlayerLife {
     }
 
     public static void pose(HumanoidModel<?> m, Player p, float limbSwing, float amount, float age) {
+        // o jogo NUNCA zera a inclinacao lateral do tronco (body.zRot): antes a respiracao somava nela a cada quadro
+        // e o tronco ia girando sozinho, separado das pernas. Agora zera aqui e so define (nao soma).
+        m.body.zRot = 0f;
         if (skip(p) || m.crouching) return;
         float amt = Math.min(1f, amount);
         float phase = limbSwing * 0.6662f;
@@ -61,7 +64,7 @@ public final class PlayerLife {
             }
             if (amt < 0.15f) {   // parado: respiracao
                 float b = Mth.sin(age * 0.045f);
-                m.body.zRot += b * 0.018f;
+                m.body.zRot = b * 0.018f;
             }
         } else if (!p.isInWater()) {   // no ar
             float vy = (float) p.getDeltaMovement().y;
@@ -95,6 +98,10 @@ public final class PlayerLife {
             back.zRot = Mth.lerp(k, back.zRot, 0.07f * side);
             m.body.yRot = Mth.lerp(k, m.body.yRot, 0.12f * side);
         }
+        // ombros acompanham a torcao do tronco (como o jogo faz no golpe), senao os bracos descolam do corpo
+        float by = m.body.yRot;
+        m.rightArm.z = Mth.sin(by) * 5f; m.rightArm.x = -Mth.cos(by) * 5f;
+        m.leftArm.z = -Mth.sin(by) * 5f; m.leftArm.x = Mth.cos(by) * 5f;
     }
 
     // corpo sobe e desce com a passada, inclina na corrida, e agacha um pouco na guarda
