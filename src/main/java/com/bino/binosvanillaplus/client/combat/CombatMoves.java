@@ -772,7 +772,7 @@ public final class CombatMoves {
         TrailPt prev = null;
         for (TrailPt pt : TRAIL) {
             if (prev != null && prev.tip().distanceSquared(pt.tip()) > 1e-6) {
-                int a0 = (int) (170 * (1 - (now - prev.t()) / (float) TRAIL_MS)), a1 = (int) (170 * (1 - (now - pt.t()) / (float) TRAIL_MS));
+                int a0 = (int) (120 * (1 - (now - prev.t()) / (float) TRAIL_MS)), a1 = (int) (120 * (1 - (now - pt.t()) / (float) TRAIL_MS));
                 quad(vc, prev.base(), prev.tip(), pt.tip(), pt.base(), a0, a1, r, g, b);
             }
             prev = pt;
@@ -784,7 +784,7 @@ public final class CombatMoves {
     }
 
     private static void quadM(VertexConsumer vc, Matrix4f m, Vector3f b0, Vector3f t0, Vector3f t1, Vector3f b1, int a0, int a1, int r, int g, int b) {
-        if (t0.distanceSquared(t1) > 0.8f || b0.distanceSquared(b1) > 0.8f) return;   // salto grande: nao estica uma placa
+        if (t0.distanceSquared(t1) > 0.3f || b0.distanceSquared(b1) > 0.3f) return;   // salto grande (FPS baixo/shaders): nao estica uma placa
         vtx(vc, m, b0, r, g, b, 0, 0, 1); vtx(vc, m, t0, r, g, b, a0, 0, 0); vtx(vc, m, t1, r, g, b, a1, 1, 0); vtx(vc, m, b1, r, g, b, 0, 1, 1);
         vtx(vc, m, b1, r, g, b, 0, 1, 1); vtx(vc, m, t1, r, g, b, a1, 1, 0); vtx(vc, m, t0, r, g, b, a0, 0, 0); vtx(vc, m, b0, r, g, b, 0, 0, 1);
     }

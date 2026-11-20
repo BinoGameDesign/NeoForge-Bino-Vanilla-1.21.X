@@ -131,10 +131,14 @@ public final class DamageNumbers {
         MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
         long now = Util.getMillis();
         Vec3 right = new Vec3(cam.getLeftVector()).scale(-1);
+        Entity camEnt = mc.getCameraEntity();
+        boolean fp = mc.options.getCameraType().isFirstPerson();
         for (Iterator<Num> it = NUMS.iterator(); it.hasNext(); ) {
             Num n = it.next();
             double u = (now - n.born) / (double) LIFE_MS;
             if (u >= 1) { it.remove(); continue; }
+            // o dano que VOCE leva, em primeira pessoa, nascia colado na camera (numero gigante na tela): nao desenha
+            if (fp && camEnt != null && n.entityId == camEnt.getId()) continue;
             // arco: sobe e cai um pouco, indo para o lado
             double t = u * 1.6;
             Vec3 p = n.origin.add(right.scale(n.side * 0.6 * u)).add(0, n.up * t - 0.55 * t * t, 0);
@@ -143,6 +147,9 @@ public final class DamageNumbers {
             float alpha = u < 0.6 ? 1f : (float) (1 - (u - 0.6) / 0.4);
             int a = Mth.clamp((int) (alpha * 255), 8, 255);
             float s = scale(n) * popK;
+            double dist = Math.sqrt(p.distanceToSqr(cp));
+            if (dist < 1.2) continue;                                   // colado na camera: some
+            if (dist < 2.5) { a = (int) (a * (dist - 1.2) / 1.3); if (a < 8) continue; }   // perto: vai sumindo
 
             ps.pushPose();
             ps.translate(p.x - cp.x, p.y - cp.y, p.z - cp.z);

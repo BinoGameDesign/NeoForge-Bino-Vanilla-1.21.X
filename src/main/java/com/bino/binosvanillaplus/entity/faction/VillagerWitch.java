@@ -70,6 +70,9 @@ public class VillagerWitch extends Witch implements FactionMob {
 
     @Override
     public boolean removeWhenFarAway(double distance) { return false; }
+    // nunca some, entao nao conta no limite de monstros do jogo (senao lota o limite e zumbis/esqueletos param de nascer)
+    @Override
+    public boolean requiresCustomPersistence() { return true; }
 
     // de vez em quando joga cura num aliado ferido por perto
     private class HealAllies extends Goal {

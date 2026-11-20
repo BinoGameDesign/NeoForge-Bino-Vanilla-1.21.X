@@ -359,8 +359,9 @@ public final class CombatFx {
                 float knees = smooth((t - 0.38f) / 0.1f);
                 ps.translate(d.dx() * -0.1f * lurch, 0.06f * lurch - h * 0.12f * knees * (1 - smooth(d.ang / 60f)), d.dz() * -0.1f * lurch);
                 rot(ps, Mth.sin(tm * 2.8f) * 4f * shake, sx, sz);
-                // tomba para a frente (para quem matou), em volta da borda da frente
-                fallAbout(ps, 14f * lurch - 10f * pull + 20f * knees * (1 - smooth(d.ang / 40f)) + d.ang, -d.dx(), -d.dz(), half);
+                // curva um pouco para quem matou e TOMBA DE LADO (caindo para a frente o corpo entrava na camera de quem estava colado)
+                fallAbout(ps, 14f * lurch - 10f * pull + 20f * knees * (1 - smooth(d.ang / 40f)), -d.dx(), -d.dz(), half);
+                fallAbout(ps, d.ang, sx, sz, half);
             }
             case 2 -> {   // queimado
                 float writhe = t < 0.5f ? 1f - t / 0.5f : 0f;

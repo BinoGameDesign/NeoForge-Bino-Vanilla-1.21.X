@@ -11,7 +11,8 @@ import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
 public class CompanionModEvents {
 
-    // o guarda villager nasce no Posto Villager (como os pillagers no posto deles), em qualquer luz
+    // o guarda villager nasce no Posto Villager (como os pillagers no posto deles), em qualquer luz.
+    // Eles nunca somem: no maximo 4 guardas por posto (e 1 bruxa por cabana), senao enchiam o mundo sem parar.
     @SubscribeEvent
     public static void spawnPlacements(net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent event) {
         // Rato: cavernas (abaixo de Y 0), sem ceu, sem luz de bloco
@@ -36,12 +37,16 @@ public class CompanionModEvents {
                 net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
         event.register(ModEntities.VILLAGER_GUARD.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
                 net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                net.minecraft.world.entity.monster.Monster::checkAnyLightMonsterSpawnRules,
+                (type, level, reason, pos, random) -> net.minecraft.world.entity.monster.Monster.checkAnyLightMonsterSpawnRules(type, level, reason, pos, random)
+                        && (reason != net.minecraft.world.entity.MobSpawnType.NATURAL || level.getEntitiesOfClass(
+                            com.bino.binosvanillaplus.entity.faction.VillagerGuard.class, new net.minecraft.world.phys.AABB(pos).inflate(32)).size() < 4),
                 net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
         // a Bruxa Villager nasce na Cabana da Bruxa Villager (igual a bruxa na cabana do pantano)
         event.register(ModEntities.VILLAGER_WITCH.get(), net.minecraft.world.entity.SpawnPlacementTypes.ON_GROUND,
                 net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                net.minecraft.world.entity.monster.Monster::checkMonsterSpawnRules,
+                (type, level, reason, pos, random) -> net.minecraft.world.entity.monster.Monster.checkMonsterSpawnRules(type, level, reason, pos, random)
+                        && (reason != net.minecraft.world.entity.MobSpawnType.NATURAL || level.getEntitiesOfClass(
+                            com.bino.binosvanillaplus.entity.faction.VillagerWitch.class, new net.minecraft.world.phys.AABB(pos).inflate(24)).isEmpty()),
                 net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.REPLACE);
     }
 
