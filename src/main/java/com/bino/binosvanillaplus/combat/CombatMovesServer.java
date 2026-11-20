@@ -45,6 +45,16 @@ public final class CombatMovesServer {
     static boolean ownHit;   // golpe feito aqui (pesado, Issen, critico...): sem o bonus do leve por cima
     private static CombatMove hitting;   // golpe do servidor que esta batendo agora (para a postura)
     static final Map<UUID, Long> STAB = new HashMap<>();   // mob -> tick em que levou uma estocada (morte "com stab")
+    private static final Map<UUID, Long> JUGGLE = new HashMap<>();   // mob no malabarismo: sem empurrao do golpe
+
+    @SubscribeEvent
+    public static void onKnockback(net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent e) {
+        Long until = JUGGLE.get(e.getEntity().getUUID());
+        if (until == null) return;
+        if (e.getEntity().level().getGameTime() <= until) e.setCanceled(true);
+        else JUGGLE.remove(e.getEntity().getUUID());
+        if (JUGGLE.size() > 256) JUGGLE.clear();
+    }
 
     static boolean stabMove(CombatMove m, boolean axe) {
         return switch (m) {
@@ -118,10 +128,14 @@ public final class CombatMovesServer {
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         CombatMove cur = hitting != null ? hitting : RECENT.containsKey(p.getUUID()) ? RECENT.get(p.getUUID()).move() : null;
         if (cur != null && stabMove(cur, axe) && (hitting != null || recentLight(p) != null)) STAB.put(v.getUUID(), v.level().getGameTime());
-        // combo aereo: o mob atingido no ar fica parado no ar um instante (malabarismo, estilo Kingdom Hearts)
-        Recent r = RECENT.get(p.getUUID());
-        if (!p.onGround() && r != null && (r.move().aerial() || r.move() == CombatMove.LAUNCHER)
-                && p.level().getGameTime() - r.tick() < 40) Posture.freeze(v, 7);
+        // malabarismo (estilo Kingdom Hearts): mob atingido NO AR fica parado no ar um instante, sem ser empurrado,
+        // para o combo continuar pegando
+        if (!v.onGround() && !v.isInWater() && !v.onClimbable() && !(v instanceof net.minecraft.world.entity.FlyingMob)) {
+            v.setDeltaMovement(v.getDeltaMovement().x * 0.2, 0.06, v.getDeltaMovement().z * 0.2);
+            v.hurtMarked = true;
+            Posture.freeze(v, 9);
+            JUGGLE.put(v.getUUID(), v.level().getGameTime() + 2);
+        }
     }
 
     // morte de mob por jogador: avisa o cliente qual animacao de morte tocar (normal ou "com stab") e de que lado veio
@@ -130,11 +144,22 @@ public final class CombatMovesServer {
         LivingEntity v = e.getEntity();
         Long st = STAB.remove(v.getUUID());
         if (STAB.size() > 256) STAB.clear();
-        if (v instanceof Player || !(e.getSource().getEntity() instanceof Player killer) || v.level().isClientSide) return;
-        boolean stab = st != null && v.level().getGameTime() - st <= 3;
-        Vec3 d = v.position().subtract(killer.position());
+        if (v instanceof Player || v.level().isClientSide) return;
+        var src = e.getSource();
+        // tipo de morte: 0 normal (cai para tras do golpe), 1 com stab, 2 queimado, 3 explosao, 4 afogado/sufocado, 5 outras
+        int kind;
+        if (src.getEntity() instanceof Player) kind = st != null && v.level().getGameTime() - st <= 3 ? 1 : 0;
+        else if (src.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION)) kind = 3;
+        else if (src.is(net.minecraft.tags.DamageTypeTags.IS_FIRE) || src.is(net.minecraft.tags.DamageTypeTags.IS_LIGHTNING)) kind = 2;
+        else if (src.is(net.minecraft.tags.DamageTypeTags.IS_DROWNING) || src.is(net.minecraft.world.damagesource.DamageTypes.IN_WALL)) kind = 4;
+        else if (src.getEntity() != null || src.is(net.minecraft.tags.DamageTypeTags.IS_PROJECTILE)) kind = 0;
+        else kind = 5;
+        // de que lado veio: quem bateu, ou o ponto da explosao/flecha; sem nada, cai para tras do proprio olhar
+        Vec3 from = src.getSourcePosition() != null ? src.getSourcePosition() : src.getEntity() != null ? src.getEntity().position() : null;
+        Vec3 d = from != null ? v.position().subtract(from) : v.getLookAngle().reverse();
+        if (d.horizontalDistanceSqr() < 1e-4) d = v.getLookAngle().reverse();
         float yaw = (float) Math.toDegrees(Math.atan2(d.z, d.x));
-        PacketDistributor.sendToPlayersTrackingEntity(v, new CombatFxPayload(CombatFxPayload.DEATH, v.getId(), stab ? 1 : 0, yaw));
+        PacketDistributor.sendToPlayersTrackingEntity(v, new CombatFxPayload(CombatFxPayload.DEATH, v.getId(), kind, yaw));
     }
 
     // golpe do servidor: na hora do impacto, acerta quem estiver no arco a frente (ou em volta, nas pancadas no chao)

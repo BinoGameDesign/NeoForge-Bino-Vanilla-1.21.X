@@ -93,11 +93,18 @@ public final class CombatEvents {
         send(victim, e.getNewDamage(), crit ? KIND_CRIT : kind(src, victim));
     }
 
-    // mob morrendo: "puf" de fumaca roxa (estilo Zelda)
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent e) {
-        LivingEntity v = e.getEntity();
-        if (e.isCanceled() || v instanceof net.minecraft.world.entity.player.Player || !(v.level() instanceof ServerLevel level)) return;
+    // dificuldade: monstros batem mais forte nos jogadores (o nivel do mob multiplica por cima, em MobLevels)
+    public static final float MOB_DAMAGE_MULT = 1.5f;
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onMobHit(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent e) {
+        if (e.getEntity() instanceof net.minecraft.world.entity.player.Player && e.getSource().getEntity() instanceof net.minecraft.world.entity.monster.Enemy)
+            e.setAmount(e.getAmount() * MOB_DAMAGE_MULT);
+    }
+
+    // mob terminando de morrer: "puf" de fumaca roxa (estilo Zelda), na hora em que ele some (LivingEntityDeathMixin)
+    public static void deathPuff(LivingEntity v) {
+        if (v instanceof net.minecraft.world.entity.player.Player || !(v.level() instanceof ServerLevel level)) return;
         Vec3 c = v.getBoundingBox().getCenter();
         float w = v.getBbWidth(), h = v.getBbHeight();
         level.sendParticles(ModParticles.DEATH_PUFF.get(), c.x, c.y, c.z, (int) Math.min(30, 8 + w * h * 6), w * 0.35, h * 0.3, w * 0.35, 0.02);

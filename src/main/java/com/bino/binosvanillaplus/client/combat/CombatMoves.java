@@ -99,9 +99,23 @@ public final class CombatMoves {
     }
 
     // novo golpe: sai da pose em que o anterior estava (sem voltar ao descanso no meio do combo)
+    private static final Map<Integer, Long> LAST_MOVE = new HashMap<>();
+
+    // postura de combate (PlayerLife): voce em combate; os outros jogadores, se golpearam nos ultimos 6 s
+    public static boolean stance(Player p) {
+        if (CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return false;
+        if (p instanceof LocalPlayer lp && lp == Minecraft.getInstance().player) return inCombat(lp, now());
+        Long t = LAST_MOVE.get(p.getId());
+        return t != null && now() - t < COMBAT_MS;
+    }
+
+    public static boolean moving(Player p) { return activeFor(p) != null; }
+
     private static void put(int id, Active a) {
         Active prev = ACTIVE.get(id);
         long now = now();
+        LAST_MOVE.put(id, now);
+        if (LAST_MOVE.size() > 64) LAST_MOVE.clear();
         if (prev != null && !prev.done(now)) a.from = pose(prev, now);
         ACTIVE.put(id, a);
     }
@@ -154,7 +168,8 @@ public final class CombatMoves {
         long now = now();
         Active cur = ACTIVE.get(p.getId());
         boolean busy = cur != null && !cur.done(now);
-        boolean onBlock = mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK;
+        // grama, flores, folhas etc. nao seguram o golpe em combate (a lamina passa por elas)
+        boolean onBlock = mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK && !(soft(mc) && inCombat(p, now));
         if (e.isAttack()) {
             if (onBlock && !busy && CombatFx.issenTarget(now) == -1 && CombatFx.rushTarget(now) == -1) return;   // minerando
             e.setCanceled(true);
@@ -382,13 +397,30 @@ public final class CombatMoves {
             return;
         }
         if (a.move.closesCombo()) { punchAt = now(); punchPower = 0.6f; }
-        Entity target = mc.hitResult instanceof EntityHitResult eh ? eh.getEntity() : assist(p);
+        Entity target = mc.hitResult instanceof EntityHitResult eh ? eh.getEntity() : soft(mc) ? pickThrough(p) : null;
+        if (target == null) target = assist(p);
         if (target != null && mc.gameMode != null) {
             lastCombat = now();
             mc.gameMode.attack(p, target);   // o ataque normal do jogo (dano, critico, varrida, encantamentos)
             a.pause(now(), a.move.closesCombo() ? 90 : 55);   // a pose segura um instante no impacto (peso)
             lastMoveEnd += a.move.closesCombo() ? 90 : 55;
         } else HitFx.swingAir(p);
+    }
+
+    // bloco "mole" na mira: plantas, grama, flores, folhas (tudo sem colisao, mais as folhas)
+    private static boolean soft(Minecraft mc) {
+        if (!(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult bh) || bh.getType() != HitResult.Type.BLOCK || mc.level == null) return false;
+        var st = mc.level.getBlockState(bh.getBlockPos());
+        return st.is(net.minecraft.tags.BlockTags.LEAVES) || st.getCollisionShape(mc.level, bh.getBlockPos()).isEmpty();
+    }
+
+    // quem esta na mira atras da planta (a mira do jogo para na planta)
+    private static Entity pickThrough(LocalPlayer p) {
+        double reach = p.entityInteractionRange();
+        Vec3 eye = p.getEyePosition(), look = p.getViewVector(1f), end = eye.add(look.scale(reach));
+        EntityHitResult r = net.minecraft.world.entity.projectile.ProjectileUtil.getEntityHitResult(p, eye, end,
+                p.getBoundingBox().expandTowards(look.scale(reach)).inflate(1), en -> !en.isSpectator() && en.isPickable(), reach * reach);
+        return r != null ? r.getEntity() : null;
     }
 
     // ajuda de mira: monstro bem na frente, dentro do alcance
@@ -544,9 +576,9 @@ public final class CombatMoves {
                 .rotateX((float) Math.toRadians(-v[MoveAnims.AP])).rotateY((float) Math.toRadians(v[MoveAnims.ER] * side));
     }
 
-    // Primeira pessoa: parado, o jogo desenha a mao normalmente. Durante um golpe (ou rolando) a arma e' desenhada do
-    // MESMO jeito que o jogo desenha (mesma posicao e o "display" do modelo, 2D ou 3D), so que movida e girada pela
-    // pose do golpe a partir do descanso; por isso nao "pula" ao comecar/terminar e fica do tamanho certo.
+    // Primeira pessoa (espada/machado): o braco da skin segura a arma, e a arma e' desenhada do MESMO jeito que o jogo
+    // desenha (mesma posicao e o "display" do modelo, 2D ou 3D), so que movida e girada pela pose do golpe a partir do
+    // descanso; por isso aponta para o lado certo, nao "pula" ao comecar/terminar e fica do tamanho certo.
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onHand(RenderHandEvent e) {
         if (e.getHand() != InteractionHand.MAIN_HAND) return;
@@ -555,12 +587,24 @@ public final class CombatMoves {
         if (p == null) return;
         ItemStack stack = e.getItemStack();
         long now = now();
-        Active a = CombatEvents.weapon(stack) == CombatEvents.Weapon.NONE ? null : activeFor(p);
-        float dip = CombatEvents.weapon(stack) == CombatEvents.Weapon.NONE ? 0f : DodgeRoll.handDip(p);
-        if (a == null && dip <= 0.001f) { springReset(); return; }   // parado: o jogo desenha
+        if (CombatEvents.weapon(stack) == CombatEvents.Weapon.NONE || p.isUsingItem() && p.getUsedItemHand() == InteractionHand.MAIN_HAND) {
+            springReset();
+            return;   // sem espada/machado: o jogo desenha
+        }
+        Active a = activeFor(p);
+        float dip = DodgeRoll.handDip(p);
         e.setCanceled(true);
 
         float[] v = a != null ? pose(a, now) : MoveAnims.REST.clone();
+        if (a == null) {
+            float sw = e.getSwingProgress();   // minerando
+            if (sw > 0) {
+                float f = Mth.sin(Mth.sqrt(sw) * Mth.PI);
+                v[MoveAnims.AP] += 55 * f; v[MoveAnims.HY] -= 0.08f * f; v[MoveAnims.HZ] -= 0.1f * f; v[MoveAnims.HX] -= 0.08f * f;
+            }
+            v[MoveAnims.HY] -= 0.6f * e.getEquipProgress();   // trocando de item / recarga, como o jogo
+            v[MoveAnims.HY] += Mth.sin(now / 650f) * 0.006f;   // respiracao
+        }
         v[MoveAnims.HY] -= 0.55f * dip; v[MoveAnims.AP] += 35f * dip; v[MoveAnims.HX] += 0.08f * dip;
         spring(v, now);
 
@@ -569,6 +613,10 @@ public final class CombatMoves {
         MultiBufferSource buf = e.getMultiBufferSource();
         int light = e.getPackedLight();
         Quaternionf abs = rot(v, side), rest = rot(MoveAnims.REST, side);
+
+        // braco da skin: do ombro (fora da tela, embaixo) ate o cabo da arma
+        LapidaryHands.arm(ps, buf, Vec3.ZERO, new Vec3(v[MoveAnims.HX] * side, v[MoveAnims.HY] - 0.04, v[MoveAnims.HZ] + 0.06),
+                new Vec3(0.40 * side, -0.98, 0.18), side > 0, light, new Vec3(0, 0, -1), p, 0.62f);
 
         ps.pushPose();
         ps.translate(v[MoveAnims.HX] * side, v[MoveAnims.HY], v[MoveAnims.HZ]);

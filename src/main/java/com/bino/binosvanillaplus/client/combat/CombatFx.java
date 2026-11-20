@@ -54,7 +54,7 @@ public final class CombatFx {
     private static final Map<Integer, Post> POSTURE = new HashMap<>();
     private static final Set<Integer> KNEELING = new HashSet<>();
     private static final Map<Integer, Long> GLINT2 = new HashMap<>();   // segundo brilho, logo antes do golpe
-    record Death(boolean stab, float dx, float dz) {}
+    record Death(int kind, float dx, float dz) {}
     private static final Map<Integer, Death> DEATHS = new HashMap<>();
     private static Window issen, rush;
     private static long flashAt = -100000, dodgeAt = -100000, letterboxAt = -100000, slashAt = -100000, zoomAt = -100000;
@@ -117,7 +117,7 @@ public final class CombatFx {
             case CombatFxPayload.DEATH -> {
                 KNEELING.remove(m.a()); POSTURE.remove(m.a()); INCOMING.remove(m.a());
                 float r = m.f() * Mth.DEG_TO_RAD;
-                DEATHS.put(m.a(), new Death(m.b() == 1, Mth.cos(r), Mth.sin(r)));
+                DEATHS.put(m.a(), new Death(m.b(), Mth.cos(r), Mth.sin(r)));
             }
             case CombatFxPayload.CRITICAL -> {
                 POSTURE.remove(m.b()); KNEELING.remove(m.b());
@@ -233,31 +233,73 @@ public final class CombatFx {
         return 90f - 9f * Mth.sin(Mth.PI * (a - 0.8f) / 0.2f);                 // bate no chao e quica um pouco
     }
 
-    // Morte (mod Combat), duas animacoes do corpo inteiro (o mob some no fim, como sempre):
-    //  - normal: cambaleia para tras, na direcao do golpe, e cai de costas, quicando no chao
-    //  - com stab (morto por estocada): treme espetado, cai de joelhos e tomba para a frente, em cima de quem matou
+    // Morte (mod Combat): o mob fica 2 s (LivingEntityDeathMixin) e some com o "puf". Animacoes do corpo inteiro:
+    //  0 normal (golpe, flecha, mob): cambaleia para tras, na direcao do golpe, e cai de costas quicando
+    //  1 com stab (morto por estocada): treme espetado, cai de joelhos e tomba para a frente, em cima de quem matou
+    //  2 queimado (fogo, lava, raio): se debate, encolhe e desaba no lugar
+    //  3 explosao: e' arremessado girando e cai longe
+    //  4 afogado/sufocado: amolece devagar e deita de lado, afundando um pouco
+    //  5 outras (queda, fome, veneno...): cambaleia de um lado para o outro e cai de lado
     private static boolean deathPose(RenderLivingEvent.Pre<?, ?> e) {
         LivingEntity le = e.getEntity();
         Death d = DEATHS.get(le.getId());
         if (d == null || le.deathTime <= 0) return false;
-        float t = Mth.clamp((le.deathTime - 1 + e.getPartialTick()) / 20f, 0f, 1f);
+        float t = Mth.clamp((le.deathTime - 1 + e.getPartialTick()) / 40f, 0f, 1f);
+        float tm = (le.tickCount + e.getPartialTick());
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
         float h = le.getBbHeight();
-        if (!d.stab()) {
-            float back = smooth(t / 0.3f);
-            ps.translate(d.dx() * 0.35f * back, 0, d.dz() * 0.35f * back);
-            float ang = fall((t - 0.12f) / 0.6f);
-            ps.mulPose(new org.joml.Quaternionf().rotationAxis(ang * Mth.DEG_TO_RAD, d.dz(), 0, -d.dx()));
-        } else {
-            float shake = t < 0.3f ? (1 - t / 0.3f) : 0f;
-            float j = Mth.sin(System.currentTimeMillis() / 22f) * 3f * shake;
-            float knees = smooth((t - 0.25f) / 0.25f);
-            ps.translate(0, 0.06f * shake - h * 0.18f * knees, 0);
-            float ang = -(18f * knees + (fall((t - 0.5f) / 0.45f)) * (1 - 18f / 90f));   // negativo: tomba para quem matou
-            ps.mulPose(new org.joml.Quaternionf().rotationAxis((ang + j) * Mth.DEG_TO_RAD, d.dz(), 0, -d.dx()));
+        float ax = d.dz(), az = -d.dx();          // eixo: cair NA direcao do golpe
+        float sx = -d.dz(), sz = d.dx();          // de lado
+        switch (d.kind()) {
+            case 1 -> {   // stab
+                float shake = t < 0.25f ? (1 - t / 0.25f) : 0f;
+                float j = Mth.sin(tm * 2.6f) * 3f * shake;
+                float knees = smooth((t - 0.2f) / 0.2f);
+                ps.translate(0, 0.06f * shake - h * 0.18f * knees, 0);
+                float ang = -(18f * knees + fall((t - 0.42f) / 0.35f) * 0.8f);
+                rot(ps, ang + j, ax, az);
+            }
+            case 2 -> {   // queimado: se debate, encolhe e desaba
+                float writhe = t < 0.5f ? 1f - t / 0.5f : 0f;
+                rot(ps, Mth.sin(tm * 1.9f) * 14f * writhe, sx, sz);
+                rot(ps, Mth.sin(tm * 1.3f) * 8f * writhe, ax, az);
+                float melt = smooth((t - 0.35f) / 0.5f);
+                ps.scale(1f + 0.15f * melt, 1f - 0.55f * melt, 1f + 0.15f * melt);
+                rot(ps, fall((t - 0.55f) / 0.35f) * 0.9f, sx, sz);
+            }
+            case 3 -> {   // explosao: arremessado girando
+                float fly = smooth(t / 0.45f);
+                float arc = Mth.sin(Mth.PI * Math.min(1f, t / 0.45f));
+                ps.translate(d.dx() * 2.2f * fly, 1.1f * arc, d.dz() * 2.2f * fly);
+                float spin = t < 0.45f ? 540f * smooth(t / 0.45f) : 540f;
+                ps.translate(0, h * 0.5f, 0);
+                rot(ps, spin, ax, az);
+                ps.translate(0, -h * 0.5f, 0);
+                if (t >= 0.45f) rot(ps, 90f - 10f * Mth.sin(Mth.PI * Mth.clamp((t - 0.45f) / 0.15f, 0f, 1f)), ax, az);
+            }
+            case 4 -> {   // afogado: amolece e deita de lado devagar
+                float k = smooth(t / 0.8f);
+                ps.translate(0, -0.25f * k, 0);
+                rot(ps, 90f * k + Mth.sin(tm * 0.5f) * 4f * (1 - k), sx, sz);
+            }
+            case 5 -> {   // outras: cambaleia e cai de lado
+                float wob = t < 0.4f ? Mth.sin(tm * 0.9f) * 12f * (1 - t / 0.4f) : 0f;
+                rot(ps, wob, sx, sz);
+                rot(ps, fall((t - 0.3f) / 0.45f), sx, sz);
+            }
+            default -> {  // normal: cambaleia para tras e cai de costas
+                float back = smooth(t / 0.25f);
+                ps.translate(d.dx() * 0.45f * back, 0, d.dz() * 0.45f * back);
+                rot(ps, Mth.sin(tm * 1.2f) * 5f * (1 - back), sx, sz);
+                rot(ps, fall((t - 0.12f) / 0.4f), ax, az);
+            }
         }
         return true;
+    }
+
+    private static void rot(PoseStack ps, float deg, float ax, float az) {
+        ps.mulPose(new org.joml.Quaternionf().rotationAxis(deg * Mth.DEG_TO_RAD, ax, 0, az));
     }
 
     // quebrado: cai de joelhos (abaixa e inclina para a frente)

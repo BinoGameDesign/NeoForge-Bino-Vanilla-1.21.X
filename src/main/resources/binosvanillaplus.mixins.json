@@ -43,6 +43,7 @@
         "EntityFactionAllyMixin",
         "VillagerBreedMixin",
         "VillagerHostilesSensorMixin",
-        "MeleeAttackGoalTelegraphMixin"
+        "MeleeAttackGoalTelegraphMixin",
+        "LivingEntityDeathMixin"
     ]
 }

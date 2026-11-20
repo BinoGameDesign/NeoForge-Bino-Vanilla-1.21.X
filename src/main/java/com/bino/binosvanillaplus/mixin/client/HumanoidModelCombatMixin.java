@@ -17,6 +17,7 @@ public abstract class HumanoidModelCombatMixin<T extends LivingEntity> {
     private void binosvanillaplus$combatPose(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw,
                                              float headPitch, CallbackInfo ci) {
         if (entity instanceof Player p) {
+            com.bino.binosvanillaplus.client.anim.PlayerLife.pose((HumanoidModel<?>) (Object) this, p, limbSwing, limbSwingAmount, ageInTicks);   // andar, correr, parado, no ar
             CombatMoves.posePlayer((HumanoidModel<?>) (Object) this, p);
             com.bino.binosvanillaplus.client.combat.DodgeRoll.posePlayer((HumanoidModel<?>) (Object) this, p);   // rolamento por cima
         }
