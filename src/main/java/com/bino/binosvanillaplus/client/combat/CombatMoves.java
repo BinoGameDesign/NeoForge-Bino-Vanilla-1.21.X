@@ -136,7 +136,8 @@ public final class CombatMoves {
     private static long cinemaRestore;
     private static net.minecraft.client.CameraType savedCamera;
 
-    // projetil vindo em voce e quase chegando: {id, 1 se perfeito} ou null
+    // projetil vindo em voce e quase chegando: {id, nivel} ou null. Nivel 2 (devolve ao atirador) so mirando
+    // bem em cima do projetil (a mira no projetil); senao 0 (so apara: ele cai)
     private static int[] arrowIncoming(LocalPlayer p) {
         int best = -1; double bestEta = com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS + 1;
         Vec3 c = p.getBoundingBox().getCenter();
@@ -152,7 +153,17 @@ public final class CombatMoves {
             if (eta < bestEta) { bestEta = eta; best = pr.getId(); }
         }
         if (best == -1 || bestEta > com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS) return null;
-        return new int[]{best, com.bino.binosvanillaplus.combat.ParryZones.zone(1f - (float) bestEta / com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS)};
+        return new int[]{best, p.level().getEntity(best) instanceof net.minecraft.world.entity.projectile.Projectile pr && aimedAt(p, pr) ? 2 : 0};
+    }
+
+    // a mira esta em cima do projetil? (distancia do projetil ate a linha da mira: ~0,4 bloco perto, um pouco mais longe)
+    public static boolean aimedAt(Player p, Entity pr) {
+        Vec3 eye = p.getEyePosition(), look = p.getLookAngle();
+        Vec3 to = pr.getBoundingBox().getCenter().subtract(eye);
+        double along = to.dot(look);
+        if (along <= 0.2) return false;
+        double off = to.subtract(look.scale(along)).length();
+        return off < 0.32 + 0.035 * along;
     }
 
     // camera de cinema da facada pelas costas: de lado, mostrando voce e o mob, girando devagar

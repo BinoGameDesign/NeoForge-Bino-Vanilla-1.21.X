@@ -55,10 +55,29 @@ public final class HitReact {
         float k = HitFx.react(e);
         float dk = CombatFx.deathLimbs(e);
         if (dk > 0.001f) { deathLimbs(model, e, dk); return; }
+        float[] atk = CombatFx.attackPhase(e);
+        if (atk != null) attackLimbs(model, atk[0], atk[1]);
         if (k <= 0.001f) return;
         float side = HitFx.side(e), front = HitFx.front(e);
         if (model instanceof HitReactive hr && hr.hitReact(k, side, front)) return;
 
+        Map<ModelPart, Kind> parts = parts(model);
+
+        float back = front >= 0 ? 1f : -0.6f;   // golpe por tras: a cabeca vai para a frente (menos)
+        for (Map.Entry<ModelPart, Kind> en : parts.entrySet()) {
+            ModelPart p = en.getKey();
+            switch (en.getValue()) {
+                case HEAD -> rot(p, -0.42f * k * back, 0.18f * k * side, 0.22f * k * side);
+                case ARM_L -> rot(p, -0.55f * k, 0, -0.35f * k);
+                case ARM_R -> rot(p, -0.55f * k, 0, 0.35f * k);
+                case TAIL -> rot(p, -0.5f * k, 0.2f * k * side, 0);
+                case EAR -> rot(p, -0.3f * k, 0, 0.25f * k * side);
+                default -> {}
+            }
+        }
+    }
+
+    private static Map<ModelPart, Kind> parts(EntityModel<?> model) {
         Map<ModelPart, Kind> parts = new IdentityHashMap<>();
         if (model instanceof HumanoidModel<?> h) {
             parts.put(h.head, Kind.HEAD);
@@ -71,16 +90,23 @@ public final class HitReact {
             for (ModelPart p : ((AgeableListModelAccessor) am).binosvanillaplus$bodyParts()) collect(p, parts, 1);
         }
         if (model instanceof HeadedModel hd && !parts.containsKey(hd.getHead())) parts.put(hd.getHead(), Kind.HEAD);
+        return parts;
+    }
 
-        float back = front >= 0 ? 1f : -0.6f;   // golpe por tras: a cabeca vai para a frente (menos)
-        for (Map.Entry<ModelPart, Kind> en : parts.entrySet()) {
+    // golpe do MOB (com o aviso do parry): no preparo os bracos sobem por cima da cabeca e a cabeca vai para tras;
+    // no golpe os bracos descem com tudo para a frente e a cabeca acompanha. Mob sem bracos (aranha, lobo...) usa
+    // so a cabeca e o corpo inteiro (CombatFx.onLivingPre).
+    private static void attackLimbs(EntityModel<?> model, float raise, float strike) {
+        float w = Math.max(raise, strike);
+        if (w <= 0.001f) return;
+        float tx = (raise * -2.6f + strike * -0.5f) / (raise + strike);   // braco: alvo entre "la em cima" e "batendo na frente"
+        for (Map.Entry<ModelPart, Kind> en : parts(model).entrySet()) {
             ModelPart p = en.getKey();
             switch (en.getValue()) {
-                case HEAD -> rot(p, -0.42f * k * back, 0.18f * k * side, 0.22f * k * side);
-                case ARM_L -> rot(p, -0.55f * k, 0, -0.35f * k);
-                case ARM_R -> rot(p, -0.55f * k, 0, 0.35f * k);
-                case TAIL -> rot(p, -0.5f * k, 0.2f * k * side, 0);
-                case EAR -> rot(p, -0.3f * k, 0, 0.25f * k * side);
+                case ARM_L -> rot(p, (tx - p.xRot) * w, 0, -0.22f * raise);
+                case ARM_R -> rot(p, (tx - p.xRot) * w, 0, 0.22f * raise);
+                case HEAD -> rot(p, -0.3f * raise + 0.32f * strike, 0, 0);
+                case TAIL -> rot(p, -0.45f * raise + 0.2f * strike, 0, 0);
                 default -> {}
             }
         }

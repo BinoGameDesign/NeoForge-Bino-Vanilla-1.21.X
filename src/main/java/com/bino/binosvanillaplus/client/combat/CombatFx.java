@@ -52,6 +52,10 @@ public final class CombatFx {
     record Post(float frac, boolean broken, long at) {}
 
     private static final Map<Integer, Incoming> INCOMING = new HashMap<>();
+    // animacao de ataque do mob (preparo -> golpe -> volta): {inicio do preparo, hora do golpe} em ms.
+    // Separado do INCOMING porque o parry apaga o aviso mas o mob termina o movimento.
+    private static final Map<Integer, long[]> ATTACKS = new HashMap<>();
+    private static final Set<Integer> PUSHED = new HashSet<>();
     private static final Map<Integer, Post> POSTURE = new HashMap<>();
     private static final Set<Integer> KNEELING = new HashSet<>();
     // estado da morte (fisica simples no cliente: o corpo tomba com o impulso do golpe, quica e escorrega)
@@ -95,8 +99,11 @@ public final class CombatFx {
                 long wind = (long) Math.abs(m.f());
                 INCOMING.put(m.a(), new Incoming(m.b(), now + wind, red, com.bino.binosvanillaplus.combat.ParryZones.window(wind)));
                 Entity mob = mc.level.getEntity(m.a());
+                ATTACKS.put(m.a(), new long[]{now, now + wind});
                 if (mob != null) {
                     Vec3 at = attackPoint(mc, mob);
+                    // anel abrindo na hora que o mob comeca a preparar o golpe (aviso mais visivel)
+                    mc.level.addParticle(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, red ? 1.3 : 1.0, red ? 2 : 0, 0);
                     if (m.b() == me.getId())
                         mc.level.playLocalSound(at.x, at.y, at.z, ModSounds.SWORD_SWING.get(), SoundSource.HOSTILE, red ? 0.6f : 0.35f, red ? 0.7f : 2.0f, false);
                 }
@@ -131,7 +138,7 @@ public final class CombatFx {
                 if (broken) KNEELING.add(m.a()); else KNEELING.remove(m.a());
             }
             case CombatFxPayload.DEATH -> {
-                KNEELING.remove(m.a()); POSTURE.remove(m.a()); INCOMING.remove(m.a());
+                KNEELING.remove(m.a()); POSTURE.remove(m.a()); INCOMING.remove(m.a()); ATTACKS.remove(m.a());
                 float r = m.f() * Mth.DEG_TO_RAD;
                 DEATHS.put(m.a(), new Death(m.b(), Mth.cos(r), Mth.sin(r), RANDOM));
             }
@@ -147,7 +154,7 @@ public final class CombatFx {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) {
-        INCOMING.clear(); POSTURE.clear(); KNEELING.clear(); DEATHS.clear(); issen = null; rush = null;
+        INCOMING.clear(); ATTACKS.clear(); POSTURE.clear(); KNEELING.clear(); DEATHS.clear(); issen = null; rush = null;
     }
 
     // a parte do mob que vai bater: a mao (mobs com bracos, como zumbi e esqueleto) ou a boca/garras (aranha, lobo...)
@@ -170,6 +177,22 @@ public final class CombatFx {
     }
 
     public static int deathKind(LivingEntity e) { Death d = DEATHS.get(e.getId()); return d == null ? -1 : d.kind(); }
+
+    // golpe do mob agora: {preparo 0..1, golpe 0..1} ou null. Preparo cresce ate a hora do golpe; o golpe desce rapido
+    // (0,11 s) e volta devagar (0,3 s).
+    public static float[] attackPhase(LivingEntity e) {
+        long[] a = ATTACKS.get(e.getId());
+        if (a == null || e.deathTime > 0) return null;
+        long now = now();
+        if (now < a[1]) {
+            float u = (now - a[0]) / (float) Math.max(1, a[1] - a[0]);
+            return new float[]{smooth(u), 0f};
+        }
+        float t = now - a[1];
+        if (t < 110) { float k = smooth(t / 110f); return new float[]{1 - k, k}; }
+        if (t < 410) return new float[]{0f, 1 - smooth((t - 110) / 300f)};
+        return null;
+    }
 
     // morte com animacao propria? (LivingEntityRendererDeathMixin tira a queda de lado do jogo)
     public static boolean customDeath(LivingEntity e) { return e.deathTime > 0 && DEATHS.containsKey(e.getId()); }
@@ -239,6 +262,7 @@ public final class CombatFx {
         if (mc.level == null) return;
         long now = now();
         INCOMING.values().removeIf(in -> now - in.hitAt() > 600);
+        ATTACKS.values().removeIf(a -> now - a[1] > 600);
         // brilho do parry: aceso durante a preparacao do golpe, na parte que vai bater, com a cor da janela agora
         for (Map.Entry<Integer, Incoming> en : INCOMING.entrySet()) {
             Incoming in = en.getValue();
@@ -247,7 +271,7 @@ public final class CombatFx {
             if (mob == null) continue;
             Vec3 at = attackPoint(mc, mob);
             int z = zoneOf(in, now);
-            mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, in.red() ? 0.7 : z == -1 ? 0.4 : 0.6, in.red() ? 2 : tint(Math.max(0, z)), 0);
+            mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, in.red() ? 1.25 : z == -1 ? 0.7 : 1.05, in.red() ? 2 : tint(Math.max(0, z)), 0);
         }
         // flechas/projeteis vindo em mim: o brilho vai na ponta, com a cor da janela
         if (mc.player != null) {
@@ -262,8 +286,9 @@ public final class CombatFx {
                 if (d < 1e-3 || v.dot(to) / (sp * d) < 0.85) continue;
                 double eta = d / sp * 50;
                 if (eta > com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS) continue;
-                int z = com.bino.binosvanillaplus.combat.ParryZones.zone(1f - (float) eta / com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS);
-                mc.level.addParticle(ModParticles.IMPACT_STAR.get(), pr.getX(), pr.getY(), pr.getZ(), 0.45, tint(z), 0);
+                // azul = a mira esta em cima dele (aparar agora devolve ao atirador); branco = so apara
+                boolean aimed = CombatMoves.aimedAt(mc.player, pr);
+                mc.level.addParticle(ModParticles.IMPACT_STAR.get(), pr.getX(), pr.getY(), pr.getZ(), aimed ? 0.9 : 0.7, aimed ? 4 : 0, 0);
             }
         }
         DEATHS.keySet().removeIf(id -> mc.level.getEntity(id) == null);
@@ -396,23 +421,33 @@ public final class CombatFx {
         ps.mulPose(new org.joml.Quaternionf().rotationAxis(deg * Mth.DEG_TO_RAD, ax, 0, az));
     }
 
-    // quebrado: cai de joelhos (abaixa e inclina para a frente)
+    // quebrado: cai de joelhos (abaixa e inclina para a frente). Atacando: inclina para tras no preparo e avanca no golpe
     @SubscribeEvent
     public static void onLivingPre(RenderLivingEvent.Pre<?, ?> e) {
-        if (deathPose(e)) return;
-        if (!KNEELING.contains(e.getEntity().getId())) return;
         LivingEntity le = e.getEntity();
+        if (deathPose(e)) { PUSHED.add(le.getId()); return; }
         float yaw = Mth.rotLerp(e.getPartialTick(), le.yBodyRotO, le.yBodyRot) * Mth.DEG_TO_RAD;
         PoseStack ps = e.getPoseStack();
+        if (KNEELING.contains(le.getId())) {
+            ps.pushPose();
+            PUSHED.add(le.getId());
+            ps.translate(0, -le.getBbHeight() * 0.12f, 0);
+            ps.mulPose(new org.joml.Quaternionf().rotationAxis(18f * Mth.DEG_TO_RAD, Mth.cos(yaw), 0, Mth.sin(yaw)));
+            return;
+        }
+        float[] at = attackPhase(le);
+        if (at == null) return;
+        float lean = -11f * at[0] + 15f * at[1];   // graus: negativo = para tras
+        float fx = -Mth.sin(yaw), fz = Mth.cos(yaw);
         ps.pushPose();
-        ps.translate(0, -le.getBbHeight() * 0.12f, 0);
-        ps.mulPose(new org.joml.Quaternionf().rotationAxis(18f * Mth.DEG_TO_RAD, Mth.cos(yaw), 0, Mth.sin(yaw)));
+        PUSHED.add(le.getId());
+        ps.translate(fx * 0.28f * at[1], 0, fz * 0.28f * at[1]);   // o corpo vai para a frente no golpe
+        ps.mulPose(new org.joml.Quaternionf().rotationAxis(lean * Mth.DEG_TO_RAD, Mth.cos(yaw), 0, Mth.sin(yaw)));
     }
 
     @SubscribeEvent
     public static void onLivingPost(RenderLivingEvent.Post<?, ?> e) {
-        LivingEntity le = e.getEntity();
-        if (DEATHS.containsKey(le.getId()) && le.deathTime > 0 || KNEELING.contains(le.getId())) e.getPoseStack().popPose();
+        if (PUSHED.remove(e.getEntity().getId())) e.getPoseStack().popPose();
     }
 
     @SubscribeEvent

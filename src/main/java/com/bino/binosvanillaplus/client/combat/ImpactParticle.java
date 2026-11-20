@@ -47,7 +47,7 @@ public class ImpactParticle extends TextureSheetParticle {
         var cam = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         double d = Math.sqrt(cam.distanceToSqr(x, y, z));
         // (com shaders o brilho espalha: encostado na camera some de vez em vez de virar um bloco branco na tela)
-        return (float) Mth.clamp((d - 0.7) / 2.0, 0.0, 1.0);
+        return (float) Mth.clamp((d - 0.7) / 2.0, 0.15, 1.0);
     }
 
     @Override

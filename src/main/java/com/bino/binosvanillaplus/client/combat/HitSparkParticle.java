@@ -27,7 +27,7 @@ public class HitSparkParticle extends TextureSheetParticle {
         this.gravity = 0.75f;
         this.lifetime = 10 + random.nextInt(10);
         this.size0 = 0.06f + random.nextFloat() * 0.06f;   // maiores (o Bino pediu exagero)
-        this.quadSize = size0 * ImpactParticle.near(x, y, z);
+        this.quadSize = size0;
         this.hasPhysics = true;
         pickSprite(sprites);
         this.gold = gold;
@@ -41,7 +41,7 @@ public class HitSparkParticle extends TextureSheetParticle {
         if (gold) setColor(1f, Mth.lerp(u, 0.88f, 0.6f), Mth.lerp(u, 0.4f, 0.05f));
         else setColor(1f, Mth.lerp(u, 0.95f, 0.55f), Mth.lerp(u, 0.75f, 0.15f));
         this.alpha = 1f - u * u;
-        this.quadSize = size0 * (1f - 0.5f * u) * ImpactParticle.near(x, y, z);   // perto da camera encolhe (nao vira bloco na tela)
+        this.quadSize = size0 * (1f - 0.5f * u);
     }
 
     @Override public int getLightColor(float partialTick) { return 0xF000F0; }
