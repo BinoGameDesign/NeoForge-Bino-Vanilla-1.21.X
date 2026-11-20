@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.world.entity.Mob;
+import org.jetbrains.annotations.Nullable;
 
 // Extende o Allay do jogo (modelo e animação originais), mas com o cérebro dele desligado
 public class CompanionAllayEntity extends Allay {
@@ -227,10 +229,10 @@ public class CompanionAllayEntity extends Allay {
             if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
             if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
             ItemStack old = this.tool;
-            ItemStack give = stack.copyWithCount(1);
+            ItemStack give = isFood(stack) ? stack.copy() : stack.copyWithCount(1);   // comida: a pilha toda
             if (give.getItem() instanceof com.bino.binosvanillaplus.item.custom.FlashlightItem)
                 give.set(com.bino.binosvanillaplus.item.ModDataComponents.FLASHLIGHT_ON.get(), true);   // ja chega ligada
-            if (!player.getAbilities().instabuild) stack.shrink(1);
+            if (!player.getAbilities().instabuild) stack.shrink(give.getCount());
             setTool(give);
             CompanionAllayManager.setTool(player, give);
             if (!old.isEmpty() && !player.getInventory().add(old)) player.drop(old, false);   // troca: devolve o anterior
@@ -305,6 +307,8 @@ public class CompanionAllayEntity extends Allay {
         hideWith(owner);
         updateAnchor(owner);
         Vec3 slot = slot(owner);
+        Vec3 guide = guidePoint(owner);     // com bussola: vai na frente, mostrando o caminho
+        if (guide != null) slot = guide;
 
         boolean carrying = !this.carriedStacks.isEmpty() || this.carriedXp > 0;
         // tarefa pedida pelo dono (aperta botao/alavanca) tem prioridade sobre buscar drops
@@ -371,6 +375,7 @@ public class CompanionAllayEntity extends Allay {
         faceCamera(owner, tasking ? Vec3.atCenterOf(this.taskPos == null ? this.blockPosition() : this.taskPos) : target);
         if (hidden) clearLight(); else updateLight(server);   // dono invisivel: o pet nao ilumina
         useTool(server, owner, carrying);
+        toolEffects(server, owner);
 
         // A cada 1 segundo: guarda o nome dado com a etiqueta (ignora o nome padrão traduzido)
         if (this.tickCount % 20 == 0 && this.hasCustomName()
@@ -563,7 +568,152 @@ public class CompanionAllayEntity extends Allay {
     // o que da para entregar
     public static boolean usable(ItemStack s) {
         return s.is(Items.TORCH) || s.is(Items.SOUL_TORCH) || s.is(Items.LANTERN) || s.is(Items.SOUL_LANTERN)
-                || s.getItem() instanceof com.bino.binosvanillaplus.item.custom.FlashlightItem;
+                || s.getItem() instanceof com.bino.binosvanillaplus.item.custom.FlashlightItem
+                || s.is(Items.TOTEM_OF_UNDYING) || isFood(s) || s.is(Items.WATER_BUCKET)
+                || s.is(com.bino.binosvanillaplus.item.ModItems.CYALUME_STICK.get())
+                || s.is(com.bino.binosvanillaplus.item.ModItems.EXPLORER_WHISTLE.get()) || s.is(Items.BELL)
+                || s.is(Items.COMPASS) || s.is(Items.RECOVERY_COMPASS) || s.is(Items.FEATHER);
+    }
+
+    // comida: o pet recebe a pilha inteira; o resto, um so
+    public static boolean isFood(ItemStack s) { return s.has(net.minecraft.core.component.DataComponents.FOOD); }
+
+    // gasta uma unidade do item equipado (comida) e guarda nos dados do dono
+    private void useUp(Player owner) {
+        ItemStack t = this.tool.copy();
+        t.shrink(1);
+        setTool(t);
+        if (t.isEmpty()) this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        CompanionAllayManager.setTool(owner, t);
+    }
+
+    // ---- usos de cada item (chamado a cada tick, no servidor)
+    private int toolCd;
+    @Nullable private BlockPos mlgWater;
+    private long mlgUntil;
+    private final java.util.Map<UUID, Long> warned = new java.util.HashMap<>();
+
+    private void toolEffects(ServerLevel server, Player owner) {
+        if (toolCd > 0) toolCd--;
+        long now = server.getGameTime();
+        // agua da MLG: some depois de 1,5 s
+        if (mlgWater != null && now > mlgUntil) {
+            if (server.getBlockState(mlgWater).is(Blocks.WATER) && server.getFluidState(mlgWater).isSource())
+                server.setBlock(mlgWater, Blocks.AIR.defaultBlockState(), 3);
+            mlgWater = null;
+        }
+        if (tool.isEmpty()) return;
+        boolean falling = owner.getDeltaMovement().y < -0.5 && !owner.onGround() && !owner.isFallFlying() && !owner.getAbilities().flying;
+
+        if (isFood(tool)) {   // te alimenta quando a fome cai (faltando 3 coxinhas ou mais)
+            if (toolCd == 0 && owner.getFoodData().getFoodLevel() <= 14) {
+                var food = tool.get(net.minecraft.core.component.DataComponents.FOOD);
+                if (food != null) {
+                    owner.getFoodData().eat(food);
+                    for (var pe : food.effects()) if (server.random.nextFloat() < pe.probability()) owner.addEffect(pe.effect());
+                    server.playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.GENERIC_EAT, SoundSource.PLAYERS, 0.8f, 1.2f);
+                    server.sendParticles(new net.minecraft.core.particles.ItemParticleOption(net.minecraft.core.particles.ParticleTypes.ITEM, tool.copyWithCount(1)),
+                            owner.getX(), owner.getEyeY() - 0.2, owner.getZ(), 8, 0.2, 0.1, 0.2, 0.05);
+                    useUp(owner);
+                    toolCd = 60;
+                }
+            }
+        } else if (tool.is(Items.WATER_BUCKET)) {
+            if (owner.isOnFire() && toolCd == 0) {   // apaga o fogo
+                owner.clearFire();
+                server.playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.GENERIC_EXTINGUISH_FIRE, SoundSource.PLAYERS, 0.8f, 1.4f);
+                server.sendParticles(ParticleTypes.SPLASH, owner.getX(), owner.getY() + 1, owner.getZ(), 20, 0.3, 0.5, 0.3, 0.1);
+                toolCd = 40;
+            }
+            // MLG: caindo de alto e o chao chegando, joga agua onde voce vai cair (nao no Nether)
+            if (falling && owner.fallDistance > 6 && mlgWater == null && !server.dimensionType().ultraWarm()) {
+                var hit = server.clip(new net.minecraft.world.level.ClipContext(owner.position(), owner.position().add(0, -4, 0),
+                        net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.ANY, owner));
+                if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                    BlockPos land = hit.getBlockPos().above();
+                    if (server.getBlockState(land).isAir() && server.getFluidState(hit.getBlockPos()).isEmpty()) {
+                        server.setBlock(land, Blocks.WATER.defaultBlockState(), 3);
+                        server.playSound(null, land, SoundEvents.BUCKET_EMPTY, SoundSource.PLAYERS, 1f, 1f);
+                        mlgWater = land;
+                        mlgUntil = now + 30;
+                    }
+                }
+            }
+        } else if (tool.is(Items.FEATHER)) {   // queda alta: segura voce (queda lenta)
+            if (falling && owner.fallDistance > 4 && !owner.hasEffect(MobEffects.SLOW_FALLING)) {
+                owner.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 60, 0, true, false, true));
+                server.playSound(null, getX(), getY(), getZ(), SoundEvents.ALLAY_ITEM_TAKEN, SoundSource.NEUTRAL, 0.8f, 1.5f);
+            }
+        } else if (tool.is(com.bino.binosvanillaplus.item.ModItems.CYALUME_STICK.get())) {   // pulso que revela os mobs por perto
+            if (toolCd == 0 && !hidden) {
+                com.bino.binosvanillaplus.item.custom.CyalumeStickItem.glowBurst(server, getX(), getY() + 0.3, getZ());
+                for (Mob m : server.getEntitiesOfClass(Mob.class, getBoundingBox().inflate(20), m -> m instanceof net.minecraft.world.entity.monster.Enemy))
+                    m.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, false, false));
+                toolCd = 200;
+            }
+        } else if (tool.is(com.bino.binosvanillaplus.item.ModItems.EXPLORER_WHISTLE.get()) || tool.is(Items.BELL)) {   // vigia
+            if (server.getGameTime() % 10 == 0) {
+                for (Mob m : server.getEntitiesOfClass(Mob.class, owner.getBoundingBox().inflate(14),
+                        m -> m instanceof net.minecraft.world.entity.monster.Enemy && m.isAlive() && (m.getTarget() == owner || m.distanceTo(owner) < 9))) {
+                    Long last = warned.get(m.getUUID());
+                    if (last != null && now - last < 600) continue;
+                    warned.put(m.getUUID(), now);
+                    server.playSound(null, owner.getX(), owner.getY(), owner.getZ(), tool.is(Items.BELL) ? SoundEvents.BELL_BLOCK : SoundEvents.NOTE_BLOCK_BELL.value(),
+                            SoundSource.NEUTRAL, 0.9f, 1.6f);
+                    owner.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.binosvanillaplus.pet_warn", m.getDisplayName())
+                            .withStyle(net.minecraft.ChatFormatting.GOLD), true);
+                    this.getLookControl().setLookAt(m);
+                    break;
+                }
+                if (warned.size() > 64) warned.entrySet().removeIf(e -> now - e.getValue() > 600);
+            }
+        } else if ((tool.is(Items.COMPASS) || tool.is(Items.RECOVERY_COMPASS)) && server.getGameTime() % 8 == 0) {
+            Vec3 dest = compassDest(owner);
+            if (dest != null && dest.distanceToSqr(owner.position()) > 64)   // trilha de luzinhas na direcao
+                server.sendParticles(ParticleTypes.END_ROD, getX(), getY() + 0.2, getZ(), 1, 0.05, 0.05, 0.05, 0.0);
+        }
+    }
+
+    // destino da bussola: recuperacao = onde voce morreu por ultimo (o tumulo); bussola com magnetita = a magnetita;
+    // bussola comum = o spawn do mundo. So na mesma dimensao.
+    @Nullable
+    private Vec3 compassDest(Player owner) {
+        if (tool.is(Items.RECOVERY_COMPASS)) {
+            var g = owner.getLastDeathLocation();
+            return g.isPresent() && g.get().dimension() == owner.level().dimension() ? Vec3.atCenterOf(g.get().pos()) : null;
+        }
+        var lode = tool.get(net.minecraft.core.component.DataComponents.LODESTONE_TRACKER);
+        if (lode != null) {
+            if (lode.target().isEmpty()) return null;
+            var g = lode.target().get();
+            return g.dimension() == owner.level().dimension() ? Vec3.atCenterOf(g.pos()) : null;
+        }
+        if (owner.level().dimension() != net.minecraft.world.level.Level.OVERWORLD) return null;
+        return Vec3.atCenterOf(((ServerLevel) owner.level()).getSharedSpawnPos());
+    }
+
+    // com bussola: o pet fica ~3 blocos a frente do dono, na direcao do destino
+    @Nullable
+    private Vec3 guidePoint(Player owner) {
+        if (!(tool.is(Items.COMPASS) || tool.is(Items.RECOVERY_COMPASS)) || hidden) return null;
+        Vec3 dest = compassDest(owner);
+        if (dest == null) return null;
+        Vec3 d = dest.subtract(owner.position()).multiply(1, 0, 1);
+        if (d.lengthSqr() < 64) return null;   // chegou perto: volta para o lado do dono
+        return owner.position().add(d.normalize().scale(3.0)).add(0, 1.6, 0);
+    }
+
+    // totem: chamado quando o dono ia morrer (PetToolEvents); true = salvou
+    public boolean saveOwner(Player owner) {
+        if (!tool.is(Items.TOTEM_OF_UNDYING)) return false;
+        useUp(owner);
+        owner.setHealth(1.0f);
+        owner.removeAllEffects();
+        owner.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 900, 1));
+        owner.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 1));
+        owner.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 800, 0));
+        owner.level().broadcastEntityEvent(owner, (byte) 35);   // animacao e som do totem
+        return true;
     }
 
     private int toolLight() {
