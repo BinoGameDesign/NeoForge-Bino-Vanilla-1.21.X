@@ -52,6 +52,8 @@ public final class HitReact {
     public static void apply(EntityModel<?> model, LivingEntity e) {
         APPLIED.clear();
         float k = HitFx.react(e);
+        float dk = CombatFx.deathLimbs(e);
+        if (dk > 0.001f) { deathLimbs(model, e, dk); return; }
         if (k <= 0.001f) return;
         float side = HitFx.side(e), front = HitFx.front(e);
         if (model instanceof HitReactive hr && hr.hitReact(k, side, front)) return;
@@ -80,6 +82,70 @@ public final class HitReact {
                 case EAR -> rot(p, -0.3f * k, 0, 0.25f * k * side);
                 default -> {}
             }
+        }
+    }
+
+    // morte: normal = bracos para cima e cabeca para tras; stab = bracos agarrando a barriga e cabeca baixa;
+    // queimado = bracos se debatendo; afogado/outras = tudo mole para baixo
+    private static void deathLimbs(EntityModel<?> model, LivingEntity e, float dk) {
+        Map<ModelPart, Kind> parts = new IdentityHashMap<>();
+        ModelPart legL = null, legR = null;
+        if (model instanceof HumanoidModel<?> h) {
+            parts.put(h.head, Kind.HEAD); parts.put(h.leftArm, Kind.ARM_L); parts.put(h.rightArm, Kind.ARM_R);
+            legL = h.leftLeg; legR = h.rightLeg;
+        } else if (model instanceof HierarchicalModel<?> hm) collect(hm.root(), parts, 0);
+        else if (model instanceof AgeableListModel<?> am) {
+            for (ModelPart p : ((AgeableListModelAccessor) am).binosvanillaplus$headParts()) { parts.put(p, Kind.HEAD); break; }
+            for (ModelPart p : ((AgeableListModelAccessor) am).binosvanillaplus$bodyParts()) collect(p, parts, 1);
+        }
+        if (model instanceof HeadedModel hd && !parts.containsKey(hd.getHead())) parts.put(hd.getHead(), Kind.HEAD);
+        int kind = CombatFx.deathKind(e);
+        float tm = e.tickCount * 0.9f;
+        for (Map.Entry<ModelPart, Kind> en : parts.entrySet()) {
+            ModelPart p = en.getKey();
+            switch (kind) {
+                case 1 -> {   // stab
+                    switch (en.getValue()) {
+                        case HEAD -> rot(p, 0.55f * dk, 0, 0);
+                        case ARM_L -> rot(p, -1.05f * dk - p.xRot * dk, 0.35f * dk, 0.25f * dk);
+                        case ARM_R -> rot(p, -1.05f * dk - p.xRot * dk, -0.35f * dk, -0.25f * dk);
+                        case TAIL -> rot(p, 0.4f * dk, 0, 0);
+                        default -> {}
+                    }
+                }
+                case 2 -> {   // queimado: se debatendo
+                    float f = Mth.sin(tm) * dk;
+                    switch (en.getValue()) {
+                        case HEAD -> rot(p, -0.3f * dk, 0.4f * f, 0);
+                        case ARM_L -> rot(p, -1.4f * dk + 0.5f * f, 0, -0.4f * dk);
+                        case ARM_R -> rot(p, -1.4f * dk - 0.5f * f, 0, 0.4f * dk);
+                        case TAIL -> rot(p, 0.6f * f, 0, 0);
+                        default -> {}
+                    }
+                }
+                case 4, 5 -> {   // mole
+                    switch (en.getValue()) {
+                        case HEAD -> rot(p, 0.35f * dk, 0, 0.2f * dk);
+                        case ARM_L, ARM_R -> rot(p, -p.xRot * dk, 0, 0);
+                        default -> {}
+                    }
+                }
+                default -> {   // normal / explosao: jogado para tras
+                    switch (en.getValue()) {
+                        case HEAD -> rot(p, -0.6f * dk, 0.15f * Mth.sin(tm * 0.5f) * dk, 0);
+                        case ARM_L -> rot(p, -1.6f * dk, 0, -0.55f * dk);
+                        case ARM_R -> rot(p, -1.6f * dk, 0, 0.55f * dk);
+                        case TAIL -> rot(p, -0.6f * dk, 0, 0);
+                        case EAR -> rot(p, -0.3f * dk, 0, 0);
+                        default -> {}
+                    }
+                }
+            }
+        }
+        if (legL != null && legR != null) {   // pernas: joelhos cedem (uma a frente, outra atras)
+            float k2 = kind == 1 ? 0.9f * dk : 0.5f * dk;
+            rot(legL, -k2 - legL.xRot * dk, 0, -0.1f * dk);
+            rot(legR, 0.35f * k2 - legR.xRot * dk, 0, 0.1f * dk);
         }
     }
 

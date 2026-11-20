@@ -36,8 +36,16 @@ public class ImpactParticle extends TextureSheetParticle {
     @Override
     public float getQuadSize(float pt) {
         float t = Mth.clamp((age + pt) / lifetime, 0f, 1f);
-        if (ring) return base * (0.25f + 0.95f * (1 - (1 - t) * (1 - t)));
-        return t < 0.2f ? base * 1.25f * (t / 0.2f) : base * (1.25f - 0.75f * (t - 0.2f) / 0.8f);
+        float s = ring ? base * (0.25f + 0.95f * (1 - (1 - t) * (1 - t)))
+                : t < 0.2f ? base * 1.25f * (t / 0.2f) : base * (1.25f - 0.75f * (t - 0.2f) / 0.8f);
+        return s * near(x, y, z);
+    }
+
+    // colado na camera (mob encostado em voce) a forma encolhe, para nao cobrir a tela
+    static float near(double x, double y, double z) {
+        var cam = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        double d = Math.sqrt(cam.distanceToSqr(x, y, z));
+        return (float) Mth.clamp((d - 0.4) / 1.6, 0.15, 1.0);
     }
 
     @Override

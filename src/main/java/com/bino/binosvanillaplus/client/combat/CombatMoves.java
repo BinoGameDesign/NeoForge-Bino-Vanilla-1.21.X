@@ -138,6 +138,14 @@ public final class CombatMoves {
     private static final Map<Integer, Deque<TrailPt>> TP_TRAIL = new HashMap<>();
 
     private record TrailPt(Vector3f base, Vector3f tip, long t) {}
+    // rastro desenhado como "entidade translucida que brilha" (com shaders o tipo de raio do jogo virava placas gigantes)
+    private static final java.util.function.Supplier<RenderType> TRAIL_TYPE = () -> RenderType.entityTranslucentEmissive(
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "textures/particle/hit_spark.png"));
+
+    private static void vtx(VertexConsumer vc, Matrix4f m, Vector3f p, int r, int g, int b, int a, float u, float v) {
+        if (m != null) vc.addVertex(m, p.x, p.y, p.z); else vc.addVertex(p.x, p.y, p.z);
+        vc.setColor(r, g, b, a).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(0, 1, 0);
+    }
     private static final Deque<TrailPt> TRAIL = new ArrayDeque<>();
 
     private static long now() { return System.currentTimeMillis(); }
@@ -606,6 +614,10 @@ public final class CombatMoves {
             v[MoveAnims.HY] += Mth.sin(now / 650f) * 0.006f;   // respiracao
         }
         v[MoveAnims.HY] -= 0.55f * dip; v[MoveAnims.AP] += 35f * dip; v[MoveAnims.HX] += 0.08f * dip;
+        // nunca encosta na camera (senao a arma vira uma placa enorme na tela)
+        v[MoveAnims.HZ] = Math.min(v[MoveAnims.HZ], -0.52f);
+        v[MoveAnims.HY] = Math.min(v[MoveAnims.HY], 0.08f);
+        v[MoveAnims.HX] = Mth.clamp(v[MoveAnims.HX], -0.62f, 0.72f);
         spring(v, now);
 
         float side = p.getMainArm() == HumanoidArm.RIGHT ? 1f : -1f;
@@ -640,7 +652,7 @@ public final class CombatMoves {
     private static void renderTrail(MultiBufferSource buf, long now, boolean heavy, boolean axe) {
         for (Iterator<TrailPt> it = TRAIL.iterator(); it.hasNext(); ) if (now - it.next().t() > TRAIL_MS) it.remove();
         if (TRAIL.size() < 2) return;
-        VertexConsumer vc = buf.getBuffer(RenderType.lightning());
+        VertexConsumer vc = buf.getBuffer(TRAIL_TYPE.get());
         int r = 255, g = heavy ? 225 : axe ? 230 : 240, b = heavy ? 150 : axe ? 200 : 255;
         if (!heavy && !axe) r = 225;
         TrailPt prev = null;
@@ -654,14 +666,13 @@ public final class CombatMoves {
     }
 
     private static void quad(VertexConsumer vc, Vector3f b0, Vector3f t0, Vector3f t1, Vector3f b1, int a0, int a1, int r, int g, int b) {
-        vc.addVertex(b0.x, b0.y, b0.z).setColor(r, g, b, 0);
-        vc.addVertex(t0.x, t0.y, t0.z).setColor(r, g, b, a0);
-        vc.addVertex(t1.x, t1.y, t1.z).setColor(r, g, b, a1);
-        vc.addVertex(b1.x, b1.y, b1.z).setColor(r, g, b, 0);
-        vc.addVertex(b1.x, b1.y, b1.z).setColor(r, g, b, 0);
-        vc.addVertex(t1.x, t1.y, t1.z).setColor(r, g, b, a1);
-        vc.addVertex(t0.x, t0.y, t0.z).setColor(r, g, b, a0);
-        vc.addVertex(b0.x, b0.y, b0.z).setColor(r, g, b, 0);
+        quadM(vc, null, b0, t0, t1, b1, a0, a1, r, g, b);
+    }
+
+    private static void quadM(VertexConsumer vc, Matrix4f m, Vector3f b0, Vector3f t0, Vector3f t1, Vector3f b1, int a0, int a1, int r, int g, int b) {
+        if (t0.distanceSquared(t1) > 0.8f || b0.distanceSquared(b1) > 0.8f) return;   // salto grande: nao estica uma placa
+        vtx(vc, m, b0, r, g, b, 0, 0, 1); vtx(vc, m, t0, r, g, b, a0, 0, 0); vtx(vc, m, t1, r, g, b, a1, 1, 0); vtx(vc, m, b1, r, g, b, 0, 1, 1);
+        vtx(vc, m, b1, r, g, b, 0, 1, 1); vtx(vc, m, t1, r, g, b, a1, 1, 0); vtx(vc, m, t0, r, g, b, a0, 0, 0); vtx(vc, m, b0, r, g, b, 0, 0, 1);
     }
 
     // ------------------------------------------------------------------ rastro da lamina em terceira pessoa
@@ -703,7 +714,7 @@ public final class CombatMoves {
         ps.translate(-cam.x, -cam.y, -cam.z);
         Matrix4f m = ps.last().pose();
         MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buf.getBuffer(RenderType.lightning());
+        VertexConsumer vc = buf.getBuffer(TRAIL_TYPE.get());
         for (Iterator<Map.Entry<Integer, Deque<TrailPt>>> it = TP_TRAIL.entrySet().iterator(); it.hasNext(); ) {
             Deque<TrailPt> d = it.next().getValue();
             d.removeIf(t -> now - t.t() > TRAIL_MS);
@@ -718,18 +729,11 @@ public final class CombatMoves {
             }
         }
         ps.popPose();
-        buf.endBatch(RenderType.lightning());
+        buf.endBatch(TRAIL_TYPE.get());
     }
 
     private static void quadW(VertexConsumer vc, Matrix4f m, Vector3f b0, Vector3f t0, Vector3f t1, Vector3f b1, int a0, int a1) {
-        vc.addVertex(m, b0.x, b0.y, b0.z).setColor(240, 245, 255, 0);
-        vc.addVertex(m, t0.x, t0.y, t0.z).setColor(240, 245, 255, a0);
-        vc.addVertex(m, t1.x, t1.y, t1.z).setColor(240, 245, 255, a1);
-        vc.addVertex(m, b1.x, b1.y, b1.z).setColor(240, 245, 255, 0);
-        vc.addVertex(m, b1.x, b1.y, b1.z).setColor(240, 245, 255, 0);
-        vc.addVertex(m, t1.x, t1.y, t1.z).setColor(240, 245, 255, a1);
-        vc.addVertex(m, t0.x, t0.y, t0.z).setColor(240, 245, 255, a0);
-        vc.addVertex(m, b0.x, b0.y, b0.z).setColor(240, 245, 255, 0);
+        quadM(vc, m, b0, t0, t1, b1, a0, a1, 240, 245, 255);
     }
 
     // camera segue o quadril: torce/tomba (roll), inclina, e acompanha cambalhotas de leve (sem enjoar)

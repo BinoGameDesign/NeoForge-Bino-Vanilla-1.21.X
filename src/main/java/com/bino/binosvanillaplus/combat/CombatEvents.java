@@ -86,9 +86,9 @@ public final class CombatEvents {
             Vec3 eye = a.getEyePosition(), c = victim.getBoundingBox().getCenter();
             Vec3 at = victim.getBoundingBox().inflate(0.1).clip(eye, c).orElse(c);
             Vec3 out = eye.subtract(at);
-            if (out.lengthSqr() > 1e-4) at = at.add(out.normalize().scale(0.25));
-            level.sendParticles(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, 0, crit ? 1.5 : 1.0, 0, 0, 1.0);
-            if (crit) level.sendParticles(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, 0, 1.2, 0, 0, 1.0);
+            if (out.lengthSqr() > 1e-4) at = at.add(out.normalize().scale(0.06));
+            level.sendParticles(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, 0, crit ? 1.0 : 0.7, 0, 0, 1.0);
+            if (crit) level.sendParticles(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, 0, 0.9, 0, 0, 1.0);
         }
         send(victim, e.getNewDamage(), crit ? KIND_CRIT : kind(src, victim));
     }
@@ -107,7 +107,7 @@ public final class CombatEvents {
         if (v instanceof net.minecraft.world.entity.player.Player || !(v.level() instanceof ServerLevel level)) return;
         Vec3 c = v.getBoundingBox().getCenter();
         float w = v.getBbWidth(), h = v.getBbHeight();
-        level.sendParticles(ModParticles.DEATH_PUFF.get(), c.x, c.y, c.z, (int) Math.min(30, 8 + w * h * 6), w * 0.35, h * 0.3, w * 0.35, 0.02);
+        level.sendParticles(ModParticles.DEATH_PUFF.get(), c.x, c.y, c.z, (int) Math.min(18, 6 + w * h * 4), w * 0.35, h * 0.3, w * 0.35, 0.02);
     }
 
     static byte kind(DamageSource src, LivingEntity victim) {

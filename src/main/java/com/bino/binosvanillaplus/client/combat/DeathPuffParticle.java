@@ -22,7 +22,7 @@ public class DeathPuffParticle extends TextureSheetParticle {
         this.gravity = -0.02f;
         this.hasPhysics = false;
         this.lifetime = 14 + random.nextInt(10);
-        this.size0 = 0.18f + random.nextFloat() * 0.14f;
+        this.size0 = 0.10f + random.nextFloat() * 0.08f;
         this.quadSize = size0;
         pickSprite(sprites);
         setColor(0.30f, 0.08f, 0.40f);
@@ -33,7 +33,7 @@ public class DeathPuffParticle extends TextureSheetParticle {
     public void tick() {
         super.tick();
         float t = (float) age / lifetime;
-        this.quadSize = size0 * (1f + 1.2f * t);
+        this.quadSize = size0 * (1f + 0.8f * t) * ImpactParticle.near(x, y, z);
         setColor(Mth.lerp(t, 0.30f, 0.62f), Mth.lerp(t, 0.08f, 0.45f), Mth.lerp(t, 0.40f, 0.75f));
         this.alpha = 0.85f * (1f - t * t);
     }

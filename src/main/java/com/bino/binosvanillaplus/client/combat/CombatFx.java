@@ -145,6 +145,16 @@ public final class CombatFx {
         return mob.getEyePosition().add(fwd.scale(w * 0.5 + 0.12)).add(0, -0.12, 0);
     }
 
+    // bracos e cabeca na morte (HitReact): 0..1 e o tipo; os bracos se debatem no comeco e amolecem no fim
+    public static float deathLimbs(LivingEntity e) {
+        Death d = DEATHS.get(e.getId());
+        if (d == null || e.deathTime <= 0) return 0f;
+        float t = Mth.clamp(e.deathTime / 40f, 0f, 1f);
+        return t < 0.1f ? t / 0.1f : t < 0.55f ? 1f : Math.max(0f, 1f - (t - 0.55f) / 0.3f) * 0.6f + 0.25f;
+    }
+
+    public static int deathKind(LivingEntity e) { Death d = DEATHS.get(e.getId()); return d == null ? -1 : d.kind(); }
+
     // morte com animacao propria? (LivingEntityRendererDeathMixin tira a queda de lado do jogo)
     public static boolean customDeath(LivingEntity e) { return e.deathTime > 0 && DEATHS.containsKey(e.getId()); }
 
@@ -252,13 +262,17 @@ public final class CombatFx {
         float ax = d.dz(), az = -d.dx();          // eixo: cair NA direcao do golpe
         float sx = -d.dz(), sz = d.dx();          // de lado
         switch (d.kind()) {
-            case 1 -> {   // stab
-                float shake = t < 0.25f ? (1 - t / 0.25f) : 0f;
-                float j = Mth.sin(tm * 2.6f) * 3f * shake;
-                float knees = smooth((t - 0.2f) / 0.2f);
-                ps.translate(0, 0.06f * shake - h * 0.18f * knees, 0);
-                float ang = -(18f * knees + fall((t - 0.42f) / 0.35f) * 0.8f);
-                rot(ps, ang + j, ax, az);
+            case 1 -> {   // stab: espetado -> treme -> lamina sai -> joelhos -> tomba para a frente
+                float lurch = smooth(t / 0.08f) * (1 - smooth((t - 0.08f) / 0.2f));          // empurrao da estocada
+                float shake = t > 0.06f && t < 0.38f ? 1f - (t - 0.06f) / 0.32f : 0f;
+                float pull = smooth((t - 0.36f) / 0.06f) * (1 - smooth((t - 0.42f) / 0.1f));   // a lamina sai: tranco para tras
+                float knees = smooth((t - 0.45f) / 0.18f);
+                float j = Mth.sin(tm * 2.8f) * 4f * shake;
+                ps.translate(d.dx() * -0.12f * lurch, 0.08f * lurch - h * 0.2f * knees, d.dz() * -0.12f * lurch);
+                rot(ps, j, sx, sz);
+                float ang = -(14f * lurch + 6f * shake) + 12f * pull - 22f * knees - fall((t - 0.62f) / 0.25f) * 0.75f;
+                rot(ps, ang, ax, az);
+                if (t > 0.9f) ps.translate(0, -0.04f * smooth((t - 0.9f) / 0.1f), 0);
             }
             case 2 -> {   // queimado: se debate, encolhe e desaba
                 float writhe = t < 0.5f ? 1f - t / 0.5f : 0f;
@@ -288,11 +302,18 @@ public final class CombatFx {
                 rot(ps, wob, sx, sz);
                 rot(ps, fall((t - 0.3f) / 0.45f), sx, sz);
             }
-            default -> {  // normal: cambaleia para tras e cai de costas
-                float back = smooth(t / 0.25f);
-                ps.translate(d.dx() * 0.45f * back, 0, d.dz() * 0.45f * back);
-                rot(ps, Mth.sin(tm * 1.2f) * 5f * (1 - back), sx, sz);
-                rot(ps, fall((t - 0.12f) / 0.4f), ax, az);
+            default -> {  // normal: tranco -> cambaleia dois passos -> joelhos cedem girando -> cai de costas -> estremece
+                float jolt = smooth(t / 0.07f) * (1 - smooth((t - 0.07f) / 0.25f));
+                float step = smooth((t - 0.05f) / 0.3f);
+                float buckle = smooth((t - 0.33f) / 0.15f);
+                float twist = 40f * smooth((t - 0.38f) / 0.3f);
+                float wob = t < 0.36f ? Mth.sin(tm * 1.1f) * 11f * (1 - step) : 0f;
+                ps.translate(d.dx() * 0.6f * step, 0.05f * jolt - h * 0.16f * buckle * (1 - smooth((t - 0.5f) / 0.15f)), d.dz() * 0.6f * step);
+                ps.mulPose(Axis.YP.rotationDegrees(twist));
+                rot(ps, wob, sx, sz);
+                float ang = 22f * jolt - 15f * buckle * (1 - smooth((t - 0.48f) / 0.08f)) + fall((t - 0.48f) / 0.26f);
+                if (t > 0.8f) ang += Mth.sin((t - 0.8f) * 60f) * 2.5f * (1 - (t - 0.8f) / 0.2f);   // estremece no chao
+                rot(ps, ang, ax, az);
             }
         }
         return true;
