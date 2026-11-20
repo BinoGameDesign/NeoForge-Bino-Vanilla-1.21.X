@@ -91,6 +91,7 @@ public final class CombatMovesServer {
             return;
         }
         long now = p.level().getGameTime();
+        CombatAI.playerAttack(p, move.serverHit(m.heavy()));   // mobs ageis por perto podem esquivar
         if (move.serverHit(m.heavy())) {
             if (now < HEAVY_READY.getOrDefault(p.getUUID(), 0L)) return;   // ainda recarregando
             PENDING.put(p.getUUID(), new Pending(move, axe, now + MoveTiming.windupTicks(move, m.heavy(), axe, delay)));
