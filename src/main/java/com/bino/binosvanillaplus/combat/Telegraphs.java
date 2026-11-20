@@ -22,9 +22,9 @@ import java.util.UUID;
 public final class Telegraphs {
     private Telegraphs() {}
 
-    public static final int WINDUP = 6;   // 0,3 s
+    public static final int WINDUP = 11;   // 0,55 s (cabe a janela de cores do parry, ParryZones)
 
-    record Claim(int mobId, boolean perfect, long tick) {}
+    record Claim(int mobId, int zone, long tick) {}
     private static final Map<UUID, Claim> CLAIMS = new HashMap<>();
 
     public static int grace(ServerPlayer p) {
@@ -61,8 +61,8 @@ public final class Telegraphs {
     }
 
     // o jogador apertou parry contra este mob
-    public static void claim(ServerPlayer p, int mobId, boolean perfect) {
-        CLAIMS.put(p.getUUID(), new Claim(mobId, perfect, p.level().getGameTime()));
+    public static void claim(ServerPlayer p, int mobId, int zone) {
+        CLAIMS.put(p.getUUID(), new Claim(mobId, zone, p.level().getGameTime()));
     }
 
     // hora do golpe: foi aparado? (o aperto tem que ter vindo depois do comeco da preparacao)
@@ -71,7 +71,7 @@ public final class Telegraphs {
         if (c == null || c.mobId() != mob.getId() || c.tick() < windupStart - 1) return false;
         CLAIMS.remove(target.getUUID());
         if (red) return false;   // ataque vermelho nao se apara
-        CombatActionsServer.parried(target, mob, c.perfect());
+        CombatActionsServer.parried(target, mob, c.zone());
         return true;
     }
 

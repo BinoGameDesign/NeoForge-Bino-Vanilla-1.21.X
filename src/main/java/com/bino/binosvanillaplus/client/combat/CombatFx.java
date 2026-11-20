@@ -2,6 +2,7 @@ package com.bino.binosvanillaplus.client.combat;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.combat.CombatFxPayload;
+import com.bino.binosvanillaplus.combat.CombatMove;
 import com.bino.binosvanillaplus.entity.ModParticles;
 import com.bino.binosvanillaplus.sound.ModSounds;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -46,14 +47,13 @@ import java.util.Set;
 public final class CombatFx {
     private CombatFx() {}
 
-    record Incoming(int target, long hitAt, boolean red) {}
+    record Incoming(int target, long hitAt, boolean red, long window) {}
     record Window(int mobId, long until) {}
     record Post(float frac, boolean broken, long at) {}
 
     private static final Map<Integer, Incoming> INCOMING = new HashMap<>();
     private static final Map<Integer, Post> POSTURE = new HashMap<>();
     private static final Set<Integer> KNEELING = new HashSet<>();
-    private static final Map<Integer, Long> GLINT2 = new HashMap<>();   // segundo brilho, logo antes do golpe
     // estado da morte (fisica simples no cliente: o corpo tomba com o impulso do golpe, quica e escorrega)
     static final class Death {
         final int kind; final float dx, dz;
@@ -92,27 +92,24 @@ public final class CombatFx {
         switch (m.kind()) {
             case CombatFxPayload.TELEGRAPH -> {
                 boolean red = m.f() < 0;   // vermelho: nao da parry, so esquiva
-                INCOMING.put(m.a(), new Incoming(m.b(), now + (long) Math.abs(m.f()), red));
+                long wind = (long) Math.abs(m.f());
+                INCOMING.put(m.a(), new Incoming(m.b(), now + wind, red, com.bino.binosvanillaplus.combat.ParryZones.window(wind)));
                 Entity mob = mc.level.getEntity(m.a());
                 if (mob != null) {
                     Vec3 at = attackPoint(mc, mob);
-                    mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, red ? 0.85 : 0.65, red ? 2 : 1, 0);   // 1 dourada, 2 vermelha
-                    GLINT2.put(m.a(), now + Math.max(0, (long) Math.abs(m.f()) - 140));
                     if (m.b() == me.getId())
                         mc.level.playLocalSound(at.x, at.y, at.z, ModSounds.SWORD_SWING.get(), SoundSource.HOSTILE, red ? 0.6f : 0.35f, red ? 0.7f : 2.0f, false);
                 }
             }
-            case CombatFxPayload.PARRY -> {
+            case CombatFxPayload.PARRY -> {   // f: 0 branco, 1 amarelo, 2 azul, 3 flecha devolvida
                 INCOMING.remove(m.b());
                 if (!mine) return;
-                boolean perfect = m.f() > 0.5f;
-                HitFx.kick(perfect ? 1.2f : 0.7f);
-                flashAt = now; flashPower = perfect ? 1f : 0.45f;
-                if (perfect) {
-                    issen = new Window(m.b(), now + 520);
-                    zoomAt = now;
-                    Stamina.give(25);
-                }
+                int zone = Math.round(m.f());
+                HitFx.kick(zone >= 2 ? 1.2f : zone == 1 ? 0.8f : 0.4f);
+                flashAt = now; flashPower = zone >= 2 ? 1f : zone == 1 ? 0.5f : 0.2f;
+                if (zone >= 2) { zoomAt = now; Stamina.give(25); }
+                if (zone == 1) Stamina.give(10);
+                if (zone == 2) CombatMoves.playLocal(CombatMove.ISSEN);   // Issen na hora
             }
             case CombatFxPayload.ISSEN -> {
                 if (!mine) return;
@@ -150,7 +147,7 @@ public final class CombatFx {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) {
-        INCOMING.clear(); POSTURE.clear(); KNEELING.clear(); GLINT2.clear(); DEATHS.clear(); issen = null; rush = null;
+        INCOMING.clear(); POSTURE.clear(); KNEELING.clear(); DEATHS.clear(); issen = null; rush = null;
     }
 
     // a parte do mob que vai bater: a mao (mobs com bracos, como zumbi e esqueleto) ou a boca/garras (aranha, lobo...)
@@ -184,27 +181,35 @@ public final class CombatFx {
     // ------------------------------------------------------------------ consultas do CombatMoves
 
     // golpe vindo em mim agora? (mob id, ou -1). perfeito = bem na hora
-    static int parryTarget(LocalPlayer p, long now) { return parryTarget(p, now, 240); }
-
-    // window = quanto antes do golpe ainda vale (escudo tem janela maior)
-    static int parryTarget(LocalPlayer p, long now, long window) {
+    // golpe com aviso vindo em mim dentro da janela de cores (mob id, ou -1)
+    static int parryTarget(LocalPlayer p, long now) {
         int best = -1; long bestD = Long.MAX_VALUE;
         for (Map.Entry<Integer, Incoming> en : INCOMING.entrySet()) {
             Incoming in = en.getValue();
             if (in.target() != p.getId() || in.red()) continue;
             long d = in.hitAt() - now;
-            if (d < -70 || d > window) continue;
+            if (d < -70 || d > in.window()) continue;
             if (Math.abs(d) < bestD) { bestD = Math.abs(d); best = en.getKey(); }
         }
         return best;
     }
 
-    static boolean perfect(int mobId, long now) {
+    // cor do brilho agora (0 branco, 1 amarelo, 2 azul); -1 fora da janela
+    static byte zone(int mobId, long now) {
         Incoming in = INCOMING.get(mobId);
-        if (in == null) return false;
-        long d = in.hitAt() - now;
-        return d >= -70 && d <= 110;
+        if (in == null) return -1;
+        return zoneOf(in, now);
     }
+
+    private static byte zoneOf(Incoming in, long now) {
+        long d = in.hitAt() - now;
+        if (d > in.window()) return -1;
+        if (d < 0) return 0;   // um pouquinho atrasado (internet): branco
+        return com.bino.binosvanillaplus.combat.ParryZones.zone(1f - d / (float) in.window());
+    }
+
+    // tint da particula para a cor (0 branco, 1 amarelo, 4 azul)
+    private static int tint(int zone) { return zone == 2 ? 4 : zone == 1 ? 1 : 0; }
 
     static void consumeIncoming(int mobId) { INCOMING.remove(mobId); }
 
@@ -234,15 +239,32 @@ public final class CombatFx {
         if (mc.level == null) return;
         long now = now();
         INCOMING.values().removeIf(in -> now - in.hitAt() > 600);
-        for (java.util.Iterator<Map.Entry<Integer, Long>> it = GLINT2.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Integer, Long> en = it.next();
-            if (now < en.getValue()) continue;
-            it.remove();
-            Incoming in = INCOMING.get(en.getKey());
+        // brilho do parry: aceso durante a preparacao do golpe, na parte que vai bater, com a cor da janela agora
+        for (Map.Entry<Integer, Incoming> en : INCOMING.entrySet()) {
+            Incoming in = en.getValue();
+            if (now > in.hitAt()) continue;
             Entity mob = mc.level.getEntity(en.getKey());
-            if (in == null || mob == null) continue;
+            if (mob == null) continue;
             Vec3 at = attackPoint(mc, mob);
-            mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, in.red() ? 1.0 : 0.8, in.red() ? 2 : 1, 0);
+            int z = zoneOf(in, now);
+            mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, in.red() ? 0.7 : z == -1 ? 0.4 : 0.6, in.red() ? 2 : tint(Math.max(0, z)), 0);
+        }
+        // flechas/projeteis vindo em mim: o brilho vai na ponta, com a cor da janela
+        if (mc.player != null) {
+            Vec3 c = mc.player.getBoundingBox().getCenter();
+            for (net.minecraft.world.entity.projectile.Projectile pr : mc.level.getEntitiesOfClass(net.minecraft.world.entity.projectile.Projectile.class,
+                    mc.player.getBoundingBox().inflate(14), pr -> pr.getOwner() != mc.player && pr.isAlive())) {
+                Vec3 v = pr.getDeltaMovement();
+                double sp = v.length();
+                if (sp < 0.3) continue;
+                Vec3 to = c.subtract(pr.position());
+                double d = to.length();
+                if (d < 1e-3 || v.dot(to) / (sp * d) < 0.85) continue;
+                double eta = d / sp * 50;
+                if (eta > com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS) continue;
+                int z = com.bino.binosvanillaplus.combat.ParryZones.zone(1f - (float) eta / com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS);
+                mc.level.addParticle(ModParticles.IMPACT_STAR.get(), pr.getX(), pr.getY(), pr.getZ(), 0.45, tint(z), 0);
+            }
         }
         DEATHS.keySet().removeIf(id -> mc.level.getEntity(id) == null);
         POSTURE.entrySet().removeIf(en -> !en.getValue().broken() && now - en.getValue().at() > 20000);

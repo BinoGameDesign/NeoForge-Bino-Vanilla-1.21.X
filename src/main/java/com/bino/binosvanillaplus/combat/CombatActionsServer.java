@@ -44,7 +44,9 @@ public final class CombatActionsServer {
 
     private record RushHit(UUID player, int mobId, long at, int left) {}
     private record StabHit(UUID player, int mobId, long at, boolean axe) {}
-    private record ArrowParry(long until, boolean perfect) {}
+    private record ArrowParry(long until, int zone) {
+        boolean perfect() { return zone == 2; }
+    }
     private static final Map<UUID, ArrowParry> ARROWS = new HashMap<>();
 
     // flecha (ou outro projetil) chegando em quem esta aparando, de frente: rebate. Perfeito = volta para quem atirou
@@ -65,7 +67,7 @@ public final class CombatActionsServer {
         if (a.perfect() && shooter != null && shooter.isAlive() && shooter.distanceToSqr(p) < 48 * 48) {
             nv = shooter.getEyePosition().add(0, -0.2, 0).subtract(proj.position()).normalize().scale(Math.max(1.6, speed));
             if (proj instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow) arrow.setCritArrow(true);
-        } else nv = v.scale(-0.45).add((level.random.nextDouble() - 0.5) * 0.3, 0.25, (level.random.nextDouble() - 0.5) * 0.3);
+        } else nv = v.scale(-0.12).add((level.random.nextDouble() - 0.5) * 0.1, 0.12, (level.random.nextDouble() - 0.5) * 0.1);   // bloqueou: cai
         proj.setDeltaMovement(nv);
         proj.setOwner(p);
         proj.hurtMarked = true;
@@ -73,7 +75,7 @@ public final class CombatActionsServer {
         level.sendParticles(ModParticles.PARRY_SPARK.get(), at.x, at.y, at.z, a.perfect() ? 24 : 12, 0.05, 0.05, 0.05, 0.4);
         level.sendParticles(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, 0, a.perfect() ? 1.0 : 0.6, 0, 0, 1.0);
         level.playSound(null, at.x, at.y, at.z, a.perfect() ? ModSounds.PARRY_PERFECT.get() : ModSounds.PARRY.get(), SoundSource.PLAYERS, 1.0f, 1.15f);
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new CombatFxPayload(CombatFxPayload.PARRY, p.getId(), proj.getId(), 0f));
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new CombatFxPayload(CombatFxPayload.PARRY, p.getId(), proj.getId(), a.perfect() ? 3f : 0f));
     }
     private static final List<StabHit> STABS = new ArrayList<>();
 
@@ -93,7 +95,7 @@ public final class CombatActionsServer {
         long now = p.level().getGameTime();
         if (m.kind() == CombatActionPayload.ARROW_PARRY) {   // aparar flecha/projetil: vale por alguns ticks
             if (!weapon) return;
-            ARROWS.put(p.getUUID(), new ArrowParry(now + 7 + Telegraphs.grace(p), m.flag()));
+            ARROWS.put(p.getUUID(), new ArrowParry(now + 7 + Telegraphs.grace(p), m.level()));
             CombatMovesServer.broadcast(p, CombatMove.PARRY, false);
             return;
         }
@@ -101,7 +103,7 @@ public final class CombatActionsServer {
         if (!(ent instanceof LivingEntity target) || !target.isAlive()) return;
         switch (m.kind()) {
             case CombatActionPayload.PARRY -> {
-                if (target.distanceToSqr(p) < 8 * 8) Telegraphs.claim(p, target.getId(), weapon && m.flag());   // escudo: so parry normal
+                if (target.distanceToSqr(p) < 8 * 8) Telegraphs.claim(p, target.getId(), weapon ? m.level() : 0);   // escudo: so parry normal
                 if (weapon) CombatMovesServer.broadcast(p, CombatMove.PARRY, false);
             }
             case CombatActionPayload.ISSEN -> {
@@ -148,25 +150,40 @@ public final class CombatActionsServer {
     }
 
     // ---------------------------------------------------------------- parry (chamado por Telegraphs)
-    static void parried(ServerPlayer p, LivingEntity mob, boolean perfect) {
+    // zone: 0 branco (so bloqueia), 1 amarelo (atordoa + postura), 2 azul (Issen na hora)
+    static void parried(ServerPlayer p, LivingEntity mob, int zone) {
         ServerLevel level = p.serverLevel();
-        long now = level.getGameTime();
         Vec3 mid = p.getEyePosition().add(mob.getEyePosition()).scale(0.5);
         Vec3 away = mob.position().subtract(p.position()).multiply(1, 0, 1);
         away = away.lengthSqr() < 1e-4 ? p.getLookAngle() : away.normalize();
-        mob.knockback(perfect ? 0.8 : 0.55, -away.x, -away.z);
-        Posture.add(mob, Posture.max(mob) * (perfect ? 0.5f : 0.3f));
-        level.playSound(null, mid.x, mid.y, mid.z, perfect ? ModSounds.PARRY_PERFECT.get() : ModSounds.PARRY.get(), SoundSource.PLAYERS, 1.1f,
-                0.95f + level.random.nextFloat() * 0.1f);
-        level.sendParticles(ModParticles.PARRY_SPARK.get(), mid.x, mid.y, mid.z, perfect ? 30 : 16, 0.05, 0.05, 0.05, 0.45);
-        level.sendParticles(ModParticles.IMPACT_STAR.get(), mid.x, mid.y, mid.z, 0, perfect ? 1.6 : 1.0, 0, 0, 1.0);
-        if (perfect) {
-            level.sendParticles(ModParticles.IMPACT_RING.get(), mid.x, mid.y, mid.z, 0, 1.4, 0, 0, 1.0);
-            Posture.freeze(mob, 8);
-            p.heal(1.0f);
-            ISSEN.put(p.getUUID(), new Window(mob.getId(), now + 11 + Telegraphs.grace(p)));
+        switch (zone) {
+            case 1 -> {   // amarelo: atordoa (da para dar um golpe) e enche a postura
+                mob.knockback(0.45, -away.x, -away.z);
+                Posture.add(mob, Posture.max(mob) * 0.45f);
+                Posture.freeze(mob, 16);
+                level.sendParticles(ModParticles.PARRY_SPARK.get(), mid.x, mid.y, mid.z, 20, 0.05, 0.05, 0.05, 0.45);
+                level.sendParticles(ModParticles.IMPACT_STAR.get(), mid.x, mid.y, mid.z, 0, 1.1, 1, 0, 1.0);
+                level.playSound(null, mid.x, mid.y, mid.z, ModSounds.PARRY.get(), SoundSource.PLAYERS, 1.2f, 1.05f);
+            }
+            case 2 -> {   // azul: Issen na hora
+                Posture.freeze(mob, 8);
+                p.heal(1.0f);
+                level.sendParticles(ModParticles.PARRY_SPARK.get(), mid.x, mid.y, mid.z, 30, 0.05, 0.05, 0.05, 0.5);
+                level.sendParticles(ModParticles.IMPACT_RING.get(), mid.x, mid.y, mid.z, 0, 1.4, 4, 0, 1.0);
+                level.playSound(null, mid.x, mid.y, mid.z, ModSounds.PARRY_PERFECT.get(), SoundSource.PLAYERS, 1.2f, 1.0f);
+                send(p, CombatFxPayload.PARRY, mob, 2);
+                CombatMovesServer.broadcast(p, CombatMove.ISSEN, false);
+                issen(p, mob);
+                return;
+            }
+            default -> {  // branco: so bloqueia
+                mob.knockback(0.25, -away.x, -away.z);
+                Posture.add(mob, Posture.max(mob) * 0.1f);
+                level.sendParticles(ModParticles.HIT_SPARK.get(), mid.x, mid.y, mid.z, 10, 0.05, 0.05, 0.05, 0.35);
+                level.playSound(null, mid.x, mid.y, mid.z, ModSounds.SWORD_HIT_HARD.get(), SoundSource.PLAYERS, 0.9f, 1.0f);
+            }
         }
-        send(p, CombatFxPayload.PARRY, mob, perfect ? 1 : 0);
+        send(p, CombatFxPayload.PARRY, mob, zone);
     }
 
     // ---------------------------------------------------------------- esquiva perfeita (chamado por DodgeServer)

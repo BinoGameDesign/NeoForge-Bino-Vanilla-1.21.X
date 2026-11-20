@@ -12,9 +12,9 @@ import net.minecraft.util.Mth;
 // Efeitos de impacto estilo Zelda (mod Combat): formas simples, brilhantes e rapidas, paradas no ponto do golpe.
 //  - estrela de 4 pontas: estoura grande em ~0,05 s e encolhe sumindo (branca, amarelando no fim)
 //  - anel: abre rapido a partir do ponto e some
-// O tamanho vem na velocidade X (o servidor manda com contagem 0); velocidade Y = 1 deixa dourada, 2 vermelha (aviso de ataque).
+// O tamanho vem na velocidade X (o servidor manda com contagem 0); velocidade Y = 1 dourada/amarela, 2 vermelha, 4 azul clara (brilho do parry).
 public class ImpactParticle extends TextureSheetParticle {
-    private final boolean ring, gold, red;
+    private final boolean ring, gold, red, blue;
     private final float base;
 
     protected ImpactParticle(ClientLevel level, double x, double y, double z, double scale, double tint, SpriteSet sprites, boolean ring) {
@@ -24,13 +24,14 @@ public class ImpactParticle extends TextureSheetParticle {
         this.hasPhysics = false;
         this.ring = ring;
         this.gold = tint > 0.5 && tint < 1.5;
-        this.red = tint >= 1.5;
+        this.red = tint >= 1.5 && tint < 2.5;
+        this.blue = tint >= 3.5;
         float s = scale > 0.05 ? (float) scale : 1f;
         this.base = (ring ? 0.75f : 0.42f) * s;
         this.lifetime = ring ? 7 : 5;
         this.roll = this.oRoll = ring ? 0 : (random.nextFloat() - 0.5f) * 0.6f;
         pickSprite(sprites);
-        if (red) setColor(1f, 0.22f, 0.18f); else if (gold) setColor(1f, 0.82f, 0.3f); else setColor(1f, 1f, 1f);
+        if (blue) setColor(0.55f, 0.88f, 1f); else if (red) setColor(1f, 0.22f, 0.18f); else if (gold) setColor(1f, 0.82f, 0.3f); else setColor(1f, 1f, 1f);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class ImpactParticle extends TextureSheetParticle {
         super.tick();
         float t = (float) age / lifetime;
         this.alpha = ring ? 0.9f * (1 - t) : 1f - t * t;
-        if (!ring && !gold && !red) setColor(1f, 1f, Mth.lerp(t, 1f, 0.55f));
+        if (!ring && !gold && !red && !blue) setColor(1f, 1f, Mth.lerp(t, 1f, 0.55f));
     }
 
     @Override public int getLightColor(float partialTick) { return 0xF000F0; }

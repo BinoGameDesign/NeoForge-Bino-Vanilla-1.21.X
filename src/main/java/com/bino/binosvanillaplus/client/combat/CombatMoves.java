@@ -138,7 +138,7 @@ public final class CombatMoves {
 
     // projetil vindo em voce e quase chegando: {id, 1 se perfeito} ou null
     private static int[] arrowIncoming(LocalPlayer p) {
-        int best = -1; double bestEta = 330;
+        int best = -1; double bestEta = com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS + 1;
         Vec3 c = p.getBoundingBox().getCenter();
         for (net.minecraft.world.entity.projectile.Projectile pr : p.level().getEntitiesOfClass(
                 net.minecraft.world.entity.projectile.Projectile.class, p.getBoundingBox().inflate(12), pr -> pr.getOwner() != p && pr.isAlive())) {
@@ -151,7 +151,8 @@ public final class CombatMoves {
             double eta = d / sp * 50;   // ms ate chegar
             if (eta < bestEta) { bestEta = eta; best = pr.getId(); }
         }
-        return best == -1 ? null : new int[]{best, bestEta <= 130 ? 1 : 0};
+        if (best == -1 || bestEta > com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS) return null;
+        return new int[]{best, com.bino.binosvanillaplus.combat.ParryZones.zone(1f - (float) bestEta / com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS)};
     }
 
     // camera de cinema da facada pelas costas: de lado, mostrando voce e o mob, girando devagar
@@ -221,10 +222,10 @@ public final class CombatMoves {
         // vira parry (janela maior que a da arma, sem Issen)
         if (e.isUseItem() && p.getOffhandItem().getItem() instanceof ShieldItem
                 && (p.isShiftKeyDown() || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE)) {
-            int mob = CombatFx.parryTarget(p, now(), 320);
-            if (mob != -1) {
+            int mob = CombatFx.parryTarget(p, now());
+            if (mob != -1) {   // escudo: so bloqueia (branco)
                 CombatFx.consumeIncoming(mob);
-                PacketDistributor.sendToServer(new CombatActionPayload(CombatActionPayload.PARRY, mob, false));
+                PacketDistributor.sendToServer(new CombatActionPayload(CombatActionPayload.PARRY, mob, CombatActionPayload.WHITE));
             }
             return;
         }
@@ -243,33 +244,33 @@ public final class CombatMoves {
             e.setCanceled(true);
             e.setSwingHand(false);
             int t;
-            if ((t = CombatFx.issenTarget(now)) != -1) { CombatFx.consumeIssen(); special(p, CombatMove.ISSEN, CombatActionPayload.ISSEN, t, false, now); return; }
-            if ((t = CombatFx.rushTarget(now)) != -1) { CombatFx.consumeRush(); special(p, CombatMove.RUSH, CombatActionPayload.RUSH, t, false, now); return; }
+            if ((t = CombatFx.issenTarget(now)) != -1) { CombatFx.consumeIssen(); special(p, CombatMove.ISSEN, CombatActionPayload.ISSEN, t, (byte) 0, now); return; }
+            if ((t = CombatFx.rushTarget(now)) != -1) { CombatFx.consumeRush(); special(p, CombatMove.RUSH, CombatActionPayload.RUSH, t, (byte) 0, now); return; }
             // agachado e por tras do mob: facada pelas costas (cena em terceira pessoa)
             if (p.isShiftKeyDown() && mc.hitResult instanceof EntityHitResult eh && eh.getEntity() instanceof LivingEntity le
                     && !(le instanceof Player) && le.isAlive() && behind(p, le)) {
-                special(p, CombatMove.BACKSTAB, CombatActionPayload.BACKSTAB, le.getId(), false, now);
+                special(p, CombatMove.BACKSTAB, CombatActionPayload.BACKSTAB, le.getId(), (byte) 0, now);
                 return;
             }
             request(p, false, cur, now);
         } else {
             // golpe critico na guarda quebrada
             LivingEntity broken = CombatFx.brokenTarget(p);
-            if (broken != null) { cancel(e); special(p, CombatMove.CRITICAL, CombatActionPayload.CRITICAL, broken.getId(), false, now); return; }
+            if (broken != null) { cancel(e); special(p, CombatMove.CRITICAL, CombatActionPayload.CRITICAL, broken.getId(), (byte) 0, now); return; }
             // parry: golpe com aviso vindo em mim agora
             int mob = CombatFx.parryTarget(p, now);
             if (mob != -1) {
                 cancel(e);
-                boolean perfect = CombatFx.perfect(mob, now);
+                byte zone = (byte) Math.max(0, CombatFx.zone(mob, now));
                 CombatFx.consumeIncoming(mob);
-                special(p, CombatMove.PARRY, CombatActionPayload.PARRY, mob, perfect, now);
+                special(p, CombatMove.PARRY, CombatActionPayload.PARRY, mob, zone, now);
                 return;
             }
             // flecha (ou outro projetil) chegando: apara (perfeito = volta para quem atirou)
             int[] arrow = arrowIncoming(p);
             if (arrow != null) {
                 cancel(e);
-                special(p, CombatMove.PARRY, CombatActionPayload.ARROW_PARRY, arrow[0], arrow[1] == 1, now);
+                special(p, CombatMove.PARRY, CombatActionPayload.ARROW_PARRY, arrow[0], (byte) arrow[1], now);
                 return;
             }
             if (onBlock || !inCombat(p, now)) return;   // descascar tronco etc.
@@ -283,7 +284,7 @@ public final class CombatMoves {
     private static void cancel(InputEvent.InteractionKeyMappingTriggered e) { e.setCanceled(true); e.setSwingHand(false); }
 
     // golpes especiais (parry, Issen, Rajada, critico): interrompem o golpe atual
-    private static void special(LocalPlayer p, CombatMove m, byte action, int target, boolean flag, long now) {
+    private static void special(LocalPlayer p, CombatMove m, byte action, int target, byte level, long now) {
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         int len = MoveTiming.lengthMs(m, false, axe, p.getCurrentItemAttackStrengthDelay());
         put(p.getId(), new Active(m, false, axe, now, len));
@@ -302,7 +303,7 @@ public final class CombatMoves {
             CombatFx.letterbox(len + 150);
         }
         if (m == CombatMove.PARRY) step(p, -0.06, 0);
-        PacketDistributor.sendToServer(new CombatActionPayload(action, target, flag));
+        PacketDistributor.sendToServer(new CombatActionPayload(action, target, level));
     }
 
     private static void request(LocalPlayer p, boolean heavy, Active cur, long now) {
@@ -431,6 +432,18 @@ public final class CombatMoves {
         if (now - lastCombat < COMBAT_MS) return true;
         return !p.level().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(12),
                 le -> le instanceof Enemy && le.isAlive()).isEmpty();
+    }
+
+    // anima um golpe so aqui (o servidor ja resolveu: ex. Issen do parry azul)
+    static void playLocal(CombatMove m) {
+        LocalPlayer p = Minecraft.getInstance().player;
+        if (p == null) return;
+        boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+        long now = now();
+        int len = MoveTiming.lengthMs(m, false, axe, p.getCurrentItemAttackStrengthDelay());
+        put(p.getId(), new Active(m, false, axe, now, len));
+        queued = null;
+        lastMoveEnd = now + len;
     }
 
     static void holdCombo(long until) { lastMoveEnd = Math.max(lastMoveEnd, until); }
