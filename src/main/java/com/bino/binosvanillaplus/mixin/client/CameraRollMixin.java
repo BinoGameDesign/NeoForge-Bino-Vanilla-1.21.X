@@ -29,7 +29,11 @@ public abstract class CameraRollMixin {
             setRotation(cine[3], cine[4]);
             return;
         }
-        if (detached) return;
+        if (detached) {   // camera sobre o ombro (F5)
+            Vec3 sp = com.bino.binosvanillaplus.client.ShoulderCam.position((Camera) (Object) this, level, entity, partialTick);
+            if (sp != null) setPosition(sp);
+            return;
+        }
         float d = DodgeRoll.cameraDrop(p) + com.bino.binosvanillaplus.client.combat.CombatMoves.cameraDrop(p);
         float f = com.bino.binosvanillaplus.client.combat.CombatMoves.cameraForward(p);
         if (d < 0.001f && Math.abs(f) < 0.001f) return;
