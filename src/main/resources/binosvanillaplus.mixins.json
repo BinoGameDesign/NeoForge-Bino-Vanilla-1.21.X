@@ -26,7 +26,8 @@
         "client.ItemInHandRendererAccessor",
         "client.HumanoidModelCombatMixin",
         "client.CreativeSearchAccessor",
-        "client.CameraRollMixin"
+        "client.CameraRollMixin",
+        "client.LivingEntityRendererDeathMixin"
     ],
     "injectors": {
         "defaultRequire": 1

@@ -152,6 +152,7 @@ public final class CombatActionsServer {
     private static void critical(ServerPlayer p, LivingEntity t) {
         ServerLevel level = p.serverLevel();
         FINISHED_BY_SPECIAL.put(t.getUUID(), level.getGameTime());
+        if (CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.SWORD) CombatMovesServer.STAB.put(t.getUUID(), level.getGameTime());
         Posture.endBreak(t);
         hit(p, t, attack(p) * 3f);
         Vec3 away = t.position().subtract(p.position()).multiply(1, 0, 1);

@@ -81,17 +81,29 @@ import java.util.Set;
 public final class CombatMoves {
     private CombatMoves() {}
 
-    private static final long COMBAT_MS = 6000, COMBO_GAP_MS = 500, BLEND_MS = 60, TRAIL_MS = 110, EQUIP_MS = 260;
+    private static final long COMBAT_MS = 6000, COMBO_GAP_MS = 500, BLEND_MS = 110, TRAIL_MS = 110, EQUIP_MS = 260;
 
     static final class Active {
         final CombatMove move; final boolean heavy, axe; final long start; final int length; final MoveAnims.Key[] keys;
         boolean hitDone;
+        float[] from = MoveAnims.REST;            // pose de onde este golpe sai (o fim do golpe anterior)
+        long pauseStart, pauseEnd;                // pausa no acerto (a pose congela um instante)
         Active(CombatMove move, boolean heavy, boolean axe, long start, int length) {
             this.move = move; this.heavy = heavy; this.axe = axe; this.start = start; this.length = length;
             this.keys = MoveAnims.keys(move, axe);
         }
-        float u(long now) { return Mth.clamp((now - start) / (float) length, 0f, 1f); }
-        boolean done(long now) { return now - start >= length; }
+        long t(long now) { return now < pauseEnd ? Math.min(now, pauseStart) : now - (pauseEnd - pauseStart); }
+        float u(long now) { return Mth.clamp((t(now) - start) / (float) length, 0f, 1f); }
+        boolean done(long now) { return t(now) - start >= length; }
+        void pause(long now, long ms) { if (pauseEnd == 0) { pauseStart = now; pauseEnd = now + ms; } }
+    }
+
+    // novo golpe: sai da pose em que o anterior estava (sem voltar ao descanso no meio do combo)
+    private static void put(int id, Active a) {
+        Active prev = ACTIVE.get(id);
+        long now = now();
+        if (prev != null && !prev.done(now)) a.from = pose(prev, now);
+        ACTIVE.put(id, a);
     }
 
     private static final Map<Integer, Active> ACTIVE = new HashMap<>();
@@ -104,7 +116,7 @@ public final class CombatMoves {
     private static ItemStack lastHeld = ItemStack.EMPTY; private static long equipAt = -100000;
     // fase 4: avanco (W W), Lanca-Ceu (P segurado), combo aereo
     private static final double[] DASH_SPEED = {0.70, 0.78, 0.74, 0.60, 0.40, 0.20};
-    private static long dashStart = -100000, dashReady, lastFwdTap = -100000, pendingLLP, airStart;
+    private static long dashStart = -100000, dashReady, lastFwdTap = -100000, pendingLLP, airStart, launchAt = -100000;
     private static Vec3 dashDir = Vec3.ZERO;
     private static boolean wasFwd;
     private static long useDownAt;   // segurando o direito (o jogo repete o clique: ignorar a repeticao)
@@ -178,7 +190,7 @@ public final class CombatMoves {
     private static void special(LocalPlayer p, CombatMove m, byte action, int target, boolean flag, long now) {
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         int len = MoveTiming.lengthMs(m, false, axe, p.getCurrentItemAttackStrengthDelay());
-        ACTIVE.put(p.getId(), new Active(m, false, axe, now, len));
+        put(p.getId(), new Active(m, false, axe, now, len));
         queued = null;
         TRAIL.clear();
         lastCombat = now;
@@ -246,7 +258,7 @@ public final class CombatMoves {
         boolean serverHit = m.serverHit(heavy);
         if (serverHit && !Stamina.use(Stamina.HEAVY)) return;   // sem folego para o pesado
         int len = MoveTiming.lengthMs(m, heavy, axe, p.getCurrentItemAttackStrengthDelay());
-        ACTIVE.put(p.getId(), new Active(m, heavy, axe, now, len));
+        put(p.getId(), new Active(m, heavy, axe, now, len));
         lastMoveEnd = now + len;
         if (serverHit) heavyReady = now + len - 80;
         seq = m.closesCombo() ? "" : s;
@@ -256,7 +268,7 @@ public final class CombatMoves {
             airHits++;
             if (airStart == 0) airStart = now;
             Vec3 d = p.getDeltaMovement();
-            p.setDeltaMovement(d.x, Math.max(d.y, 0.12), d.z);   // um respiro no ar
+            p.setDeltaMovement(d.x, Math.max(d.y, 0.22), d.z);   // um respiro no ar (sobe um pouco a cada golpe)
         }
         if (m == CombatMove.METEOR) { Vec3 d = p.getDeltaMovement(); p.setDeltaMovement(d.x, Math.max(d.y, 0.2), d.z); }
         impulse(p, m, heavy, axe);
@@ -331,7 +343,8 @@ public final class CombatMoves {
         LocalPlayer p = mc.player;
         if (p == null) return;
         long now = now();
-        if (p.onGround() && (airHits > 0 || airStart > 0) && (ACTIVE.get(p.getId()) == null || !ACTIVE.get(p.getId()).move.aerial())) { airHits = 0; airStart = 0; }
+        if (p.onGround() && now - launchAt > 350 && (airHits > 0 || airStart > 0)
+                && (ACTIVE.get(p.getId()) == null || !ACTIVE.get(p.getId()).move.aerial())) { airHits = 0; airStart = 0; }
         if (pendingLLP > 0) {   // L L P: soltou = Quebra-Guarda; segurou 0,2 s = Lanca-Ceu
             boolean held = mc.options.keyUse.isDown();
             if (!held || now - pendingLLP >= 200) {
@@ -351,15 +364,17 @@ public final class CombatMoves {
 
     private static void impact(Minecraft mc, LocalPlayer p, Active a) {
         if (a.move.visualOnly()) return;   // o servidor resolve (parry, Issen, Rajada, critico)
-        if (a.move == CombatMove.LAUNCHER) {   // pula atras do mob
+        if (a.move == CombatMove.LAUNCHER) {   // pula atras do mob (um pouco mais alto que ele)
             Vec3 d = p.getDeltaMovement();
-            p.setDeltaMovement(d.x, 0.62, d.z);
-            airHits = 0; airStart = now();
+            p.setDeltaMovement(d.x, 0.86, d.z);
+            airHits = 0; airStart = now(); launchAt = now();
         }
         if (a.move == CombatMove.METEOR) { Vec3 d = p.getDeltaMovement(); p.setDeltaMovement(d.x * 0.3, -1.1, d.z * 0.3); }   // mergulho
         if (a.move.serverHit(a.heavy)) {   // o servidor faz o dano; aqui so o peso
             boolean big = a.move == CombatMove.JUMP || a.move == CombatMove.JUDGMENT || a.move == CombatMove.METEOR;
             HitFx.kick(big ? 1.4f : 1.1f);
+            a.pause(now(), big ? 100 : 75);
+            lastMoveEnd += big ? 100 : 75;
             punchAt = now(); punchPower = big ? 1f : 0.7f;
             p.level().playLocalSound(p.getX(), p.getEyeY(), p.getZ(), a.axe ? ModSounds.AXE_SWING.get() : ModSounds.SWORD_SWING.get(),
                     SoundSource.PLAYERS, 1f, 0.72f, false);
@@ -371,6 +386,8 @@ public final class CombatMoves {
         if (target != null && mc.gameMode != null) {
             lastCombat = now();
             mc.gameMode.attack(p, target);   // o ataque normal do jogo (dano, critico, varrida, encantamentos)
+            a.pause(now(), a.move.closesCombo() ? 90 : 55);   // a pose segura um instante no impacto (peso)
+            lastMoveEnd += a.move.closesCombo() ? 90 : 55;
         } else HitFx.swingAir(p);
     }
 
@@ -395,7 +412,7 @@ public final class CombatMoves {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !(mc.level.getEntity(m.entityId()) instanceof Player pl)) return;
         boolean axe = CombatEvents.weapon(pl.getMainHandItem()) == CombatEvents.Weapon.AXE;
-        ACTIVE.put(m.entityId(), new Active(CombatMove.of(m.move()), m.heavy(), axe, now(), Math.max(100, m.lengthMs())));
+        put(m.entityId(), new Active(CombatMove.of(m.move()), m.heavy(), axe, now(), Math.max(100, m.lengthMs())));
     }
 
     @SubscribeEvent
@@ -432,7 +449,7 @@ public final class CombatMoves {
         dashReady = now + 650;
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         int len = MoveTiming.lengthMs(CombatMove.DASH, false, axe, p.getCurrentItemAttackStrengthDelay());
-        ACTIVE.put(p.getId(), new Active(CombatMove.DASH, false, axe, now, len));
+        put(p.getId(), new Active(CombatMove.DASH, false, axe, now, len));
         queued = null;
         holdCombo(now + len);
         p.level().playLocalSound(p.getX(), p.getY() + 0.5, p.getZ(), ModSounds.SWORD_SWING.get(), SoundSource.PLAYERS, 0.5f, 0.6f, false);
@@ -454,7 +471,7 @@ public final class CombatMoves {
         }
         // combo aereo: cai bem devagar enquanto golpeia (no maximo ~1,3 s no ar)
         Active a = ACTIVE.get(p.getId());
-        if (a != null && !a.done(now) && !p.onGround() && airStart > 0 && now - airStart < 1300
+        if (a != null && !a.done(now) && !p.onGround() && airStart > 0 && now - airStart < 1500
                 && (a.move.aerial() || a.move == CombatMove.LAUNCHER && a.hitDone)) {
             Vec3 d = p.getDeltaMovement();
             if (d.y < -0.03) p.setDeltaMovement(d.x, -0.03, d.z);
@@ -477,10 +494,10 @@ public final class CombatMoves {
     // pose agora; entra suave a partir do descanso (rodopio e cambalhota nao, sao voltas inteiras)
     private static float[] pose(Active a, long now) {
         float[] v = MoveAnims.sample(a.keys, a.u(now));
-        float in = Mth.clamp((now - a.start) / (float) BLEND_MS, 0f, 1f);
+        float in = Mth.clamp((a.t(now) - a.start) / (float) BLEND_MS, 0f, 1f);
         in = in * in * (3 - 2 * in);
         for (int i = 0; i < MoveAnims.N; i++)
-            if (i != MoveAnims.SP && i != MoveAnims.FL) v[i] = MoveAnims.REST[i] + (v[i] - MoveAnims.REST[i]) * in;
+            if (i != MoveAnims.SP && i != MoveAnims.FL) v[i] = a.from[i] + (v[i] - a.from[i]) * in;
         return v;
     }
 
@@ -498,6 +515,38 @@ public final class CombatMoves {
 
     // ------------------------------------------------------------------ primeira pessoa
 
+    // mola da mao em primeira pessoa: segue a pose com um pouquinho de atraso (da peso e suaviza as viradas)
+    private static final float[] SPRING = MoveAnims.REST.clone(), SPRING_V = new float[6];
+    private static long springAt;
+
+    private static void spring(float[] v, long now) {
+        float dt = Mth.clamp((now - springAt) / 1000f, 0f, 0.05f);
+        springAt = now;
+        if (dt <= 0f) { System.arraycopy(SPRING, 0, v, 0, 6); return; }
+        float w = 34f;   // rigidez (maior = segue mais grudado)
+        for (int i = 0; i < 6; i++) {
+            float x = SPRING[i] - v[i];
+            float acc = -w * w * x - 2f * w * SPRING_V[i];   // amortecimento critico (sem quicar)
+            SPRING_V[i] += acc * dt;
+            SPRING[i] += SPRING_V[i] * dt;
+            v[i] = SPRING[i];
+        }
+    }
+
+    private static void springReset() {
+        System.arraycopy(MoveAnims.REST, 0, SPRING, 0, 6);
+        java.util.Arrays.fill(SPRING_V, 0f);
+        springAt = now();
+    }
+
+    private static Quaternionf rot(float[] v, float side) {
+        return new Quaternionf().rotateY((float) Math.toRadians(-v[MoveAnims.AY] * side))
+                .rotateX((float) Math.toRadians(-v[MoveAnims.AP])).rotateY((float) Math.toRadians(v[MoveAnims.ER] * side));
+    }
+
+    // Primeira pessoa: parado, o jogo desenha a mao normalmente. Durante um golpe (ou rolando) a arma e' desenhada do
+    // MESMO jeito que o jogo desenha (mesma posicao e o "display" do modelo, 2D ou 3D), so que movida e girada pela
+    // pose do golpe a partir do descanso; por isso nao "pula" ao comecar/terminar e fica do tamanho certo.
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onHand(RenderHandEvent e) {
         if (e.getHand() != InteractionHand.MAIN_HAND) return;
@@ -505,69 +554,38 @@ public final class CombatMoves {
         LocalPlayer p = mc.player;
         if (p == null) return;
         ItemStack stack = e.getItemStack();
-        if (CombatEvents.weapon(stack) == CombatEvents.Weapon.NONE || p.isUsingItem() && p.getUsedItemHand() == InteractionHand.MAIN_HAND) {
-            lastHeld = stack.copy();
-            return;
-        }
-        e.setCanceled(true);
         long now = now();
-        if (!ItemStack.isSameItem(stack, lastHeld)) equipAt = now;
-        lastHeld = stack.copy();
+        Active a = CombatEvents.weapon(stack) == CombatEvents.Weapon.NONE ? null : activeFor(p);
+        float dip = CombatEvents.weapon(stack) == CombatEvents.Weapon.NONE ? 0f : DodgeRoll.handDip(p);
+        if (a == null && dip <= 0.001f) { springReset(); return; }   // parado: o jogo desenha
+        e.setCanceled(true);
 
-        Active a = activeFor(p);
         float[] v = a != null ? pose(a, now) : MoveAnims.REST.clone();
-        if (a == null) {
-            float sw = e.getSwingProgress();   // minerando
-            if (sw > 0) {
-                float f = Mth.sin(Mth.sqrt(sw) * Mth.PI);
-                v[MoveAnims.AP] += 60 * f; v[MoveAnims.HY] -= 0.10f * f; v[MoveAnims.HZ] -= 0.12f * f; v[MoveAnims.HX] -= 0.08f * f;
-            }
-            v[MoveAnims.HY] += Mth.sin(now / 650f) * 0.006f;   // respiracao
-        }
-        float dip = DodgeRoll.handDip(p);   // rolando: a arma desce com o corpo
         v[MoveAnims.HY] -= 0.55f * dip; v[MoveAnims.AP] += 35f * dip; v[MoveAnims.HX] += 0.08f * dip;
-        float eq = 1f - Mth.clamp((now - equipAt) / (float) EQUIP_MS, 0f, 1f);
-        v[MoveAnims.HY] -= 0.6f * eq * eq;
+        spring(v, now);
 
         float side = p.getMainArm() == HumanoidArm.RIGHT ? 1f : -1f;
         PoseStack ps = e.getPoseStack();
         MultiBufferSource buf = e.getMultiBufferSource();
         int light = e.getPackedLight();
-        Vector3f hand = new Vector3f(v[MoveAnims.HX] * side, v[MoveAnims.HY], v[MoveAnims.HZ]);
-
-        Vec3 shoulder = new Vec3(0.40 * side, -0.86, 0.12);
-        LapidaryHands.arm(ps, buf, Vec3.ZERO, new Vec3(hand.x, hand.y, hand.z), shoulder, side > 0, light, new Vec3(0, 0, -1), p, 0.85f);
+        Quaternionf abs = rot(v, side), rest = rot(MoveAnims.REST, side);
 
         ps.pushPose();
-        ps.translate(hand.x, hand.y, hand.z);
-        ps.mulPose(Axis.YP.rotationDegrees(-v[MoveAnims.AY] * side));
-        ps.mulPose(Axis.XP.rotationDegrees(-v[MoveAnims.AP]));
-        ps.mulPose(Axis.YP.rotationDegrees(v[MoveAnims.ER] * side));
-        if (a != null && MoveAnims.striking(a.keys, a.u(now))) {
+        ps.translate(v[MoveAnims.HX] * side, v[MoveAnims.HY], v[MoveAnims.HZ]);
+        if (a != null && MoveAnims.striking(a.keys, a.u(now))) {   // rastro: base e ponta da lamina pela direcao absoluta
+            ps.pushPose();
+            ps.mulPose(abs);
             Matrix4f m = ps.last().pose();
             float len = a.axe ? 0.72f : 0.84f;
             TRAIL.addLast(new TrailPt(m.transformPosition(new Vector3f(0, len * 0.3f, 0)), m.transformPosition(new Vector3f(0, len, 0)), now));
+            ps.popPose();
         }
-        renderWeapon(mc, p, stack, ps, buf, light);
+        ps.mulPose(new Quaternionf(abs).mul(new Quaternionf(rest).conjugate()));   // so a diferenca para o descanso
+        boolean right = side > 0;
+        mc.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(p, stack,
+                right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, !right, ps, buf, light);
         ps.popPose();
         renderTrail(buf, now, a != null && a.move.serverHit(a.heavy), a != null && a.axe);
-    }
-
-    private static void renderWeapon(Minecraft mc, LocalPlayer p, ItemStack stack, PoseStack ps, MultiBufferSource buf, int light) {
-        BakedModel model = mc.getItemRenderer().getModel(stack, p.level(), p, p.getId());
-        ps.pushPose();
-        if (model instanceof HeldToolModel h) {   // modelo 3D do mod (em pe, cabo embaixo)
-            ps.scale(0.55f, 0.55f, 0.55f);
-            ps.translate(0, 0.36f, 0);
-            if (CombatEvents.weapon(stack) == CombatEvents.Weapon.SWORD) ps.mulPose(Axis.YP.rotationDegrees(90));
-            mc.getItemRenderer().render(stack, ItemDisplayContext.NONE, false, ps, buf, light, OverlayTexture.NO_OVERLAY, h.solid());
-        } else {                                   // icone 2D (diagonal: cabo embaixo-esquerda, ponta em cima-direita)
-            ps.scale(0.72f, 0.72f, 0.72f);
-            ps.translate(0, 0.42f, 0);
-            ps.mulPose(Axis.ZP.rotationDegrees(45));
-            mc.getItemRenderer().render(stack, ItemDisplayContext.NONE, false, ps, buf, light, OverlayTexture.NO_OVERLAY, model);
-        }
-        ps.popPose();
     }
 
     // rastro solido e curto (estilo Zelda): espada branco-azulado, machado branco-alaranjado, pesado dourado
@@ -678,6 +696,13 @@ public final class CombatMoves {
         e.setRoll(e.getRoll() - v[MoveAnims.TW] * 0.07f * side + v[MoveAnims.RL] * 0.35f);
         e.setPitch(e.getPitch() + v[MoveAnims.LN] * 0.06f + Mth.sin(v[MoveAnims.FL] * Mth.DEG_TO_RAD) * 14f);
         e.setYaw(e.getYaw() + v[MoveAnims.TW] * 0.04f * side);
+    }
+
+    // quanto a camera vai a frente (o corpo entra na estocada/investida), para CameraRollMixin
+    public static float cameraForward(Player p) {
+        Active a = activeFor(p);
+        if (a == null) return 0f;
+        return pose(a, now())[MoveAnims.DX] * 0.35f;
     }
 
     // quanto a camera abaixa (agachando no golpe), para CameraRollMixin

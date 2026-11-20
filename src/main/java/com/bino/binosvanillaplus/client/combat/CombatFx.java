@@ -53,6 +53,9 @@ public final class CombatFx {
     private static final Map<Integer, Incoming> INCOMING = new HashMap<>();
     private static final Map<Integer, Post> POSTURE = new HashMap<>();
     private static final Set<Integer> KNEELING = new HashSet<>();
+    private static final Map<Integer, Long> GLINT2 = new HashMap<>();   // segundo brilho, logo antes do golpe
+    record Death(boolean stab, float dx, float dz) {}
+    private static final Map<Integer, Death> DEATHS = new HashMap<>();
     private static Window issen, rush;
     private static long flashAt = -100000, dodgeAt = -100000, letterboxAt = -100000, slashAt = -100000, zoomAt = -100000;
     private static float flashPower;
@@ -73,8 +76,9 @@ public final class CombatFx {
                 INCOMING.put(m.a(), new Incoming(m.b(), now + (long) Math.abs(m.f()), red));
                 Entity mob = mc.level.getEntity(m.a());
                 if (mob != null) {
-                    Vec3 at = mob.getEyePosition().add(mob.getLookAngle().scale(0.45)).add(0, -0.25, 0);
+                    Vec3 at = attackPoint(mc, mob);
                     mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, red ? 0.85 : 0.65, red ? 2 : 1, 0);   // 1 dourada, 2 vermelha
+                    GLINT2.put(m.a(), now + Math.max(0, (long) Math.abs(m.f()) - 140));
                     if (m.b() == me.getId())
                         mc.level.playLocalSound(at.x, at.y, at.z, ModSounds.SWORD_SWING.get(), SoundSource.HOSTILE, red ? 0.6f : 0.35f, red ? 0.7f : 2.0f, false);
                 }
@@ -110,6 +114,11 @@ public final class CombatFx {
                 else POSTURE.put(m.a(), new Post(m.f(), broken, now));
                 if (broken) KNEELING.add(m.a()); else KNEELING.remove(m.a());
             }
+            case CombatFxPayload.DEATH -> {
+                KNEELING.remove(m.a()); POSTURE.remove(m.a()); INCOMING.remove(m.a());
+                float r = m.f() * Mth.DEG_TO_RAD;
+                DEATHS.put(m.a(), new Death(m.b() == 1, Mth.cos(r), Mth.sin(r)));
+            }
             case CombatFxPayload.CRITICAL -> {
                 POSTURE.remove(m.b()); KNEELING.remove(m.b());
                 if (!mine) return;
@@ -122,8 +131,22 @@ public final class CombatFx {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) {
-        INCOMING.clear(); POSTURE.clear(); KNEELING.clear(); issen = null; rush = null;
+        INCOMING.clear(); POSTURE.clear(); KNEELING.clear(); GLINT2.clear(); DEATHS.clear(); issen = null; rush = null;
     }
+
+    // a parte do mob que vai bater: a mao (mobs com bracos, como zumbi e esqueleto) ou a boca/garras (aranha, lobo...)
+    static Vec3 attackPoint(Minecraft mc, Entity mob) {
+        float yaw = (mob instanceof LivingEntity le ? le.yBodyRot : mob.getYRot()) * Mth.DEG_TO_RAD;
+        Vec3 fwd = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw)), right = new Vec3(-Mth.cos(yaw), 0, -Mth.sin(yaw));
+        float w = mob.getBbWidth(), h = mob.getBbHeight();
+        boolean arms = mc.getEntityRenderDispatcher().getRenderer(mob) instanceof net.minecraft.client.renderer.entity.LivingEntityRenderer<?, ?> lr
+                && lr.getModel() instanceof net.minecraft.client.model.ArmedModel;
+        if (arms) return mob.position().add(0, h * 0.68, 0).add(fwd.scale(w * 0.5 + 0.42)).add(right.scale(w * 0.38));
+        return mob.getEyePosition().add(fwd.scale(w * 0.5 + 0.12)).add(0, -0.12, 0);
+    }
+
+    // morte com animacao propria? (LivingEntityRendererDeathMixin tira a queda de lado do jogo)
+    public static boolean customDeath(LivingEntity e) { return e.deathTime > 0 && DEATHS.containsKey(e.getId()); }
 
     // ------------------------------------------------------------------ consultas do CombatMoves
 
@@ -178,6 +201,17 @@ public final class CombatFx {
         if (mc.level == null) return;
         long now = now();
         INCOMING.values().removeIf(in -> now - in.hitAt() > 600);
+        for (java.util.Iterator<Map.Entry<Integer, Long>> it = GLINT2.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Integer, Long> en = it.next();
+            if (now < en.getValue()) continue;
+            it.remove();
+            Incoming in = INCOMING.get(en.getKey());
+            Entity mob = mc.level.getEntity(en.getKey());
+            if (in == null || mob == null) continue;
+            Vec3 at = attackPoint(mc, mob);
+            mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, in.red() ? 1.0 : 0.8, in.red() ? 2 : 1, 0);
+        }
+        DEATHS.keySet().removeIf(id -> mc.level.getEntity(id) == null);
         POSTURE.entrySet().removeIf(en -> !en.getValue().broken() && now - en.getValue().at() > 20000);
         if (mc.level.getGameTime() % 3 != 0) return;
         for (int id : KNEELING) {
@@ -190,9 +224,46 @@ public final class CombatFx {
         }
     }
 
+    private static float smooth(float a) { a = Mth.clamp(a, 0f, 1f); return a * a * (3 - 2 * a); }
+
+    // queda com quiquezinho no fim: 0 em pe -> 90 deitado
+    private static float fall(float a) {
+        a = Mth.clamp(a, 0f, 1f);
+        if (a < 0.8f) { float k = a / 0.8f; return 90f * k * k; }               // acelera caindo (gravidade)
+        return 90f - 9f * Mth.sin(Mth.PI * (a - 0.8f) / 0.2f);                 // bate no chao e quica um pouco
+    }
+
+    // Morte (mod Combat), duas animacoes do corpo inteiro (o mob some no fim, como sempre):
+    //  - normal: cambaleia para tras, na direcao do golpe, e cai de costas, quicando no chao
+    //  - com stab (morto por estocada): treme espetado, cai de joelhos e tomba para a frente, em cima de quem matou
+    private static boolean deathPose(RenderLivingEvent.Pre<?, ?> e) {
+        LivingEntity le = e.getEntity();
+        Death d = DEATHS.get(le.getId());
+        if (d == null || le.deathTime <= 0) return false;
+        float t = Mth.clamp((le.deathTime - 1 + e.getPartialTick()) / 20f, 0f, 1f);
+        PoseStack ps = e.getPoseStack();
+        ps.pushPose();
+        float h = le.getBbHeight();
+        if (!d.stab()) {
+            float back = smooth(t / 0.3f);
+            ps.translate(d.dx() * 0.35f * back, 0, d.dz() * 0.35f * back);
+            float ang = fall((t - 0.12f) / 0.6f);
+            ps.mulPose(new org.joml.Quaternionf().rotationAxis(ang * Mth.DEG_TO_RAD, d.dz(), 0, -d.dx()));
+        } else {
+            float shake = t < 0.3f ? (1 - t / 0.3f) : 0f;
+            float j = Mth.sin(System.currentTimeMillis() / 22f) * 3f * shake;
+            float knees = smooth((t - 0.25f) / 0.25f);
+            ps.translate(0, 0.06f * shake - h * 0.18f * knees, 0);
+            float ang = -(18f * knees + (fall((t - 0.5f) / 0.45f)) * (1 - 18f / 90f));   // negativo: tomba para quem matou
+            ps.mulPose(new org.joml.Quaternionf().rotationAxis((ang + j) * Mth.DEG_TO_RAD, d.dz(), 0, -d.dx()));
+        }
+        return true;
+    }
+
     // quebrado: cai de joelhos (abaixa e inclina para a frente)
     @SubscribeEvent
     public static void onLivingPre(RenderLivingEvent.Pre<?, ?> e) {
+        if (deathPose(e)) return;
         if (!KNEELING.contains(e.getEntity().getId())) return;
         LivingEntity le = e.getEntity();
         float yaw = Mth.rotLerp(e.getPartialTick(), le.yBodyRotO, le.yBodyRot) * Mth.DEG_TO_RAD;
@@ -204,7 +275,8 @@ public final class CombatFx {
 
     @SubscribeEvent
     public static void onLivingPost(RenderLivingEvent.Post<?, ?> e) {
-        if (KNEELING.contains(e.getEntity().getId())) e.getPoseStack().popPose();
+        LivingEntity le = e.getEntity();
+        if (DEATHS.containsKey(le.getId()) && le.deathTime > 0 || KNEELING.contains(le.getId())) e.getPoseStack().popPose();
     }
 
     @SubscribeEvent
@@ -224,7 +296,11 @@ public final class CombatFx {
             if (!post.broken() && post.frac() < 0.5f) continue;
             Entity ent = mc.level.getEntity(en.getKey());
             if (ent == null || ent.distanceToSqr(cp) > 32 * 32) continue;
-            Vec3 at = ent.getPosition(pt).add(0, ent.getBbHeight() + 0.12, 0);
+            // embaixo do mob, um pouco para o lado da camera (nao some dentro do chao nem atras dele)
+            Vec3 feet = ent.getPosition(pt);
+            Vec3 toCam = cp.subtract(feet).multiply(1, 0, 1);
+            toCam = toCam.lengthSqr() < 1e-4 ? Vec3.ZERO : toCam.normalize().scale(ent.getBbWidth() * 0.5 + 0.2);
+            Vec3 at = feet.add(toCam).add(0, 0.12, 0);
             ps.pushPose();
             ps.translate(at.x - cp.x, at.y - cp.y, at.z - cp.z);
             ps.mulPose(cam.rotation());

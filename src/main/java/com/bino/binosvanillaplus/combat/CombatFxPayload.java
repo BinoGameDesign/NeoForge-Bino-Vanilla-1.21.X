@@ -15,8 +15,9 @@ import net.minecraft.resources.ResourceLocation;
 //   RUSH           a = jogador, b = mob
 //   POSTURE        a = mob, b = 1 guarda quebrada, f = 0..1
 //   CRITICAL       a = jogador, b = mob
+//   DEATH          a = mob, b = 1 morte com stab, f = direcao do golpe (graus, atan2(dz, dx))
 public record CombatFxPayload(byte kind, int a, int b, float f) implements CustomPacketPayload {
-    public static final byte TELEGRAPH = 0, PARRY = 1, ISSEN = 2, PERFECT_DODGE = 3, RUSH = 4, POSTURE = 5, CRITICAL = 6;
+    public static final byte TELEGRAPH = 0, PARRY = 1, ISSEN = 2, PERFECT_DODGE = 3, RUSH = 4, POSTURE = 5, CRITICAL = 6, DEATH = 7;
     public static final Type<CombatFxPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "combat_fx"));
     public static final StreamCodec<ByteBuf, CombatFxPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BYTE, CombatFxPayload::kind, ByteBufCodecs.VAR_INT, CombatFxPayload::a,

@@ -44,6 +44,15 @@ public final class CombatMovesServer {
     private static final Map<UUID, Long> HEAVY_READY = new HashMap<>();
     static boolean ownHit;   // golpe feito aqui (pesado, Issen, critico...): sem o bonus do leve por cima
     private static CombatMove hitting;   // golpe do servidor que esta batendo agora (para a postura)
+    static final Map<UUID, Long> STAB = new HashMap<>();   // mob -> tick em que levou uma estocada (morte "com stab")
+
+    static boolean stabMove(CombatMove m, boolean axe) {
+        return switch (m) {
+            case FORWARD, ROLL_THRUST -> true;
+            case PIERCE, GUARD_BREAK, JUDGMENT, CRITICAL -> !axe;
+            default -> false;
+        };
+    }
 
     public static void onMove(ServerPlayer p, MovePayload m) {
         CombatEvents.Weapon w = CombatEvents.weapon(p.getMainHandItem());
@@ -106,10 +115,26 @@ public final class CombatMovesServer {
         if (hitting != null) mult = hitting.posture();
         else if (!ownHit) { Recent r = recentLight(p); if (r != null) mult = r.move().posture(); }
         Posture.add(v, e.getNewDamage() * mult);
+        boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+        CombatMove cur = hitting != null ? hitting : RECENT.containsKey(p.getUUID()) ? RECENT.get(p.getUUID()).move() : null;
+        if (cur != null && stabMove(cur, axe) && (hitting != null || recentLight(p) != null)) STAB.put(v.getUUID(), v.level().getGameTime());
         // combo aereo: o mob atingido no ar fica parado no ar um instante (malabarismo, estilo Kingdom Hearts)
         Recent r = RECENT.get(p.getUUID());
         if (!p.onGround() && r != null && (r.move().aerial() || r.move() == CombatMove.LAUNCHER)
                 && p.level().getGameTime() - r.tick() < 40) Posture.freeze(v, 7);
+    }
+
+    // morte de mob por jogador: avisa o cliente qual animacao de morte tocar (normal ou "com stab") e de que lado veio
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent e) {
+        LivingEntity v = e.getEntity();
+        Long st = STAB.remove(v.getUUID());
+        if (STAB.size() > 256) STAB.clear();
+        if (v instanceof Player || !(e.getSource().getEntity() instanceof Player killer) || v.level().isClientSide) return;
+        boolean stab = st != null && v.level().getGameTime() - st <= 3;
+        Vec3 d = v.position().subtract(killer.position());
+        float yaw = (float) Math.toDegrees(Math.atan2(d.z, d.x));
+        PacketDistributor.sendToPlayersTrackingEntity(v, new CombatFxPayload(CombatFxPayload.DEATH, v.getId(), stab ? 1 : 0, yaw));
     }
 
     // golpe do servidor: na hora do impacto, acerta quem estiver no arco a frente (ou em volta, nas pancadas no chao)
@@ -149,7 +174,7 @@ public final class CombatMovesServer {
                 Vec3 out = to.multiply(1, 0, 1);
                 Vec3 push = around && out.lengthSqr() > 1e-4 ? out.normalize() : look;
                 if (mv == CombatMove.LAUNCHER) {   // Lanca-Ceu: joga o mob para cima (o jogador pula atras)
-                    t.setDeltaMovement(push.x * 0.15, 0.95, push.z * 0.15);
+                    t.setDeltaMovement(push.x * 0.15, 0.78, push.z * 0.15);
                     t.hurtMarked = true;
                 } else if (mv == CombatMove.GUARD_BREAK) {
                     if (pd.axe()) { t.setDeltaMovement(push.x * 0.1, 0.7, push.z * 0.1); t.hurtMarked = true; }   // cabo no queixo: levanta

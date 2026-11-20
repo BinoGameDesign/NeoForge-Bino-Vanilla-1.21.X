@@ -23,6 +23,11 @@ public abstract class CameraRollMixin {
                                            float partialTick, CallbackInfo ci) {
         if (detached || !(entity instanceof Player p)) return;
         float d = DodgeRoll.cameraDrop(p) + com.bino.binosvanillaplus.client.combat.CombatMoves.cameraDrop(p);
-        if (d > 0.001f) setPosition(getPosition().add(0, -d, 0));
+        float f = com.bino.binosvanillaplus.client.combat.CombatMoves.cameraForward(p);
+        if (d < 0.001f && Math.abs(f) < 0.001f) return;
+        org.joml.Vector3f look = ((Camera) (Object) this).getLookVector();
+        double hl = Math.sqrt(look.x * look.x + look.z * look.z);
+        double fx = hl > 1e-4 ? look.x / hl * f : 0, fz = hl > 1e-4 ? look.z / hl * f : 0;
+        setPosition(getPosition().add(fx, -d, fz));
     }
 }

@@ -22,7 +22,8 @@ public final class MoveAnims {
     static final int LIN = 0, W = 1, S = 2, F = 3, R = 4;
 
     // descanso (mao parada com a arma)
-    static final float[] REST = {0.50f, -0.50f, -0.72f, -8, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // descanso = exatamente onde o jogo desenha a mao com o item (a pose de cada golpe e' aplicada em cima da do jogo)
+    static final float[] REST = {0.56f, -0.52f, -0.72f, -8, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     record Key(float t, int ease, float[] v) {}
 
@@ -96,9 +97,10 @@ public final class MoveAnims {
                     rest(1, 0, -360));
             // QUEBRA-GUARDA (3o): estocada com o ombro que atordoa
             case GUARD_BREAK -> keys(
-                    k(0.30f, W).h(0.30f, -0.40f, -0.15f).a(-5, 88, 90).b(35, -5).m(0, 0, 0.4f),
-                    k(0.45f, S).h(0.15f, -0.28f, -1.10f).a(-3, 90, 90).b(-25, 22).m(0, 0.9f, 0.4f).d(0.35f),
-                    k(0.65f, F).h(0.15f, -0.30f, -1.02f).a(-3, 90, 90).b(-22, 20).m(0, 0.9f, 0.4f).d(0.3f),
+                    k(0.30f, W).h(0.44f, -0.44f, -0.08f).a(4, 94, 90).b(38, -5).m(0, 0, 0.45f),
+                    k(0.45f, S).h(0.14f, -0.27f, -1.18f).a(-2, 90, 90).b(-26, 22).m(0, 0.9f, 0.4f).d(0.4f),
+                    k(0.53f, F).h(0.13f, -0.26f, -1.24f).a(-2, 90, 70).b(-27, 23).m(0, 0.9f, 0.4f).d(0.45f),
+                    k(0.72f, F).h(0.16f, -0.31f, -1.0f).a(-3, 92, 80).b(-18, 18).m(0, 0.9f, 0.4f).d(0.3f),
                     rest(1));
             // 4o do Quebra-Guarda: primeiro corte do X
             case BREAK_1 -> keys(
@@ -118,11 +120,12 @@ public final class MoveAnims {
                     k(0.30f, S).h(-0.05f, -0.35f, -0.85f).a(-20, 90, -80).b(-5, 8).r(180, 0, 0).m(0, 0.3f, 0.5f).d(0.1f),
                     k(0.50f, F).h(-0.45f, 0.05f, -0.55f).a(-80, 40, -80).b(-35, -5).r(360, 0, 0).m(0, 0.3f, 0.1f),
                     rest(1, 360, 0));
-            // saindo do rolamento pesado: estocada longa
+            // saindo do rolamento pesado: estocada longa subindo do chao
             case ROLL_THRUST -> keys(
-                    k(0.25f, W).h(0.42f, -0.36f, -0.20f).a(-4, 88, 90).b(25, -6).m(0, 0, 0.5f),
-                    k(0.40f, S).h(0.12f, -0.24f, -1.20f).a(-3, 90, 90).b(-18, 25).m(0, 1, 0.45f).d(0.5f),
-                    k(0.62f, F).h(0.12f, -0.26f, -1.10f).a(-3, 90, 90).b(-16, 24).m(0, 1, 0.45f).d(0.45f),
+                    k(0.24f, W).h(0.46f, -0.50f, -0.10f).a(4, 100, 90).b(28, 4).m(0, 0, 0.7f),
+                    k(0.40f, S).h(0.10f, -0.24f, -1.28f).a(-2, 88, 90).b(-18, 25).m(0, 1, 0.4f).d(0.55f),
+                    k(0.48f, F).h(0.09f, -0.23f, -1.34f).a(-2, 88, 70).b(-20, 26).m(0, 1, 0.4f).d(0.6f),
+                    k(0.70f, F).h(0.14f, -0.30f, -1.08f).a(-3, 92, 80).b(-12, 18).m(0, 0.9f, 0.35f).d(0.4f),
                     rest(1));
             // pesado: puxa por tras do ombro, segura e desce com o corpo todo
             case HEAVY -> keys(
@@ -137,11 +140,12 @@ public final class MoveAnims {
                     k(0.55f, S).h(0.05f, -0.40f, -0.86f).a(-2, 136, 0).b(0, 30).r(0, 0, 360).m(0, 0.3f, 0.3f),
                     k(0.72f, F).h(0.05f, -0.56f, -0.74f).a(-2, 160, 0).b(0, 30).r(0, 0, 360).m(0, 0.3f, 0.4f),
                     rest(1, 0, 360));
-            // investida: estocada reta deslizando
+            // investida: estocada reta deslizando (puxa ao peito, dispara, passa do ponto e recolhe)
             case FORWARD -> keys(
-                    k(0.20f, W).h(0.42f, -0.36f, -0.24f).a(-4, 88, 90).b(22, -6).m(0, 0, 0.4f),
-                    k(0.32f, S).h(0.12f, -0.25f, -1.16f).a(-3, 90, 90).b(-16, 22).m(0, 0.9f, 0.35f).d(0.4f),
-                    k(0.52f, F).h(0.12f, -0.26f, -1.05f).a(-3, 90, 90).b(-16, 22).m(0, 0.9f, 0.35f).d(0.35f),
+                    k(0.18f, W).h(0.46f, -0.42f, -0.12f).a(4, 92, 90).b(26, -6).m(0, 0, 0.45f),
+                    k(0.30f, S).h(0.10f, -0.26f, -1.25f).a(-2, 90, 90).b(-18, 24).m(0, 0.95f, 0.35f).d(0.45f),
+                    k(0.38f, F).h(0.09f, -0.25f, -1.32f).a(-2, 90, 70).b(-20, 25).m(0, 0.95f, 0.35f).d(0.5f),
+                    k(0.60f, F).h(0.14f, -0.30f, -1.05f).a(-3, 92, 80).b(-12, 18).m(0, 0.9f, 0.3f).d(0.35f),
                     rest(1));
             // parry: lamina atravessada na frente do rosto, desvia e abre
             case PARRY -> keys(
@@ -181,11 +185,12 @@ public final class MoveAnims {
                     k(0.30f, S).h(-0.20f, -0.28f, -0.90f).a(-40, 90, -90).b(-15, 20).m(0, 0.9f, 0.35f).d(0.45f),
                     k(0.50f, F).h(-0.58f, -0.30f, -0.45f).a(-100, 92, -90).b(-42, 15).m(0, 0.9f, 0.3f).d(0.4f),
                     rest(1));
-            // Perfurador: estocada longa atravessando a fila
+            // Perfurador: estocada longa atravessando a fila (gira a lamina no fim, como quem crava)
             case PIERCE -> keys(
-                    k(0.25f, W).h(0.40f, -0.30f, -0.05f).a(-4, 88, 90).b(30, -4).m(0, 0, 0.55f),
-                    k(0.40f, S).h(0.10f, -0.24f, -1.25f).a(-3, 90, 90).b(-20, 28).m(0, 1, 0.4f).d(0.6f),
-                    k(0.65f, F).h(0.10f, -0.25f, -1.18f).a(-3, 90, 90).b(-18, 26).m(0, 1, 0.4f).d(0.55f),
+                    k(0.25f, W).h(0.48f, -0.40f, 0.0f).a(4, 94, 90).b(32, -4).m(0, 0, 0.6f),
+                    k(0.40f, S).h(0.10f, -0.25f, -1.30f).a(-2, 90, 90).b(-22, 28).m(0, 1, 0.4f).d(0.65f),
+                    k(0.50f, F).h(0.09f, -0.24f, -1.38f).a(-2, 90, 30).b(-24, 29).m(0, 1, 0.4f).d(0.7f),
+                    k(0.72f, F).h(0.14f, -0.30f, -1.10f).a(-3, 92, 60).b(-14, 20).m(0, 0.9f, 0.35f).d(0.45f),
                     rest(1));
             // Lanca-Ceu: corte de baixo para cima que joga o mob para o alto, e pula atras
             case LAUNCHER -> keys(
@@ -407,7 +412,8 @@ public final class MoveAnims {
         };
     }
 
-    // pose no tempo u (0..1)
+    // pose no tempo u (0..1): curva Catmull-Rom passando pelas chaves (a velocidade nao "quebra" ao passar por uma
+    // chave, o que deixa o movimento fluido), com a curva de tempo de cada trecho (preparacao/golpe/continuacao)
     static float[] sample(Key[] k, float u) {
         float[] out = new float[N];
         if (u <= k[0].t()) { System.arraycopy(k[0].v(), 0, out, 0, N); return out; }
@@ -415,7 +421,15 @@ public final class MoveAnims {
             if (u <= k[i + 1].t()) {
                 float a = (u - k[i].t()) / Math.max(1e-4f, k[i + 1].t() - k[i].t());
                 a = ease(k[i + 1].ease(), a);
-                for (int j = 0; j < N; j++) out[j] = k[i].v()[j] + (k[i + 1].v()[j] - k[i].v()[j]) * a;
+                float[] p0 = k[Math.max(0, i - 1)].v(), p1 = k[i].v(), p2 = k[i + 1].v(), p3 = k[Math.min(k.length - 1, i + 2)].v();
+                float a2 = a * a, a3 = a2 * a;
+                for (int j = 0; j < N; j++) {
+                    float cr = 0.5f * (2 * p1[j] + (-p0[j] + p2[j]) * a + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * a2
+                            + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * a3);
+                    float lin = p1[j] + (p2[j] - p1[j]) * a;
+                    // rodopio/cambalhota em voltas inteiras: sem passar do ponto (nao pode girar para tras)
+                    out[j] = j == SP || j == FL ? lin : cr;
+                }
                 return out;
             }
         }
