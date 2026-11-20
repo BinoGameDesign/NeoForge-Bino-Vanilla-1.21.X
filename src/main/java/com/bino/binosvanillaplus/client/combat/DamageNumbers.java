@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 // Numeros de dano (mod Combat). Cada numero da um "pop", sobe fazendo um arco para um lado sorteado e some em fade.
-// Tamanho pelo dano (com limites). Cores: fisico branco; fogo e raio amarelos; critico vermelho claro com "Critical"
+// Tamanho pelo dano (com limites). Cores: fisico branco; fogo e raio amarelos; critico vermelho claro com "Critical" (branco)
 // em cima; afogamento azul; veneno verde claro; "Block" e "Miss" cinza. Golpes muito rapidos no mesmo alvo SOMAM no
 // numero que ja esta no ar (ele cresce e da outro pop).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
@@ -158,7 +158,7 @@ public final class DamageNumbers {
                 ps.translate(0, -7, 0);
                 ps.scale(0.6f, 0.6f, 0.6f);
                 String c = "Critical";
-                font.drawInBatch(c, -font.width(c) / 2f, 0, col, false, ps.last().pose(), buf, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                font.drawInBatch(c, -font.width(c) / 2f, 0, (a << 24) | 0xFFFFFF, false, ps.last().pose(), buf, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
                 ps.popPose();
             }
             ps.popPose();

@@ -22,7 +22,9 @@
         "client.LivingEntityRendererFlashMixin",
         "client.LivingEntityRendererHitReactMixin",
         "client.ModelPartAccessor",
-        "client.AgeableListModelAccessor"
+        "client.AgeableListModelAccessor",
+        "client.ItemInHandRendererAccessor",
+        "client.HumanoidModelCombatMixin"
     ],
     "injectors": {
         "defaultRequire": 1

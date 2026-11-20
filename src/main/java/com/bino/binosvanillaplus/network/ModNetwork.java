@@ -62,6 +62,12 @@ public class ModNetwork {
         registrar.playToServer(com.bino.binosvanillaplus.combat.SwingPayload.TYPE, com.bino.binosvanillaplus.combat.SwingPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatEvents.onSwing((ServerPlayer) context.player(), payload)));
 
+        // mod Combat: golpes do combo (cliente -> servidor) e animacao dos outros jogadores (servidor -> clientes)
+        registrar.playToServer(com.bino.binosvanillaplus.combat.MovePayload.TYPE, com.bino.binosvanillaplus.combat.MovePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatMovesServer.onMove((ServerPlayer) context.player(), payload)));
+        registrar.playToClient(com.bino.binosvanillaplus.combat.MoveBroadcastPayload.TYPE, com.bino.binosvanillaplus.combat.MoveBroadcastPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.CombatMoves.receive(payload)));
+
         // lanterna do capacete (tecla)
         registrar.playToServer(HelmetLampTogglePayload.TYPE, HelmetLampTogglePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> toggleHelmetLamp((ServerPlayer) context.player())));
