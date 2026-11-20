@@ -34,8 +34,10 @@ public abstract class MeleeAttackGoalTelegraphMixin {
         long now = this.mob.level().getGameTime();
         if (binosvanillaplus$windupStart < 0) {
             if (!canPerformAttack(target)) return;   // o jogo tambem nao bateria
-            binosvanillaplus$windupStart = now;
             int wind = Telegraphs.windup(this.mob);
+            // ficha de ataque (CombatAI): ja ha 2 mobs atacando este jogador -> espera a vez (rodeando)
+            if (!com.bino.binosvanillaplus.combat.CombatAI.take(p, this.mob, wind + Telegraphs.grace(p))) { ci.cancel(); return; }
+            binosvanillaplus$windupStart = now;
             binosvanillaplus$hitAt = now + wind + Telegraphs.grace(p);
             binosvanillaplus$red = Telegraphs.rollRed(this.mob);
             Telegraphs.start(this.mob, p, wind, binosvanillaplus$red);
@@ -45,6 +47,7 @@ public abstract class MeleeAttackGoalTelegraphMixin {
         if (now < binosvanillaplus$hitAt) { ci.cancel(); return; }   // segurando o golpe
         long start = binosvanillaplus$windupStart;
         binosvanillaplus$windupStart = -1;
+        com.bino.binosvanillaplus.combat.CombatAI.attacked(this.mob, p);   // depois do golpe: recua e devolve a ficha
         if (Telegraphs.tryParry(this.mob, p, start, binosvanillaplus$red)) {   // aparado: nao bate
             resetAttackCooldown();
             this.mob.swing(InteractionHand.MAIN_HAND);
