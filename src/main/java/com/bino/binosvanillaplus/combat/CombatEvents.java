@@ -81,7 +81,7 @@ public final class CombatEvents {
                 level.playSound(null, victim.getX(), victim.getY() + victim.getBbHeight() * 0.6, victim.getZ(), s, SoundSource.PLAYERS,
                         1.0f, 0.92f + level.random.nextFloat() * 0.16f);
             }
-            sparks(level, a, victim, w == Weapon.NONE ? 4 : crit ? 14 : 9);
+            sparks(level, a, victim, w == Weapon.NONE ? 10 : crit ? 36 : 22);
         }
         send(victim, e.getNewDamage(), crit ? KIND_CRIT : kind(src, victim));
     }
@@ -94,16 +94,24 @@ public final class CombatEvents {
         return KIND_PHYSICAL;
     }
 
-    // faiscas voando na direcao do golpe, saindo do ponto de contato
+    // faiscas: nascem na SUPERFICIE do alvo, no ponto que o atacante acertou (do lado de quem bate, para dar para ver),
+    // e espirram para fora (para os lados, para cima e um pouco de volta para o atacante), nunca para dentro do mob
     static void sparks(ServerLevel level, LivingEntity attacker, LivingEntity victim, int count) {
-        Vec3 dir = victim.position().subtract(attacker.position()).multiply(1, 0, 1);
-        dir = dir.lengthSqr() < 1.0e-4 ? attacker.getLookAngle() : dir.normalize();
-        Vec3 look = attacker.getLookAngle();
-        dir = dir.add(0, look.y * 0.5 + 0.15, 0).normalize();
-        Vec3 hit = victim.position().add(0, victim.getBbHeight() * 0.6, 0).subtract(dir.scale(victim.getBbWidth() * 0.45));
+        Vec3 eye = attacker.getEyePosition();
+        Vec3 aim = victim.getBoundingBox().getCenter().add(0, victim.getBbHeight() * 0.1, 0);
+        Vec3 hit = victim.getBoundingBox().inflate(0.05).clip(eye, aim).orElse(aim);
+        Vec3 out = eye.subtract(hit);
+        out = out.lengthSqr() < 1.0e-4 ? attacker.getLookAngle().reverse() : out.normalize();
+        hit = hit.add(out.scale(0.15));   // um pouco para fora do corpo
+        Vec3 side = out.cross(new Vec3(0, 1, 0));
+        side = side.lengthSqr() < 1.0e-4 ? new Vec3(1, 0, 0) : side.normalize();
+        var r = level.random;
         for (int i = 0; i < count; i++) {
-            Vec3 v = dir.add((level.random.nextDouble() - 0.5) * 0.9, (level.random.nextDouble() - 0.3) * 0.7, (level.random.nextDouble() - 0.5) * 0.9).normalize();
-            double sp = 0.25 + level.random.nextDouble() * 0.35;
+            Vec3 v = out.scale(0.35 + r.nextDouble() * 0.5)
+                    .add(side.scale((r.nextDouble() - 0.5) * 2.6))
+                    .add(0, 0.15 + r.nextDouble() * 0.9, 0)
+                    .normalize();
+            double sp = 0.35 + r.nextDouble() * 0.6;
             level.sendParticles(ModParticles.HIT_SPARK.get(), hit.x, hit.y, hit.z, 0, v.x, v.y, v.z, sp);
         }
     }

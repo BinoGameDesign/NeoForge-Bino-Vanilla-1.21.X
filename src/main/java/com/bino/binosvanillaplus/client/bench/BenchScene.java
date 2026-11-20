@@ -155,7 +155,10 @@ public final class BenchScene {
         if (mc.screen instanceof BenchSceneScreen) mc.setScreen(null);
     }
 
+    public static boolean browsing;   // abriu o Receitas+ de dentro da cena (a cena continua aberta por tras)
+
     public static void screenClosed() {
+        if (browsing) return;
         if (leaving || phase == Phase.NONE || phase == Phase.OUTRO) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && menu() != null) {
@@ -186,6 +189,10 @@ public final class BenchScene {
         if (player == null || mc.level == null) { abort(); return; }
         double now = clock();
         if (phase == Phase.OUTRO) { if (now - phaseAt >= OUTRO) finish(); return; }
+        if (browsing && !(mc.screen instanceof com.bino.binosvanillaplus.client.recipes.RecipeLookupScreen)) {
+            browsing = false;   // saiu do Receitas+ sem voltar para a cena: fecha a cena tambem
+            if (!(mc.screen instanceof BenchSceneScreen)) screenClosed();
+        }
         if (menu() == null) return;   // screenClosed cuida
         if (phase == Phase.INTRO && now - phaseAt >= LEAN) {
             phase = Phase.ACTIVE;

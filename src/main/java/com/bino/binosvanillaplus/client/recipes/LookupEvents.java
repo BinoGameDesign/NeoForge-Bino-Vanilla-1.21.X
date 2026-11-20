@@ -47,6 +47,11 @@ public class LookupEvents {
         Screen screen = event.getScreen();
         if (screen instanceof RecipeLookupScreen || !(screen instanceof AbstractContainerScreen<?> cs)) return;
         if (screen.getFocused() instanceof EditBox box && box.canConsumeInput()) return;   // digitando em uma busca
+        for (var c : screen.children()) if (c instanceof EditBox b && b.isFocused() && b.isVisible()) return;
+        // criativo: a busca do criativo nao fica como "foco" da tela, entao olha ela direto
+        if (screen instanceof net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen cr
+                && ((com.bino.binosvanillaplus.mixin.client.CreativeSearchAccessor) cr).binosvanillaplus$searchBox() instanceof EditBox sb
+                && sb.isFocused() && sb.isVisible()) return;
 
         Slot slot = cs.getSlotUnderMouse();
         if (slot == null || !slot.hasItem()) return;

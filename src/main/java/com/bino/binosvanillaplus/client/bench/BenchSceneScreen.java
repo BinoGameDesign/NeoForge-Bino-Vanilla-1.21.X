@@ -34,6 +34,7 @@ public class BenchSceneScreen extends Screen {
 
     @Override
     protected void init() {
+        BenchScene.browsing = false;
         if (BenchScene.kind == BenchScene.Kind.ANVIL) {
             name = new EditBox(font, width / 2 - 80, 40, 160, 16, Component.translatable("container.repair"));
             name.setMaxLength(50);
@@ -103,7 +104,15 @@ public class BenchSceneScreen extends Screen {
 
     private static boolean in(double mx, double my, int x, int y) { return mx >= x && my >= y && mx < x + SLOT && my < y + SLOT; }
 
+    // botao "Receitas+" embaixo no centro (so na bancada)
+    private static final int RW = 74, RH = 18;
+    private boolean hasRecipes() { return BenchScene.kind == BenchScene.Kind.CRAFTING && BenchScene.phase == BenchScene.Phase.ACTIVE; }
+    private int rx() { return width / 2 - RW / 2; }
+    private int ry() { return height - BOTTOM - RH + (int) ((1 - slide()) * 34); }
+    private boolean overRecipes(double mx, double my) { return hasRecipes() && mx >= rx() && my >= ry() && mx < rx() + RW && my < ry() + RH; }
+
     private boolean overUi(double mx, double my) {
+        if (overRecipes(mx, my)) return true;
         for (Cell c : cells()) if (in(mx, my, c.x, c.y)) return true;
         int[] p = plus();
         return in(mx, my, p[0], p[1]) || nameVisible() && mx >= width / 2 - 90 && mx < width / 2 + 90 && my >= 34 && my < 58;
@@ -191,6 +200,16 @@ public class BenchSceneScreen extends Screen {
         String t = expanded ? "-" : "+";
         BinoUi.text(g, font, t, pl[0] + SLOT / 2f - font.width(t), pl[1] + 3, 2f, BinoUi.TEXT, false);
 
+        // botao Receitas+
+        if (hasRecipes()) {
+            boolean ov = overRecipes(mouseX, mouseY);
+            float hr = hoverAnim.computeIfAbsent(-2, k -> new Tween(0f, 70f)).get(ov ? 1f : 0f);
+            Glass.shadow(g, rx(), ry(), RW, RH, 6, 3f, 6f, 0.35f);
+            Glass.panel(g, rx(), ry() - Math.round(hr), RW, RH, 6, Glass.PANEL.withMilk(0.08f * hr).withRim(0.7f + 0.7f * hr), BinoUi.MENU_BG);
+            String rt = Component.translatableWithFallback("recipes.binosvanillaplus.button", "Receitas+").getString();
+            g.drawString(font, rt, width / 2 - font.width(rt) / 2, ry() + 5 - Math.round(hr), ov ? 0xFFFFFFFF : 0xFFD8D8D8, false);
+        }
+
         // dicas no alto
         float a = slide(), sc = 0.75f;
         String hint = BenchScene.hint();
@@ -215,12 +234,19 @@ public class BenchSceneScreen extends Screen {
             return name.mouseClicked(mx, my, button) || true;
         }
         if (name != null) name.setFocused(false);
+        if (overRecipes(mx, my)) {
+            UiSound.click();
+            BenchScene.browsing = true;
+            Minecraft.getInstance().setScreen(new com.bino.binosvanillaplus.client.recipes.RecipeLookupScreen(this,
+                    com.bino.binosvanillaplus.client.recipes.RecipeLookupScreen.Mode.BROWSE, null));
+            return true;
+        }
         int[] pl = plus();
         if (in(mx, my, pl[0], pl[1])) { expanded = !expanded; UiSound.click(); return true; }
         for (Cell c : cells())
             if (in(mx, my, c.x, c.y)) { BenchScene.barClick(c.slot, button, hasShiftDown()); return true; }
         BenchScene.updateHover();
-        if (!nearBar(mx, my) && BenchScene.outside()) { BenchScene.leave(); return true; }
+        if (!nearBar(mx, my) && !(hasRecipes() && my >= ry() - 12) && BenchScene.outside()) { BenchScene.leave(); return true; }
         BenchScene.click(button, hasShiftDown());
         return true;
     }

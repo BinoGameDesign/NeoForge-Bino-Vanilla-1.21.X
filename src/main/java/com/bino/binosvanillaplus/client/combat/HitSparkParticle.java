@@ -17,10 +17,10 @@ public class HitSparkParticle extends TextureSheetParticle {
     protected HitSparkParticle(ClientLevel level, double x, double y, double z, double vx, double vy, double vz, SpriteSet sprites) {
         super(level, x, y, z, 0, 0, 0);
         this.xd = vx; this.yd = vy; this.zd = vz;   // a velocidade vem pronta do servidor (direcao do golpe)
-        this.friction = 0.86f;
-        this.gravity = 0.9f;
-        this.lifetime = 6 + random.nextInt(6);
-        this.size0 = 0.035f + random.nextFloat() * 0.035f;
+        this.friction = 0.88f;
+        this.gravity = 0.75f;
+        this.lifetime = 10 + random.nextInt(10);
+        this.size0 = 0.06f + random.nextFloat() * 0.06f;   // maiores (o Bino pediu exagero)
         this.quadSize = size0;
         this.hasPhysics = true;
         pickSprite(sprites);

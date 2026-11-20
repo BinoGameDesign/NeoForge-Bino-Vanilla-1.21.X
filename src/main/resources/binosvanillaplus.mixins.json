@@ -24,7 +24,8 @@
         "client.ModelPartAccessor",
         "client.AgeableListModelAccessor",
         "client.ItemInHandRendererAccessor",
-        "client.HumanoidModelCombatMixin"
+        "client.HumanoidModelCombatMixin",
+        "client.CreativeSearchAccessor"
     ],
     "injectors": {
         "defaultRequire": 1
