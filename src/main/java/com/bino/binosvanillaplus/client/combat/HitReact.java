@@ -1,5 +1,6 @@
 package com.bino.binosvanillaplus.client.combat;
 
+import net.minecraft.util.Mth;
 import com.bino.binosvanillaplus.mixin.client.AgeableListModelAccessor;
 import com.bino.binosvanillaplus.mixin.client.ModelPartAccessor;
 import net.minecraft.client.model.AgeableListModel;
