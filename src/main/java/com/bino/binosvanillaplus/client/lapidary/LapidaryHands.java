@@ -231,6 +231,12 @@ public final class LapidaryHands {
     // e esticado ate o comprimento certo
     public static void arm(PoseStack ps, MultiBufferSource buf, Vec3 cam, Vec3 hand, Vec3 shoulder, boolean right, int light,
                             Vec3 forward, LocalPlayer player) {
+        arm(ps, buf, cam, hand, shoulder, right, light, forward, player, ARM_THICK);
+    }
+
+    // mesma coisa com a grossura escolhida (1 = braco normal do jogo); usado tambem pelos golpes do mod Combat
+    public static void arm(PoseStack ps, MultiBufferSource buf, Vec3 cam, Vec3 hand, Vec3 shoulder, boolean right, int light,
+                            Vec3 forward, LocalPlayer player, float thick) {
         if (!(Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player) instanceof PlayerRenderer renderer)) return;
         Vec3 d = hand.subtract(shoulder);
         if (d.lengthSqr() < 1e-8) return;
@@ -249,7 +255,7 @@ public final class LapidaryHands {
         ps.pushPose();
         ps.translate(shoulder.x - cam.x, shoulder.y - cam.y, shoulder.z - cam.z);
         ps.mulPose(rot);
-        ps.scale(ARM_THICK, (float) (length * 16.0 / 12.0), ARM_THICK);
+        ps.scale(thick, (float) (length * 16.0 / 12.0), thick);
         ps.translate((right ? 5 : -5) / 16f, -0.03f, 0);   // desfaz o pivo do braco no modelo (ombro em x = +-5 px)
         if (right) renderer.renderRightHand(ps, buf, light, player);
         else renderer.renderLeftHand(ps, buf, light, player);

@@ -31,7 +31,7 @@ import java.util.UUID;
 public final class CombatMovesServer {
     private CombatMovesServer() {}
 
-    private record Recent(CombatMove move, boolean heavy, long tick) {}
+    private record Recent(CombatMove move, boolean heavy, long tick, int window) {}
     private record Pending(CombatMove move, boolean axe, long atTick) {}
 
     private static final Map<UUID, Recent> RECENT = new HashMap<>();
@@ -44,15 +44,17 @@ public final class CombatMovesServer {
         if (w == CombatEvents.Weapon.NONE) return;
         boolean axe = w == CombatEvents.Weapon.AXE;
         CombatMove move = CombatMove.of(m.move());
+        float delay = p.getCurrentItemAttackStrengthDelay();
         long now = p.level().getGameTime();
         if (m.heavy()) {
             if (now < HEAVY_READY.getOrDefault(p.getUUID(), 0L)) return;   // ainda recarregando
-            int windup = MoveTiming.windupTicks(move, true, axe);
+            int windup = MoveTiming.windupTicks(move, true, axe, delay);
             PENDING.put(p.getUUID(), new Pending(move, axe, now + windup));
-            HEAVY_READY.put(p.getUUID(), now + MoveTiming.lengthTicks(move, true, axe) + 4);
+            HEAVY_READY.put(p.getUUID(), now + MoveTiming.lengthTicks(move, true, axe, delay) - 2);
         }
-        RECENT.put(p.getUUID(), new Recent(move, m.heavy(), now));
-        PacketDistributor.sendToPlayersTrackingEntity(p, new MoveBroadcastPayload(p.getId(), m.move(), m.heavy()));
+        RECENT.put(p.getUUID(), new Recent(move, m.heavy(), now, MoveTiming.windupTicks(move, m.heavy(), axe, delay) + 4));
+        PacketDistributor.sendToPlayersTrackingEntity(p, new MoveBroadcastPayload(p.getId(), m.move(), m.heavy(),
+                MoveTiming.lengthMs(move, m.heavy(), axe, delay)));
     }
 
     // bonus do golpe leve que acabou de ser anunciado (investida, no ar, final do combo)
@@ -60,7 +62,7 @@ public final class CombatMovesServer {
     public static void onIncoming(LivingIncomingDamageEvent e) {
         if (ownHit || !(e.getSource().getEntity() instanceof ServerPlayer p) || e.getSource().getDirectEntity() != p) return;
         Recent r = RECENT.get(p.getUUID());
-        if (r == null || r.heavy() || p.level().getGameTime() - r.tick() > 3) return;
+        if (r == null || r.heavy() || p.level().getGameTime() - r.tick() > r.window()) return;
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         e.setAmount(e.getAmount() * r.move().damage(false, axe));
     }

@@ -122,11 +122,17 @@ public final class HitFx {
     public static void onAttack(AttackEntityEvent e) {
         Minecraft mc = Minecraft.getInstance();
         if (e.getEntity() != mc.player || !(e.getTarget() instanceof LivingEntity)) return;
-        float charge = mc.player.getAttackStrengthScale(0.5f);
+        kick(0.4f + 0.6f * mc.player.getAttackStrengthScale(0.5f));
+    }
+
+    // tranco da camera (hitstop + tremida); tambem usado pelo golpe pesado
+    public static void kick(float power) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
         kickAt = Util.getMillis();
         kickYaw = mc.player.getYRot();
         kickPitch = mc.player.getXRot();
-        kickPower = 0.4f + 0.6f * charge;
+        kickPower = power;
     }
 
     @SubscribeEvent
@@ -174,6 +180,13 @@ public final class HitFx {
         if (p == null || e.getEntity() != p) return;
         CombatEvents.Weapon w = CombatEvents.weapon(p.getMainHandItem());
         if (w == CombatEvents.Weapon.NONE) return;   // (o jogo zera a carga do ataque logo antes deste evento)
+        swingAir(p);
+    }
+
+    // golpe que nao pegou ninguem: som no ar (ou na agua) aqui e para os outros
+    public static void swingAir(LocalPlayer p) {
+        CombatEvents.Weapon w = CombatEvents.weapon(p.getMainHandItem());
+        if (w == CombatEvents.Weapon.NONE) return;
         // a mira bate na agua dentro do alcance?
         Vec3 at = CombatEvents.waterInFront(p);
         if (at != null) {
