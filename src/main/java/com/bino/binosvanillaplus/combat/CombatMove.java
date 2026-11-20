@@ -19,7 +19,8 @@ public enum CombatMove {
     LIGHT_1, LIGHT_2, LIGHT_3, LIGHT_4, HEAVY, JUMP, FORWARD,
     TEMPEST, JUDGMENT, GUARD_BREAK, BREAK_1, BREAK_2,
     ROLL_SLASH, ROLL_THRUST, PARRY, ISSEN, RUSH, CRITICAL,
-    DASH, DASH_SLASH, PIERCE, LAUNCHER, AIR_1, AIR_2, AIR_3, METEOR, DANCE;
+    DASH, DASH_SLASH, PIERCE, LAUNCHER, AIR_1, AIR_2, AIR_3, METEOR, DANCE,
+    BACKSTAB;   // agachado, por tras do mob: crava a arma nas costas (so animacao; o efeito vem por CombatActionPayload)
 
     public static final int MAX_COMBO = 5;
 
@@ -35,7 +36,7 @@ public enum CombatMove {
     }
 
     // so animacao (o efeito vem de outro lugar)
-    public boolean visualOnly() { return this == PARRY || this == ISSEN || this == RUSH || this == CRITICAL || this == DASH; }
+    public boolean visualOnly() { return this == PARRY || this == ISSEN || this == RUSH || this == CRITICAL || this == DASH || this == BACKSTAB; }
 
     public boolean aerial() { return this == AIR_1 || this == AIR_2 || this == AIR_3; }
 

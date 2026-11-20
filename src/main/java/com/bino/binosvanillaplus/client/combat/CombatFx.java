@@ -158,6 +158,10 @@ public final class CombatFx {
     // morte com animacao propria? (LivingEntityRendererDeathMixin tira a queda de lado do jogo)
     public static boolean customDeath(LivingEntity e) { return e.deathTime > 0 && DEATHS.containsKey(e.getId()); }
 
+    // barras de cinema por um tempo (facada pelas costas)
+    private static long letterboxUntil;
+    static void letterbox(long ms) { letterboxUntil = now() + ms; letterboxAt = now(); }
+
     // ------------------------------------------------------------------ consultas do CombatMoves
 
     // golpe vindo em mim agora? (mob id, ou -1). perfeito = bem na hora
@@ -420,9 +424,9 @@ public final class CombatFx {
             g.fill(0, 0, w, h, ((int) (k * 35) << 24) | 0x103060);
         }
         // barras de cinema do golpe critico
-        long dl = now - letterboxAt;
-        if (dl < 950) {
-            float k = dl < 150 ? dl / 150f : dl > 750 ? (950 - dl) / 200f : 1f;
+        long dl = now - letterboxAt, total = Math.max(950, letterboxUntil - letterboxAt);
+        if (dl < total) {
+            float k = dl < 150 ? dl / 150f : dl > total - 200 ? (total - dl) / 200f : 1f;
             int bar = (int) (h * 0.11f * k);
             g.fill(0, 0, w, bar, 0xFF000000);
             g.fill(0, h - bar, w, h, 0xFF000000);

@@ -63,7 +63,6 @@ public final class PlayerLife {
             if (amt < 0.15f) {   // parado: respiracao
                 float b = Mth.sin(age * 0.045f);
                 m.body.zRot += b * 0.018f;
-                m.head.zRot += b * 0.012f;
             }
         } else if (!p.isInWater()) {   // no ar
             float vy = (float) p.getDeltaMovement().y;

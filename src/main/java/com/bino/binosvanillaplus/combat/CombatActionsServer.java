@@ -43,6 +43,16 @@ public final class CombatActionsServer {
     private static final Map<UUID, Long> FINISHED_BY_SPECIAL = new HashMap<>();   // mob -> tick do golpe especial
 
     private record RushHit(UUID player, int mobId, long at, int left) {}
+    private record StabHit(UUID player, int mobId, long at, boolean axe) {}
+    private static final List<StabHit> STABS = new ArrayList<>();
+
+    // jogador atras do mob (fora do campo de visao dele)
+    static boolean behind(Player p, LivingEntity t) {
+        double y = Math.toRadians(t.yBodyRot);
+        Vec3 face = new Vec3(-Math.sin(y), 0, Math.cos(y));
+        Vec3 to = p.position().subtract(t.position()).multiply(1, 0, 1);
+        return to.lengthSqr() > 1e-4 && face.dot(to.normalize()) < -0.35;
+    }
     private static final List<RushHit> RUSHES = new ArrayList<>();
 
     public static void onAction(ServerPlayer p, CombatActionPayload m) {
@@ -69,6 +79,13 @@ public final class CombatActionsServer {
                 if (w == null || w.mobId() != target.getId() || now > w.until() || target.distanceToSqr(p) > 6 * 6) return;
                 RUSHES.add(new RushHit(p.getUUID(), target.getId(), now + 1, 5));
                 send(p, CombatFxPayload.RUSH, target, 0);
+            }
+            case CombatActionPayload.BACKSTAB -> {
+                CombatMovesServer.broadcast(p, CombatMove.BACKSTAB, false);
+                if (!p.isCrouching() || target.distanceToSqr(p) > 3.2 * 3.2 || !behind(p, target) || target instanceof net.minecraft.world.entity.player.Player) return;
+                Posture.freeze(target, 24);   // fica parado enquanto a arma entra e sai
+                boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+                STABS.add(new StabHit(p.getUUID(), target.getId(), now + 9, axe));
             }
             case CombatActionPayload.CRITICAL -> {
                 CombatMovesServer.broadcast(p, CombatMove.CRITICAL, false);
@@ -172,6 +189,26 @@ public final class CombatActionsServer {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post e) {
         if (FINISHED_BY_SPECIAL.size() > 256) FINISHED_BY_SPECIAL.clear();
+        // facada pelas costas: o golpe entra no momento certo da animacao
+        for (Iterator<StabHit> it = STABS.iterator(); it.hasNext(); ) {
+            StabHit s = it.next();
+            ServerPlayer p = e.getServer().getPlayerList().getPlayer(s.player());
+            if (p == null) { it.remove(); continue; }
+            ServerLevel level = p.serverLevel();
+            if (level.getGameTime() < s.at()) continue;
+            it.remove();
+            if (!(level.getEntity(s.mobId()) instanceof LivingEntity t) || !t.isAlive()) continue;
+            FINISHED_BY_SPECIAL.put(t.getUUID(), level.getGameTime());
+            if (!s.axe()) CombatMovesServer.STAB.put(t.getUUID(), level.getGameTime());
+            hit(p, t, attack(p) * 5f);
+            Posture.add(t, Posture.max(t) * 0.6f);
+            Vec3 c = t.getBoundingBox().getCenter();
+            level.sendParticles(ModParticles.IMPACT_STAR.get(), c.x, c.y, c.z, 0, 1.2, 0, 0, 1.0);
+            level.sendParticles(ModParticles.HIT_SPARK.get(), c.x, c.y, c.z, 30, 0.15, 0.25, 0.15, 0.4);
+            level.playSound(null, c.x, c.y, c.z, s.axe() ? ModSounds.AXE_HIT.get() : ModSounds.SWORD_HIT.get(), SoundSource.PLAYERS, 1.4f, 0.6f);
+            level.playSound(null, c.x, c.y, c.z, SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0f, 0.7f);
+            p.getMainHandItem().hurtAndBreak(2, p, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+        }
         if (RUSHES.isEmpty()) return;
         List<RushHit> next = new ArrayList<>();
         for (Iterator<RushHit> it = RUSHES.iterator(); it.hasNext(); ) {

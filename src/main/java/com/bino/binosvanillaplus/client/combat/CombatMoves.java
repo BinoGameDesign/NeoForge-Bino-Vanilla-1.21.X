@@ -133,6 +133,25 @@ public final class CombatMoves {
     private static long dashStart = -100000, dashReady, lastFwdTap = -100000, pendingLLP, airStart, launchAt = -100000;
     private static Vec3 dashDir = Vec3.ZERO;
     private static boolean wasFwd;
+    private static long cinemaRestore;
+    private static net.minecraft.client.CameraType savedCamera;
+
+    // mob de costas para voce (voce fora do campo de visao dele)
+    static boolean behind(Player p, LivingEntity t) {
+        double y = Math.toRadians(t.yBodyRot);
+        Vec3 face = new Vec3(-Math.sin(y), 0, Math.cos(y));
+        Vec3 to = p.position().subtract(t.position()).multiply(1, 0, 1);
+        return to.lengthSqr() > 1e-4 && face.dot(to.normalize()) < -0.35;
+    }
+
+    // durante a facada pelas costas e o golpe critico voce nao anda
+    @SubscribeEvent
+    public static void onMoveInput(net.neoforged.neoforge.client.event.MovementInputUpdateEvent e) {
+        Active a = ACTIVE.get(e.getEntity().getId());
+        if (a == null || a.done(now()) || a.move != CombatMove.BACKSTAB && a.move != CombatMove.CRITICAL) return;
+        var in = e.getInput();
+        in.forwardImpulse = 0; in.leftImpulse = 0; in.up = in.down = in.left = in.right = false; in.jumping = false;
+    }
     private static long useDownAt;   // segurando o direito (o jogo repete o clique: ignorar a repeticao)
     private static int airHits;
     private static final Map<Integer, Deque<TrailPt>> TP_TRAIL = new HashMap<>();
@@ -185,6 +204,12 @@ public final class CombatMoves {
             int t;
             if ((t = CombatFx.issenTarget(now)) != -1) { CombatFx.consumeIssen(); special(p, CombatMove.ISSEN, CombatActionPayload.ISSEN, t, false, now); return; }
             if ((t = CombatFx.rushTarget(now)) != -1) { CombatFx.consumeRush(); special(p, CombatMove.RUSH, CombatActionPayload.RUSH, t, false, now); return; }
+            // agachado e por tras do mob: facada pelas costas (cena em terceira pessoa)
+            if (p.isShiftKeyDown() && mc.hitResult instanceof EntityHitResult eh && eh.getEntity() instanceof LivingEntity le
+                    && !(le instanceof Player) && le.isAlive() && behind(p, le)) {
+                special(p, CombatMove.BACKSTAB, CombatActionPayload.BACKSTAB, le.getId(), false, now);
+                return;
+            }
             request(p, false, cur, now);
         } else {
             // golpe critico na guarda quebrada
@@ -219,6 +244,13 @@ public final class CombatMoves {
         lastCombat = now;
         lastMoveEnd = now + len;
         if (m == CombatMove.CRITICAL) step(p, 0.12, 0);
+        if (m == CombatMove.BACKSTAB) {   // mostra a cena em terceira pessoa e volta para a camera de antes
+            Minecraft mc = Minecraft.getInstance();
+            if (cinemaRestore == 0) savedCamera = mc.options.getCameraType();
+            if (mc.options.getCameraType().isFirstPerson()) mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+            cinemaRestore = now + len + 150;
+            CombatFx.letterbox(len + 150);
+        }
         if (m == CombatMove.PARRY) step(p, -0.06, 0);
         PacketDistributor.sendToServer(new CombatActionPayload(action, target, flag));
     }
@@ -366,6 +398,11 @@ public final class CombatMoves {
         LocalPlayer p = mc.player;
         if (p == null) return;
         long now = now();
+        if (cinemaRestore > 0 && now >= cinemaRestore) {
+            cinemaRestore = 0;
+            if (savedCamera != null && mc.options.getCameraType() != savedCamera) mc.options.setCameraType(savedCamera);
+            savedCamera = null;
+        }
         if (p.onGround() && now - launchAt > 350 && (airHits > 0 || airStart > 0)
                 && (ACTIVE.get(p.getId()) == null || !ACTIVE.get(p.getId()).move.aerial())) { airHits = 0; airStart = 0; }
         if (pendingLLP > 0) {   // L L P: soltou = Quebra-Guarda; segurou 0,2 s = Lanca-Ceu
@@ -560,15 +597,24 @@ public final class CombatMoves {
     private static long springAt;
 
     private static void spring(float[] v, long now) {
-        float dt = Mth.clamp((now - springAt) / 1000f, 0f, 0.05f);
+        float dt = (now - springAt) / 1000f;
         springAt = now;
+        boolean bad = false;
+        for (int i = 0; i < 6; i++) bad |= !Float.isFinite(SPRING[i]) || !Float.isFinite(SPRING_V[i]);
+        if (bad || dt > 0.25f) {   // voltou de outra camera / travou: comeca colado na pose
+            System.arraycopy(v, 0, SPRING, 0, 6);
+            java.util.Arrays.fill(SPRING_V, 0f);
+            return;
+        }
         if (dt <= 0f) { System.arraycopy(SPRING, 0, v, 0, 6); return; }
         float w = 34f;   // rigidez (maior = segue mais grudado)
-        for (int i = 0; i < 6; i++) {
-            float x = SPRING[i] - v[i];
-            float acc = -w * w * x - 2f * w * SPRING_V[i];   // amortecimento critico (sem quicar)
-            SPRING_V[i] += acc * dt;
-            SPRING[i] += SPRING_V[i] * dt;
+        float e = (float) Math.exp(-w * dt);
+        for (int i = 0; i < 6; i++) {   // amortecimento critico, conta exata: estavel com qualquer FPS
+            float x0 = SPRING[i] - v[i], v0 = SPRING_V[i];
+            float c = v0 + w * x0;
+            float x = (x0 + c * dt) * e;
+            SPRING_V[i] = (v0 - w * c * dt) * e;
+            SPRING[i] = v[i] + x;
             v[i] = SPRING[i];
         }
     }
@@ -602,6 +648,7 @@ public final class CombatMoves {
         Active a = activeFor(p);
         float dip = DodgeRoll.handDip(p);
         e.setCanceled(true);
+        if (!ItemStack.isSameItem(stack, lastHeld) && a != null) equipAt = -100000;
 
         float[] v = a != null ? pose(a, now) : MoveAnims.REST.clone();
         if (a == null) {
@@ -610,7 +657,9 @@ public final class CombatMoves {
                 float f = Mth.sin(Mth.sqrt(sw) * Mth.PI);
                 v[MoveAnims.AP] += 55 * f; v[MoveAnims.HY] -= 0.08f * f; v[MoveAnims.HZ] -= 0.1f * f; v[MoveAnims.HX] -= 0.08f * f;
             }
-            v[MoveAnims.HY] -= 0.6f * e.getEquipProgress();   // trocando de item / recarga, como o jogo
+            if (!ItemStack.isSameItem(stack, lastHeld)) equipAt = now;   // trocou de item: sobe de baixo
+            float eq = 1f - Mth.clamp((now - equipAt) / (float) EQUIP_MS, 0f, 1f);
+            v[MoveAnims.HY] -= 0.6f * eq * eq;
             v[MoveAnims.HY] += Mth.sin(now / 650f) * 0.006f;   // respiracao
         }
         v[MoveAnims.HY] -= 0.55f * dip; v[MoveAnims.AP] += 35f * dip; v[MoveAnims.HX] += 0.08f * dip;
@@ -646,6 +695,7 @@ public final class CombatMoves {
                 right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, !right, ps, buf, light);
         ps.popPose();
         renderTrail(buf, now, a != null && a.move.serverHit(a.heavy), a != null && a.axe);
+        lastHeld = stack.copy();
     }
 
     // rastro solido e curto (estilo Zelda): espada branco-azulado, machado branco-alaranjado, pesado dourado
@@ -827,6 +877,7 @@ public final class CombatMoves {
             q = new Quaternionf().rotationAxis(roll, arm).mul(q);
         }
         Vector3f eu = q.getEulerAnglesZYX(new Vector3f());
+        if (!Float.isFinite(eu.x) || !Float.isFinite(eu.y) || !Float.isFinite(eu.z)) return;   // conta degenerada: nao mexe
 
         float tw = (float) Math.toRadians(v[MoveAnims.TW]) * side;
         m.body.yRot = Mth.lerp(w, m.body.yRot, tw);
