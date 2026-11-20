@@ -94,25 +94,29 @@ public final class CombatEvents {
         return KIND_PHYSICAL;
     }
 
-    // faiscas: nascem na SUPERFICIE do alvo, no ponto que o atacante acertou (do lado de quem bate, para dar para ver),
-    // e espirram para fora (para os lados, para cima e um pouco de volta para o atacante), nunca para dentro do mob
+    // faiscas: voam NA DIRECAO DO GOLPE (para longe de quem bateu, saindo pelo outro lado do alvo). Nascem na borda
+    // do corpo (dos lados e atras do alvo, na altura do golpe), para nao ficarem escondidas dentro do mob.
     static void sparks(ServerLevel level, LivingEntity attacker, LivingEntity victim, int count) {
-        Vec3 eye = attacker.getEyePosition();
-        Vec3 aim = victim.getBoundingBox().getCenter().add(0, victim.getBbHeight() * 0.1, 0);
-        Vec3 hit = victim.getBoundingBox().inflate(0.05).clip(eye, aim).orElse(aim);
-        Vec3 out = eye.subtract(hit);
-        out = out.lengthSqr() < 1.0e-4 ? attacker.getLookAngle().reverse() : out.normalize();
-        hit = hit.add(out.scale(0.15));   // um pouco para fora do corpo
-        Vec3 side = out.cross(new Vec3(0, 1, 0));
-        side = side.lengthSqr() < 1.0e-4 ? new Vec3(1, 0, 0) : side.normalize();
-        var r = level.random;
+        Vec3 c = victim.getBoundingBox().getCenter();
+        Vec3 dir = c.subtract(attacker.getEyePosition());
+        dir = dir.lengthSqr() < 1.0e-4 ? attacker.getLookAngle() : dir.normalize();
+        Vec3 flat = new Vec3(dir.x, 0, dir.z);
+        flat = flat.lengthSqr() < 1.0e-4 ? new Vec3(1, 0, 0) : flat.normalize();
+        Vec3 side = new Vec3(-flat.z, 0, flat.x);
+        double r = victim.getBbWidth() * 0.5 + 0.12;
+        double y = Math.min(attacker.getEyeY() - 0.3, victim.getY() + victim.getBbHeight() * 0.85);
+        y = Math.max(y, victim.getY() + victim.getBbHeight() * 0.3);
+        var rnd = level.random;
         for (int i = 0; i < count; i++) {
-            Vec3 v = out.scale(0.35 + r.nextDouble() * 0.5)
-                    .add(side.scale((r.nextDouble() - 0.5) * 2.6))
-                    .add(0, 0.15 + r.nextDouble() * 0.9, 0)
-                    .normalize();
-            double sp = 0.35 + r.nextDouble() * 0.6;
-            level.sendParticles(ModParticles.HIT_SPARK.get(), hit.x, hit.y, hit.z, 0, v.x, v.y, v.z, sp);
+            // ponto na borda: um lado, o outro, ou atras (pelo lado oposto ao golpe)
+            double ang = (rnd.nextBoolean() ? 1 : -1) * (0.35 + rnd.nextDouble() * 1.25);   // 0 = atras do alvo, +-1.6 = dos lados
+            Vec3 rim = flat.scale(Math.cos(ang) * r).add(side.scale(Math.sin(ang) * r));
+            Vec3 at = new Vec3(c.x, y + (rnd.nextDouble() - 0.5) * 0.35, c.z).add(rim);
+            Vec3 out = rim.normalize();
+            Vec3 v = dir.scale(0.9).add(out.scale(0.55 + rnd.nextDouble() * 0.5)).add(0, 0.1 + rnd.nextDouble() * 0.6, 0)
+                    .add((rnd.nextDouble() - 0.5) * 0.3, 0, (rnd.nextDouble() - 0.5) * 0.3).normalize();
+            double sp = 0.35 + rnd.nextDouble() * 0.6;
+            level.sendParticles(ModParticles.HIT_SPARK.get(), at.x, at.y, at.z, 0, v.x, v.y, v.z, sp);
         }
     }
 

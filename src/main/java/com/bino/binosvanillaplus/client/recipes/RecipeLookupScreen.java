@@ -342,9 +342,19 @@ public class RecipeLookupScreen extends Screen {
 
     // ---------------------------------------------------------------- preencher a grade
 
+    // menu onde a receita entra: a janela de onde viemos, ou a cena "estilo cinema" da bancada (o menu dela continua aberto)
+    @Nullable
+    private AbstractContainerMenu fillMenu() {
+        if (parent instanceof AbstractContainerScreen<?> cs) return cs.getMenu();
+        Minecraft mc = Minecraft.getInstance();
+        if (parent instanceof com.bino.binosvanillaplus.client.bench.BenchSceneScreen && mc.player != null
+                && mc.player.containerMenu != mc.player.inventoryMenu) return mc.player.containerMenu;
+        return null;
+    }
+
     private boolean canFill(RecipeEntry e) {
-        if (e.holder() == null || !(parent instanceof AbstractContainerScreen<?> cs)) return false;
-        AbstractContainerMenu m = cs.getMenu();
+        AbstractContainerMenu m = e.holder() == null ? null : fillMenu();
+        if (m == null) return false;
         if (!(m instanceof RecipeBookMenu<?, ?> rbm)) return false;
         RecipeBookType want = switch (e.category()) {
             case CRAFTING -> RecipeBookType.CRAFTING;
@@ -362,8 +372,8 @@ public class RecipeLookupScreen extends Screen {
     private void fill(RecipeEntry e) {
         if (!canFill(e) || parent == null) return;
         Minecraft mc = Minecraft.getInstance();
-        AbstractContainerMenu m = ((AbstractContainerScreen<?>) parent).getMenu();
-        if (mc.getConnection() != null)
+        AbstractContainerMenu m = fillMenu();
+        if (m != null && mc.getConnection() != null)
             mc.getConnection().send(new ServerboundPlaceRecipePacket(m.containerId, (RecipeHolder<?>) e.holder(), hasShiftDown()));
         mc.setScreen(parent);
     }

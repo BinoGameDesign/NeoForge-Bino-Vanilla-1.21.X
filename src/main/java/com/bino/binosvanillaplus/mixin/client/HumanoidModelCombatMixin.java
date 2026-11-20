@@ -16,6 +16,9 @@ public abstract class HumanoidModelCombatMixin<T extends LivingEntity> {
     @Inject(method = "setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V", at = @At("TAIL"), require = 0)
     private void binosvanillaplus$combatPose(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw,
                                              float headPitch, CallbackInfo ci) {
-        if (entity instanceof Player p) CombatMoves.posePlayer((HumanoidModel<?>) (Object) this, p);
+        if (entity instanceof Player p) {
+            CombatMoves.posePlayer((HumanoidModel<?>) (Object) this, p);
+            com.bino.binosvanillaplus.client.combat.DodgeRoll.posePlayer((HumanoidModel<?>) (Object) this, p);   // rolamento por cima
+        }
     }
 }

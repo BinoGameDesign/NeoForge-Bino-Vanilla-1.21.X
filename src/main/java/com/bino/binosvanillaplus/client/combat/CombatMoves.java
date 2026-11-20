@@ -114,6 +114,7 @@ public final class CombatMoves {
         LocalPlayer p = mc.player;
         if (p == null || mc.screen != null || e.getHand() != InteractionHand.MAIN_HAND) return;
         if (CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
+        if (DodgeRoll.rolling(p) && (e.isAttack() || e.isUseItem())) { e.setCanceled(true); e.setSwingHand(false); return; }
         long now = now();
         Active cur = ACTIVE.get(p.getId());
         boolean busy = cur != null && !cur.done(now);
@@ -173,7 +174,13 @@ public final class CombatMoves {
         PacketDistributor.sendToServer(new MovePayload((byte) m.ordinal(), heavy, (byte) next));
     }
 
-    private static boolean inCombat(LocalPlayer p, long now) {
+    // rolamento cancela o golpe que estava saindo
+    static void cancel(Player p) {
+        ACTIVE.remove(p.getId());
+        if (p == Minecraft.getInstance().player) { queued = null; TRAIL.clear(); }
+    }
+
+    static boolean inCombat(LocalPlayer p, long now) {
         if (p.hurtTime > 0) lastCombat = now;
         if (now - lastCombat < COMBAT_MS) return true;
         return !p.level().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(12),
@@ -301,6 +308,8 @@ public final class CombatMoves {
             }
             v[MoveAnims.HY] += Mth.sin(now / 650f) * 0.006f;   // respiracao
         }
+        float dip = DodgeRoll.handDip(p);   // rolando: a arma desce com o corpo
+        v[MoveAnims.HY] -= 0.55f * dip; v[MoveAnims.AP] += 35f * dip; v[MoveAnims.HX] += 0.08f * dip;
         float eq = 1f - Mth.clamp((now - equipAt) / (float) EQUIP_MS, 0f, 1f);
         v[MoveAnims.HY] -= 0.6f * eq * eq;
 
