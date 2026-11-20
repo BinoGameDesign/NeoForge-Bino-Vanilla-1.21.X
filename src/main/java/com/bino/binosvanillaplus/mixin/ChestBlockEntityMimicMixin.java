@@ -16,13 +16,7 @@ public abstract class ChestBlockEntityMimicMixin {
         if (id != MimicChest.EVENT_BREATH) return;
         BlockEntity be = (BlockEntity) (Object) this;
         if (be.getLevel() != null && be.getLevel().isClientSide) {
-            MimicChest.startBreath(be.getBlockPos());
-            // grunhido baixinho junto com a respiracao (a pista para quem presta atencao)
-            var p = be.getBlockPos();
-            var rnd = be.getLevel().random;
-            be.getLevel().playLocalSound(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5,
-                    rnd.nextBoolean() ? net.minecraft.sounds.SoundEvents.HOGLIN_AMBIENT : net.minecraft.sounds.SoundEvents.RAVAGER_AMBIENT,
-                    net.minecraft.sounds.SoundSource.HOSTILE, 0.3f, 0.4f + rnd.nextFloat() * 0.15f, false);
+            MimicChest.startBreath(be.getBlockPos());   // so a tampa mexe; em forma de bau ele nao faz barulho nenhum
         }
         cir.setReturnValue(true);
     }

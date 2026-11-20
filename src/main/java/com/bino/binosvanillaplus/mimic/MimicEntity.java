@@ -70,6 +70,7 @@ public class MimicEntity extends Monster {
                 .add(Attributes.ATTACK_DAMAGE, dbl ? 12.0 : 8.0)
                 .add(Attributes.ARMOR, 3.0)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.7)
+                .add(Attributes.STEP_HEIGHT, 1.0)   // sobe um bloco andando/pulando (antes ficava preso)
                 .add(Attributes.MOVEMENT_SPEED, 0.25)
                 .add(Attributes.FOLLOW_RANGE, 24.0);
     }
@@ -105,7 +106,8 @@ public class MimicEntity extends Monster {
         super.tick();
         if (level().isClientSide) return;
         LivingEntity t = getTarget();
-        if (t != null && t.isAlive()) face(t);
+        boolean fleeing = t != null && revealT < 0 && getHealth() < getMaxHealth() * 0.3f;
+        if (t != null && t.isAlive()) { if (fleeing) faceAway(t); else face(t); }   // fugindo: de costas para o alvo
 
         if (revealT >= 0) {   // revelacao: abre a boca, morde quem tentou pegar o item
             if (revealT == 0) {   // o susto: rugido + grunhido grave
@@ -149,10 +151,9 @@ public class MimicEntity extends Monster {
             } else hideTicks = 0;
             if (onGround() && hopCd == 0 && d < 14) {
                 Vec3 dir = new Vec3(getX() - t.getX(), 0, getZ() - t.getZ()).normalize();
-                setDeltaMovement(dir.x * 0.45, 0.42, dir.z * 0.45);
+                setDeltaMovement(dir.x * 0.45, hopUp(dir, 0.42), dir.z * 0.45);
                 hasImpulse = true;
-                event(EV_HOP);
-                playSound(SoundEvents.CHEST_OPEN, 0.6f, 1.1f);
+                event(EV_HOP);   // fugindo para se disfarcar: sem som
                 hopCd = 10 + random.nextInt(6);
             }
             return;
@@ -175,13 +176,26 @@ public class MimicEntity extends Monster {
         } else if (onGround() && hopCd == 0 && d > REACH * 0.8) {   // pulo na direcao do alvo
             Vec3 dir = new Vec3(t.getX() - getX(), 0, t.getZ() - getZ()).normalize();
             double sp = isDouble() ? 0.36 : 0.42;
-            setDeltaMovement(dir.x * sp, 0.46, dir.z * sp);
+            setDeltaMovement(dir.x * sp, hopUp(dir, 0.46), dir.z * sp);
             hasImpulse = true;
             event(EV_HOP);
             playSound(SoundEvents.CHEST_OPEN, 0.6f, 0.7f + random.nextFloat() * 0.2f);
             if (random.nextFloat() < 0.35f) playSound(SoundEvents.HOGLIN_AMBIENT, 0.8f, 0.55f + random.nextFloat() * 0.15f);
             hopCd = 14 + random.nextInt(8);
         }
+    }
+
+    private void faceAway(LivingEntity t) {
+        float yaw = (float) (Mth.atan2(getZ() - t.getZ(), getX() - t.getX()) * (180f / Math.PI)) - 90f;
+        setYRot(Mth.approachDegrees(getYRot(), yaw, 25f));
+        yBodyRot = getYRot(); yHeadRot = getYRot();
+    }
+
+    // pulo: mais alto se tiver um bloco na frente (para nao ficar preso em degrau)
+    private double hopUp(Vec3 dir, double normal) {
+        BlockPos ahead = BlockPos.containing(getX() + dir.x * (getBbWidth() * 0.5 + 0.6), getY() + 0.2, getZ() + dir.z * (getBbWidth() * 0.5 + 0.6));
+        boolean wall = horizontalCollision || !level().getBlockState(ahead).getCollisionShape(level(), ahead).isEmpty();
+        return wall ? 0.62 : normal;
     }
 
     private void face(LivingEntity t) {
@@ -221,7 +235,8 @@ public class MimicEntity extends Monster {
     @Override protected boolean shouldDespawnInPeaceful() { return false; }
     @Override public boolean removeWhenFarAway(double d) { return false; }
     // depois de revelado: grunhidos graves de monstro
-    @Override @Nullable protected SoundEvent getAmbientSound() { return SoundEvents.RAVAGER_AMBIENT; }
+    // grunhidos so enquanto caca; ferido e fugindo (para virar bau de novo) fica quieto
+    @Override @Nullable protected SoundEvent getAmbientSound() { return getHealth() < getMaxHealth() * 0.3f ? null : SoundEvents.RAVAGER_AMBIENT; }
     @Override public float getVoicePitch() { return 0.6f + random.nextFloat() * 0.15f; }
     @Override public int getAmbientSoundInterval() { return 100; }
     @Override protected SoundEvent getHurtSound(DamageSource s) { return SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR; }
