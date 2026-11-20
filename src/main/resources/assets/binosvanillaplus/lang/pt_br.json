@@ -361,5 +361,11 @@
   "subtitles.binosvanillaplus.combat.axe_swing": "Machado corta o ar",
   "subtitles.binosvanillaplus.combat.axe_hit": "Machado acerta",
   "subtitles.binosvanillaplus.combat.axe_hit_hard": "Machado bate em algo duro",
-  "subtitles.binosvanillaplus.combat.hit_water": "Golpe na água"
+  "subtitles.binosvanillaplus.combat.hit_water": "Golpe na água",
+  "combat.binosvanillaplus.issen": "Issen!",
+  "combat.binosvanillaplus.rush": "Rajada!",
+  "combat.binosvanillaplus.combo.tempest": "Tempestade!",
+  "combat.binosvanillaplus.combo.lumberjack": "Lenhador!",
+  "combat.binosvanillaplus.combo.judgment": "Juízo!",
+  "combat.binosvanillaplus.combo.guard_break": "Quebra-Guarda!"
 }

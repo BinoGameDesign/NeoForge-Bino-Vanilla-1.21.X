@@ -85,6 +85,10 @@ public class ModClientEvents {
     public static void registerParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SLEEP_Z.get(), com.bino.binosvanillaplus.client.SleepZParticle.Provider::new);
         event.registerSpriteSet(ModParticles.HIT_SPARK.get(), com.bino.binosvanillaplus.client.combat.HitSparkParticle.Provider::new);   // mod Combat
+        event.registerSpriteSet(ModParticles.PARRY_SPARK.get(), com.bino.binosvanillaplus.client.combat.HitSparkParticle.GoldProvider::new);
+        event.registerSpriteSet(ModParticles.IMPACT_STAR.get(), com.bino.binosvanillaplus.client.combat.ImpactParticle.StarProvider::new);
+        event.registerSpriteSet(ModParticles.IMPACT_RING.get(), com.bino.binosvanillaplus.client.combat.ImpactParticle.RingProvider::new);
+        event.registerSpriteSet(ModParticles.DEATH_PUFF.get(), com.bino.binosvanillaplus.client.combat.DeathPuffParticle.Provider::new);
         // mod Combat: tira os coracoes escuros que o jogo solta quando voce bate (DAMAGE_INDICATOR); ficam so as faiscas
         event.registerSpecial(net.minecraft.core.particles.ParticleTypes.DAMAGE_INDICATOR, (type, level, x, y, z, vx, vy, vz) -> null);
         event.registerSpriteSet(ModParticles.PINK_HEART.get(), sprites -> {

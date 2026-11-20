@@ -41,6 +41,7 @@
         "VillagerFactionPriceMixin",
         "EntityFactionAllyMixin",
         "VillagerBreedMixin",
-        "VillagerHostilesSensorMixin"
+        "VillagerHostilesSensorMixin",
+        "MeleeAttackGoalTelegraphMixin"
     ]
 }

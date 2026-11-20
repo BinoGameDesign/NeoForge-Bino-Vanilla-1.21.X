@@ -1,18 +1,23 @@
 package com.bino.binosvanillaplus.combat;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
+import com.bino.binosvanillaplus.entity.ModParticles;
 import com.bino.binosvanillaplus.sound.ModSounds;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -22,10 +27,10 @@ import java.util.Map;
 import java.util.UUID;
 
 // Servidor dos golpes do hack and slash (mod Combat):
-//  - golpe LEVE: o ataque normal do jogo continua acontecendo; aqui so entra o bonus do tipo (investida, no ar, final
-//    do combo) para o golpe que chegar logo depois do aviso do cliente;
-//  - golpe PESADO: tem preparacao (a arma sobe) e o servidor acerta todo mundo num arco a frente (ou em volta, no
-//    golpe pesado pulando, que cai como uma pancada no chao), com dano maior e empurrao forte. Tem recarga.
+//  - golpe LEVE (ataque normal do jogo, no impacto da animacao): aqui so entra o bonus do golpe anunciado
+//    (CombatMove.damage) e quanto ele enche a postura do alvo.
+//  - golpe do SERVIDOR (pesado, Juizo, Quebra-Guarda, saida de rolamento pesada, pulo/investida pesados): tem
+//    preparacao e acerta todo mundo num arco a frente (ou em volta, nas pancadas no chao), com empurrao forte.
 //  - avisa os outros jogadores para eles verem a animacao.
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
 public final class CombatMovesServer {
@@ -37,37 +42,69 @@ public final class CombatMovesServer {
     private static final Map<UUID, Recent> RECENT = new HashMap<>();
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
     private static final Map<UUID, Long> HEAVY_READY = new HashMap<>();
-    private static boolean ownHit;   // o proprio golpe pesado esta batendo (nao aplicar o bonus do leve por cima)
+    static boolean ownHit;   // golpe feito aqui (pesado, Issen, critico...): sem o bonus do leve por cima
+    private static CombatMove hitting;   // golpe do servidor que esta batendo agora (para a postura)
 
     public static void onMove(ServerPlayer p, MovePayload m) {
         CombatEvents.Weapon w = CombatEvents.weapon(p.getMainHandItem());
         if (w == CombatEvents.Weapon.NONE) return;
         boolean axe = w == CombatEvents.Weapon.AXE;
         CombatMove move = CombatMove.of(m.move());
+        if (move.visualOnly()) return;   // esses vem por CombatActionPayload
         float delay = p.getCurrentItemAttackStrengthDelay();
         long now = p.level().getGameTime();
-        if (m.heavy()) {
+        if (move.serverHit(m.heavy())) {
             if (now < HEAVY_READY.getOrDefault(p.getUUID(), 0L)) return;   // ainda recarregando
-            int windup = MoveTiming.windupTicks(move, true, axe, delay);
-            PENDING.put(p.getUUID(), new Pending(move, axe, now + windup));
-            HEAVY_READY.put(p.getUUID(), now + MoveTiming.lengthTicks(move, true, axe, delay) - 2);
+            PENDING.put(p.getUUID(), new Pending(move, axe, now + MoveTiming.windupTicks(move, m.heavy(), axe, delay)));
+            HEAVY_READY.put(p.getUUID(), now + MoveTiming.lengthTicks(move, m.heavy(), axe, delay) - 3);
         }
-        RECENT.put(p.getUUID(), new Recent(move, m.heavy(), now, MoveTiming.windupTicks(move, m.heavy(), axe, delay) + 4));
+        RECENT.put(p.getUUID(), new Recent(move, m.heavy(), now, MoveTiming.windupTicks(move, m.heavy(), axe, delay) + 5));
         PacketDistributor.sendToPlayersTrackingEntity(p, new MoveBroadcastPayload(p.getId(), m.move(), m.heavy(),
                 MoveTiming.lengthMs(move, m.heavy(), axe, delay)));
     }
 
-    // bonus do golpe leve que acabou de ser anunciado (investida, no ar, final do combo)
+    // so a animacao para quem esta vendo (parry, Issen, Rajada, critico)
+    static void broadcast(ServerPlayer p, CombatMove move, boolean heavy) {
+        boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+        PacketDistributor.sendToPlayersTrackingEntity(p, new MoveBroadcastPayload(p.getId(), (byte) move.ordinal(), heavy,
+                MoveTiming.lengthMs(move, heavy, axe, p.getCurrentItemAttackStrengthDelay())));
+    }
+
+    @SubscribeEvent
+    public static void onLogout(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent e) {
+        UUID id = e.getEntity().getUUID();
+        RECENT.remove(id); PENDING.remove(id); HEAVY_READY.remove(id);
+    }
+
+    private static Recent recentLight(ServerPlayer p) {
+        Recent r = RECENT.get(p.getUUID());
+        if (r == null || r.heavy() || !r.move().vanillaHit(false) || p.level().getGameTime() - r.tick() > r.window()) return null;
+        return r;
+    }
+
+    // bonus do golpe leve que acabou de ser anunciado
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onIncoming(LivingIncomingDamageEvent e) {
         if (ownHit || !(e.getSource().getEntity() instanceof ServerPlayer p) || e.getSource().getDirectEntity() != p) return;
-        Recent r = RECENT.get(p.getUUID());
-        if (r == null || r.heavy() || p.level().getGameTime() - r.tick() > r.window()) return;
+        Recent r = recentLight(p);
+        if (r == null) return;
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         e.setAmount(e.getAmount() * r.move().damage(false, axe));
     }
 
-    // golpe pesado: na hora do impacto, acerta quem estiver no arco a frente (ou em volta, caindo do pulo)
+    // postura: todo golpe corpo a corpo de jogador enche a barra do alvo (golpes fortes enchem mais)
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onDamaged(LivingDamageEvent.Post e) {
+        LivingEntity v = e.getEntity();
+        if (v instanceof Player || !(e.getSource().getEntity() instanceof ServerPlayer p) || e.getSource().getDirectEntity() != p) return;
+        if (e.getNewDamage() <= 0) return;
+        float mult = 1f;
+        if (hitting != null) mult = hitting.posture();
+        else if (!ownHit) { Recent r = recentLight(p); if (r != null) mult = r.move().posture(); }
+        Posture.add(v, e.getNewDamage() * mult);
+    }
+
+    // golpe do servidor: na hora do impacto, acerta quem estiver no arco a frente (ou em volta, nas pancadas no chao)
     @SubscribeEvent
     public static void onTick(PlayerTickEvent.Post e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
@@ -76,10 +113,13 @@ public final class CombatMovesServer {
         PENDING.remove(p.getUUID());
         if (!p.isAlive() || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
         ServerLevel level = p.serverLevel();
-        boolean slam = pd.move() == CombatMove.JUMP;
-        double reach = pd.move() == CombatMove.FORWARD ? 3.9 : pd.move() == CombatMove.FINISHER ? 3.6 : 3.2;
-        double cone = pd.move() == CombatMove.FINISHER ? -0.1 : 0.35;   // cos do meio-angulo (finalizador quase em volta)
-        float dmg = (float) p.getAttributeValue(Attributes.ATTACK_DAMAGE) * pd.move().damage(true, pd.axe());
+        CombatMove mv = pd.move();
+        boolean slam = mv == CombatMove.JUMP || (mv == CombatMove.JUDGMENT && pd.axe());
+        double reach = switch (mv) {
+            case FORWARD -> 3.9; case ROLL_THRUST -> 4.0; case JUDGMENT -> 3.8; case GUARD_BREAK -> 3.0; default -> 3.2;
+        };
+        double cone = mv == CombatMove.JUDGMENT ? -0.2 : mv == CombatMove.ROLL_THRUST || mv == CombatMove.FORWARD ? 0.6 : 0.35;
+        float dmg = (float) p.getAttributeValue(Attributes.ATTACK_DAMAGE) * mv.damage(true, pd.axe());
         Vec3 look = p.getLookAngle().multiply(1, 0, 1).normalize();
         boolean hitAny = false;
         for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, new AABB(p.blockPosition()).inflate(reach + 1),
@@ -89,19 +129,25 @@ public final class CombatMovesServer {
             if (d > reach + t.getBbWidth() * 0.5 || Math.abs(to.y) > 2.5) continue;
             if (!slam && d > 0.6 && to.multiply(1, 0, 1).normalize().dot(look) < cone) continue;
             if (!p.hasLineOfSight(t)) continue;
-            ownHit = true;
+            ownHit = true; hitting = mv;
             boolean ok = t.hurt(p.damageSources().playerAttack(p), dmg);
-            ownHit = false;
+            ownHit = false; hitting = null;
             if (ok) {
                 hitAny = true;
                 Vec3 push = slam ? to.multiply(1, 0, 1).normalize() : look;
-                t.knockback(pd.axe() ? 0.9 : 0.7, -push.x, -push.z);
+                if (mv == CombatMove.GUARD_BREAK) Posture.freeze(t, 10);   // atordoa (o resto do combo pega)
+                else t.knockback(pd.axe() ? 0.9 : 0.7, -push.x, -push.z);
                 if (slam) t.setDeltaMovement(t.getDeltaMovement().add(0, 0.25, 0));
+                Vec3 c = t.getBoundingBox().getCenter();
+                level.sendParticles(ModParticles.IMPACT_STAR.get(), c.x, c.y, c.z, 0, 1.4, 0, 0, 1.0);
             }
         }
         if (hitAny) p.getMainHandItem().hurtAndBreak(1, p, EquipmentSlot.MAINHAND);
-        if (slam) level.sendParticles(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.BLOCK,
-                level.getBlockState(p.blockPosition().below())), p.getX(), p.getY() + 0.1, p.getZ(), 30, 1.0, 0.05, 1.0, 0.15);
+        if (slam) {
+            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, level.getBlockState(p.blockPosition().below())),
+                    p.getX(), p.getY() + 0.1, p.getZ(), 40, 1.2, 0.05, 1.2, 0.18);
+            level.sendParticles(ModParticles.IMPACT_RING.get(), p.getX(), p.getY() + 0.15, p.getZ(), 0, 2.4, 0, 0, 1.0);
+        }
         level.playSound(p, p.getX(), p.getEyeY(), p.getZ(), pd.axe() ? ModSounds.AXE_SWING.get() : ModSounds.SWORD_SWING.get(),
                 SoundSource.PLAYERS, 1.0f, 0.75f);
         p.resetAttackStrengthTicker();

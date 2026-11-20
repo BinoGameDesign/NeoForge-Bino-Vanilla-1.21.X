@@ -169,5 +169,11 @@
   "subtitles.binosvanillaplus.combat.axe_swing": "Axe swishes",
   "subtitles.binosvanillaplus.combat.axe_hit": "Axe hits",
   "subtitles.binosvanillaplus.combat.axe_hit_hard": "Axe strikes something hard",
-  "subtitles.binosvanillaplus.combat.hit_water": "Water splashes"
+  "subtitles.binosvanillaplus.combat.hit_water": "Water splashes",
+  "combat.binosvanillaplus.issen": "Issen!",
+  "combat.binosvanillaplus.rush": "Flurry!",
+  "combat.binosvanillaplus.combo.tempest": "Tempest!",
+  "combat.binosvanillaplus.combo.lumberjack": "Lumberjack!",
+  "combat.binosvanillaplus.combo.judgment": "Judgment!",
+  "combat.binosvanillaplus.combo.guard_break": "Guard Break!"
 }

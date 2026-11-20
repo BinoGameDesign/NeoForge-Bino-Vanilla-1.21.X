@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Rolamento (mod Combat): em primeira pessoa a camera abaixa junto com o corpo encolhido
+// Rolamento e golpes (mod Combat): em primeira pessoa a camera abaixa junto com o corpo (encolhido / agachado no golpe)
 @Mixin(Camera.class)
 public abstract class CameraRollMixin {
     @Shadow protected abstract void setPosition(Vec3 pos);
@@ -22,7 +22,7 @@ public abstract class CameraRollMixin {
     private void binosvanillaplus$rollDrop(BlockGetter level, Entity entity, boolean detached, boolean thirdPersonReverse,
                                            float partialTick, CallbackInfo ci) {
         if (detached || !(entity instanceof Player p)) return;
-        float d = DodgeRoll.cameraDrop(p);
+        float d = DodgeRoll.cameraDrop(p) + com.bino.binosvanillaplus.client.combat.CombatMoves.cameraDrop(p);
         if (d > 0.001f) setPosition(getPosition().add(0, -d, 0));
     }
 }

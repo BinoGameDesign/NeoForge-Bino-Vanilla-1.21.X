@@ -18,12 +18,13 @@ import java.util.UUID;
 
 // Rolamento (mod Combat), servidor: quadros de invencibilidade (i-frames) como no Elden Ring. Durante o comeco do
 // rolamento os golpes, flechas e explosoes passam "por voce" (aparece "Miss"). Queda, fogo, afogamento etc. pegam.
+// Rolar bem em cima do golpe de um mob = ESQUIVA PERFEITA (o mob fica lento e abre a Rajada).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
 public final class DodgeServer {
     private DodgeServer() {}
 
     // ticks: invencivel de I_FROM ate I_TO depois do inicio; recarga entre rolamentos
-    public static final int I_FROM = 1, I_TO = 7, I_TO_BACK = 4, COOLDOWN = 11;
+    public static final int I_FROM = 0, I_TO = 7, I_TO_BACK = 4, COOLDOWN = 11;
 
     private record Roll(long tick, boolean back) {}
     private static final Map<UUID, Roll> ROLLS = new HashMap<>();
@@ -35,7 +36,6 @@ public final class DodgeServer {
         if (p.isPassenger() || p.isFallFlying() || p.getAbilities().flying) return;
         ROLLS.put(p.getUUID(), new Roll(now, m.back()));
         p.setSprinting(false);
-        p.causeFoodExhaustion(0.3f);   // cansa um pouco (fome), como a estamina
         p.level().playSound(p, p.getX(), p.getY() + 0.5, p.getZ(), ModSounds.SWORD_SWING.get(), SoundSource.PLAYERS, 0.5f, 0.55f);
         PacketDistributor.sendToPlayersTrackingEntity(p, new RollSeenPayload(p.getId(), m.yaw(), m.back()));
     }
@@ -57,5 +57,10 @@ public final class DodgeServer {
         if (!(e.getEntity() instanceof ServerPlayer p) || !dodgeable(e.getSource()) || !invulnerable(p)) return;
         e.setCanceled(true);
         CombatEvents.miss(p);
+        // esquiva perfeita: rolou nos ultimos ~0,15 s antes do golpe de um mob -> Rajada
+        Roll r = ROLLS.get(p.getUUID());
+        if (r != null && !r.back() && p.level().getGameTime() - r.tick() <= 3
+                && e.getSource().getEntity() instanceof net.minecraft.world.entity.LivingEntity atk && !(atk instanceof net.minecraft.world.entity.player.Player))
+            CombatActionsServer.perfectDodge(p, atk);
     }
 }

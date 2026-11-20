@@ -42,7 +42,8 @@ import java.util.Set;
 // Rolamento estilo Elden Ring (mod Combat), lado do cliente.
 //  - Q em combate (ou com espada/machado na mao) = rola na direcao que voce esta andando (WASD). Parado = passo
 //    para tras (backstep). Fora disso o Q continua soltando o item; Ctrl+Q sempre solta a pilha.
-//  - So no chao. Cancela o golpe que estava saindo. Da para emendar rolamentos (recarga curta).
+//  - So no chao. Gasta estamina (25). Cancela o golpe que estava saindo, mas nao perde o combo: o proximo golpe
+//    logo depois de rolar vira Contra-Rolamento (L) / Saida de Cacador (P). Da para emendar rolamentos.
 //  - Invencivel no comeco do rolamento (o servidor decide: DodgeServer); golpes passam e aparece "Miss".
 // Animacao:
 //  - terceira pessoa: o corpo vira para a direcao do rolamento, se encolhe (joelhos no peito, bracos abracando,
@@ -65,7 +66,7 @@ public final class DodgeRoll {
 
     private static final Map<Integer, Roll> ROLLS = new HashMap<>();
     private static final Set<Integer> PUSHED = new HashSet<>();
-    private static long readyAt;
+    private static long readyAt, lastRollEnd = -100000;
 
     private static long now() { return System.currentTimeMillis(); }
 
@@ -76,6 +77,9 @@ public final class DodgeRoll {
     }
 
     public static boolean rolling(Player p) { return get(p) != null; }
+
+    // acabou de rolar (para o Contra-Rolamento / Saida de Cacador)
+    static boolean justRolled(Player p, long now) { return p == Minecraft.getInstance().player && now - lastRollEnd < 450 && now >= lastRollEnd - 120; }
 
     // ------------------------------------------------------------------ curvas
 
@@ -110,6 +114,7 @@ public final class DodgeRoll {
     private static void tryRoll(LocalPlayer p, long now) {
         if (now < readyAt || !p.onGround() || p.isInWater() || p.isPassenger() || p.isFallFlying() || p.getAbilities().flying
                 || p.onClimbable() || p.isUsingItem()) return;
+        if (!Stamina.use(Stamina.ROLL)) return;   // sem folego
         float fwd = p.input.forwardImpulse, left = p.input.leftImpulse;
         boolean back = fwd * fwd + left * left < 0.01f;
         float yawRad = p.getYRot() * Mth.DEG_TO_RAD;
@@ -123,8 +128,10 @@ public final class DodgeRoll {
         int len = back ? BACK_MS : ROLL_MS;
         ROLLS.put(p.getId(), new Roll(now, yaw, back, len, dir, new boolean[1]));
         readyAt = now + len - 60;
+        lastRollEnd = now + len;
         p.setSprinting(false);
         CombatMoves.cancel(p);
+        CombatMoves.holdCombo(now + len);   // rolar no meio do combo nao perde o combo
         p.level().playLocalSound(p.getX(), p.getY() + 0.5, p.getZ(), ModSounds.SWORD_SWING.get(), SoundSource.PLAYERS, 0.5f, 0.55f, false);
         dust(p, dir, 6);
         PacketDistributor.sendToServer(new RollPayload(yaw, back));

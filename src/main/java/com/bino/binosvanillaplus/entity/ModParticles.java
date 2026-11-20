@@ -27,6 +27,16 @@ public class ModParticles {
     public static final Supplier<SimpleParticleType> HIT_SPARK =
             PARTICLE_TYPES.register("hit_spark", () -> new SimpleParticleType(true));
 
+    // mod Combat (visual estilo Zelda)
+    public static final Supplier<SimpleParticleType> PARRY_SPARK =      // faisca dourada do parry
+            PARTICLE_TYPES.register("parry_spark", () -> new SimpleParticleType(true));
+    public static final Supplier<SimpleParticleType> IMPACT_STAR =      // estrela de 4 pontas no impacto (vx = tamanho)
+            PARTICLE_TYPES.register("impact_star", () -> new SimpleParticleType(true));
+    public static final Supplier<SimpleParticleType> IMPACT_RING =      // anel que abre (vx = tamanho)
+            PARTICLE_TYPES.register("impact_ring", () -> new SimpleParticleType(true));
+    public static final Supplier<SimpleParticleType> DEATH_PUFF =       // fumaca roxa do mob morrendo
+            PARTICLE_TYPES.register("death_puff", () -> new SimpleParticleType(false));
+
     public static void register(IEventBus eventBus) {
         PARTICLE_TYPES.register(eventBus);
     }

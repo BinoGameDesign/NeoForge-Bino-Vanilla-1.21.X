@@ -14,7 +14,13 @@ import net.minecraft.util.Mth;
 public class HitSparkParticle extends TextureSheetParticle {
     private final float size0;
 
+    private final boolean gold;   // faisca do parry: dourada
+
     protected HitSparkParticle(ClientLevel level, double x, double y, double z, double vx, double vy, double vz, SpriteSet sprites) {
+        this(level, x, y, z, vx, vy, vz, sprites, false);
+    }
+
+    protected HitSparkParticle(ClientLevel level, double x, double y, double z, double vx, double vy, double vz, SpriteSet sprites, boolean gold) {
         super(level, x, y, z, 0, 0, 0);
         this.xd = vx; this.yd = vy; this.zd = vz;   // a velocidade vem pronta do servidor (direcao do golpe)
         this.friction = 0.88f;
@@ -24,14 +30,16 @@ public class HitSparkParticle extends TextureSheetParticle {
         this.quadSize = size0;
         this.hasPhysics = true;
         pickSprite(sprites);
-        setColor(1f, 0.97f, 0.8f);
+        this.gold = gold;
+        setColor(1f, gold ? 0.85f : 0.97f, gold ? 0.35f : 0.8f);
     }
 
     @Override
     public void tick() {
         super.tick();
         float u = (float) age / lifetime;
-        setColor(1f, Mth.lerp(u, 0.95f, 0.55f), Mth.lerp(u, 0.75f, 0.15f));
+        if (gold) setColor(1f, Mth.lerp(u, 0.88f, 0.6f), Mth.lerp(u, 0.4f, 0.05f));
+        else setColor(1f, Mth.lerp(u, 0.95f, 0.55f), Mth.lerp(u, 0.75f, 0.15f));
         this.alpha = 1f - u * u;
         this.quadSize = size0 * (1f - 0.5f * u);
     }
@@ -45,6 +53,15 @@ public class HitSparkParticle extends TextureSheetParticle {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double vx, double vy, double vz) {
             return new HitSparkParticle(level, x, y, z, vx, vy, vz, sprites);
+        }
+    }
+
+    public static class GoldProvider implements ParticleProvider<SimpleParticleType> {
+        private final SpriteSet sprites;
+        public GoldProvider(SpriteSet sprites) { this.sprites = sprites; }
+        @Override
+        public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double vx, double vy, double vz) {
+            return new HitSparkParticle(level, x, y, z, vx, vy, vz, sprites, true);
         }
     }
 }

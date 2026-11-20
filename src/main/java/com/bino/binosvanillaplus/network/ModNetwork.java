@@ -67,6 +67,10 @@ public class ModNetwork {
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatMovesServer.onMove((ServerPlayer) context.player(), payload)));
         registrar.playToClient(com.bino.binosvanillaplus.combat.MoveBroadcastPayload.TYPE, com.bino.binosvanillaplus.combat.MoveBroadcastPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.CombatMoves.receive(payload)));
+        registrar.playToServer(com.bino.binosvanillaplus.combat.CombatActionPayload.TYPE, com.bino.binosvanillaplus.combat.CombatActionPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatActionsServer.onAction((ServerPlayer) context.player(), payload)));
+        registrar.playToClient(com.bino.binosvanillaplus.combat.CombatFxPayload.TYPE, com.bino.binosvanillaplus.combat.CombatFxPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.CombatFx.receive(payload)));
         registrar.playToServer(com.bino.binosvanillaplus.combat.RollPayload.TYPE, com.bino.binosvanillaplus.combat.RollPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.DodgeServer.onRoll((ServerPlayer) context.player(), payload)));
         registrar.playToClient(com.bino.binosvanillaplus.combat.RollSeenPayload.TYPE, com.bino.binosvanillaplus.combat.RollSeenPayload.STREAM_CODEC,

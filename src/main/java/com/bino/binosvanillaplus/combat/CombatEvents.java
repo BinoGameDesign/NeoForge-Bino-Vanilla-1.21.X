@@ -82,8 +82,25 @@ public final class CombatEvents {
                         1.0f, 0.92f + level.random.nextFloat() * 0.16f);
             }
             sparks(level, a, victim, w == Weapon.NONE ? 10 : crit ? 36 : 22);
+            // estrela de impacto (estilo Zelda) no ponto do golpe, um pouco para fora do corpo; anel no critico
+            Vec3 eye = a.getEyePosition(), c = victim.getBoundingBox().getCenter();
+            Vec3 at = victim.getBoundingBox().inflate(0.1).clip(eye, c).orElse(c);
+            Vec3 out = eye.subtract(at);
+            if (out.lengthSqr() > 1e-4) at = at.add(out.normalize().scale(0.25));
+            level.sendParticles(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, 0, crit ? 1.5 : 1.0, 0, 0, 1.0);
+            if (crit) level.sendParticles(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, 0, 1.2, 0, 0, 1.0);
         }
         send(victim, e.getNewDamage(), crit ? KIND_CRIT : kind(src, victim));
+    }
+
+    // mob morrendo: "puf" de fumaca roxa (estilo Zelda)
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent e) {
+        LivingEntity v = e.getEntity();
+        if (e.isCanceled() || v instanceof net.minecraft.world.entity.player.Player || !(v.level() instanceof ServerLevel level)) return;
+        Vec3 c = v.getBoundingBox().getCenter();
+        float w = v.getBbWidth(), h = v.getBbHeight();
+        level.sendParticles(ModParticles.DEATH_PUFF.get(), c.x, c.y, c.z, (int) Math.min(30, 8 + w * h * 6), w * 0.35, h * 0.3, w * 0.35, 0.02);
     }
 
     static byte kind(DamageSource src, LivingEntity victim) {
