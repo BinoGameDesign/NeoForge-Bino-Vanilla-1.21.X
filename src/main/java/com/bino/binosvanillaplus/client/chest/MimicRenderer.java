@@ -47,7 +47,15 @@ public class MimicRenderer extends MobRenderer<MimicEntity, MimicRenderer.Model>
         ps.mulPose(Axis.YP.rotationDegrees(180f));
     }
 
-    public static class Model extends HierarchicalModel<MimicEntity> {
+    // reacao ao golpe propria (mod Combat): a tampa/boca abre num susto e a lingua sacode
+    public static class Model extends HierarchicalModel<MimicEntity> implements com.bino.binosvanillaplus.client.combat.HitReactive {
+        @Override
+        public boolean hitReact(float k, float side, float front) {
+            getAnyDescendantWithName("lid").ifPresent(p -> p.xRot += (float) Math.toRadians(28) * k);
+            getAnyDescendantWithName("tongue").ifPresent(p -> { p.xRot += 0.4f * k; p.yRot += 0.35f * k * side; });
+            return true;
+        }
+
         private final ModelPart top;
         private final boolean dbl;
 
