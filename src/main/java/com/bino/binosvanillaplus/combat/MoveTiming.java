@@ -45,6 +45,8 @@ public final class MoveTiming {
             case DASH -> 0.5f; case DASH_SLASH -> 0.3f; case PIERCE -> 0.4f; case LAUNCHER -> 0.45f;
             case AIR_3 -> 0.4f; case METEOR -> 0.45f; case DANCE -> 0.55f; case BACKSTAB -> 0.36f;
             case TORMENTA -> 0.6f; case SURPRISE -> 0.4f; case LIGHT_5 -> 0.36f;
+            // animacoes do Blockbench (espada): o marcador de acerto da linha do tempo / duracao
+            case LIGHT_1 -> 0.375f; case LIGHT_2 -> 0.368f; case LIGHT_3 -> 0.352f;
             default -> 0.34f;
         };
     }

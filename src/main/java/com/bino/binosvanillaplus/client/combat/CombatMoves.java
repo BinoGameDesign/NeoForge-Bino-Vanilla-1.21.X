@@ -85,13 +85,16 @@ public final class CombatMoves {
 
     static final class Active {
         final CombatMove move; final boolean heavy, axe; final long start; final int length; final MoveAnims.Key[] keys;
+        final BbAnims.Anim bb;                    // animacao do Blockbench (terceira pessoa), se ja existir para o golpe
         boolean hitDone;
         float[] from = MoveAnims.REST;            // pose de onde este golpe sai (o fim do golpe anterior)
         long pauseStart, pauseEnd;                // pausa no acerto (a pose congela um instante)
         Active(CombatMove move, boolean heavy, boolean axe, long start, int length) {
             this.move = move; this.heavy = heavy; this.axe = axe; this.start = start; this.length = length;
             this.keys = MoveAnims.keys(move, axe);
+            this.bb = BbAnims.forMove(move, axe);
         }
+        float bbTime(long now) { return u(now) * bb.length(); }
         long t(long now) { return now < pauseEnd ? Math.min(now, pauseStart) : now - (pauseEnd - pauseStart); }
         float u(long now) { return Mth.clamp((t(now) - start) / (float) length, 0f, 1f); }
         boolean done(long now) { return t(now) - start >= length; }
@@ -839,7 +842,15 @@ public final class CombatMoves {
         for (Map.Entry<Integer, Active> en : ACTIVE.entrySet()) {
             Active a = en.getValue();
             if (a.done(now) || mc.player != null && en.getKey() == mc.player.getId() && fp) continue;
-            if (!(mc.level.getEntity(en.getKey()) instanceof Player pl) || !MoveAnims.striking(a.keys, a.u(now))) continue;
+            if (!(mc.level.getEntity(en.getKey()) instanceof Player pl)) continue;
+            if (a.bb != null) {   // animacao do Blockbench: a lamina pelas contas do proprio modelo
+                float bt = a.bbTime(now);
+                if (!a.bb.striking(bt)) continue;
+                Vec3[] bw = BbAnims.blade(a.bb, bt, pl.getMainArm() == HumanoidArm.RIGHT, Mth.rotLerp(pt, pl.yBodyRotO, pl.yBodyRot), pl.getPosition(pt));
+                TP_TRAIL.computeIfAbsent(en.getKey(), k -> new ArrayDeque<>()).addLast(new TrailPt(bw[0].toVector3f(), bw[1].toVector3f(), now));
+                continue;
+            }
+            if (!MoveAnims.striking(a.keys, a.u(now))) continue;
             float[] v = pose(a, now);
             if (Math.abs(v[MoveAnims.FL] % 360f) > 1 || Math.abs(v[MoveAnims.RL]) > 1) continue;   // de cabeca para baixo: sem rastro
             Vec3[] bt = bladeWorld(pl, v, pt);
@@ -947,6 +958,7 @@ public final class CombatMoves {
         long now = now();
         float w = tpWeight(a, now);
         if (w <= 0.001f) return;
+        if (a.bb != null) { BbAnims.poseModel(m, a.bb, a.bbTime(now), w, p.getMainArm() == HumanoidArm.RIGHT); return; }
         float[] v = pose(a, now);
         boolean right = p.getMainArm() == HumanoidArm.RIGHT;
         float side = right ? 1f : -1f;
@@ -997,6 +1009,16 @@ public final class CombatMoves {
         }
     }
 
+    // a arma na mao (ItemInHandLayerCombatMixin): o osso "item" da animacao do Blockbench (gira e estica)
+    public static void poseItem(net.minecraft.world.entity.LivingEntity e, HumanoidArm arm, PoseStack ps) {
+        if (!(e instanceof Player p) || arm != p.getMainArm()) return;
+        Active a = activeFor(p);
+        if (a == null || a.bb == null) return;
+        long now = now();
+        float w = tpWeight(a, now);
+        if (w > 0.001f) BbAnims.poseItem(ps, a.bb, a.bbTime(now), w, arm == HumanoidArm.RIGHT);
+    }
+
     // corpo inteiro: agacha, pulinho, rodopio, tombo, cambalhota, inclinacao e o corpo indo a frente
     @SubscribeEvent
     public static void onRenderPlayerPre(RenderPlayerEvent.Pre e) {
@@ -1004,12 +1026,13 @@ public final class CombatMoves {
         Active a = activeFor(p);
         if (a == null || DodgeRoll.rolling(p)) return;
         long now = now();
-        float[] v = pose(a, now);
         float w = tpWeight(a, now);
         float yaw = Mth.rotLerp(e.getPartialTick(), p.yBodyRotO, p.yBodyRot);
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
         PUSHED.add(p.getId());
+        if (a.bb != null) { BbAnims.poseRoot(ps, a.bb, a.bbTime(now), w, p.getMainArm() == HumanoidArm.RIGHT, yaw); return; }
+        float[] v = pose(a, now);
         ps.translate(0, (v[MoveAnims.HOP] - v[MoveAnims.CR] * 0.12f) * w, 0);
         ps.mulPose(Axis.YP.rotationDegrees(-yaw));
         ps.translate(0, 0, v[MoveAnims.DX] * w);                  // corpo vai a frente
