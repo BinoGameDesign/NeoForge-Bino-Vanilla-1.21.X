@@ -158,6 +158,7 @@ public final class CombatFx {
                     me.level().playLocalSound(at.x, at.y, at.z, ModSounds.PARRY_PERFECT.get(), SoundSource.PLAYERS, 0.5f, 1.6f, false);
                 }
             }
+            case CombatFxPayload.HIT_FROM -> { if (mine) Crosshair.hit(m.f()); }
             case CombatFxPayload.CLASH -> {   // choque de espadas (PvP)
                 if (!mine) return;
                 flashAt = now; flashPower = 0.7f;

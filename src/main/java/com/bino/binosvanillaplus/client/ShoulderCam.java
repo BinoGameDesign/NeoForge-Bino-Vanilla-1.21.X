@@ -1,8 +1,6 @@
 package com.bino.binosvanillaplus.client;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
@@ -117,7 +115,6 @@ public final class ShoulderCam {
         e.registerAboveAll(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "shoulder_crosshair"), ShoulderCam::renderCrosshair);
     }
 
-    private static final ResourceLocation CROSSHAIR = ResourceLocation.withDefaultNamespace("hud/crosshair");
     private static double crossX = Double.NaN, crossY = Double.NaN;
     private static long crossMs;
 
@@ -151,11 +148,6 @@ public final class ShoulderCam {
         crossX += (tx - crossX) * k; crossY += (ty - crossY) * k;
         if (Double.isNaN(crossX) || Math.abs(crossX - tx) > w) { crossX = tx; crossY = ty; }
         int x = (int) Math.round(crossX), y = (int) Math.round(crossY);
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);   // como a mira do jogo (inverte a cor)
-        g.blitSprite(CROSSHAIR, x - 7, y - 7, 15, 15);
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableBlend();
+        com.bino.binosvanillaplus.client.combat.Crosshair.draw(g, x, y, true);   // a mira nova (com os avisos de golpe)
     }
 }

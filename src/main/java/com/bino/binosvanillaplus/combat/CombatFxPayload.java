@@ -21,9 +21,10 @@ import net.minecraft.resources.ResourceLocation;
 //   PLAYER_POSTURE a = jogador, b = 1 guarda quebrada, f = 0..1
 //   ISSEN_CHAIN    a = jogador, b = mob, f = ms da janela do proximo Issen (abre daqui a pouco, ver CombatActionsServer)
 //   CLASH          a = jogador, b = o outro jogador (choque de espadas)
+//   HIT_FROM       a = jogador atingido, f = yaw do mundo de onde veio o golpe (aviso na mira)
 public record CombatFxPayload(byte kind, int a, int b, float f) implements CustomPacketPayload {
     public static final byte TELEGRAPH = 0, PARRY = 1, ISSEN = 2, PERFECT_DODGE = 3, RUSH = 4, POSTURE = 5, CRITICAL = 6, DEATH = 7,
-            STAMINA = 8, BLOCKED = 9, PLAYER_POSTURE = 10, ISSEN_CHAIN = 11, CLASH = 12;
+            STAMINA = 8, BLOCKED = 9, PLAYER_POSTURE = 10, ISSEN_CHAIN = 11, CLASH = 12, HIT_FROM = 13;
     public static final Type<CombatFxPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "combat_fx"));
     public static final StreamCodec<ByteBuf, CombatFxPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BYTE, CombatFxPayload::kind, ByteBufCodecs.VAR_INT, CombatFxPayload::a,

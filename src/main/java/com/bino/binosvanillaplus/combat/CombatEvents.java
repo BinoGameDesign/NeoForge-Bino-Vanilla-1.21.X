@@ -94,6 +94,15 @@ public final class CombatEvents {
             if (crit) level.sendParticles(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, 0, 0.9, 0, 0, 1.0);
         }
         send(victim, e.getNewDamage(), crit ? KIND_CRIT : kind(src, victim));
+        // de onde veio o golpe (aviso rosa na mira quando vem de fora da visao)
+        Vec3 from = src.getSourcePosition();
+        if (victim instanceof ServerPlayer sp && from != null) {
+            double dx = from.x - sp.getX(), dz = from.z - sp.getZ();
+            if (dx * dx + dz * dz > 0.01) {
+                float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
+                PacketDistributor.sendToPlayer(sp, new CombatFxPayload(CombatFxPayload.HIT_FROM, sp.getId(), 0, yaw));
+            }
+        }
     }
 
     // dificuldade: monstros batem mais forte nos jogadores CORPO A CORPO (o nivel do mob multiplica por cima, em MobLevels).
