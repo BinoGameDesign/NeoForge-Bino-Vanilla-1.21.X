@@ -30,7 +30,7 @@ import org.lwjgl.glfw.GLFW;
 public final class Defense {
     private Defense() {}
 
-    public static final KeyMapping DEFEND = new KeyMapping("key.binosvanillaplus.defend", KeyConflictContext.IN_GAME,
+    public static final KeyMapping DEFEND = new KeyMapping("key.binosvanillaplus.guard", KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V, "key.categories.binosvanillaplus");   // R e' do Iris (recarregar shaders)
     public static final long MAX_HOLD_MS = 2000;
 
