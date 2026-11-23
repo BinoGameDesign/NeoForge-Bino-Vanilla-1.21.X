@@ -727,17 +727,23 @@ public final class CombatMoves {
     // descanso; por isso aponta para o lado certo, nao "pula" ao comecar/terminar e fica do tamanho certo.
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onHand(RenderHandEvent e) {
-        if (e.getHand() != InteractionHand.MAIN_HAND) return;
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         if (p == null) return;
-        ItemStack stack = e.getItemStack();
         long now = now();
+        Active a = activeFor(p);
+        // golpe com animacao do Blockbench: braços 3D do proprio boneco vistos dos olhos (como o Better Combat)
+        if (a != null && a.bb != null) {
+            e.setCanceled(true);
+            if (e.getHand() == InteractionHand.MAIN_HAND) { arms3D(e, mc, p, a, now); springReset(); }
+            return;
+        }
+        if (e.getHand() != InteractionHand.MAIN_HAND) return;
+        ItemStack stack = e.getItemStack();
         if (CombatEvents.weapon(stack) == CombatEvents.Weapon.NONE || p.isUsingItem() && p.getUsedItemHand() == InteractionHand.MAIN_HAND) {
             springReset();
             return;   // sem espada/machado: o jogo desenha
         }
-        Active a = activeFor(p);
         float dip = DodgeRoll.handDip(p);
         e.setCanceled(true);
         if (!ItemStack.isSameItem(stack, lastHeld) && a != null) equipAt = -100000;
@@ -806,6 +812,67 @@ public final class CombatMoves {
         lastHeld = stack.copy();
     }
 
+    // Primeira pessoa igual a terceira (ideia do Better Combat, codigo proprio): o boneco do jogador recebe a pose do golpe
+    // (o mesmo setupAnim da terceira pessoa) e so os dois braços (pele, manga da camisa, manga da armadura) e a arma
+    // sao desenhados, a partir dos olhos. Barato: um setupAnim e 4 partes do modelo + o item, so durante o golpe.
+    // O corpo inteiro (root) entra so como deslocamento; giros/cambalhotas ficam com a camera (onCamera).
+    private static void arms3D(RenderHandEvent e, Minecraft mc, LocalPlayer p, Active a, long now) {
+        if (!(mc.getEntityRenderDispatcher().getRenderer(p) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer pr)) return;
+        var model = pr.getModel();
+        float pt = e.getPartialTick();
+        boolean right = p.getMainArm() == HumanoidArm.RIGHT;
+        float t = a.bbTime(now), w = tpWeight(a, now);
+        model.attackTime = 0f;
+        model.crouching = p.isCrouching();
+        model.riding = false;
+        model.young = false;
+        model.rightArmPose = right ? HumanoidModel.ArmPose.ITEM : HumanoidModel.ArmPose.EMPTY;
+        model.leftArmPose = right ? HumanoidModel.ArmPose.EMPTY : HumanoidModel.ArmPose.ITEM;
+        model.setupAnim(p, 0f, 0f, p.tickCount + pt, 0f, 0f);   // passa pelo HumanoidModelCombatMixin (pose do golpe)
+
+        PoseStack ps = e.getPoseStack();
+        MultiBufferSource buf = e.getMultiBufferSource();
+        int light = e.getPackedLight();
+        var cam = mc.gameRenderer.getMainCamera();
+        ps.pushPose();
+        ps.mulPose(new Quaternionf(cam.rotation()).conjugate());          // mundo -> olhos
+        Vec3 d = p.getPosition(pt).subtract(cam.getPosition());
+        ps.translate(d.x, d.y, d.z);
+        ps.mulPose(Axis.YP.rotationDegrees(180f - p.getViewYRot(pt)));     // o boneco olha para onde a camera olha
+        BbAnims.rootShift(ps, a.bb, t, w, right);
+        ps.scale(-1f, -1f, 1f);
+        ps.scale(0.9375f, 0.9375f, 0.9375f);
+        ps.translate(0f, -1.501f, 0f);
+
+        VertexConsumer vc = buf.getBuffer(RenderType.entityTranslucent(p.getSkin().texture()));
+        int ov = OverlayTexture.NO_OVERLAY;
+        model.rightArm.visible = model.leftArm.visible = true;
+        model.rightSleeve.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_SLEEVE);
+        model.leftSleeve.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_SLEEVE);
+        model.rightArm.render(ps, vc, light, ov);
+        model.rightSleeve.render(ps, vc, light, ov);
+        model.leftArm.render(ps, vc, light, ov);
+        model.leftSleeve.render(ps, vc, light, ov);
+        com.bino.binosvanillaplus.client.gear.HandArmor.render(ps, buf, light, p, true, model);
+        com.bino.binosvanillaplus.client.gear.HandArmor.render(ps, buf, light, p, false, model);
+
+        ItemStack stack = p.getMainHandItem();
+        if (!stack.isEmpty()) {   // a arma: igual a camada do item na mao da terceira pessoa
+            HumanoidArm arm = right ? HumanoidArm.RIGHT : HumanoidArm.LEFT;
+            ps.pushPose();
+            model.translateToHand(arm, ps);
+            poseItem(p, arm, ps);
+            ps.mulPose(Axis.XP.rotationDegrees(-90f));
+            ps.mulPose(Axis.YP.rotationDegrees(180f));
+            ps.translate((right ? 1f : -1f) / 16f, 0.125f, -0.625f);
+            mc.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(p, stack,
+                    right ? ItemDisplayContext.THIRD_PERSON_RIGHT_HAND : ItemDisplayContext.THIRD_PERSON_LEFT_HAND, !right, ps, buf, light);
+            ps.popPose();
+        }
+        ps.popPose();
+        lastHeld = stack.copy();
+    }
+
     // rastro solido e curto (estilo Zelda): espada branco-azulado, machado branco-alaranjado, pesado dourado
     private static void renderTrail(MultiBufferSource buf, long now, boolean heavy, boolean axe) {
         for (Iterator<TrailPt> it = TRAIL.iterator(); it.hasNext(); ) if (now - it.next().t() > TRAIL_MS) it.remove();
@@ -857,12 +924,14 @@ public final class CombatMoves {
         boolean fp = mc.options.getCameraType().isFirstPerson();
         for (Map.Entry<Integer, Active> en : ACTIVE.entrySet()) {
             Active a = en.getValue();
-            if (a.done(now) || mc.player != null && en.getKey() == mc.player.getId() && fp) continue;
+            if (a.done(now) || mc.player != null && en.getKey() == mc.player.getId() && fp && a.bb == null) continue;
             if (!(mc.level.getEntity(en.getKey()) instanceof Player pl)) continue;
             if (a.bb != null) {   // animacao do Blockbench: a lamina pelas contas do proprio modelo
                 float bt = a.bbTime(now);
                 if (!a.bb.striking(bt)) continue;
-                Vec3[] bw = BbAnims.blade(a.bb, bt, pl.getMainArm() == HumanoidArm.RIGHT, Mth.rotLerp(pt, pl.yBodyRotO, pl.yBodyRot), pl.getPosition(pt));
+                boolean mineFp = fp && pl == mc.player;   // primeira pessoa: o boneco segue a camera (arms3D)
+                Vec3[] bw = BbAnims.blade(a.bb, bt, pl.getMainArm() == HumanoidArm.RIGHT,
+                        mineFp ? pl.getViewYRot(pt) : Mth.rotLerp(pt, pl.yBodyRotO, pl.yBodyRot), pl.getPosition(pt));
                 TP_TRAIL.computeIfAbsent(en.getKey(), k -> new ArrayDeque<>()).addLast(new TrailPt(bw[0].toVector3f(), bw[1].toVector3f(), now));
                 continue;
             }

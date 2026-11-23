@@ -248,6 +248,14 @@ public final class BbAnims {
         ps.mulPose(Axis.YP.rotationDegrees(-(180f - bodyYaw)));
     }
 
+    // primeira pessoa: so o deslocamento do corpo inteiro (root/tumble), sem giros (esses vao para a camera)
+    static void rootShift(PoseStack ps, Anim a, float t, float w, boolean right) {
+        float[] rp = a.pos("root", t), tp = a.pos("tumble", t);
+        float x = rp[0] + tp[0], y = rp[1] + tp[1], z = rp[2] + tp[2];
+        if (!right) x = -x;
+        ps.translate(x * PX * w, y * PX * w, z * PX * w);
+    }
+
     // a arma (osso "item"): depois do jogo levar a pose ate a mao. Gira e estica a partir da mao.
     static void poseItem(PoseStack ps, Anim a, float t, float w, boolean right) {
         float[] r = a.rot("item", t), o = a.pos("item", t), s = a.scale("item", t);
