@@ -119,9 +119,9 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         } else if (tab == TAB_ATTR) {
             tabs(624, 700);
             // "+" de Forca, Vitalidade e Agilidade (Inteligencia e Vontade: so com a magia)
-            buttons.add(new Btn(1600, 573, 70, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.STR, t("attr.add")));
-            buttons.add(new Btn(1600, 669, 70, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.VIT, t("attr.add")));
-            buttons.add(new Btn(1600, 957, 70, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.AGI, t("attr.add")));
+            buttons.add(new Btn(1356, 576, 64, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.STR, t("attr.add")));
+            buttons.add(new Btn(1356, 672, 64, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.VIT, t("attr.add")));
+            buttons.add(new Btn(1356, 960, 64, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.AGI, t("attr.add")));
         } else {
             tabs(2682, 806);
         }
@@ -278,7 +278,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             if (sil != null && !slot.hasItem()) icon(g, sil, r[0] + r[2] * 0.2f, r[1] + r[2] * 0.2f, r[2] * 0.6f, 0.22f);
         }
         // linha da hotbar e item selecionado
-        if (tab != TAB_ARMOR) {
+        if (tab != TAB_ARMOR && tab != TAB_ATTR) {
             g.fill((int) X(1386), (int) Y(1366), (int) X(1386 + 1951), (int) Y(1366) + 1, 0x55FFFFFF);
             float[] r = screenRect(BinoInventoryMenu.HOTBAR + minecraft.player.getInventory().selected);
             if (r != null) icon(g, "select", r[0] - r[2] * 0.035f, r[1] - r[2] * 0.035f, r[2] * 1.07f, 1f);
@@ -667,19 +667,19 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         box(g, 979, 1146, 601, 375, 1344);
         double dmg = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
         double spd = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED);
-        text(g, t("attr.physical_damage").getString(), 1013, 1217, 30, white, false);
-        text(g, String.format(java.util.Locale.ROOT, "%.1f", dmg), 1536, 1217, 38, white, true);
-        text(g, t("attr.attack_speed").getString(), 1013, 1313, 30, white, false);
-        text(g, String.format(java.util.Locale.ROOT, "%.2f", spd), 1536, 1313, 38, white, true);
-        text(g, t("attr.magic_damage").getString(), 1013, 1459, 30, dim, false);
-        text(g, "-", 1536, 1459, 38, dim, true);
+        text(g, t("attr.physical_damage").getString(), 1013, 1217, 27, white, false);
+        text(g, String.format(java.util.Locale.ROOT, "%.1f", dmg), 1536, 1217, 36, white, true);
+        text(g, t("attr.attack_speed").getString(), 1013, 1335, 27, white, false);
+        text(g, String.format(java.util.Locale.ROOT, "%.2f", spd), 1536, 1335, 36, white, true);
+        text(g, t("attr.magic_damage").getString(), 1013, 1453, 27, dim, false);
+        text(g, "-", 1536, 1453, 36, dim, true);
         // derivados: defesa e recursos
         box(g, 1667, 540, 601, 981, 2003);
         float stamina = com.bino.binosvanillaplus.client.combat.Stamina.BASE_COMBAT + 2f * agi;
         double armorW = p.getArmorValue() + p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS) * 1.5;
         int posture = (int) (100 + armorW * 1.5 + 3 * vit);
         String[][] rows = {
-                {"life", String.valueOf((int) p.getMaxHealth())},
+                {"life", String.format(java.util.Locale.ROOT, "%.1f", p.getMaxHealth() * (1f + 0.02f * vit))},
                 {"stamina", String.valueOf((int) stamina)},
                 {"posture", String.valueOf(posture)},
                 {"physical_defense", String.valueOf(p.getArmorValue())},
@@ -699,8 +699,8 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         int bars = p.experienceLevel, cost = com.bino.binosvanillaplus.leveling.PlayerStats.cost(lv + 1);
         boolean max = lv >= com.bino.binosvanillaplus.leveling.PlayerStats.MAX_LEVEL;
         boolean can = !max && (p.isCreative() || bars >= cost);
-        text(g, t("attr.bars").getString() + ": " + bars, 1500, 1660, 30, 0xFF80FF20, false);
-        text(g, max ? t("attr.max_level").getString() : t("attr.cost").getString() + ": " + cost, 1500, 1740, 30, can ? white : 0xFFE05050, false);
+        text(g, t("attr.bars").getString() + ": " + bars, 1330, 1660, 30, 0xFF80FF20, false);
+        text(g, max ? t("attr.max_level").getString() : t("attr.cost").getString() + ": " + cost, 1330, 1740, 30, can ? white : 0xFFE05050, false);
         boolean over = inRect(mx, my, LEVEL_BTN);
         float press = Ease.since(levelAt, 180), sq = 1f - 0.08f * (float) Math.sin(Math.PI * press);
         float bw = LEVEL_BTN[2] * sq, bh = LEVEL_BTN[3] * sq;

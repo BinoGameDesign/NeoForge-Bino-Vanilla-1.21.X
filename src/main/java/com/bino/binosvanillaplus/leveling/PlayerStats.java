@@ -23,7 +23,8 @@ import java.util.List;
 // custa barras de experiencia (o "nivel" do jogo = barras completas): nivel 2 custa 1 barra e o custo sobe 1 barra a
 // cada 4 niveis (nivel 20 = 5 barras). Maximo 100. Cada nivel da 1 ponto para distribuir:
 //   FORCA       +3% de dano fisico e +2% da postura que voce causa, por ponto
-//   VITALIDADE  +1 de vida (meio coracao) e +3 de postura sua, por ponto
+//   VITALIDADE  +2% de vida POR CORACAO (os 10 coracoes ficam iguais; cada um aguenta mais: o dano e a cura sao
+//               divididos por 1 + 0,02 x Vitalidade) e +3 de postura sua, por ponto
 //   AGILIDADE   +2 de estamina de combate, +1% de velocidade de ataque e +0,5% de evasao (max 25%), por ponto
 //   INTELIGENCIA / VONTADE: reservados para a magia (travados, nao recebem pontos ainda)
 // Os dados ficam no jogador (sobrevivem a morte) e vao para o cliente (visor e aba Atributos).
@@ -95,7 +96,7 @@ public final class PlayerStats {
     private static final ResourceLocation DAMAGE = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "stats_strength");
 
     public static void apply(ServerPlayer p) {
-        modify(p, Attributes.MAX_HEALTH, HEALTH, get(p, VIT), AttributeModifier.Operation.ADD_VALUE);
+        modify(p, Attributes.MAX_HEALTH, HEALTH, 0, AttributeModifier.Operation.ADD_VALUE);   // (versao antiga dava coracoes a mais: tira)
         modify(p, Attributes.ATTACK_SPEED, SPEED, 0.01 * get(p, AGI), AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
         modify(p, Attributes.ATTACK_DAMAGE, DAMAGE, 0.03 * get(p, STR), AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
         if (p.getHealth() > p.getMaxHealth()) p.setHealth(p.getMaxHealth());
@@ -121,6 +122,23 @@ public final class PlayerStats {
 
     @SubscribeEvent
     public static void onDimension(PlayerEvent.PlayerChangedDimensionEvent e) { if (e.getEntity() instanceof ServerPlayer p) sync(p); }
+
+    // Vitalidade = mais vida por coracao: o dano que chega (depois da armadura) e a cura sao divididos pelo mesmo fator
+    public static float heartScale(Player p) { return 1f + 0.02f * get(p, VIT); }
+
+    @SubscribeEvent
+    public static void onDamage(net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Pre e) {
+        if (e.getEntity() instanceof ServerPlayer p && get(p, VIT) > 0) e.setNewDamage(e.getNewDamage() / heartScale(p));
+    }
+
+    // cura: tambem por coracao; e a regeneracao natural gasta metade da fome (o combate novo tira mais vida)
+    @SubscribeEvent
+    public static void onHeal(net.neoforged.neoforge.event.entity.living.LivingHealEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        float amount = e.getAmount();
+        if (amount <= 1.0f && p.getFoodData().getFoodLevel() >= 18) p.getFoodData().addExhaustion(-3f * amount);   // o jogo cobra 6 por ponto curado
+        if (get(p, VIT) > 0) e.setAmount(amount / heartScale(p));
+    }
 
     // evasao (Agilidade): chance de nao levar o golpe de um mob
     @SubscribeEvent

@@ -21,7 +21,7 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
-// Tecla DEFENDER (R, regras de 23/11): apertar na hora certa do golpe = PARRY (cores branco/amarelo/azul; com escudo
+// Tecla DEFENDER (V; a R era do Iris e recarregava os shaders. Regras de 23/11): apertar na hora certa do golpe = PARRY (cores branco/amarelo/azul; com escudo
 // no maximo amarelo, sem Issen); apertar com flecha chegando = aparar a flecha; SEGURAR = bloquear (no maximo 2 s).
 // Bloqueio: 100% do dano, mas gasta 40 de estamina (20 com escudo) e enche a postura com 1,5x o golpe (servidor).
 // Segurar sem levar golpe gasta 20. Estamina zerada defendendo = guarda quebrada (atordoado 1,2 s, leva 1,5x de dano).
@@ -31,7 +31,7 @@ public final class Defense {
     private Defense() {}
 
     public static final KeyMapping DEFEND = new KeyMapping("key.binosvanillaplus.defend", KeyConflictContext.IN_GAME,
-            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "key.categories.binosvanillaplus");
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V, "key.categories.binosvanillaplus");   // R e' do Iris (recarregar shaders)
     public static final long MAX_HOLD_MS = 2000;
 
     private static boolean holding, gotHit;

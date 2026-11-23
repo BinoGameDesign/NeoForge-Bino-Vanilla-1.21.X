@@ -37,8 +37,8 @@ public class ComboListScreen extends Screen {
             new Row("context", "pierce", "W W + P", m(CombatMove.DASH, CombatMove.PIERCE)),
             new Row("context", "roll", "Q + L / P", m(CombatMove.ROLL_SLASH, CombatMove.ROLL_THRUST)),
             new Row("context", "forward", "Ctrl + L / P", m(CombatMove.FORWARD)),
-            new Row("defense", "parry", "R", m(CombatMove.PARRY)),
-            new Row("defense", "issen", "R (azul) L L L", m(CombatMove.PARRY, CombatMove.ISSEN, CombatMove.ISSEN)),
+            new Row("defense", "parry", "V", m(CombatMove.PARRY)),
+            new Row("defense", "issen", "V (azul) L L L", m(CombatMove.PARRY, CombatMove.ISSEN, CombatMove.ISSEN)),
             new Row("defense", "backstab", "Shift + L", m(CombatMove.BACKSTAB)),
             new Row("defense", "critical", "P", m(CombatMove.CRITICAL)));
 
@@ -95,17 +95,32 @@ public class ComboListScreen extends Screen {
             String k = parts[i];
             if (k.isEmpty()) continue;
             boolean word = k.equals("+") || k.equals("/") || k.equals("...") || k.startsWith("(");
-            int w = font.width(k) + (word ? 2 : 8);
+            boolean mouse = k.equals("L") || k.equals("P");
+            int w = mouse ? 9 : font.width(k) + (word ? 2 : 8);
             x -= w;
-            if (!word) {
+            if (mouse) mouse(g, x, y - 1, k.equals("L"));
+            else if (!word) {
                 g.fill(x, y, x + w, y + 11, 0xFF2A2C30);
                 g.fill(x, y, x + w, y + 1, 0xFF5A5E66);
                 g.fill(x, y + 10, x + w, y + 11, 0xFF15161A);
-                int col = k.equals("P") ? 0xFFFF9A5A : k.equals("L") ? 0xFF9AD8FF : k.equals("R") ? 0xFFB8FF8A : 0xFFFFFFFF;
+                int col = k.equals("P") ? 0xFFFF9A5A : k.equals("L") ? 0xFF9AD8FF : k.equals("V") ? 0xFFB8FF8A : 0xFFFFFFFF;
                 g.drawString(font, k, x + 4, y + 2, col, false);
             } else g.drawString(font, k, x + 1, y + 2, 0xA0A0A0, false);
             x -= 2;
         }
+    }
+
+    // mouse em pixel art (9x13): botao esquerdo ou direito aceso
+    private static void mouse(GuiGraphics g, int x, int y, boolean left) {
+        int edge = 0xFF15161A, body = 0xFF3A3D44, lit = left ? 0xFF6EC8FF : 0xFFFF9A5A;
+        g.fill(x + 1, y, x + 8, y + 13, edge);
+        g.fill(x, y + 1, x + 9, y + 12, edge);
+        g.fill(x + 1, y + 1, x + 8, y + 12, body);
+        // botoes (metade de cima), separados no meio
+        g.fill(left ? x + 1 : x + 5, y + 1, left ? x + 4 : x + 8, y + 5, lit);
+        g.fill(x + 4, y + 1, x + 5, y + 6, edge);
+        g.fill(x + 1, y + 5, x + 8, y + 6, edge);
+        g.fill(x + 2, y + 9, x + 7, y + 10, 0xFF4E525A);   // brilho embaixo
     }
 
     private int scroll, contentH;
