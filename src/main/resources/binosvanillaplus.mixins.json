@@ -48,6 +48,7 @@
         "VillagerBreedMixin",
         "VillagerHostilesSensorMixin",
         "MeleeAttackGoalTelegraphMixin",
-        "LivingEntityDeathMixin"
+        "LivingEntityDeathMixin",
+        "PlayerAttackStrengthMixin"
     ]
 }

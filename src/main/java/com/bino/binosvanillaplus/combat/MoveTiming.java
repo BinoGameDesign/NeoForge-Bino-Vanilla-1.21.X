@@ -8,6 +8,11 @@ public final class MoveTiming {
 
     // duracao em milissegundos; delayTicks = recarga de ataque da arma (Player.getCurrentItemAttackStrengthDelay)
     public static int lengthMs(CombatMove m, boolean heavy, boolean axe, float delayTicks) {
+        BbTiming.Times bb = BbTiming.get(m, axe);
+        if (bb != null) {   // animacao do Blockbench: a duracao dela, mais rapida/lenta com a velocidade de ataque da arma
+            boolean fixed = m == CombatMove.PARRY || m == CombatMove.ISSEN || m == CombatMove.RUSH || m == CombatMove.DASH || m == CombatMove.BACKSTAB;
+            return Math.round(bb.length() * 1000f * (fixed ? 1f : speedScale(delayTicks)));
+        }
         int base = switch (m) {
             case LIGHT_1 -> 420; case LIGHT_2 -> 440; case LIGHT_3 -> 460; case LIGHT_4 -> 460;
             case HEAVY -> 760; case JUMP -> 560; case FORWARD -> 480;
@@ -35,7 +40,19 @@ public final class MoveTiming {
         return (float) Math.max(0.65, Math.min(1.7, Math.pow(delayTicks / 12.5, 0.6)));
     }
 
-    // fracao da animacao em que a arma "bate"
+    // fracao da animacao em que a arma "bate" (animacao do Blockbench: o marcador da linha do tempo)
+    public static float impact(CombatMove m, boolean axe) {
+        BbTiming.Times bb = BbTiming.get(m, axe);
+        return bb != null ? bb.hit() / bb.length() : impact(m);
+    }
+
+    // a partir de que fracao o proximo golpe do combo pode sair (Blockbench: depois da pausa do acerto)
+    public static float chain(CombatMove m, boolean heavy, boolean axe) {
+        BbTiming.Times bb = BbTiming.get(m, axe);
+        if (bb != null) return bb.chain() / bb.length();
+        return m.serverHit(heavy) ? 0.9f : 0.84f;
+    }
+
     public static float impact(CombatMove m) {
         return switch (m) {
             case HEAVY -> 0.5f; case JUMP -> 0.55f; case FORWARD -> 0.32f;
@@ -45,12 +62,10 @@ public final class MoveTiming {
             case DASH -> 0.5f; case DASH_SLASH -> 0.3f; case PIERCE -> 0.4f; case LAUNCHER -> 0.45f;
             case AIR_3 -> 0.4f; case METEOR -> 0.45f; case DANCE -> 0.55f; case BACKSTAB -> 0.36f;
             case TORMENTA -> 0.6f; case SURPRISE -> 0.4f; case LIGHT_5 -> 0.36f;
-            // animacoes do Blockbench (espada): o marcador de acerto da linha do tempo / duracao
-            case LIGHT_1 -> 0.375f; case LIGHT_2 -> 0.368f; case LIGHT_3 -> 0.352f;
             default -> 0.34f;
         };
     }
 
     public static int lengthTicks(CombatMove m, boolean heavy, boolean axe, float delay) { return Math.round(lengthMs(m, heavy, axe, delay) / 50f); }
-    public static int windupTicks(CombatMove m, boolean heavy, boolean axe, float delay) { return Math.max(1, Math.round(lengthMs(m, heavy, axe, delay) * impact(m) / 50f)); }
+    public static int windupTicks(CombatMove m, boolean heavy, boolean axe, float delay) { return Math.max(1, Math.round(lengthMs(m, heavy, axe, delay) * impact(m, axe) / 50f)); }
 }

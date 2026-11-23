@@ -95,6 +95,14 @@ public final class CombatMoves {
             this.bb = BbAnims.forMove(move, axe);
         }
         float bbTime(long now) { return u(now) * bb.length(); }
+        BbAnims.Sample fromBb;                    // pose em que o golpe anterior estava (o combo sai dela, sem voltar ao descanso)
+        static final float CHAIN_BLEND_MS = 120f;
+        BbAnims.Sample src(long now) {
+            BbAnims.Sample s = BbAnims.at(bb, bbTime(now));
+            if (fromBb == null) return s;
+            float k = Mth.clamp((t(now) - start) / CHAIN_BLEND_MS, 0f, 1f);
+            return k >= 1f ? s : BbAnims.mix(fromBb, s, k * k * (3 - 2 * k));
+        }
         long t(long now) { return now < pauseEnd ? Math.min(now, pauseStart) : now - (pauseEnd - pauseStart); }
         float u(long now) { return Mth.clamp((t(now) - start) / (float) length, 0f, 1f); }
         boolean done(long now) { return t(now) - start >= length; }
@@ -119,7 +127,10 @@ public final class CombatMoves {
         long now = now();
         LAST_MOVE.put(id, now);
         if (LAST_MOVE.size() > 64) LAST_MOVE.clear();
-        if (prev != null && !prev.done(now)) a.from = pose(prev, now);
+        if (prev != null && !prev.done(now)) {
+            a.from = pose(prev, now);
+            if (prev.bb != null && a.bb != null) a.fromBb = frozen(prev, now);
+        }
         ACTIVE.put(id, a);
     }
 
@@ -506,8 +517,8 @@ public final class CombatMoves {
         chargeTick(mc, p, now);
         Active a = ACTIVE.get(p.getId());
         if (a == null) { queued = null; return; }
-        if (!a.hitDone && a.u(now) >= MoveTiming.impact(a.move)) { a.hitDone = true; impact(mc, p, a); }
-        boolean canChain = a.u(now) >= (a.move.serverHit(a.heavy) ? 0.9f : 0.84f);
+        if (!a.hitDone && a.u(now) >= MoveTiming.impact(a.move, a.axe)) { a.hitDone = true; impact(mc, p, a); }
+        boolean canChain = a.u(now) >= MoveTiming.chain(a.move, a.heavy, a.axe);
         if (queued != null && canChain) { boolean h = queued; queued = null; begin(p, h, now); }
         else if (a.done(now)) ACTIVE.remove(p.getId());
     }
@@ -662,7 +673,7 @@ public final class CombatMoves {
 
     // pose agora; entra suave a partir do descanso (rodopio e cambalhota nao, sao voltas inteiras)
     private static float[] pose(Active a, long now) {
-        float[] v = a.bb != null ? BbAnims.firstPersonPose(a.bb, a.bbTime(now), tpWeight(a, now)) : MoveAnims.sample(a.keys, a.u(now));
+        float[] v = a.bb != null ? BbAnims.firstPersonPose(a.src(now), tpWeight(a, now)) : MoveAnims.sample(a.keys, a.u(now));
         float in = Mth.clamp((a.t(now) - a.start) / (float) BLEND_MS, 0f, 1f);
         in = in * in * (3 - 2 * in);
         for (int i = 0; i < MoveAnims.N; i++)
@@ -671,9 +682,23 @@ public final class CombatMoves {
     }
 
     // terceira pessoa entra/sai da pose do jogo base
+    // pose do golpe anterior congelada no instante em que o novo comecou
+    private static BbAnims.Sample frozen(Active prev, long now) {
+        BbAnims.Sample s = prev.src(now);
+        String[] bones = {"root", "tumble", "head", "body", "right_arm", "left_arm", "right_leg", "left_leg", "item"};
+        Map<String, float[][]> snap = new HashMap<>();
+        for (String b : bones) snap.put(b, new float[][]{s.rot(b), s.pos(b), s.scale(b)});
+        float w = tpWeight(prev, now);   // se o anterior ja estava voltando para a pose do jogo, sai dali
+        return new BbAnims.Sample() {
+            public float[] rot(String b) { float[] v = snap.get(b)[0].clone(); for (int i = 0; i < 3; i++) v[i] *= w; return v; }
+            public float[] pos(String b) { float[] v = snap.get(b)[1].clone(); for (int i = 0; i < 3; i++) v[i] *= w; return v; }
+            public float[] scale(String b) { float[] v = snap.get(b)[2].clone(); for (int i = 0; i < 3; i++) v[i] = 1 + (v[i] - 1) * w; return v; }
+        };
+    }
+
     private static float tpWeight(Active a, long now) {
         float u = a.u(now);
-        float w = Math.min(1f, u / 0.1f) * Math.min(1f, (1f - u) / 0.22f);
+        float w = (a.fromBb != null ? 1f : Math.min(1f, u / 0.1f)) * Math.min(1f, (1f - u) / 0.22f);
         w = Mth.clamp(w, 0f, 1f);
         return w * w * (3 - 2 * w);
     }
@@ -772,20 +797,6 @@ public final class CombatMoves {
         MultiBufferSource buf = e.getMultiBufferSource();
         int light = e.getPackedLight();
         Quaternionf abs = rot(v, side), rest = rot(MoveAnims.REST, side);
-        float stretch = 1f;
-        if (a != null && a.bb != null) {   // animacao do Blockbench: a arma gira o mesmo tanto que no modelo (sem mola)
-            float bt = a.bbTime(now), bw = tpWeight(a, now);
-            abs = BbAnims.firstPersonTurn(a.bb, bt, bw, side > 0).mul(rest);
-            // a lamina nunca aponta para a camera (para tras ela vira uma placa enorme na tela): no maximo de lado/para cima
-            Vector3f bl = abs.transform(new Vector3f(0, 1, 0));
-            if (bl.z > 0.12f) {
-                Vector3f to = new Vector3f(bl.x, bl.y, 0.12f);
-                if (to.x * to.x + to.y * to.y < 0.2f) to.y += 0.6f;   // apontando reto para tras: vai para cima
-                to.normalize();
-                abs = new Quaternionf().rotationTo(bl, to).mul(abs);
-            }
-            stretch = 1f + (BbAnims.stretch(a.bb, bt, bw) - 1f) * 0.35f;   // esticada mais discreta (a arma ja e' grande na tela)
-        }
 
         // braco da skin: do ombro (fora da tela, embaixo) ate o cabo da arma
         LapidaryHands.arm(ps, buf, Vec3.ZERO, new Vec3(v[MoveAnims.HX] * side, v[MoveAnims.HY] - 0.04, v[MoveAnims.HZ] + 0.06),
@@ -793,7 +804,7 @@ public final class CombatMoves {
 
         ps.pushPose();
         ps.translate(v[MoveAnims.HX] * side, v[MoveAnims.HY], v[MoveAnims.HZ]);
-        if (a != null && (a.bb != null ? a.bb.striking(a.bbTime(now)) : MoveAnims.striking(a.keys, a.u(now)))) {   // rastro: base e ponta da lamina pela direcao absoluta
+        if (a != null && MoveAnims.striking(a.keys, a.u(now))) {   // rastro: base e ponta da lamina pela direcao absoluta
             ps.pushPose();
             ps.mulPose(abs);
             Matrix4f m = ps.last().pose();
@@ -801,9 +812,7 @@ public final class CombatMoves {
             TRAIL.addLast(new TrailPt(m.transformPosition(new Vector3f(0, len * 0.3f, 0)), m.transformPosition(new Vector3f(0, len, 0)), now));
             ps.popPose();
         }
-        ps.mulPose(abs);                                   // so a diferenca para o descanso...
-        if (stretch != 1f) ps.scale(1f, stretch, 1f);      // (a lamina estica no sentido dela, a partir da mao)
-        ps.mulPose(new Quaternionf(rest).conjugate());
+        ps.mulPose(new Quaternionf(abs).mul(new Quaternionf(rest).conjugate()));   // so a diferenca para o descanso
         boolean right = side > 0;
         mc.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(p, stack,
                 right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, !right, ps, buf, light);
@@ -821,7 +830,8 @@ public final class CombatMoves {
         var model = pr.getModel();
         float pt = e.getPartialTick();
         boolean right = p.getMainArm() == HumanoidArm.RIGHT;
-        float t = a.bbTime(now), w = tpWeight(a, now);
+        BbAnims.Sample src = a.src(now);
+        float w = tpWeight(a, now);
         model.attackTime = 0f;
         model.crouching = p.isCrouching();
         model.riding = false;
@@ -834,12 +844,15 @@ public final class CombatMoves {
         MultiBufferSource buf = e.getMultiBufferSource();
         int light = e.getPackedLight();
         var cam = mc.gameRenderer.getMainCamera();
+        Matrix4f eyeSpace = new Matrix4f(ps.last().pose());   // espaco da mao normal (para a transicao da arma)
         ps.pushPose();
+        ps.translate(0f, -0.06f, 0f);                                      // um pouco abaixo dos olhos: braço nao cobre a tela
         ps.mulPose(new Quaternionf(cam.rotation()).conjugate());          // mundo -> olhos
+        ps.mulPose(halfPitch(cam));                                        // os braços acompanham metade da inclinacao da camera
         Vec3 d = p.getPosition(pt).subtract(cam.getPosition());
         ps.translate(d.x, d.y, d.z);
         ps.mulPose(Axis.YP.rotationDegrees(180f - p.getViewYRot(pt)));     // o boneco olha para onde a camera olha
-        BbAnims.rootShift(ps, a.bb, t, w, right);
+        BbAnims.rootShift(ps, src, w, right);
         ps.scale(-1f, -1f, 1f);
         ps.scale(0.9375f, 0.9375f, 0.9375f);
         ps.translate(0f, -1.501f, 0f);
@@ -849,10 +862,9 @@ public final class CombatMoves {
         model.rightArm.visible = model.leftArm.visible = true;
         model.rightSleeve.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_SLEEVE);
         model.leftSleeve.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_SLEEVE);
-        model.rightArm.render(ps, vc, light, ov);
-        model.rightSleeve.render(ps, vc, light, ov);
-        model.leftArm.render(ps, vc, light, ov);
-        model.leftSleeve.render(ps, vc, light, ov);
+        ModelPart[] arms = {model.rightArm, model.rightSleeve, model.leftArm, model.leftSleeve};
+        for (ModelPart part : arms) { part.xScale = part.zScale = ARM_THIN; part.render(ps, vc, light, ov); }   // mais finos: nao tampam a tela
+        for (ModelPart part : arms) part.xScale = part.zScale = 1f;
         com.bino.binosvanillaplus.client.gear.HandArmor.render(ps, buf, light, p, true, model);
         com.bino.binosvanillaplus.client.gear.HandArmor.render(ps, buf, light, p, false, model);
 
@@ -865,12 +877,52 @@ public final class CombatMoves {
             ps.mulPose(Axis.XP.rotationDegrees(-90f));
             ps.mulPose(Axis.YP.rotationDegrees(180f));
             ps.translate((right ? 1f : -1f) / 16f, 0.125f, -0.625f);
-            mc.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(p, stack,
-                    right ? ItemDisplayContext.THIRD_PERSON_RIGHT_HAND : ItemDisplayContext.THIRD_PERSON_LEFT_HAND, !right, ps, buf, light);
+            float k = switchBlend(a, now);
+            if (k >= 1f) {
+                mc.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(p, stack,
+                        right ? ItemDisplayContext.THIRD_PERSON_RIGHT_HAND : ItemDisplayContext.THIRD_PERSON_LEFT_HAND, !right, ps, buf, light);
+            } else {   // comeco/fim do golpe: a arma desliza de onde a mao normal segura ate a mao do boneco (sem pulo)
+                var ir = mc.getItemRenderer();
+                var bm = ir.getModel(stack, p.level(), p, p.getId());
+                PoseStack fpS = new PoseStack();
+                fpS.last().pose().set(eyeSpace).translate(MoveAnims.REST[MoveAnims.HX] * (right ? 1f : -1f), MoveAnims.REST[MoveAnims.HY], MoveAnims.REST[MoveAnims.HZ]);
+                bm.applyTransform(right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, fpS, !right);
+                PoseStack tpS = new PoseStack();
+                tpS.last().pose().set(ps.last().pose());
+                bm.applyTransform(right ? ItemDisplayContext.THIRD_PERSON_RIGHT_HAND : ItemDisplayContext.THIRD_PERSON_LEFT_HAND, tpS, !right);
+                Matrix4f m = blend(fpS.last().pose(), tpS.last().pose(), k);
+                PoseStack out = new PoseStack();
+                out.last().pose().set(m);
+                out.last().normal().set(m.normal(new org.joml.Matrix3f()));
+                ir.render(stack, ItemDisplayContext.NONE, !right, out, buf, light, OverlayTexture.NO_OVERLAY, bm);
+            }
             ps.popPose();
         }
         ps.popPose();
         lastHeld = stack.copy();
+    }
+
+    private static final float ARM_THIN = 0.82f, SWITCH_MS = 110f;
+
+    // 0..1: quanto a arma ja passou da mao normal para a mao do boneco (no comeco e no fim do golpe)
+    private static float switchBlend(Active a, long now) {
+        float since = a.fromBb != null ? SWITCH_MS : a.t(now) - a.start, left = a.length - (a.t(now) - a.start);
+        float k = Mth.clamp(Math.min(since, left) / SWITCH_MS, 0f, 1f);
+        return k * k * (3 - 2 * k);
+    }
+
+    // mistura duas matrizes (posicao, giro e tamanho) sem deformar
+    private static Matrix4f blend(Matrix4f a, Matrix4f b, float k) {
+        Vector3f ta = a.getTranslation(new Vector3f()), tb = b.getTranslation(new Vector3f());
+        Vector3f sa = a.getScale(new Vector3f()), sb = b.getScale(new Vector3f());
+        Quaternionf qa = a.getNormalizedRotation(new Quaternionf()), qb = b.getNormalizedRotation(new Quaternionf());
+        return new Matrix4f().translationRotateScale(ta.lerp(tb, k), qa.slerp(qb, k), sa.lerp(sb, k));
+    }
+
+    // giro (no mundo, em volta dos olhos) que devolve metade da inclinacao da camera aos braços
+    private static Quaternionf halfPitch(net.minecraft.client.Camera cam) {
+        float yaw = (float) Math.PI - cam.getYRot() * Mth.DEG_TO_RAD, pitch = cam.getXRot() * Mth.DEG_TO_RAD;
+        return new Quaternionf().rotationYXZ(yaw, -pitch * 0.5f, 0f).mul(new Quaternionf().rotationY(yaw).conjugate());
     }
 
     // rastro solido e curto (estilo Zelda): espada branco-azulado, machado branco-alaranjado, pesado dourado
@@ -929,9 +981,20 @@ public final class CombatMoves {
             if (a.bb != null) {   // animacao do Blockbench: a lamina pelas contas do proprio modelo
                 float bt = a.bbTime(now);
                 if (!a.bb.striking(bt)) continue;
+                BbAnims.Sample src = a.src(now);
                 boolean mineFp = fp && pl == mc.player;   // primeira pessoa: o boneco segue a camera (arms3D)
-                Vec3[] bw = BbAnims.blade(a.bb, bt, pl.getMainArm() == HumanoidArm.RIGHT,
+                Vec3[] bw = BbAnims.blade(src, pl.getMainArm() == HumanoidArm.RIGHT,
                         mineFp ? pl.getViewYRot(pt) : Mth.rotLerp(pt, pl.yBodyRotO, pl.yBodyRot), pl.getPosition(pt));
+                if (mineFp) {   // primeira pessoa: os braços estao 0,06 abaixo e com metade da inclinacao (arms3D)
+                    var cam = e.getCamera();
+                    Vec3 eye = cam.getPosition();
+                    Quaternionf hp = halfPitch(cam);
+                    for (int i = 0; i < 2; i++) {
+                        Vector3f r = hp.transform(new Vector3f((float) (bw[i].x - eye.x), (float) (bw[i].y - eye.y), (float) (bw[i].z - eye.z)));
+                        Vector3f down = new Quaternionf(cam.rotation()).transform(new Vector3f(0f, -0.06f, 0f));
+                        bw[i] = eye.add(r.x + down.x, r.y + down.y, r.z + down.z);
+                    }
+                }
                 TP_TRAIL.computeIfAbsent(en.getKey(), k -> new ArrayDeque<>()).addLast(new TrailPt(bw[0].toVector3f(), bw[1].toVector3f(), now));
                 continue;
             }
@@ -1043,7 +1106,7 @@ public final class CombatMoves {
         long now = now();
         float w = tpWeight(a, now);
         if (w <= 0.001f) return;
-        if (a.bb != null) { BbAnims.poseModel(m, a.bb, a.bbTime(now), w, p.getMainArm() == HumanoidArm.RIGHT); return; }
+        if (a.bb != null) { BbAnims.poseModel(m, a.src(now), w, p.getMainArm() == HumanoidArm.RIGHT); return; }
         float[] v = pose(a, now);
         boolean right = p.getMainArm() == HumanoidArm.RIGHT;
         float side = right ? 1f : -1f;
@@ -1101,7 +1164,7 @@ public final class CombatMoves {
         if (a == null || a.bb == null) return;
         long now = now();
         float w = tpWeight(a, now);
-        if (w > 0.001f) BbAnims.poseItem(ps, a.bb, a.bbTime(now), w, arm == HumanoidArm.RIGHT);
+        if (w > 0.001f) BbAnims.poseItem(ps, a.src(now), w, arm == HumanoidArm.RIGHT);
     }
 
     // corpo inteiro: agacha, pulinho, rodopio, tombo, cambalhota, inclinacao e o corpo indo a frente
@@ -1116,7 +1179,7 @@ public final class CombatMoves {
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
         PUSHED.add(p.getId());
-        if (a.bb != null) { BbAnims.poseRoot(ps, a.bb, a.bbTime(now), w, p.getMainArm() == HumanoidArm.RIGHT, yaw); return; }
+        if (a.bb != null) { BbAnims.poseRoot(ps, a.src(now), w, p.getMainArm() == HumanoidArm.RIGHT, yaw); return; }
         float[] v = pose(a, now);
         ps.translate(0, (v[MoveAnims.HOP] - v[MoveAnims.CR] * 0.12f) * w, 0);
         ps.mulPose(Axis.YP.rotationDegrees(-yaw));

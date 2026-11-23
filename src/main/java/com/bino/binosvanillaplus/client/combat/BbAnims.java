@@ -41,21 +41,8 @@ import java.util.Map;
 public final class BbAnims {
     private BbAnims() {}
 
-    // nome da animacao no Blockbench para cada golpe (as que ainda nao existirem no JSON ficam com a antiga)
-    private static String name(CombatMove m) {
-        return switch (m) {
-            case LIGHT_1 -> "base_1"; case LIGHT_2 -> "base_2"; case LIGHT_3 -> "base_3"; case LIGHT_4 -> "base_4"; case LIGHT_5 -> "base_5";
-            case SURPRISE -> "surpresa"; case GUARD_BREAK -> "quebra_guarda"; case JUDGMENT -> "juizo"; case TORMENTA -> "tormenta";
-            case LAUNCHER -> "lanca_ceu"; case AIR_1 -> "aereo_1"; case AIR_2 -> "aereo_2"; case AIR_3 -> "aereo_3"; case METEOR -> "meteoro";
-            case FORWARD -> "investida"; case DASH -> "avanco"; case DASH_SLASH -> "avanco_corte"; case PIERCE -> "perfurador";
-            case ROLL_SLASH -> "rolamento_corte"; case ROLL_THRUST -> "rolamento_estocada"; case PARRY -> "aparar"; case ISSEN -> "issen";
-            case RUSH -> "rajada"; case CRITICAL -> "critico"; case BACKSTAB -> "pelas_costas";
-            default -> null;
-        };
-    }
-
     public static Anim forMove(CombatMove m, boolean axe) {
-        String n = name(m);
+        String n = com.bino.binosvanillaplus.combat.BbTiming.name(m);
         return n == null ? null : load(axe ? "axe" : "sword").get(n);
     }
 
@@ -199,22 +186,51 @@ public final class BbAnims {
         return new float[]{r.get(i).getAsFloat(), r.get(i + 1).getAsFloat(), r.get(i + 2).getAsFloat()};
     }
 
+    // ------------------------------------------------------------------ pose num instante (ou mistura de duas)
+
+    // a pose de uma animacao num tempo; mix = passa de uma pose para outra (golpe que sai de onde o anterior parou)
+    public interface Sample {
+        float[] rot(String bone);
+        float[] pos(String bone);
+        float[] scale(String bone);
+    }
+
+    public static Sample at(Anim a, float t) {
+        return new Sample() {
+            public float[] rot(String b) { return a.rot(b, t); }
+            public float[] pos(String b) { return a.pos(b, t); }
+            public float[] scale(String b) { return a.scale(b, t); }
+        };
+    }
+
+    public static Sample mix(Sample from, Sample to, float k) {
+        return new Sample() {
+            public float[] rot(String b) { return lerp(from.rot(b), to.rot(b), k); }
+            public float[] pos(String b) { return lerp(from.pos(b), to.pos(b), k); }
+            public float[] scale(String b) { return lerp(from.scale(b), to.scale(b), k); }
+        };
+    }
+
+    private static float[] lerp(float[] a, float[] b, float k) {
+        return new float[]{a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k};
+    }
+
     // ------------------------------------------------------------------ aplicar no modelo (terceira pessoa)
 
     // braco, pernas, tronco e cabeca. w = quanto da animacao entra (0 = pose do jogo, 1 = so a animacao).
     // right = mao principal direita (canhoto: tudo espelhado).
-    static void poseModel(HumanoidModel<?> m, Anim a, float t, float w, boolean right) {
+    static void poseModel(HumanoidModel<?> m, Sample a, float w, boolean right) {
         boolean mir = !right;
-        part(m.body, a, "body", t, w, mir, 0, 0, 0, false);
-        part(m.head, a, "head", t, w, mir, 0, 0, 0, true);   // a cabeca soma (continua olhando para onde voce olha)
-        part(right ? m.rightArm : m.leftArm, a, "right_arm", t, w, mir, right ? -5 : 5, 2, 0, false);
-        part(right ? m.leftArm : m.rightArm, a, "left_arm", t, w, mir, right ? 5 : -5, 2, 0, false);
-        part(right ? m.rightLeg : m.leftLeg, a, "right_leg", t, w, mir, right ? -1.9f : 1.9f, 12, 0, false);
-        part(right ? m.leftLeg : m.rightLeg, a, "left_leg", t, w, mir, right ? 1.9f : -1.9f, 12, 0, false);
+        part(m.body, a, "body", w, mir, 0, 0, 0, false);
+        part(m.head, a, "head", w, mir, 0, 0, 0, true);   // a cabeca soma (continua olhando para onde voce olha)
+        part(right ? m.rightArm : m.leftArm, a, "right_arm", w, mir, right ? -5 : 5, 2, 0, false);
+        part(right ? m.leftArm : m.rightArm, a, "left_arm", w, mir, right ? 5 : -5, 2, 0, false);
+        part(right ? m.rightLeg : m.leftLeg, a, "right_leg", w, mir, right ? -1.9f : 1.9f, 12, 0, false);
+        part(right ? m.leftLeg : m.rightLeg, a, "left_leg", w, mir, right ? 1.9f : -1.9f, 12, 0, false);
     }
 
-    private static void part(ModelPart p, Anim a, String bone, float t, float w, boolean mir, float dx, float dy, float dz, boolean add) {
-        float[] r = a.rot(bone, t), o = a.pos(bone, t);
+    private static void part(ModelPart p, Sample a, String bone, float w, boolean mir, float dx, float dy, float dz, boolean add) {
+        float[] r = a.rot(bone), o = a.pos(bone);
         float jx = -r[0] * Mth.DEG_TO_RAD, jy = -r[1] * Mth.DEG_TO_RAD, jz = r[2] * Mth.DEG_TO_RAD;
         float ox = -o[0], oy = -o[1], oz = o[2];
         if (mir) { jy = -jy; jz = -jz; ox = -ox; }
@@ -232,8 +248,8 @@ public final class BbAnims {
     private static final float PX = 0.9375f / 16f, TUMBLE_Y = 14.4f;
 
     // corpo inteiro (root + tumble), no espaco do jogador depois de virar para onde o corpo olha (bodyYaw)
-    static void poseRoot(PoseStack ps, Anim a, float t, float w, boolean right, float bodyYaw) {
-        float[] rp = a.pos("root", t), rr = a.rot("root", t), tp = a.pos("tumble", t), tr = a.rot("tumble", t);
+    static void poseRoot(PoseStack ps, Sample a, float w, boolean right, float bodyYaw) {
+        float[] rp = a.pos("root"), rr = a.rot("root"), tp = a.pos("tumble"), tr = a.rot("tumble");
         if (!right) { rp[0] = -rp[0]; rr[1] = -rr[1]; rr[2] = -rr[2]; tp[0] = -tp[0]; tr[1] = -tr[1]; tr[2] = -tr[2]; }
         ps.mulPose(Axis.YP.rotationDegrees(180f - bodyYaw));
         ps.translate(rp[0] * PX * w, rp[1] * PX * w, rp[2] * PX * w);
@@ -249,16 +265,16 @@ public final class BbAnims {
     }
 
     // primeira pessoa: so o deslocamento do corpo inteiro (root/tumble), sem giros (esses vao para a camera)
-    static void rootShift(PoseStack ps, Anim a, float t, float w, boolean right) {
-        float[] rp = a.pos("root", t), tp = a.pos("tumble", t);
+    static void rootShift(PoseStack ps, Sample a, float w, boolean right) {
+        float[] rp = a.pos("root"), tp = a.pos("tumble");
         float x = rp[0] + tp[0], y = rp[1] + tp[1], z = rp[2] + tp[2];
         if (!right) x = -x;
         ps.translate(x * PX * w, y * PX * w, z * PX * w);
     }
 
     // a arma (osso "item"): depois do jogo levar a pose ate a mao. Gira e estica a partir da mao.
-    static void poseItem(PoseStack ps, Anim a, float t, float w, boolean right) {
-        float[] r = a.rot("item", t), o = a.pos("item", t), s = a.scale("item", t);
+    static void poseItem(PoseStack ps, Sample a, float w, boolean right) {
+        float[] r = a.rot("item"), o = a.pos("item"), s = a.scale("item");
         float jx = -r[0] * w, jy = -r[1] * w, jz = r[2] * w, ox = -o[0] * w, oy = -o[1] * w, oz = o[2] * w;
         if (!right) { jy = -jy; jz = -jz; ox = -ox; }
         float px = right ? -1f : 1f, py = 9f;   // ponto da mao no braco (pixels do modelo do jogo)
@@ -271,52 +287,51 @@ public final class BbAnims {
     }
 
     // base e ponta da lamina no mundo (para o rastro), pelas mesmas contas do Blockbench
-    static Vec3[] blade(Anim a, float t, boolean right, float bodyYaw, Vec3 feet) {
+    static Vec3[] blade(Sample a, boolean right, float bodyYaw, Vec3 feet) {
         Matrix4f m = new Matrix4f().rotateY((180f - bodyYaw) * Mth.DEG_TO_RAD);
         if (!right) m.scale(-1, 1, 1);
         m.scale(PX);
-        bone(m, a, "root", t, 0, 0, 0);
-        bone(m, a, "tumble", t, 0, TUMBLE_Y, 0);
-        bone(m, a, "right_arm", t, 5, 22, 0);
-        bone(m, a, "item", t, 6, 13, 0);
+        bone(m, a, "root", 0, 0, 0);
+        bone(m, a, "tumble", 0, TUMBLE_Y, 0);
+        bone(m, a, "right_arm", 5, 22, 0);
+        bone(m, a, "item", 6, 13, 0);
         Vector4f b = m.transform(new Vector4f(6, 13, -5, 1)), tip = m.transform(new Vector4f(6, 13, -17, 1));
         return new Vec3[]{feet.add(b.x, b.y, b.z), feet.add(tip.x, tip.y, tip.z)};
     }
 
-    private static void bone(Matrix4f m, Anim a, String bone, float t, float px, float py, float pz) {
-        float[] r = a.rot(bone, t), o = a.pos(bone, t), s = a.scale(bone, t);
+    private static void bone(Matrix4f m, Sample a, String bone, float px, float py, float pz) {
+        float[] r = a.rot(bone), o = a.pos(bone), s = a.scale(bone);
         m.translate(px + o[0], py + o[1], pz + o[2])
                 .rotateZ(r[2] * Mth.DEG_TO_RAD).rotateY(r[1] * Mth.DEG_TO_RAD).rotateX(r[0] * Mth.DEG_TO_RAD)
                 .scale(s[0], s[1], s[2])
                 .translate(-px, -py, -pz);
     }
-    // ------------------------------------------------------------------ primeira pessoa (a mesma animacao)
-    // A camera fica nos olhos; a mao e a arma fazem o MESMO caminho da terceira pessoa, medido a partir do descanso:
-    //  - a mao anda o mesmo tanto (em blocos) que anda no modelo, somado a posicao de descanso da primeira pessoa;
-    //  - a arma gira o mesmo tanto que gira no modelo (giro do braco + giro do osso item) e estica igual;
-    //  - o corpo inteiro (root/tumble/tronco) vira movimento da camera: vai a frente, abaixa, inclina, tomba.
+
+    // ------------------------------------------------------------------ camera da primeira pessoa
+    // O corpo inteiro (root/tumble/tronco) vira movimento da camera: vai a frente, abaixa, inclina, tomba.
+    // (os braços sao desenhados de verdade em CombatMoves.arms3D)
 
     // mao e arma no descanso (braco com a arma, 18 graus a frente, como o jogo segura)
     private static Matrix4f restItem() {
         return new Matrix4f().translate(5, 22, 0).rotateX(18 * Mth.DEG_TO_RAD).translate(-5, -22, 0);
     }
 
-    private static Matrix4f itemFrame(Anim a, float t) {
+    private static Matrix4f itemFrame(Sample a) {
         Matrix4f m = new Matrix4f();
-        bone(m, a, "right_arm", t, 5, 22, 0);
-        bone(m, a, "item", t, 6, 13, 0);
+        bone(m, a, "right_arm", 5, 22, 0);
+        bone(m, a, "item", 6, 13, 0);
         return m;
     }
 
     // parametros da pose da primeira pessoa (mesmo formato do MoveAnims): mao + corpo para a camera
-    static float[] firstPersonPose(Anim a, float t, float w) {
+    static float[] firstPersonPose(Sample a, float w) {
         float[] v = MoveAnims.REST.clone();
-        Vector3f h = itemFrame(a, t).transformPosition(new Vector3f(6, 13, 0)), h0 = restItem().transformPosition(new Vector3f(6, 13, 0));
+        Vector3f h = itemFrame(a).transformPosition(new Vector3f(6, 13, 0)), h0 = restItem().transformPosition(new Vector3f(6, 13, 0));
         // a mao anda menos que no modelo (a camera esta colada nela): o golpe continua na tela
         v[MoveAnims.HX] += (h.x - h0.x) / 16f * 0.6f * w;
         v[MoveAnims.HY] += (h.y - h0.y) / 16f * 0.45f * w;
         v[MoveAnims.HZ] += (h.z - h0.z) / 16f * 0.6f * w;
-        float[] rp = a.pos("root", t), rr = a.rot("root", t), tr = a.rot("tumble", t), br = a.rot("body", t);
+        float[] rp = a.pos("root"), rr = a.rot("root"), tr = a.rot("tumble"), br = a.rot("body");
         v[MoveAnims.TW] = -br[1] * w;
         v[MoveAnims.LN] = -rr[0] / 0.3f * w;
         v[MoveAnims.SP] = -rr[1];
@@ -327,15 +342,4 @@ public final class BbAnims {
         v[MoveAnims.CR] = Mth.clamp(-rp[1] / 16f / 0.12f, 0f, 1f) * w;
         return v;
     }
-
-    // giro da arma na primeira pessoa desde o descanso (espaco da camera); canhoto espelhado
-    static Quaternionf firstPersonTurn(Anim a, float t, float w, boolean right) {
-        Quaternionf q = itemFrame(a, t).getNormalizedRotation(new Quaternionf());
-        Quaternionf q0 = restItem().getNormalizedRotation(new Quaternionf());
-        Quaternionf d = q.mul(q0.conjugate());
-        if (!right) d.set(d.x, -d.y, -d.z, d.w);
-        return new Quaternionf().slerp(d, w);
-    }
-
-    static float stretch(Anim a, float t, float w) { return Mth.lerp(w, 1f, a.scale("item", t)[2]); }
 }
