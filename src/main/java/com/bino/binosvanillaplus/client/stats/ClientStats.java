@@ -47,11 +47,12 @@ public final class ClientStats {
         GuiGraphics g = e.getGuiGraphics();
         var font = mc.font;
         int w = g.guiWidth(), h = g.guiHeight();
-        // nivel do personagem: grande (2x), no meio, acima da barra de experiencia e por cima do resto do visor
+        // nivel do personagem: no lugar do numero do jogo, 20% maior, por cima do resto do visor
         String lv = String.valueOf(level);
+        float k = 1.2f;
         g.pose().pushPose();
-        g.pose().translate(w / 2f - font.width(lv), h - 31 - 22, 200);
-        g.pose().scale(2f, 2f, 1f);
+        g.pose().translate(w / 2f - font.width(lv) * k / 2f, h - 31 - 4 - 2, 200);   // o do jogo fica em h-35
+        g.pose().scale(k, k, 1f);
         outlined(g, lv, 0, 0, 0xFFFFFF);
         g.pose().popPose();
         // barras completas: verde, a esquerda da barra de experiencia

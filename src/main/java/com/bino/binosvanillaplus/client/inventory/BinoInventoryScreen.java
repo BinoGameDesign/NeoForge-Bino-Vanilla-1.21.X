@@ -719,15 +719,21 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         int bars = p.experienceLevel, cost = com.bino.binosvanillaplus.leveling.PlayerStats.cost(lv + 1);
         boolean max = lv >= com.bino.binosvanillaplus.leveling.PlayerStats.MAX_LEVEL;
         boolean can = !max && (p.isCreative() || bars >= cost);
-        text(g, t("attr.bars").getString() + ": " + bars, 1330, 1660, 30, 0xFF80FF20, false);
-        text(g, max ? t("attr.max_level").getString() : t("attr.cost").getString() + ": " + cost, 1330, 1740, 30, can ? white : 0xFFE05050, false);
+        text(g, t("attr.bars").getString() + ": " + bars, 1440, 1660, 30, 0xFF80FF20, false);
+        text(g, max ? t("attr.max_level").getString() : t("attr.cost").getString() + ": " + cost, 1440, 1740, 30, can ? white : 0xFFE05050, false);
         boolean over = inRect(mx, my, LEVEL_BTN);
         float press = Ease.since(levelAt, 180), sq = 1f - 0.08f * (float) Math.sin(Math.PI * press);
         float bw = LEVEL_BTN[2] * sq, bh = LEVEL_BTN[3] * sq;
         float bx = LEVEL_BTN[0] + (LEVEL_BTN[2] - bw) / 2f, by = LEVEL_BTN[1] + (LEVEL_BTN[3] - bh) / 2f;
-        round(g, X(bx), Y(by), bw * s, bh * s, 38 * s, can ? (over ? 0xFFF4F6F6 : BUTTON) : 0xFF8A8A8A);
-        String lbl = t("attr.level_up").getString();
-        text(g, lbl, bx + bw / 2f + font.width(lbl) * 34 / 8f / 2f, by + bh / 2f, 34, can ? BUTTON_INK : 0xFF5A5A5A, true);
+        // pode subir: verde com borda clara e brilho em cima; nao pode: vidro escuro com borda suave
+        float e = 6;   // espessura da borda
+        round(g, X(bx), Y(by), bw * s, bh * s, 38 * s, can ? (over ? 0xFFB8FFB0 : 0xFF8FE68A) : 0x50FFFFFF);
+        round(g, X(bx + e), Y(by + e), (bw - 2 * e) * s, (bh - 2 * e) * s, 32 * s,
+                can ? (over ? 0xFF46B455 : 0xFF33923F) : 0xD0202422);
+        if (can) round(g, X(bx + e), Y(by + e), (bw - 2 * e) * s, (bh - 2 * e) * 0.45f * s, 32 * s, over ? 0x30FFFFFF : 0x22FFFFFF);
+        String lbl = max ? t("attr.max_level").getString() : t("attr.level_up").getString();
+        text(g, lbl, bx + bw / 2f + font.width(lbl) * 34 / 8f / 2f, by + bh / 2f, 34,
+                can ? 0xFFFFFFFF : max ? gold : 0xFF9AA39C, true);
     }
 
     // ---------------------------------------------------------------- formas
