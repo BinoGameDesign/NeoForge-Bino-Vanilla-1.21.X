@@ -662,7 +662,7 @@ public final class CombatMoves {
 
     // pose agora; entra suave a partir do descanso (rodopio e cambalhota nao, sao voltas inteiras)
     private static float[] pose(Active a, long now) {
-        float[] v = MoveAnims.sample(a.keys, a.u(now));
+        float[] v = a.bb != null ? BbAnims.firstPersonPose(a.bb, a.bbTime(now), tpWeight(a, now)) : MoveAnims.sample(a.keys, a.u(now));
         float in = Mth.clamp((a.t(now) - a.start) / (float) BLEND_MS, 0f, 1f);
         in = in * in * (3 - 2 * in);
         for (int i = 0; i < MoveAnims.N; i++)
@@ -766,6 +766,12 @@ public final class CombatMoves {
         MultiBufferSource buf = e.getMultiBufferSource();
         int light = e.getPackedLight();
         Quaternionf abs = rot(v, side), rest = rot(MoveAnims.REST, side);
+        float stretch = 1f;
+        if (a != null && a.bb != null) {   // animacao do Blockbench: a arma gira o mesmo tanto que no modelo (sem mola)
+            float bt = a.bbTime(now), bw = tpWeight(a, now);
+            abs = BbAnims.firstPersonTurn(a.bb, bt, bw, side > 0).mul(rest);
+            stretch = BbAnims.stretch(a.bb, bt, bw);
+        }
 
         // braco da skin: do ombro (fora da tela, embaixo) ate o cabo da arma
         LapidaryHands.arm(ps, buf, Vec3.ZERO, new Vec3(v[MoveAnims.HX] * side, v[MoveAnims.HY] - 0.04, v[MoveAnims.HZ] + 0.06),
@@ -773,7 +779,7 @@ public final class CombatMoves {
 
         ps.pushPose();
         ps.translate(v[MoveAnims.HX] * side, v[MoveAnims.HY], v[MoveAnims.HZ]);
-        if (a != null && MoveAnims.striking(a.keys, a.u(now))) {   // rastro: base e ponta da lamina pela direcao absoluta
+        if (a != null && (a.bb != null ? a.bb.striking(a.bbTime(now)) : MoveAnims.striking(a.keys, a.u(now)))) {   // rastro: base e ponta da lamina pela direcao absoluta
             ps.pushPose();
             ps.mulPose(abs);
             Matrix4f m = ps.last().pose();
@@ -781,7 +787,9 @@ public final class CombatMoves {
             TRAIL.addLast(new TrailPt(m.transformPosition(new Vector3f(0, len * 0.3f, 0)), m.transformPosition(new Vector3f(0, len, 0)), now));
             ps.popPose();
         }
-        ps.mulPose(new Quaternionf(abs).mul(new Quaternionf(rest).conjugate()));   // so a diferenca para o descanso
+        ps.mulPose(abs);                                   // so a diferenca para o descanso...
+        if (stretch != 1f) ps.scale(1f, stretch, 1f);      // (a lamina estica no sentido dela, a partir da mao)
+        ps.mulPose(new Quaternionf(rest).conjugate());
         boolean right = side > 0;
         mc.getEntityRenderDispatcher().getItemInHandRenderer().renderItem(p, stack,
                 right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, !right, ps, buf, light);

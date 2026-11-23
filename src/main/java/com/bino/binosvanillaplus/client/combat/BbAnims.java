@@ -20,6 +20,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import java.io.Reader;
@@ -279,4 +281,51 @@ public final class BbAnims {
                 .scale(s[0], s[1], s[2])
                 .translate(-px, -py, -pz);
     }
+    // ------------------------------------------------------------------ primeira pessoa (a mesma animacao)
+    // A camera fica nos olhos; a mao e a arma fazem o MESMO caminho da terceira pessoa, medido a partir do descanso:
+    //  - a mao anda o mesmo tanto (em blocos) que anda no modelo, somado a posicao de descanso da primeira pessoa;
+    //  - a arma gira o mesmo tanto que gira no modelo (giro do braco + giro do osso item) e estica igual;
+    //  - o corpo inteiro (root/tumble/tronco) vira movimento da camera: vai a frente, abaixa, inclina, tomba.
+
+    // mao e arma no descanso (braco com a arma, 18 graus a frente, como o jogo segura)
+    private static Matrix4f restItem() {
+        return new Matrix4f().translate(5, 22, 0).rotateX(18 * Mth.DEG_TO_RAD).translate(-5, -22, 0);
+    }
+
+    private static Matrix4f itemFrame(Anim a, float t) {
+        Matrix4f m = new Matrix4f();
+        bone(m, a, "right_arm", t, 5, 22, 0);
+        bone(m, a, "item", t, 6, 13, 0);
+        return m;
+    }
+
+    // parametros da pose da primeira pessoa (mesmo formato do MoveAnims): mao + corpo para a camera
+    static float[] firstPersonPose(Anim a, float t, float w) {
+        float[] v = MoveAnims.REST.clone();
+        Vector3f h = itemFrame(a, t).transformPosition(new Vector3f(6, 13, 0)), h0 = restItem().transformPosition(new Vector3f(6, 13, 0));
+        v[MoveAnims.HX] += (h.x - h0.x) / 16f * w;
+        v[MoveAnims.HY] += (h.y - h0.y) / 16f * w;
+        v[MoveAnims.HZ] += (h.z - h0.z) / 16f * w;
+        float[] rp = a.pos("root", t), rr = a.rot("root", t), tr = a.rot("tumble", t), br = a.rot("body", t);
+        v[MoveAnims.TW] = -br[1] * w;
+        v[MoveAnims.LN] = -rr[0] / 0.3f * w;
+        v[MoveAnims.SP] = -rr[1];
+        v[MoveAnims.RL] = -tr[2] * w;
+        v[MoveAnims.FL] = -tr[0];
+        v[MoveAnims.DX] = -rp[2] / 16f * w;
+        v[MoveAnims.HOP] = Math.max(0, rp[1]) / 16f * w;
+        v[MoveAnims.CR] = Mth.clamp(-rp[1] / 16f / 0.12f, 0f, 1f) * w;
+        return v;
+    }
+
+    // giro da arma na primeira pessoa desde o descanso (espaco da camera); canhoto espelhado
+    static Quaternionf firstPersonTurn(Anim a, float t, float w, boolean right) {
+        Quaternionf q = itemFrame(a, t).getNormalizedRotation(new Quaternionf());
+        Quaternionf q0 = restItem().getNormalizedRotation(new Quaternionf());
+        Quaternionf d = q.mul(q0.conjugate());
+        if (!right) d.set(d.x, -d.y, -d.z, d.w);
+        return new Quaternionf().slerp(d, w);
+    }
+
+    static float stretch(Anim a, float t, float w) { return Mth.lerp(w, 1f, a.scale("item", t)[2]); }
 }
