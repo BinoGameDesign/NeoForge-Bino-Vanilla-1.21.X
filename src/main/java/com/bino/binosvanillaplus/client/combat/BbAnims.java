@@ -218,12 +218,13 @@ public final class BbAnims {
         float jx = -r[0] * Mth.DEG_TO_RAD, jy = -r[1] * Mth.DEG_TO_RAD, jz = r[2] * Mth.DEG_TO_RAD;
         float ox = -o[0], oy = -o[1], oz = o[2];
         if (mir) { jy = -jy; jz = -jz; ox = -ox; }
-        if (add) {
-            p.xRot += jx * w; p.yRot += jy * w; p.zRot += jz * w;
-            p.x += ox * w; p.y += oy * w; p.z += oz * w;
+        if (add) {   // cabeca: o jogo refaz so o olhar (x/y) e a altura a cada quadro; giro de lado e x/z nao voltam sozinhos
+            p.xRot += jx * w; p.yRot += jy * w; p.zRot = jz * w;
+            p.x = ox * w; p.y += oy * w; p.z = oz * w;
         } else {
             p.xRot = Mth.lerp(w, p.xRot, jx); p.yRot = Mth.lerp(w, p.yRot, jy); p.zRot = Mth.lerp(w, p.zRot, jz);
-            p.x = Mth.lerp(w, p.x, dx + ox); p.y = Mth.lerp(w, p.y, dy + oy); p.z = Mth.lerp(w, p.z, dz + oz);
+            // posicao: x/z a partir do lugar padrao (o jogo nao refaz x/z do tronco e das pernas); y soma a do jogo (agachar)
+            p.x = dx + ox * w; p.y += oy * w; p.z = dz + oz * w;
         }
     }
 
@@ -303,9 +304,10 @@ public final class BbAnims {
     static float[] firstPersonPose(Anim a, float t, float w) {
         float[] v = MoveAnims.REST.clone();
         Vector3f h = itemFrame(a, t).transformPosition(new Vector3f(6, 13, 0)), h0 = restItem().transformPosition(new Vector3f(6, 13, 0));
-        v[MoveAnims.HX] += (h.x - h0.x) / 16f * w;
-        v[MoveAnims.HY] += (h.y - h0.y) / 16f * w;
-        v[MoveAnims.HZ] += (h.z - h0.z) / 16f * w;
+        // a mao anda menos que no modelo (a camera esta colada nela): o golpe continua na tela
+        v[MoveAnims.HX] += (h.x - h0.x) / 16f * 0.6f * w;
+        v[MoveAnims.HY] += (h.y - h0.y) / 16f * 0.45f * w;
+        v[MoveAnims.HZ] += (h.z - h0.z) / 16f * 0.6f * w;
         float[] rp = a.pos("root", t), rr = a.rot("root", t), tr = a.rot("tumble", t), br = a.rot("body", t);
         v[MoveAnims.TW] = -br[1] * w;
         v[MoveAnims.LN] = -rr[0] / 0.3f * w;

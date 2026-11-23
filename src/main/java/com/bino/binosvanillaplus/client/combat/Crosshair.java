@@ -92,8 +92,15 @@ public final class Crosshair {
 
     // desenha a mira com o ponto do meio em (x, y); cross = false so os avisos
     public static void draw(GuiGraphics g, int x, int y, boolean cross) {
-        int ox = x - 8, oy = y - 10;   // o pontinho do meio da arte fica em (8, 10)
+        int ox = -8, oy = -10;   // o pontinho do meio da arte fica em (8, 10)
         g.flush();
+        // um pouco menor que a escala da interface: cada pixel da arte vira (escala - 1) pixels da tela (sempre inteiro,
+        // fica nitido). Na escala 1 ou 2 fica do tamanho normal.
+        int gs = (int) Math.round(Minecraft.getInstance().getWindow().getGuiScale());
+        float k = gs >= 3 ? (gs - 1f) / gs : 1f;
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(k, k, 1f);
         if (cross) {
             RenderSystem.enableBlend();
             // cor final = branco - GRAY * fundo  (canal alfa da tela nao muda)
@@ -110,7 +117,7 @@ public final class Crosshair {
         }
         long now = Util.getMillis();
         float b = blink(backAt, now), l = blink(leftAt, now), r = blink(rightAt, now);
-        if (b + l + r <= 0f) return;
+        if (b + l + r <= 0f) { g.pose().popPose(); return; }
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         if (b > 0) { g.setColor(1f, 1f, 1f, b); g.blit(BACK, ox, oy, 0, 0, 17, 17, 17, 17); }
@@ -119,5 +126,6 @@ public final class Crosshair {
         g.flush();
         g.setColor(1f, 1f, 1f, 1f);
         RenderSystem.disableBlend();
+        g.pose().popPose();
     }
 }

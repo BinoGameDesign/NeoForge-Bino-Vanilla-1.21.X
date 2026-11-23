@@ -770,7 +770,15 @@ public final class CombatMoves {
         if (a != null && a.bb != null) {   // animacao do Blockbench: a arma gira o mesmo tanto que no modelo (sem mola)
             float bt = a.bbTime(now), bw = tpWeight(a, now);
             abs = BbAnims.firstPersonTurn(a.bb, bt, bw, side > 0).mul(rest);
-            stretch = BbAnims.stretch(a.bb, bt, bw);
+            // a lamina nunca aponta para a camera (para tras ela vira uma placa enorme na tela): no maximo de lado/para cima
+            Vector3f bl = abs.transform(new Vector3f(0, 1, 0));
+            if (bl.z > 0.12f) {
+                Vector3f to = new Vector3f(bl.x, bl.y, 0.12f);
+                if (to.x * to.x + to.y * to.y < 0.2f) to.y += 0.6f;   // apontando reto para tras: vai para cima
+                to.normalize();
+                abs = new Quaternionf().rotationTo(bl, to).mul(abs);
+            }
+            stretch = 1f + (BbAnims.stretch(a.bb, bt, bw) - 1f) * 0.35f;   // esticada mais discreta (a arma ja e' grande na tela)
         }
 
         // braco da skin: do ombro (fora da tela, embaixo) ate o cabo da arma
