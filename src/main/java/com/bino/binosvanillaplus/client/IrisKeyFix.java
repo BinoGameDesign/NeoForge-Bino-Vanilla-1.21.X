@@ -10,6 +10,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.lwjgl.glfw.GLFW;
 
+// Tambem desliga o indicador de recarga do ataque (o combate novo nao usa).
 // O Iris usa a R para "recarregar shaders", que e' a tecla Defender do combate. Uma vez por abertura do jogo: se a tecla
 // do Iris estiver na R, passa para a V (a pessoa pode trocar de novo nos controles; so volta se ela colocar na R).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
@@ -20,9 +21,14 @@ public final class IrisKeyFix {
 
     @SubscribeEvent
     public static void onTick(ClientTickEvent.Post e) {
-        if (done) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options == null) return;
+        // o indicador de recarga do ataque (mira ou barra de atalhos) nao combina com o combate novo: sempre desligado
+        if (mc.options.attackIndicator().get() != net.minecraft.client.AttackIndicatorStatus.OFF) {
+            mc.options.attackIndicator().set(net.minecraft.client.AttackIndicatorStatus.OFF);
+            mc.options.save();
+        }
+        if (done) return;
         done = true;
         boolean changed = false;
         for (KeyMapping k : mc.options.keyMappings) {
