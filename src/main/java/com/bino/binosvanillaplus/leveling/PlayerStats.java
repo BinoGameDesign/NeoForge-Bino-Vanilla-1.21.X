@@ -25,8 +25,8 @@ import java.util.List;
 //   FORCA       +3% de dano fisico, +2% da postura que voce causa e +2% de dano critico (base x1,5), por ponto
 //   VITALIDADE  +2% de vida POR CORACAO (os 10 coracoes ficam iguais; cada um aguenta mais: o dano e' dividido por
 //               1 + 0,02 x Vitalidade, e a cura continua enchendo os coracoes no mesmo ritmo) e +3 de postura sua
-//   AGILIDADE   +2 de estamina de combate, +1% de velocidade de ataque, +0,5% de evasao (max 25%) e +0,5% de
-//               chance de critico (base 5%, max 50%), por ponto
+//   AGILIDADE   +2 de estamina de combate, +1% de velocidade de ataque, +0,25% de evasao (25% com 100 pontos) e
+//               +0,5% de chance de critico (50% com 100 pontos), por ponto
 //   INTELIGENCIA / VONTADE: reservados para a magia (travados, nao recebem pontos ainda)
 // Os dados ficam no jogador (sobrevivem a morte) e vao para o cliente (visor e aba Atributos).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
@@ -51,8 +51,8 @@ public final class PlayerStats {
     public static int cost(int to) { return 1 + Math.max(0, to - 2) / 4; }
 
     public static float postureMult(Player p) { return 1f + 0.02f * get(p, STR); }
-    public static float evasion(Player p) { return Math.min(0.25f, 0.005f * get(p, AGI)); }
-    public static float critChance(Player p) { return Math.min(0.5f, 0.05f + 0.005f * get(p, AGI)); }
+    public static float evasion(Player p) { return Math.min(0.25f, 0.0025f * get(p, AGI)); }    // 100 pontos = 25%
+    public static float critChance(Player p) { return Math.min(0.5f, 0.005f * get(p, AGI)); }   // 100 pontos = 50%
     public static float critDamage(Player p) { return 1.5f + 0.02f * get(p, STR); }
 
     // critico nos golpes leves (ataque do jogo): Agilidade da a chance, Forca o tamanho (vale tambem para o critico do pulo)

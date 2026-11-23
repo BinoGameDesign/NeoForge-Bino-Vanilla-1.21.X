@@ -680,7 +680,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         box(g, 979, 1146, 601, 375, 1344);
         double dmg = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
         double spd = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED);
-        float critC = Math.min(50f, 5f + 0.5f * agi), critD = 150f + 2f * str;
+        float critC = Math.min(50f, 0.5f * agi), critD = 150f + 2f * str;
         String[][] dmgRows = {
                 {"physical_damage", String.format(java.util.Locale.ROOT, "%.1f", dmg)},
                 {"attack_speed", String.format(java.util.Locale.ROOT, "%.2f", spd)},
@@ -703,7 +703,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
                 {"stamina", String.valueOf((int) stamina)},
                 {"posture", String.valueOf(posture)},
                 {"physical_defense", String.valueOf(p.getArmorValue())},
-                {"evasion", String.format(java.util.Locale.ROOT, "%.1f%%", Math.min(25f, 0.5f * agi))},
+                {"evasion", String.format(java.util.Locale.ROOT, "%.2f%%", Math.min(25f, 0.25f * agi))},
                 {"mana", "-"},
                 {"magic_defense", "-"}};
         for (int i = 0; i < rows.length; i++) {
