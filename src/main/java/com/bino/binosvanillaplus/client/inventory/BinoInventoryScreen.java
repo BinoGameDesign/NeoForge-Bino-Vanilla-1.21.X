@@ -77,6 +77,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         if (tab == TAB_CRAFT) return new float[]{295, 337, 3231, 1414};
         // lado esquerdo esticado: o personagem fica por cima, cobrindo o canto
         if (tab == TAB_ARMOR) return new float[]{960, 343, 1775, 1414};
+        if (tab == TAB_ATTR) return new float[]{839, 453, 1695, 1409};   // conceito "Attributes" do Bino
         return new float[]{700, 326, 2795, 1414};
     }
 
@@ -115,6 +116,12 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         } else if (tab == TAB_CRAFT) {
             buttons.add(new Btn(3445, 422, 196, 38, "recipes", null, -100, t("recipes")));
             tabs(3445, 806);
+        } else if (tab == TAB_ATTR) {
+            tabs(624, 700);
+            // "+" de Forca, Vitalidade e Agilidade (Inteligencia e Vontade: so com a magia)
+            buttons.add(new Btn(1600, 573, 70, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.STR, t("attr.add")));
+            buttons.add(new Btn(1600, 669, 70, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.VIT, t("attr.add")));
+            buttons.add(new Btn(1600, 957, 70, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.AGI, t("attr.add")));
         } else {
             tabs(2682, 806);
         }
@@ -134,7 +141,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         for (int i = 0; i < order.length; i++) {
             int t = order[i];
             String icon = t == TAB_CRAFT ? "tab_crafting" : t == TAB_INV ? "tab_inventory" : t == TAB_ARMOR ? "tab_armor" : "tab_attributes";
-            String key = t == TAB_CRAFT ? "tab.crafting" : t == TAB_INV ? "tab.inventory" : t == TAB_ARMOR ? "tab.armor" : "tab.attributes_soon";
+            String key = t == TAB_CRAFT ? "tab.crafting" : t == TAB_INV ? "tab.inventory" : t == TAB_ARMOR ? "tab.armor" : "tab.attributes";
             buttons.add(new Btn(x, y + i * 221, 196, 38, icon, null, -t, t(key)));
         }
     }
@@ -162,7 +169,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     protected boolean hasClickedOutside(double mx, double my, int left, int top, int button) {
         float[] p = panel();
         boolean inPanel = mx >= X(p[0]) && mx < X(p[0] + p[2]) && my >= Y(p[1]) && my < Y(p[1] + p[3]);
-        return !inPanel && !inPopup(mx, my) && buttonAt(mx, my) == null;
+        return !inPanel && !inPopup(mx, my) && buttonAt(mx, my) == null && !(BinoInventoryMenu.clientTab == TAB_ATTR && inRect(mx, my, LEVEL_BTN));
     }
 
     private Btn buttonAt(double mx, double my) {
@@ -175,16 +182,34 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0 && clickPopup(mx, my)) return true;
+        if (button == 0 && BinoInventoryMenu.clientTab == TAB_ATTR && inRect(mx, my, LEVEL_BTN)) {
+            int lv = com.bino.binosvanillaplus.client.stats.ClientStats.level();
+            if (lv < com.bino.binosvanillaplus.leveling.PlayerStats.MAX_LEVEL
+                    && (minecraft.player.isCreative() || minecraft.player.experienceLevel >= com.bino.binosvanillaplus.leveling.PlayerStats.cost(lv + 1))) {
+                UiSound.click();
+                levelAt = Ease.now();
+                PacketDistributor.sendToServer(new com.bino.binosvanillaplus.leveling.StatsActionPayload(com.bino.binosvanillaplus.leveling.PlayerStats.ACT_LEVEL_UP, (byte) 0));
+            }
+            return true;
+        }
         if (button == 0 && clickEquipSlot(mx, my)) return true;
         Btn b = button == 0 ? buttonAt(mx, my) : null;
         if (b != null && menu.getCarried().isEmpty()) {
-            if (b.action() != -TAB_ATTR) pressAt.put(b.action(), Ease.now());
+            pressAt.put(b.action(), Ease.now());
+            if (b.action() >= ATTR_ADD && b.action() < ATTR_ADD + 10) {   // ponto num atributo
+                if (com.bino.binosvanillaplus.client.stats.ClientStats.freePoints() > 0) {
+                    UiSound.click();
+                    PacketDistributor.sendToServer(new com.bino.binosvanillaplus.leveling.StatsActionPayload(
+                            com.bino.binosvanillaplus.leveling.PlayerStats.ACT_ADD, (byte) (b.action() - ATTR_ADD)));
+                }
+                return true;
+            }
             if (b.action() == -100) {
                 UiSound.click();
                 minecraft.setScreen(new RecipeLookupScreen(this, RecipeLookupScreen.Mode.BROWSE, null));
             } else if (b.action() < 0) {
                 int t = -b.action();
-                if (t != TAB_ATTR && t != BinoInventoryMenu.clientTab) {
+                if (t != BinoInventoryMenu.clientTab) {
                     pinned = -1;
                     UiSound.click();
                     BinoInventoryMenu.clientTab = t;
@@ -228,10 +253,11 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         if (tab == TAB_ARMOR) character(1060, 1000, 1500, 30f, ActionPose.Pose.HERO, g);
 
         // titulo
-        String title = t(tab == TAB_CRAFT ? "tab.crafting" : tab == TAB_ARMOR ? "tab.armor" : "tab.inventory").getString();
+        String title = t(tab == TAB_CRAFT ? "tab.crafting" : tab == TAB_ARMOR ? "tab.armor" : tab == TAB_ATTR ? "tab.attributes" : "tab.inventory").getString();
         float ts = 128 * s / 8.5f;
-        float cx = tab == TAB_CRAFT ? 2121 : tab == TAB_ARMOR ? 2036 : 2249;
-        float ty = tab == TAB_CRAFT ? 274 : tab == TAB_ARMOR ? 265 : 247;
+        float cx = tab == TAB_CRAFT ? 2121 : tab == TAB_ARMOR ? 2036 : tab == TAB_ATTR ? 1686 : 2249;
+        float ty = tab == TAB_CRAFT ? 274 : tab == TAB_ARMOR ? 265 : tab == TAB_ATTR ? 300 : 247;
+        if (tab == TAB_ATTR) { character(3030, 1050, 1500, -24f, ActionPose.Pose.HERO, g); attributes(g, mx, my); }
         g.pose().pushPose();
         g.pose().translate(X(cx) - font.width(title) * ts / 2f, Y(ty) + 16 * s, 0);
         g.pose().scale(ts, ts, 1f);
@@ -272,7 +298,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
                 boolean isTab = b.action() < 0 && b.action() != -100;
                 Tween tw = hover.computeIfAbsent(b.action(), k -> new Tween(0f, 55f));
                 boolean over = buttonAt(mx, my) == b;
-                boolean disabled = b.action() == -TAB_ATTR;
+                boolean disabled = b.action() >= ATTR_ADD && b.action() < ATTR_ADD + 10 && com.bino.binosvanillaplus.client.stats.ClientStats.freePoints() <= 0;
                 boolean selected = b.action() == -tab;
                 float h = pass == 0 ? tw.get(over && !disabled ? 1f : 0f) : tw.get();
                 float press = pressAt.containsKey(b.action()) ? Ease.since(pressAt.get(b.action()), 180) : 1f;
@@ -596,6 +622,92 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
     private void character(float cx, float cy, float h, float yaw, ActionPose.Pose pose, GuiGraphics g) {
         if (minecraft.player == null) return;
         BendyPlayer.render(g, minecraft.player, X(cx), Y(cy), h * s / 2.0f, yaw, pose);
+    }
+
+    // ---------------------------------------------------------------- aba Atributos (conceito "Attributes" do Bino + subir nivel)
+    private static final int ATTR_ADD = 1000;
+    private static final float[] LEVEL_BTN = {1900, 1625, 330, 150};   // x, y, largura, altura (Figma)
+    private long levelAt = -100000;
+
+    private boolean inRect(double mx, double my, float[] r) {
+        return mx >= X(r[0]) && mx < X(r[0] + r[2]) && my >= Y(r[1]) && my < Y(r[1] + r[3]);
+    }
+
+    private void text(GuiGraphics g, String str, float x, float y, float px, int col, boolean right) {
+        float k = px * s / 8f;
+        g.pose().pushPose();
+        g.pose().translate(X(x) - (right ? font.width(str) * k : 0), Y(y) - 4 * k, 0);
+        g.pose().scale(k, k, 1f);
+        g.drawString(font, str, 0, 0, col, true);
+        g.pose().popPose();
+    }
+
+    private void box(GuiGraphics g, float x, float y, float w, float h, float valueX) {
+        round(g, X(x), Y(y), w * s, h * s, 30 * s, 0x8C141516);
+        if (valueX > 0) round(g, X(valueX), Y(y), (x + w - valueX) * s, h * s, 30 * s, 0x50000000);
+    }
+
+    private void attributes(GuiGraphics g, int mx, int my) {
+        var p = minecraft.player;
+        int str = com.bino.binosvanillaplus.client.stats.ClientStats.strength(), vit = com.bino.binosvanillaplus.client.stats.ClientStats.vitality(),
+                agi = com.bino.binosvanillaplus.client.stats.ClientStats.agility();
+        int lv = com.bino.binosvanillaplus.client.stats.ClientStats.level(), free = com.bino.binosvanillaplus.client.stats.ClientStats.freePoints();
+        int white = 0xFFFFFFFF, dim = 0xFF9A9A9A, gold = 0xFFF2C14E;
+        // atributos (pontos)
+        box(g, 979, 540, 601, 574, 1344);
+        String[] names = {"str", "vit", "int", "wil", "agi"};
+        int[] vals = {str, vit, com.bino.binosvanillaplus.client.stats.ClientStats.intelligence(), com.bino.binosvanillaplus.client.stats.ClientStats.will(), agi};
+        for (int i = 0; i < 5; i++) {
+            boolean locked = i == 2 || i == 3;
+            float y = 607 + i * 96;
+            text(g, t("attr." + names[i]).getString(), 1027, y, 34, locked ? dim : white, false);
+            text(g, locked ? "-" : String.valueOf(vals[i]), 1536, y, 40, locked ? dim : white, true);
+        }
+        // derivados: dano e velocidade
+        box(g, 979, 1146, 601, 375, 1344);
+        double dmg = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+        double spd = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED);
+        text(g, t("attr.physical_damage").getString(), 1013, 1217, 30, white, false);
+        text(g, String.format(java.util.Locale.ROOT, "%.1f", dmg), 1536, 1217, 38, white, true);
+        text(g, t("attr.attack_speed").getString(), 1013, 1313, 30, white, false);
+        text(g, String.format(java.util.Locale.ROOT, "%.2f", spd), 1536, 1313, 38, white, true);
+        text(g, t("attr.magic_damage").getString(), 1013, 1459, 30, dim, false);
+        text(g, "-", 1536, 1459, 38, dim, true);
+        // derivados: defesa e recursos
+        box(g, 1667, 540, 601, 981, 2003);
+        float stamina = com.bino.binosvanillaplus.client.combat.Stamina.BASE_COMBAT + 2f * agi;
+        double armorW = p.getArmorValue() + p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS) * 1.5;
+        int posture = (int) (100 + armorW * 1.5 + 3 * vit);
+        String[][] rows = {
+                {"life", String.valueOf((int) p.getMaxHealth())},
+                {"stamina", String.valueOf((int) stamina)},
+                {"posture", String.valueOf(posture)},
+                {"physical_defense", String.valueOf(p.getArmorValue())},
+                {"evasion", String.format(java.util.Locale.ROOT, "%.1f%%", Math.min(25f, 0.5f * agi))},
+                {"mana", "-"},
+                {"magic_defense", "-"}};
+        for (int i = 0; i < rows.length; i++) {
+            boolean magic = i >= 5;
+            float y = 607 + i * 132;
+            text(g, t("attr." + rows[i][0]).getString(), 1705, y, 32, magic ? dim : white, false);
+            text(g, rows[i][1], 2228, y, 38, magic ? dim : white, true);
+        }
+        // nivel do personagem: nivel, pontos livres, barras de experiencia e o botao de subir
+        box(g, 979, 1594, 1289, 207, 0);
+        text(g, t("attr.level").getString() + " " + lv, 1027, 1660, 46, white, false);
+        text(g, t("attr.free_points").getString() + ": " + free, 1027, 1740, 30, free > 0 ? gold : dim, false);
+        int bars = p.experienceLevel, cost = com.bino.binosvanillaplus.leveling.PlayerStats.cost(lv + 1);
+        boolean max = lv >= com.bino.binosvanillaplus.leveling.PlayerStats.MAX_LEVEL;
+        boolean can = !max && (p.isCreative() || bars >= cost);
+        text(g, t("attr.bars").getString() + ": " + bars, 1500, 1660, 30, 0xFF80FF20, false);
+        text(g, max ? t("attr.max_level").getString() : t("attr.cost").getString() + ": " + cost, 1500, 1740, 30, can ? white : 0xFFE05050, false);
+        boolean over = inRect(mx, my, LEVEL_BTN);
+        float press = Ease.since(levelAt, 180), sq = 1f - 0.08f * (float) Math.sin(Math.PI * press);
+        float bw = LEVEL_BTN[2] * sq, bh = LEVEL_BTN[3] * sq;
+        float bx = LEVEL_BTN[0] + (LEVEL_BTN[2] - bw) / 2f, by = LEVEL_BTN[1] + (LEVEL_BTN[3] - bh) / 2f;
+        round(g, X(bx), Y(by), bw * s, bh * s, 38 * s, can ? (over ? 0xFFF4F6F6 : BUTTON) : 0xFF8A8A8A);
+        String lbl = t("attr.level_up").getString();
+        text(g, lbl, bx + bw / 2f + font.width(lbl) * 34 / 8f / 2f, by + bh / 2f, 34, can ? BUTTON_INK : 0xFF5A5A5A, true);
     }
 
     // ---------------------------------------------------------------- formas

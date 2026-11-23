@@ -17,14 +17,22 @@ public final class MoveTiming {
             case DASH -> 300; case DASH_SLASH -> 460; case PIERCE -> 620; case LAUNCHER -> 600;
             case AIR_1 -> 380; case AIR_2 -> 380; case AIR_3 -> 480; case METEOR -> 700; case DANCE -> 820;
             case BACKSTAB -> 1300;
+            case LIGHT_5 -> 520; case TORMENTA -> 900; case SURPRISE -> 640;
         };
         if (heavy && (m == CombatMove.JUMP || m == CombatMove.FORWARD)) base += 220;   // versao pesada: preparacao maior
-        if (axe && m != CombatMove.PARRY && m != CombatMove.ISSEN && m != CombatMove.RUSH && m != CombatMove.DASH) base = (int) (base * 1.15f);
+        // velocidade de ataque da arma muda a velocidade da animacao (espada, 1,6 ataques/s = 12,5 ticks, e' a base)
+        if (m != CombatMove.PARRY && m != CombatMove.ISSEN && m != CombatMove.RUSH && m != CombatMove.DASH && m != CombatMove.BACKSTAB)
+            base = (int) (base * speedScale(delayTicks));
         if (m.vanillaHit(heavy)) {
             int cd = (int) (delayTicks * 50f * (m == CombatMove.TEMPEST ? 1.2f : 1f));
             base = Math.max(base, Math.min(cd, 1400));
         }
         return base;
+    }
+
+    public static float speedScale(float delayTicks) {
+        if (delayTicks <= 0) return 1f;
+        return (float) Math.max(0.65, Math.min(1.7, Math.pow(delayTicks / 12.5, 0.6)));
     }
 
     // fracao da animacao em que a arma "bate"
@@ -36,6 +44,7 @@ public final class MoveTiming {
             case PARRY -> 0.2f; case ISSEN -> 0.25f; case RUSH -> 0.1f; case CRITICAL -> 0.55f;
             case DASH -> 0.5f; case DASH_SLASH -> 0.3f; case PIERCE -> 0.4f; case LAUNCHER -> 0.45f;
             case AIR_3 -> 0.4f; case METEOR -> 0.45f; case DANCE -> 0.55f; case BACKSTAB -> 0.36f;
+            case TORMENTA -> 0.6f; case SURPRISE -> 0.4f; case LIGHT_5 -> 0.36f;
             default -> 0.34f;
         };
     }

@@ -76,6 +76,12 @@ public class ModNetwork {
         registrar.playToClient(com.bino.binosvanillaplus.combat.RollSeenPayload.TYPE, com.bino.binosvanillaplus.combat.RollSeenPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.DodgeRoll.receive(payload)));
 
+        // nivel do personagem e atributos (regras de 23/11)
+        registrar.playToClient(com.bino.binosvanillaplus.leveling.StatsSyncPayload.TYPE, com.bino.binosvanillaplus.leveling.StatsSyncPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.stats.ClientStats.receive(payload)));
+        registrar.playToServer(com.bino.binosvanillaplus.leveling.StatsActionPayload.TYPE, com.bino.binosvanillaplus.leveling.StatsActionPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.leveling.PlayerStats.onAction((ServerPlayer) context.player(), payload)));
+
         // lanterna do capacete (tecla)
         registrar.playToServer(HelmetLampTogglePayload.TYPE, HelmetLampTogglePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> toggleHelmetLamp((ServerPlayer) context.player())));

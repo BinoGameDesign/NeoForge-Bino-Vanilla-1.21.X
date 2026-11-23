@@ -43,7 +43,14 @@ public final class Posture {
 
     private static boolean boss(LivingEntity e) { return e instanceof EnderDragon || e instanceof WitherBoss || e instanceof Warden; }
 
-    public static float max(LivingEntity e) { return (float) (10 + e.getMaxHealth() * 0.6) * (boss(e) ? 4f : 1f); }
+    // postura maxima: vida, armadura, resistencia a empurrao e tamanho (mob mais pesado/forte aguenta mais; regras de 23/11)
+    public static float max(LivingEntity e) {
+        double armor = e.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR) != null ? e.getArmorValue() : 0;
+        double kb = e.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE) != null
+                ? e.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE) : 0;
+        double size = e.getBbWidth() * e.getBbHeight();
+        return (float) (10 + e.getMaxHealth() * 0.6 + armor * 1.2 + kb * 30 + size * 4) * (boss(e) ? 4f : 1f);
+    }
 
     private static P get(LivingEntity e) {
         ENT.put(e.getUUID(), e);

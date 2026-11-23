@@ -16,11 +16,22 @@ import net.minecraft.resources.ResourceLocation;
 //   POSTURE        a = mob, b = 1 guarda quebrada, f = 0..1
 //   CRITICAL       a = jogador, b = mob
 //   DEATH          a = mob, b = 1 morte com stab, f = direcao do golpe (graus, atan2(dz, dx))
+//   STAMINA        a = jogador, f = estamina de combate devolvida (negativo = enche tudo)
+//   BLOCKED        a = jogador, b = atacante, f = custo de estamina do bloqueio
+//   PLAYER_POSTURE a = jogador, b = 1 guarda quebrada, f = 0..1
+//   ISSEN_CHAIN    a = jogador, b = mob, f = ms da janela do proximo Issen (abre daqui a pouco, ver CombatActionsServer)
+//   CLASH          a = jogador, b = o outro jogador (choque de espadas)
 public record CombatFxPayload(byte kind, int a, int b, float f) implements CustomPacketPayload {
-    public static final byte TELEGRAPH = 0, PARRY = 1, ISSEN = 2, PERFECT_DODGE = 3, RUSH = 4, POSTURE = 5, CRITICAL = 6, DEATH = 7;
+    public static final byte TELEGRAPH = 0, PARRY = 1, ISSEN = 2, PERFECT_DODGE = 3, RUSH = 4, POSTURE = 5, CRITICAL = 6, DEATH = 7,
+            STAMINA = 8, BLOCKED = 9, PLAYER_POSTURE = 10, ISSEN_CHAIN = 11, CLASH = 12;
     public static final Type<CombatFxPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "combat_fx"));
     public static final StreamCodec<ByteBuf, CombatFxPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BYTE, CombatFxPayload::kind, ByteBufCodecs.VAR_INT, CombatFxPayload::a,
             ByteBufCodecs.VAR_INT, CombatFxPayload::b, ByteBufCodecs.FLOAT, CombatFxPayload::f, CombatFxPayload::new);
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+    // devolve estamina de combate ao jogador (amount < 0 = enche tudo)
+    public static void stamina(net.minecraft.server.level.ServerPlayer p, float amount) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, new CombatFxPayload(STAMINA, p.getId(), 0, amount));
+    }
 }

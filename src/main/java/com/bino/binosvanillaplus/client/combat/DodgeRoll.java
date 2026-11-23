@@ -79,6 +79,12 @@ public final class DodgeRoll {
 
     public static boolean rolling(Player p) { return get(p) != null; }
 
+    // peso do equipamento (armadura + resistencia): ate 10 nao muda; armadura de netherite completa rola ~30% mais curto
+    static double weightFactor(Player p) {
+        double w = p.getArmorValue() + p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS) * 1.5;
+        return 1.0 - Math.max(0, Math.min(0.3, (w - 10) / 40.0));
+    }
+
     // acabou de rolar (para o Contra-Rolamento / Saida de Cacador)
     static int chain() { return chain; }
 
@@ -115,7 +121,7 @@ public final class DodgeRoll {
     }
 
     private static void tryRoll(LocalPlayer p, long now) {
-        if (now < readyAt || !p.onGround() || p.isInWater() || p.isPassenger() || p.isFallFlying() || p.getAbilities().flying
+        if (now < readyAt || Defense.stunned() || !p.onGround() || p.isInWater() || p.isPassenger() || p.isFallFlying() || p.getAbilities().flying
                 || p.onClimbable() || p.isUsingItem()) return;
         if (!Stamina.use(Stamina.ROLL)) return;   // sem folego
         float fwd = p.input.forwardImpulse, left = p.input.leftImpulse;
@@ -166,6 +172,7 @@ public final class DodgeRoll {
         double[] sp = r.back ? BACK_SPEED : ROLL_SPEED;
         double s = i < sp.length ? sp[i] : 0;
         Vec3 d = p.getDeltaMovement();
+        s *= weightFactor(p);   // armadura pesada: rolamento mais curto
         p.setDeltaMovement(r.dir.x * s, d.y, r.dir.z * s);
         p.setSprinting(false);
     }

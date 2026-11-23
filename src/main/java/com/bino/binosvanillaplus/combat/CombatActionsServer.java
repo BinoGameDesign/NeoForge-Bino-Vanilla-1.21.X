@@ -91,6 +91,11 @@ public final class CombatActionsServer {
     public static void onAction(ServerPlayer p, CombatActionPayload m) {
         boolean weapon = CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE;
         boolean shield = p.getOffhandItem().getItem() instanceof net.minecraft.world.item.ShieldItem;
+        // defesa (tecla Defender): segurar/soltar e guarda quebrada por falta de estamina
+        if (m.kind() == CombatActionPayload.BLOCK_START || m.kind() == CombatActionPayload.BLOCK_END || m.kind() == CombatActionPayload.GUARD_BROKEN) {
+            if (p.isAlive()) PlayerDefense.onAction(p, m);
+            return;
+        }
         if (!p.isAlive() || !weapon && !(shield && m.kind() == CombatActionPayload.PARRY)) return;
         long now = p.level().getGameTime();
         if (m.kind() == CombatActionPayload.ARROW_PARRY) {   // aparar flecha/projetil: vale por alguns ticks
@@ -109,7 +114,7 @@ public final class CombatActionsServer {
             case CombatActionPayload.ISSEN -> {
                 Window w = ISSEN.remove(p.getUUID());
                 CombatMovesServer.broadcast(p, CombatMove.ISSEN, false);
-                if (w == null || w.mobId() != target.getId() || now > w.until() || target.distanceToSqr(p) > 6 * 6) return;
+                if (w == null || w.mobId() != target.getId() || now > w.until() || target.distanceToSqr(p) > 6 * 6) { CHAIN.remove(p.getUUID()); return; }
                 issen(p, target);
             }
             case CombatActionPayload.RUSH -> {
@@ -218,6 +223,38 @@ public final class CombatActionsServer {
         level.playSound(null, c.x, c.y, c.z, SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS, 0.6f, 1.6f);
         p.getMainHandItem().hurtAndBreak(1, p, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
         send(p, CombatFxPayload.ISSEN, t, 0);
+        CombatFxPayload.stamina(p, -1);   // acertar um Issen enche a estamina
+        // Issen em cadeia (Onimusha 3): outra chance aparece daqui a 0,3-0,6 s, com janela 10% menor a cada elo
+        if (t.isAlive()) {
+            Chain c0 = CHAIN.get(p.getUUID());
+            int link = c0 != null && c0.mobId() == t.getId() ? c0.link() + 1 : 1;
+            long opens = level.getGameTime() + 6 + level.random.nextInt(7);
+            CHAIN.put(p.getUUID(), new Chain(t.getId(), link, opens));
+        } else CHAIN.remove(p.getUUID());
+    }
+
+    // ---------------------------------------------------------------- Issen em cadeia
+    private record Chain(int mobId, int link, long opensAt) {}
+    private static final Map<UUID, Chain> CHAIN = new HashMap<>();
+    public static final float CHAIN_FIRST_MS = 500, CHAIN_MIN_MS = 120;
+
+    static float chainWindowMs(int link) { return Math.max(CHAIN_MIN_MS, CHAIN_FIRST_MS * (float) Math.pow(0.9, link - 1)); }
+
+    private static void chainTick(ServerTickEvent.Post e) {
+        if (CHAIN.isEmpty()) return;
+        for (Iterator<Map.Entry<UUID, Chain>> it = CHAIN.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<UUID, Chain> en = it.next();
+            ServerPlayer p = e.getServer().getPlayerList().getPlayer(en.getKey());
+            Chain c = en.getValue();
+            if (p == null || c.opensAt() < 0) { if (p == null) it.remove(); continue; }
+            long now = p.level().getGameTime();
+            if (now < c.opensAt()) continue;
+            if (!(p.level().getEntity(c.mobId()) instanceof LivingEntity t) || !t.isAlive() || t.distanceToSqr(p) > 6 * 6) { it.remove(); continue; }
+            float ms = chainWindowMs(c.link());
+            ISSEN.put(p.getUUID(), new Window(t.getId(), now + Math.max(2, Math.round(ms / 50f)) + Telegraphs.grace(p)));
+            PacketDistributor.sendToPlayer(p, new CombatFxPayload(CombatFxPayload.ISSEN_CHAIN, p.getId(), t.getId(), ms));
+            en.setValue(new Chain(c.mobId(), c.link(), -1));   // aberta: agora e' com o jogador
+        }
     }
 
     // ---------------------------------------------------------------- golpe critico
@@ -244,6 +281,7 @@ public final class CombatActionsServer {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post e) {
         if (FINISHED_BY_SPECIAL.size() > 256) FINISHED_BY_SPECIAL.clear();
+        chainTick(e);
         // facada pelas costas: o golpe entra no momento certo da animacao
         for (Iterator<StabHit> it = STABS.iterator(); it.hasNext(); ) {
             StabHit s = it.next();

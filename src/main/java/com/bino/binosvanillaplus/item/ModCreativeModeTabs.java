@@ -102,6 +102,7 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creativetab.binosvanillaplus.exploration"))
                     .displayItems((params, output) -> {
                         output.accept(ModItems.CYALUME_STICK);
+                        output.accept(ModItems.RESPEC_ESSENCE);
                         output.accept(ModItems.FLASHLIGHT);
                         output.accept(ModItems.ROPE);
                         output.accept(ModItems.CLIMBING_HOOK);

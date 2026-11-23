@@ -116,8 +116,8 @@ public final class CombatFx {
                 int zone = Math.round(m.f());
                 HitFx.kick(zone >= 2 ? 1.2f : zone == 1 ? 0.8f : 0.4f);
                 flashAt = now; flashPower = zone >= 2 ? 1f : zone == 1 ? 0.5f : 0.2f;
-                if (zone >= 2) { zoomAt = now; Stamina.give(25); }
-                if (zone == 1) Stamina.give(10);
+                if (zone >= 2) zoomAt = now;
+                Stamina.give(40);   // acertar um parry devolve 40
                 if (zone == 2) CombatMoves.playLocal(CombatMove.ISSEN);   // Issen na hora
             }
             case CombatFxPayload.ISSEN -> {
@@ -143,6 +143,25 @@ public final class CombatFx {
                 KNEELING.remove(m.a()); POSTURE.remove(m.a()); INCOMING.remove(m.a()); ATTACKS.remove(m.a());
                 float r = m.f() * Mth.DEG_TO_RAD;
                 DEATHS.put(m.a(), new Death(m.b(), Mth.cos(r), Mth.sin(r), RANDOM));
+            }
+            case CombatFxPayload.STAMINA -> { if (mine) { if (m.f() < 0) Stamina.fill(); else Stamina.give(m.f()); } }
+            case CombatFxPayload.BLOCKED -> { if (mine) Defense.blocked(m.f()); }
+            case CombatFxPayload.PLAYER_POSTURE -> { if (mine) Defense.posture(m.f(), m.b() == 1); }
+            case CombatFxPayload.ISSEN_CHAIN -> {   // outra chance de Issen (cadeia): clique esquerdo dentro da janela
+                if (!mine) return;
+                issen = new Window(m.b(), now + (long) m.f() + 60);
+                Entity mob = mc.level.getEntity(m.b());
+                if (mob != null) {
+                    Vec3 at = mob.getBoundingBox().getCenter();
+                    mc.level.addParticle(ModParticles.IMPACT_STAR.get(), at.x, at.y, at.z, 1.3 * glintSize(mob), 4, 1);
+                    mc.level.addParticle(ModParticles.IMPACT_RING.get(), at.x, at.y, at.z, 1.6 * glintSize(mob), 4, 1);
+                    me.level().playLocalSound(at.x, at.y, at.z, ModSounds.PARRY_PERFECT.get(), SoundSource.PLAYERS, 0.5f, 1.6f, false);
+                }
+            }
+            case CombatFxPayload.CLASH -> {   // choque de espadas (PvP)
+                if (!mine) return;
+                flashAt = now; flashPower = 0.7f;
+                HitFx.kick(1.3f);
             }
             case CombatFxPayload.CRITICAL -> {
                 POSTURE.remove(m.b()); KNEELING.remove(m.b());

@@ -39,5 +39,10 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<Boolean>> MIMIC = ATTACHMENTS.register("mimic",
             () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
 
+    // nivel do personagem e pontos: [nivel, forca, vitalidade, agilidade, inteligencia, vontade] (ver PlayerStats)
+    public static final Supplier<AttachmentType<java.util.List<Integer>>> CHAR_STATS = ATTACHMENTS.register("char_stats",
+            () -> AttachmentType.<java.util.List<Integer>>builder(() -> java.util.List.of(1, 0, 0, 0, 0, 0))
+                    .serialize(Codec.INT.listOf()).copyOnDeath().build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }

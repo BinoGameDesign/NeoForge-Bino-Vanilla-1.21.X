@@ -27,6 +27,10 @@ public class ModItems {
     public static final DeferredItem<Item> PILLAGER_CIVILIAN_SPAWN_EGG = ITEMS.register("pillager_civilian_spawn_egg",
             () -> new com.bino.binosvanillaplus.item.CivilianSpawnEggItem(new Item.Properties()));
 
+    // Essencia do Recomeco: devolve os pontos de atributo (nivel do personagem, regras de 23/11)
+    public static final DeferredItem<Item> RESPEC_ESSENCE = ITEMS.register("respec_essence",
+            () -> new RespecEssenceItem(new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC)));
+
     public static final DeferredItem<Item> RUBI = ITEMS.register("rubi",
             () -> new Item(new Item.Properties()));
 

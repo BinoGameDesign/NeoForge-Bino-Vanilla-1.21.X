@@ -229,6 +229,9 @@ public final class MoveAnims {
                     k(0.75f, F).h(-0.56f, -0.30f, -0.50f).a(-92, 88, -90).b(-40, 4).r(720, 0, 0).m(0, 0.4f, 0.4f),
                     rest(1, 720, 0));
             // facada pelas costas: agacha atras do mob, ergue a espada de ponta para baixo e crava; torce e puxa
+            case LIGHT_5 -> sword(CombatMove.BREAK_2);
+            case TORMENTA -> sword(CombatMove.TEMPEST);
+            case SURPRISE -> sword(CombatMove.FORWARD);
             case BACKSTAB -> keys(
                     k(0.22f, W).h(0.30f, 0.05f, -0.30f).a(0, 175, 0).b(10, -6).m(0, 0.3f, 0.5f),
                     k(0.36f, S).h(0.12f, -0.40f, -0.80f).a(-4, 170, 0).b(-6, 26).m(0, 0.8f, 0.75f).d(0.25f),
@@ -409,6 +412,9 @@ public final class MoveAnims {
                     k(0.75f, F).h(-0.56f, -0.32f, -0.52f).a(-92, 90, -90).b(-46, 6).r(720, 0, 0).m(0, 0.4f, 0.45f),
                     rest(1, 720, 0));
             // machadada pelas costas: ergue atras da cabeca, crava na nuca, balanca para soltar e arranca
+            case LIGHT_5 -> axe(CombatMove.BREAK_2);
+            case TORMENTA -> axe(CombatMove.TEMPEST);
+            case SURPRISE -> axe(CombatMove.FORWARD);
             case BACKSTAB -> keys(
                     k(0.24f, W).h(0.32f, 0.08f, -0.08f).a(12, -70, 0).b(18, -18).m(0, 0.3f, 0.3f),
                     k(0.36f, S).h(0.05f, -0.42f, -0.84f).a(-5, 150, 0).b(0, 36).m(0, 0.8f, 0.8f).d(0.2f),

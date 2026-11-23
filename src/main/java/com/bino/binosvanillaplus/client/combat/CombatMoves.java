@@ -130,7 +130,7 @@ public final class CombatMoves {
     private static ItemStack lastHeld = ItemStack.EMPTY; private static long equipAt = -100000;
     // fase 4: avanco (W W), Lanca-Ceu (P segurado), combo aereo
     private static final double[] DASH_SPEED = {0.70, 0.78, 0.74, 0.60, 0.40, 0.20};
-    private static long dashStart = -100000, dashReady, lastFwdTap = -100000, pendingLLP, airStart, launchAt = -100000;
+    private static long dashStart = -100000, dashReady, lastFwdTap = -100000, airStart, launchAt = -100000;
     private static Vec3 dashDir = Vec3.ZERO;
     private static boolean wasFwd;
     private static long cinemaRestore;
@@ -138,7 +138,7 @@ public final class CombatMoves {
 
     // projetil vindo em voce e quase chegando: {id, nivel} ou null. Nivel 2 (devolve ao atirador) so mirando
     // bem em cima do projetil (a mira no projetil); senao 0 (so apara: ele cai)
-    private static int[] arrowIncoming(LocalPlayer p) {
+    static int[] arrowIncoming(LocalPlayer p) {
         int best = -1; double bestEta = com.bino.binosvanillaplus.combat.ParryZones.WINDOW_MS + 1;
         Vec3 c = p.getBoundingBox().getCenter();
         for (net.minecraft.world.entity.projectile.Projectile pr : p.level().getEntitiesOfClass(
@@ -232,7 +232,7 @@ public final class CombatMoves {
         // escudo na outra mao (agachado, ou sem arma): o escudo sobe normal e, se um golpe com aviso estiver chegando,
         // vira parry (janela maior que a da arma, sem Issen)
         if (e.isUseItem() && p.getOffhandItem().getItem() instanceof ShieldItem
-                && (p.isShiftKeyDown() || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE)) {
+                && CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) {
             int mob = CombatFx.parryTarget(p, now());
             if (mob != -1) {   // escudo: so bloqueia (branco)
                 CombatFx.consumeIncoming(mob);
@@ -244,7 +244,7 @@ public final class CombatMoves {
         if (!e.isAttack() && !e.isUseItem()) return;
         if (e.isUseItem() && useDownAt > 0 && now() - useDownAt > 150
                 && !(mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK)) { cancel(e); return; }   // repeticao de quem segura
-        if (DodgeRoll.rolling(p)) { e.setCanceled(true); e.setSwingHand(false); return; }
+        if (DodgeRoll.rolling(p) || Defense.stunned()) { e.setCanceled(true); e.setSwingHand(false); return; }   // rolando / guarda quebrada
         long now = now();
         Active cur = ACTIVE.get(p.getId());
         boolean busy = cur != null && !cur.done(now);
@@ -259,7 +259,8 @@ public final class CombatMoves {
             if ((t = CombatFx.rushTarget(now)) != -1) { CombatFx.consumeRush(); special(p, CombatMove.RUSH, CombatActionPayload.RUSH, t, (byte) 0, now); return; }
             // agachado e por tras do mob: facada pelas costas (cena em terceira pessoa)
             if (p.isShiftKeyDown() && mc.hitResult instanceof EntityHitResult eh && eh.getEntity() instanceof LivingEntity le
-                    && !(le instanceof Player) && le.isAlive() && behind(p, le)) {
+                    && !(le instanceof Player) && le.isAlive() && behind(p, le)
+                    && !(le instanceof net.minecraft.world.entity.Mob mb && mb.getTarget() == p)) {   // so se ele nao te viu
                 special(p, CombatMove.BACKSTAB, CombatActionPayload.BACKSTAB, le.getId(), (byte) 0, now);
                 return;
             }
@@ -268,24 +269,8 @@ public final class CombatMoves {
             // golpe critico na guarda quebrada
             LivingEntity broken = CombatFx.brokenTarget(p);
             if (broken != null) { cancel(e); special(p, CombatMove.CRITICAL, CombatActionPayload.CRITICAL, broken.getId(), (byte) 0, now); return; }
-            // parry: golpe com aviso vindo em mim agora
-            int mob = CombatFx.parryTarget(p, now);
-            if (mob != -1) {
-                cancel(e);
-                byte zone = (byte) Math.max(0, CombatFx.zone(mob, now));
-                CombatFx.consumeIncoming(mob);
-                special(p, CombatMove.PARRY, CombatActionPayload.PARRY, mob, zone, now);
-                return;
-            }
-            // flecha (ou outro projetil) chegando: apara (perfeito = volta para quem atirou)
-            int[] arrow = arrowIncoming(p);
-            if (arrow != null) {
-                cancel(e);
-                special(p, CombatMove.PARRY, CombatActionPayload.ARROW_PARRY, arrow[0], (byte) arrow[1], now);
-                return;
-            }
+            // (parry e aparar flecha agora sao na tecla Defender: Defense)
             if (onBlock || !inCombat(p, now)) return;   // descascar tronco etc.
-            if (p.isShiftKeyDown() && p.getOffhandItem().getItem() instanceof ShieldItem) return;   // defender com escudo
             cancel(e);
             lastCombat = now;
             request(p, true, cur, now);
@@ -295,7 +280,7 @@ public final class CombatMoves {
     private static void cancel(InputEvent.InteractionKeyMappingTriggered e) { e.setCanceled(true); e.setSwingHand(false); }
 
     // golpes especiais (parry, Issen, Rajada, critico): interrompem o golpe atual
-    private static void special(LocalPlayer p, CombatMove m, byte action, int target, byte level, long now) {
+    static void special(LocalPlayer p, CombatMove m, byte action, int target, byte level, long now) {
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
         int len = MoveTiming.lengthMs(m, false, axe, p.getCurrentItemAttackStrengthDelay());
         put(p.getId(), new Active(m, false, axe, now, len));
@@ -318,41 +303,41 @@ public final class CombatMoves {
     }
 
     private static void request(LocalPlayer p, boolean heavy, Active cur, long now) {
-        if (pendingLLP > 0) return;   // decidindo Quebra-Guarda x Lanca-Ceu
+        if (chargeMove != null) return;   // carregando um pesado
         if (cur == null || cur.done(now) || cur.move == CombatMove.DASH) begin(p, heavy, now);
         else if (cur.u(now) >= 0.25f) queued = heavy;   // guarda o proximo (encadeia quando este acabar)
     }
 
-    // arvore dos combos (null = fora da arvore: recomeca)
+    // arvore dos combos (null = fora da arvore: recomeca). O pesado so fecha combo: "P" sozinho nao existe.
     private static CombatMove tree(String s) {
         return switch (s) {
             case "L" -> CombatMove.LIGHT_1;
             case "LL" -> CombatMove.LIGHT_2;
             case "LLL" -> CombatMove.LIGHT_3;
             case "LLLL" -> CombatMove.LIGHT_4;
-            case "LLLLL" -> CombatMove.TEMPEST;
-            case "LLLLP" -> CombatMove.JUDGMENT;
+            case "LLLLL" -> CombatMove.LIGHT_5;
+            case "LP" -> CombatMove.SURPRISE;
             case "LLP" -> CombatMove.GUARD_BREAK;
-            case "LLPL" -> CombatMove.BREAK_1;
-            case "LLPLL" -> CombatMove.BREAK_2;
-            case "P" -> CombatMove.HEAVY;
+            case "LLLP" -> CombatMove.JUDGMENT;
+            case "LLLLP" -> CombatMove.TORMENTA;
             default -> null;
         };
     }
 
     private static CombatMove route(LocalPlayer p, String s, boolean heavy, long now) {
-        CombatMove t = tree(s);
-        boolean signature = t != null && (t.closesCombo() || t == CombatMove.GUARD_BREAK);   // golpes com nome mandam
-        if (!signature) {
+        boolean fresh = s.length() == 1;   // comecando agora (nao e' continuacao de combo)
+        // golpes de contexto (fora da lista): logo depois do avanco ou do rolamento, ou correndo
+        if (fresh) {
             if (now - dashStart < DASH_SPEED.length * 50L + 450) return heavy ? CombatMove.PIERCE : CombatMove.DASH_SLASH;
-            if (DodgeRoll.justRolled(p, now))
-                return heavy ? (DodgeRoll.chain() >= 2 ? CombatMove.DANCE : CombatMove.ROLL_THRUST) : CombatMove.ROLL_SLASH;
-            if (!p.onGround() && !p.isInWater() && !p.onClimbable()) {   // no ar: combo aereo / Meteoro
-                if (heavy) return airHits >= 1 ? CombatMove.METEOR : CombatMove.JUMP;
-                return airHits == 0 ? CombatMove.AIR_1 : airHits == 1 ? CombatMove.AIR_2 : airHits == 2 ? CombatMove.AIR_3 : CombatMove.JUMP;
-            }
-            if (p.isSprinting()) return CombatMove.FORWARD;
+            if (DodgeRoll.justRolled(p, now)) return heavy ? CombatMove.ROLL_THRUST : CombatMove.ROLL_SLASH;
+            if (p.isSprinting() && p.onGround()) return CombatMove.FORWARD;
         }
+        if (!p.onGround() && !p.isInWater() && !p.onClimbable()) {   // no ar: mesmos botoes; o pesado que fecha e' o Meteoro
+            if (heavy) return fresh ? null : CombatMove.METEOR;
+            return switch (s.length()) { case 1, 4 -> CombatMove.AIR_1; case 2 -> CombatMove.AIR_2; default -> CombatMove.AIR_3; };
+        }
+        CombatMove t = tree(s);
+        if (t != null && heavy && p.isShiftKeyDown()) return CombatMove.LAUNCHER;   // abaixado: o pesado levanta o inimigo
         return t;
     }
 
@@ -367,20 +352,52 @@ public final class CombatMoves {
         CombatMove m = route(p, s, heavy, now);
         if (m == null) { s = String.valueOf(c); m = route(p, s, heavy, now); }
         if (m == null) return;
-        if (m == CombatMove.GUARD_BREAK) { pendingLLP = now; return; }   // segurou o direito? (onFrame decide)
-        start(p, heavy, axe, s, m, now);
+        if (heavy) {   // pesado: comeca a carregar; sai ao soltar o botao (ou sozinho no nivel forte)
+            if (Stamina.combat() <= 0) { Stamina.denied(); return; }
+            chargeMove = m; chargeSeq = s; chargeAxe = axe; chargeAt = now; chargeShown = 0;
+            return;
+        }
+        start(p, false, axe, s, m, now, 0);
     }
 
-    private static void start(LocalPlayer p, boolean heavy, boolean axe, String s, CombatMove m, long now) {
+    // pesado carregando (null = nenhum)
+    private static CombatMove chargeMove;
+    private static String chargeSeq = "";
+    private static boolean chargeAxe;
+    private static long chargeAt;
+    private static int chargeShown;
+
+    public static boolean charging() { return chargeMove != null; }
+    public static float chargeProgress(long now) { return chargeMove == null ? 0f : Math.min(1f, (now - chargeAt) / (float) CombatMove.CHARGE_MS[3]); }
+
+    private static void chargeTick(Minecraft mc, LocalPlayer p, long now) {
+        if (chargeMove == null) return;
+        long held = now - chargeAt;
+        int lv = CombatMove.chargeLevel(held);
+        if (lv > chargeShown) {   // subiu de nivel: brilho na arma e um "tim"
+            chargeShown = lv;
+            Vec3 h = p.getEyePosition().add(p.getLookAngle().scale(0.6)).add(0, -0.35, 0);
+            p.level().addParticle(com.bino.binosvanillaplus.entity.ModParticles.IMPACT_RING.get(), h.x, h.y, h.z, 0.35 + 0.15 * lv, lv == 1 ? 0 : lv == 2 ? 1 : 2, 1);
+            p.level().playLocalSound(p.getX(), p.getEyeY(), p.getZ(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.5f, 0.8f + 0.25f * lv, false);
+        }
+        boolean held2 = mc.options.keyUse.isDown();
+        if (!held2 || held >= CombatMove.CHARGE_MS[3] || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) {
+            CombatMove m = chargeMove;
+            chargeMove = null;
+            if (CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE) start(p, true, chargeAxe, chargeSeq, m, now, lv);
+        }
+    }
+
+    private static void start(LocalPlayer p, boolean heavy, boolean axe, String s, CombatMove m, long now, int charge) {
         boolean serverHit = m.serverHit(heavy);
-        if (serverHit && !Stamina.use(Stamina.HEAVY)) return;   // sem folego para o pesado
+        if (!Stamina.use(heavy ? Stamina.HEAVY : Stamina.LIGHT)) return;   // sem folego
         int len = MoveTiming.lengthMs(m, heavy, axe, p.getCurrentItemAttackStrengthDelay());
         put(p.getId(), new Active(m, heavy, axe, now, len));
         lastMoveEnd = now + len;
         if (serverHit) heavyReady = now + len - 80;
         seq = m.closesCombo() ? "" : s;
         hudStep = s.length(); hudAt = now;
-        hudName = m.closesCombo() || m == CombatMove.GUARD_BREAK ? comboName(m, axe) : null;
+        hudName = m.closesCombo() ? comboName(m, axe) : null;
         if (m.aerial()) {
             airHits++;
             if (airStart == 0) airStart = now;
@@ -389,15 +406,16 @@ public final class CombatMoves {
         }
         if (m == CombatMove.METEOR) { Vec3 d = p.getDeltaMovement(); p.setDeltaMovement(d.x, Math.max(d.y, 0.2), d.z); }
         impulse(p, m, heavy, axe);
-        PacketDistributor.sendToServer(new MovePayload((byte) m.ordinal(), heavy, (byte) s.length()));
+        PacketDistributor.sendToServer(new MovePayload((byte) m.ordinal(), heavy, (byte) (Math.min(15, s.length()) | (charge << 4))));
     }
 
     private static String comboName(CombatMove m, boolean axe) {
         return switch (m) {
-            case TEMPEST -> axe ? Component.translatableWithFallback("combat.binosvanillaplus.combo.lumberjack", "Lenhador!").getString()
-                    : Component.translatableWithFallback("combat.binosvanillaplus.combo.tempest", "Tempestade!").getString();
+            case TORMENTA -> Component.translatableWithFallback("combat.binosvanillaplus.combo.tormenta", "Tormenta!").getString();
+            case SURPRISE -> Component.translatableWithFallback("combat.binosvanillaplus.combo.surprise", "Surpresa!").getString();
+            case LIGHT_5 -> Component.translatableWithFallback("combat.binosvanillaplus.combo.base", "Base!").getString();
             case JUDGMENT -> Component.translatableWithFallback("combat.binosvanillaplus.combo.judgment", "Juizo!").getString();
-            case GUARD_BREAK, BREAK_2 -> Component.translatableWithFallback("combat.binosvanillaplus.combo.guard_break", "Quebra-Guarda!").getString();
+            case GUARD_BREAK -> Component.translatableWithFallback("combat.binosvanillaplus.combo.guard_break", "Quebra-Guarda!").getString();
             case LAUNCHER -> Component.translatableWithFallback("combat.binosvanillaplus.combo.launcher", "Lanca-Ceu!").getString();
             case AIR_3 -> Component.translatableWithFallback("combat.binosvanillaplus.combo.aerial", "Combo Aereo!").getString();
             case METEOR -> Component.translatableWithFallback("combat.binosvanillaplus.combo.meteor", "Meteoro!").getString();
@@ -416,7 +434,9 @@ public final class CombatMoves {
             case ROLL_SLASH -> fwd = 0.15;
             case ROLL_THRUST -> fwd = 0.5;
             case GUARD_BREAK -> fwd = 0.25;
-            case TEMPEST -> { fwd = axe ? 0.25 : 0.35; up = axe ? 0 : 0.42; }
+            case TEMPEST, TORMENTA -> { fwd = axe ? 0.25 : 0.35; up = axe ? 0 : 0.42; }
+            case SURPRISE -> fwd = axe ? 0.45 : 0.55;
+            case LIGHT_5 -> fwd = 0.15;
             case JUDGMENT -> { fwd = axe ? 0.2 : -0.35; up = axe ? 0.55 : 0.45; }
             case BREAK_1, BREAK_2 -> { fwd = 0.1; up = axe ? 0.35 : 0; }
             case JUMP, AIR_1, AIR_2, AIR_3, METEOR -> fwd = 0;
@@ -446,7 +466,7 @@ public final class CombatMoves {
     }
 
     // anima um golpe so aqui (o servidor ja resolveu: ex. Issen do parry azul)
-    static void playLocal(CombatMove m) {
+    public static void playLocal(CombatMove m) {
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null) return;
         boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
@@ -480,15 +500,7 @@ public final class CombatMoves {
         }
         if (p.onGround() && now - launchAt > 350 && (airHits > 0 || airStart > 0)
                 && (ACTIVE.get(p.getId()) == null || !ACTIVE.get(p.getId()).move.aerial())) { airHits = 0; airStart = 0; }
-        if (pendingLLP > 0) {   // L L P: soltou = Quebra-Guarda; segurou 0,2 s = Lanca-Ceu
-            boolean held = mc.options.keyUse.isDown();
-            if (!held || now - pendingLLP >= 200) {
-                pendingLLP = 0;
-                boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
-                if (CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE)
-                    start(p, true, axe, "LLP", held ? CombatMove.LAUNCHER : CombatMove.GUARD_BREAK, now);
-            }
-        }
+        chargeTick(mc, p, now);
         Active a = ACTIVE.get(p.getId());
         if (a == null) { queued = null; return; }
         if (!a.hitDone && a.u(now) >= MoveTiming.impact(a.move)) { a.hitDone = true; impact(mc, p, a); }
@@ -498,6 +510,7 @@ public final class CombatMoves {
     }
 
     private static void impact(Minecraft mc, LocalPlayer p, Active a) {
+        if (mc.screen instanceof com.bino.binosvanillaplus.client.combo.ComboListScreen) return;   // so a demonstracao da lista de combos
         if (a.move.visualOnly()) return;   // o servidor resolve (parry, Issen, Rajada, critico)
         if (a.move == CombatMove.LAUNCHER) {   // pula atras do mob (um pouco mais alto que ele)
             Vec3 d = p.getDeltaMovement();
@@ -570,7 +583,7 @@ public final class CombatMoves {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) {
-        ACTIVE.clear(); PUSHED.clear(); TRAIL.clear(); TP_TRAIL.clear(); seq = ""; queued = null; pendingLLP = 0; airHits = 0; airStart = 0;
+        ACTIVE.clear(); PUSHED.clear(); TRAIL.clear(); TP_TRAIL.clear(); seq = ""; queued = null; chargeMove = null; airHits = 0; airStart = 0;
     }
 
     // ================================================================== avanco (W W) e flutuar no combo aereo
@@ -593,7 +606,7 @@ public final class CombatMoves {
     private static void tryDash(LocalPlayer p, long now) {
         if (now < dashReady || !p.onGround() || p.isShiftKeyDown() || p.isInWater() || p.isPassenger() || p.isFallFlying()
                 || DodgeRoll.rolling(p) || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE || !inCombat(p, now)) return;
-        if (!Stamina.use(15)) return;
+        if (!Stamina.use(Stamina.DASH)) return;
         Vec3 look = p.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0, look.z);
         if (flat.lengthSqr() < 1e-4) return;
