@@ -1,15 +1,12 @@
 package com.bino.binosvanillaplus.client.combo;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
-import com.bino.binosvanillaplus.client.combat.CombatMoves;
-import com.bino.binosvanillaplus.combat.CombatEvents;
 import com.bino.binosvanillaplus.combat.CombatMove;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -18,8 +15,8 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.util.List;
 
-// LISTA DE COMBOS (menu do jogo, regras de 23/11): so para ver e ler. Cada combo com as teclas e a explicacao; o
-// personagem mostra os combos um depois do outro, sozinho (precisa de espada ou machado na mao). Nada aqui e' clicavel.
+// LISTA DE COMBOS (menu do jogo, regras de 23/11), como a lista de golpes dos jogos de luta: so mostra como se faz cada
+// combo (nome, teclas e uma linha explicando). Rola com a roda do mouse.
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public class ComboListScreen extends Screen {
     private final Screen parent;
@@ -36,17 +33,15 @@ public class ComboListScreen extends Screen {
             new Row("ground", "surprise", "L P", m(L1, CombatMove.SURPRISE)),
             new Row("air", "meteor", "L ... P", m(CombatMove.AIR_1, CombatMove.AIR_2, CombatMove.AIR_3, CombatMove.METEOR)),
             new Row("crouch", "launcher", "Shift + L ... P", m(L1, L2, CombatMove.LAUNCHER)),
-            new Row("context", "dash", "W W  L / P", m(CombatMove.DASH, CombatMove.DASH_SLASH)),
-            new Row("context", "pierce", "W W  P", m(CombatMove.DASH, CombatMove.PIERCE)),
-            new Row("context", "roll", "Q  L / P", m(CombatMove.ROLL_SLASH, CombatMove.ROLL_THRUST)),
-            new Row("context", "forward", "Ctrl  L / P", m(CombatMove.FORWARD)),
+            new Row("context", "dash", "W W + L / P", m(CombatMove.DASH, CombatMove.DASH_SLASH)),
+            new Row("context", "pierce", "W W + P", m(CombatMove.DASH, CombatMove.PIERCE)),
+            new Row("context", "roll", "Q + L / P", m(CombatMove.ROLL_SLASH, CombatMove.ROLL_THRUST)),
+            new Row("context", "forward", "Ctrl + L / P", m(CombatMove.FORWARD)),
             new Row("defense", "parry", "R", m(CombatMove.PARRY)),
-            new Row("defense", "issen", "R (azul)  L L L", m(CombatMove.PARRY, CombatMove.ISSEN, CombatMove.ISSEN)),
+            new Row("defense", "issen", "R (azul) L L L", m(CombatMove.PARRY, CombatMove.ISSEN, CombatMove.ISSEN)),
             new Row("defense", "backstab", "Shift + L", m(CombatMove.BACKSTAB)),
             new Row("defense", "critical", "P", m(CombatMove.CRITICAL)));
 
-    private int selected = 0, step = 0;
-    private long nextAt;
 
     public ComboListScreen(Screen parent) {
         super(Component.translatable("gui.binosvanillaplus.combos.title"));
@@ -57,68 +52,69 @@ public class ComboListScreen extends Screen {
     protected void init() {
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(width / 2 - 100, height - 28, 200, 20).build());
-        nextAt = 0;
     }
 
     @Override public void onClose() { minecraft.setScreen(parent); }
     @Override public boolean isPauseScreen() { return true; }
 
-    private int rowY(int i) { return 36 + i * 13 + sectionIndex(i) * 6; }
-    private static int sectionIndex(int i) {
-        int n = 0;
-        for (int k = 1; k <= i; k++) if (!ROWS.get(k).section().equals(ROWS.get(k - 1).section())) n++;
-        return n;
-    }
 
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
         g.drawCenteredString(font, title, width / 2, 12, 0xFFFFFF);
-        int x0 = width / 2 - 200;
+        // como nos jogos de luta: nome do golpe a esquerda, os botoes (teclas) a direita e uma linha explicando embaixo
+        int x0 = width / 2 - 170, x1 = width / 2 + 170;
+        int y = 34 - scroll;
         String last = "";
-        for (int i = 0; i < ROWS.size(); i++) {
-            Row r = ROWS.get(i);
-            int y = rowY(i);
+        for (Row r : ROWS) {
             if (!r.section().equals(last)) {
-                g.drawString(font, Component.translatable("gui.binosvanillaplus.combos.section." + r.section()), x0, y - 8 - 2, 0xF2C14E);
+                if (!last.isEmpty()) y += 6;
+                if (y > 22 && y < height - 40) g.drawString(font, Component.translatable("gui.binosvanillaplus.combos.section." + r.section()), x0, y, 0xF2C14E);
+                y += 12;
                 last = r.section();
             }
-            if (i == selected) g.fill(x0 - 2, y - 2, x0 + 232, y + 10, 0x50FFFFFF);   // o que o personagem esta mostrando agora
-            g.drawString(font, Component.translatable("gui.binosvanillaplus.combos." + r.name()), x0 + 2, y, 0xFFFFFF);
-            g.drawString(font, r.keys(), x0 + 228 - font.width(r.keys()), y, 0xA0D8FF);
-        }
-        // explicacao do selecionado
-        Row r = ROWS.get(selected);
-        int px = width / 2 + 50, pw = 150;
-        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.translatable("gui.binosvanillaplus.combos." + r.name() + ".desc"), pw);
-        int ty = height - 40 - lines.size() * 10;
-        for (int i = 0; i < lines.size(); i++) g.drawString(font, lines.get(i), px, ty + i * 10, 0xDDDDDD);
-        // o personagem fazendo o combo
-        var p = minecraft.player;
-        if (p == null) return;
-        boolean armed = CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE;
-        if (!armed) {
-            List<net.minecraft.util.FormattedCharSequence> tip = font.split(Component.translatable("gui.binosvanillaplus.combos.need_weapon"), pw);
-            for (int i = 0; i < tip.size(); i++) g.drawString(font, tip.get(i), px, 60 + i * 10, 0xFF8080);
-        } else {
-            long now = System.currentTimeMillis();
-            if (now >= nextAt) {
-                CombatMove mv = r.moves()[step % r.moves().length];
-                CombatMoves.playLocal(mv);
-                boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
-                int len = com.bino.binosvanillaplus.combat.MoveTiming.lengthMs(mv, false, axe, p.getCurrentItemAttackStrengthDelay());
-                step++;
-                nextAt = now + (int) (len * 0.92f);
-                if (step >= r.moves().length) {   // acabou este combo: pausa e passa para o proximo da lista
-                    nextAt += 900;
-                    step = 0;
-                    selected = (selected + 1) % ROWS.size();
-                }
+            List<net.minecraft.util.FormattedCharSequence> desc = font.split(Component.translatable("gui.binosvanillaplus.combos." + r.name() + ".desc"), x1 - x0 - 8);
+            int h = 14 + desc.size() * 9;
+            if (y + h > 22 && y < height - 36) {
+                g.fill(x0 - 4, y - 3, x1 + 4, y + h - 1, 0x40000000);
+                g.drawString(font, Component.translatable("gui.binosvanillaplus.combos." + r.name()), x0, y, 0xFFFFFF);
+                keys(g, r.keys(), x1, y - 1);
+                for (int i = 0; i < desc.size(); i++) g.drawString(font, desc.get(i), x0 + 4, y + 12 + i * 9, 0xB8B8B8);
             }
+            y += h + 3;
         }
-        int bx = px, by = 34, bw = pw, bh = Math.max(80, ty - 44);
-        InventoryScreen.renderEntityInInventoryFollowsMouse(g, bx, by, bx + bw, by + bh, (int) (bh * 0.36f), 0.0625f, bx + bw * 0.75f, by + bh * 0.35f, p);
+        contentH = y + scroll - 34;
+    }
+
+    // as teclas como botoes (tampinhas), alinhadas a direita: cada palavra separada por espaco e' uma tecla
+    private void keys(GuiGraphics g, String keys, int right, int y) {
+        String[] parts = keys.split(" ");
+        int x = right;
+        for (int i = parts.length - 1; i >= 0; i--) {
+            String k = parts[i];
+            if (k.isEmpty()) continue;
+            boolean word = k.equals("+") || k.equals("/") || k.equals("...") || k.startsWith("(");
+            int w = font.width(k) + (word ? 2 : 8);
+            x -= w;
+            if (!word) {
+                g.fill(x, y, x + w, y + 11, 0xFF2A2C30);
+                g.fill(x, y, x + w, y + 1, 0xFF5A5E66);
+                g.fill(x, y + 10, x + w, y + 11, 0xFF15161A);
+                int col = k.equals("P") ? 0xFFFF9A5A : k.equals("L") ? 0xFF9AD8FF : k.equals("R") ? 0xFFB8FF8A : 0xFFFFFFFF;
+                g.drawString(font, k, x + 4, y + 2, col, false);
+            } else g.drawString(font, k, x + 1, y + 2, 0xA0A0A0, false);
+            x -= 2;
+        }
+    }
+
+    private int scroll, contentH;
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        int max = Math.max(0, contentH - (height - 80));
+        scroll = Math.max(0, Math.min(max, scroll - (int) (dy * 14)));
+        return true;
     }
 
     // botao "Lista de combos" no menu do jogo (canto de cima, a esquerda)
