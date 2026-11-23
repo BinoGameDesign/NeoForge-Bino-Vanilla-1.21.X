@@ -25,7 +25,7 @@ import org.lwjgl.glfw.GLFW;
 // no maximo amarelo, sem Issen); apertar com flecha chegando = aparar a flecha; SEGURAR = bloquear (no maximo 2 s).
 // Bloqueio: 100% do dano, mas gasta 40 de estamina (20 com escudo) e enche a postura com 1,5x o golpe (servidor).
 // Segurar sem levar golpe gasta 20. Estamina zerada defendendo = guarda quebrada (atordoado 1,2 s, leva 1,5x de dano).
-// A postura do jogador aparece numa barrinha acima da barra de atalhos so quando tem algo nela.
+// A postura do jogador nao aparece na tela (so conta por dentro).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public final class Defense {
     private Defense() {}
@@ -106,23 +106,5 @@ public final class Defense {
         }
     }
 
-    // barrinha da postura do jogador (aparece so quando tem algo nela)
-    @SubscribeEvent
-    public static void onHud(RenderGuiEvent.Post e) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui) return;
-        long now = now();
-        boolean broken = stunned();
-        float f = broken ? 1f : posture;
-        if (f < 0.03f && !broken) return;
-        GuiGraphics g = e.getGuiGraphics();
-        int w = 82, x = g.guiWidth() / 2 - w / 2, y = g.guiHeight() - 22 - 30;
-        g.fill(x - 1, y - 1, x + w + 1, y + 4, 0xA0101010);
-        int fill = Math.round(w * Mth.clamp(f, 0f, 1f));
-        int col = broken ? ((now / 90) % 2 == 0 ? 0xFFFF3030 : 0xFFFFD040) : f < 0.5f ? 0xFFF2C14E : f < 0.8f ? 0xFFF08A30 : 0xFFE84030;
-        // enche do meio para as pontas (como em Sekiro)
-        int half = fill / 2;
-        g.fill(x + w / 2 - half, y, x + w / 2 + half, y + 3, col);
-        if (holding) g.fill(x + w / 2 - 1, y - 2, x + w / 2 + 1, y + 5, 0xFFFFFFFF);
-    }
+    // (a postura do jogador nao aparece na tela: so conta por dentro)
 }

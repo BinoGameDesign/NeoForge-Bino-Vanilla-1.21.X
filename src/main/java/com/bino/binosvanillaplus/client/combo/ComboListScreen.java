@@ -18,8 +18,8 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.util.List;
 
-// LISTA DE COMBOS (menu do jogo, regras de 23/11): cada combo com as teclas e uma animacao do proprio personagem
-// fazendo o golpe (precisa de espada ou machado na mao). Clique numa linha para ver de novo.
+// LISTA DE COMBOS (menu do jogo, regras de 23/11): so para ver e ler. Cada combo com as teclas e a explicacao; o
+// personagem mostra os combos um depois do outro, sozinho (precisa de espada ou machado na mao). Nada aqui e' clicavel.
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public class ComboListScreen extends Screen {
     private final Screen parent;
@@ -70,15 +70,6 @@ public class ComboListScreen extends Screen {
         return n;
     }
 
-    @Override
-    public boolean mouseClicked(double mx, double my, int button) {
-        int x0 = width / 2 - 200;
-        for (int i = 0; i < ROWS.size(); i++) {
-            int y = rowY(i);
-            if (mx >= x0 && mx < x0 + 230 && my >= y - 2 && my < y + 11) { selected = i; step = 0; nextAt = 0; return true; }
-        }
-        return super.mouseClicked(mx, my, button);
-    }
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
@@ -93,8 +84,7 @@ public class ComboListScreen extends Screen {
                 g.drawString(font, Component.translatable("gui.binosvanillaplus.combos.section." + r.section()), x0, y - 8 - 2, 0xF2C14E);
                 last = r.section();
             }
-            boolean sel = i == selected, over = mx >= x0 && mx < x0 + 230 && my >= y - 2 && my < y + 11;
-            if (sel || over) g.fill(x0 - 2, y - 2, x0 + 232, y + 10, sel ? 0x50FFFFFF : 0x28FFFFFF);
+            if (i == selected) g.fill(x0 - 2, y - 2, x0 + 232, y + 10, 0x50FFFFFF);   // o que o personagem esta mostrando agora
             g.drawString(font, Component.translatable("gui.binosvanillaplus.combos." + r.name()), x0 + 2, y, 0xFFFFFF);
             g.drawString(font, r.keys(), x0 + 228 - font.width(r.keys()), y, 0xA0D8FF);
         }
@@ -119,7 +109,12 @@ public class ComboListScreen extends Screen {
                 boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
                 int len = com.bino.binosvanillaplus.combat.MoveTiming.lengthMs(mv, false, axe, p.getCurrentItemAttackStrengthDelay());
                 step++;
-                nextAt = now + (int) (len * 0.92f) + (step % r.moves().length == 0 ? 700 : 0);   // pausa no fim do combo
+                nextAt = now + (int) (len * 0.92f);
+                if (step >= r.moves().length) {   // acabou este combo: pausa e passa para o proximo da lista
+                    nextAt += 900;
+                    step = 0;
+                    selected = (selected + 1) % ROWS.size();
+                }
             }
         }
         int bx = px, by = 34, bw = pw, bh = Math.max(80, ty - 44);
