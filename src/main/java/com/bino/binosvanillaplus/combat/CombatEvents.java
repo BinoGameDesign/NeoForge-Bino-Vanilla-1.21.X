@@ -58,6 +58,9 @@ public final class CombatEvents {
     // ---------------------------------------------------------------- critico (marca o alvo ate o dano chegar)
     private static final Set<UUID> CRIT = new HashSet<>();
 
+    // golpe do servidor (pesado) que saiu critico: o numero de dano aparece como critico
+    public static void markCrit(LivingEntity target) { CRIT.add(target.getUUID()); }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onCrit(CriticalHitEvent e) {
         if (!e.getEntity().level().isClientSide && e.isCriticalHit()) CRIT.add(e.getTarget().getUUID());

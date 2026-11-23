@@ -22,10 +22,11 @@ import java.util.List;
 // NIVEL DO PERSONAGEM (regras de 23/11, estilo almas do Dark Souls): a experiencia do jogo e' a moeda. Cada nivel
 // custa barras de experiencia (o "nivel" do jogo = barras completas): nivel 2 custa 1 barra e o custo sobe 1 barra a
 // cada 4 niveis (nivel 20 = 5 barras). Maximo 100. Cada nivel da 1 ponto para distribuir:
-//   FORCA       +3% de dano fisico e +2% da postura que voce causa, por ponto
-//   VITALIDADE  +2% de vida POR CORACAO (os 10 coracoes ficam iguais; cada um aguenta mais: o dano e a cura sao
-//               divididos por 1 + 0,02 x Vitalidade) e +3 de postura sua, por ponto
-//   AGILIDADE   +2 de estamina de combate, +1% de velocidade de ataque e +0,5% de evasao (max 25%), por ponto
+//   FORCA       +3% de dano fisico, +2% da postura que voce causa e +2% de dano critico (base x1,5), por ponto
+//   VITALIDADE  +2% de vida POR CORACAO (os 10 coracoes ficam iguais; cada um aguenta mais: o dano e' dividido por
+//               1 + 0,02 x Vitalidade, e a cura continua enchendo os coracoes no mesmo ritmo) e +3 de postura sua
+//   AGILIDADE   +2 de estamina de combate, +1% de velocidade de ataque, +0,5% de evasao (max 25%) e +0,5% de
+//               chance de critico (base 5%, max 50%), por ponto
 //   INTELIGENCIA / VONTADE: reservados para a magia (travados, nao recebem pontos ainda)
 // Os dados ficam no jogador (sobrevivem a morte) e vao para o cliente (visor e aba Atributos).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
@@ -51,6 +52,16 @@ public final class PlayerStats {
 
     public static float postureMult(Player p) { return 1f + 0.02f * get(p, STR); }
     public static float evasion(Player p) { return Math.min(0.25f, 0.005f * get(p, AGI)); }
+    public static float critChance(Player p) { return Math.min(0.5f, 0.05f + 0.005f * get(p, AGI)); }
+    public static float critDamage(Player p) { return 1.5f + 0.02f * get(p, STR); }
+
+    // critico nos golpes leves (ataque do jogo): Agilidade da a chance, Forca o tamanho (vale tambem para o critico do pulo)
+    @SubscribeEvent
+    public static void onCrit(net.neoforged.neoforge.event.entity.player.CriticalHitEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p)) return;
+        if (!e.isCriticalHit() && p.getRandom().nextFloat() < critChance(p)) e.setCriticalHit(true);
+        if (e.isCriticalHit()) e.setDamageMultiplier(critDamage(p));
+    }
 
     private static void set(ServerPlayer p, int i, int v) {
         List<Integer> d = new ArrayList<>(data(p));
@@ -131,13 +142,13 @@ public final class PlayerStats {
         if (e.getEntity() instanceof ServerPlayer p && get(p, VIT) > 0) e.setNewDamage(e.getNewDamage() / heartScale(p));
     }
 
-    // cura: tambem por coracao; e a regeneracao natural gasta metade da fome (o combate novo tira mais vida)
+    // a regeneracao natural gasta metade da fome (o combate novo tira mais vida)
     @SubscribeEvent
     public static void onHeal(net.neoforged.neoforge.event.entity.living.LivingHealEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
         float amount = e.getAmount();
         if (amount <= 1.0f && p.getFoodData().getFoodLevel() >= 18) p.getFoodData().addExhaustion(-3f * amount);   // o jogo cobra 6 por ponto curado
-        if (get(p, VIT) > 0) e.setAmount(amount / heartScale(p));
+        // a cura NAO e' dividida: cada coracao enche no mesmo ritmo de antes, entao a cura cresce junto com a vida
     }
 
     // evasao (Agilidade): chance de nao levar o golpe de um mob

@@ -217,7 +217,12 @@ public final class CombatMovesServer {
             if (!around && d > 0.6 && to.multiply(1, 0, 1).normalize().dot(look) < cone) continue;
             if (!p.hasLineOfSight(t)) continue;
             ownHit = true; hitting = mv; hittingCharge = charge * com.bino.binosvanillaplus.leveling.PlayerStats.postureMult(p);
-            boolean ok = t.hurt(p.damageSources().playerAttack(p), dmg);
+            float hitDmg = dmg;
+            if (p.getRandom().nextFloat() < com.bino.binosvanillaplus.leveling.PlayerStats.critChance(p)) {   // critico (Agilidade / Forca)
+                hitDmg *= com.bino.binosvanillaplus.leveling.PlayerStats.critDamage(p);
+                CombatEvents.markCrit(t);
+            }
+            boolean ok = t.hurt(p.damageSources().playerAttack(p), hitDmg);
             ownHit = false; hitting = null; hittingCharge = 1f;
             if (ok) {
                 hitAny = true;

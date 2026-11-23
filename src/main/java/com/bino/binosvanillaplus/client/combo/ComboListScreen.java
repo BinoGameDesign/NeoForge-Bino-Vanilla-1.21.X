@@ -37,8 +37,8 @@ public class ComboListScreen extends Screen {
             new Row("context", "pierce", "W W + P", m(CombatMove.DASH, CombatMove.PIERCE)),
             new Row("context", "roll", "Q + L / P", m(CombatMove.ROLL_SLASH, CombatMove.ROLL_THRUST)),
             new Row("context", "forward", "Ctrl + L / P", m(CombatMove.FORWARD)),
-            new Row("defense", "parry", "V", m(CombatMove.PARRY)),
-            new Row("defense", "issen", "V (azul) L L L", m(CombatMove.PARRY, CombatMove.ISSEN, CombatMove.ISSEN)),
+            new Row("defense", "parry", "R", m(CombatMove.PARRY)),
+            new Row("defense", "issen", "R (azul) L L L", m(CombatMove.PARRY, CombatMove.ISSEN, CombatMove.ISSEN)),
             new Row("defense", "backstab", "Shift + L", m(CombatMove.BACKSTAB)),
             new Row("defense", "critical", "P", m(CombatMove.CRITICAL)));
 
@@ -103,7 +103,7 @@ public class ComboListScreen extends Screen {
                 g.fill(x, y, x + w, y + 11, 0xFF2A2C30);
                 g.fill(x, y, x + w, y + 1, 0xFF5A5E66);
                 g.fill(x, y + 10, x + w, y + 11, 0xFF15161A);
-                int col = k.equals("P") ? 0xFFFF9A5A : k.equals("L") ? 0xFF9AD8FF : k.equals("V") ? 0xFFB8FF8A : 0xFFFFFFFF;
+                int col = k.equals("P") ? 0xFFFF9A5A : k.equals("L") ? 0xFF9AD8FF : k.equals("R") ? 0xFFB8FF8A : 0xFFFFFFFF;
                 g.drawString(font, k, x + 4, y + 2, col, false);
             } else g.drawString(font, k, x + 1, y + 2, 0xA0A0A0, false);
             x -= 2;

@@ -405,6 +405,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         } else renderTooltip(g, mx, my);
         Btn b = buttonAt(mx, my);
         if (b != null && menu.getCarried().isEmpty()) g.renderTooltip(font, b.tip(), mx, my);
+        else if (BinoInventoryMenu.clientTab == TAB_ATTR && attrTip != null) g.renderComponentTooltip(font, attrTip, mx, my);
     }
 
     // ---------------------------------------------------------------- aba Armadura: itens do inventario que servem no slot
@@ -626,6 +627,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
 
     // ---------------------------------------------------------------- aba Atributos (conceito "Attributes" do Bino + subir nivel)
     private static final int ATTR_ADD = 1000;
+    private List<Component> attrTip;
     private static final float[] LEVEL_BTN = {1900, 1625, 330, 150};   // x, y, largura, altura (Figma)
     private long levelAt = -100000;
 
@@ -657,9 +659,20 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         box(g, 979, 540, 601, 574, 1344);
         String[] names = {"str", "vit", "int", "wil", "agi"};
         int[] vals = {str, vit, com.bino.binosvanillaplus.client.stats.ClientStats.intelligence(), com.bino.binosvanillaplus.client.stats.ClientStats.will(), agi};
+        attrTip = null;
         for (int i = 0; i < 5; i++) {
             boolean locked = i == 2 || i == 3;
             float y = 607 + i * 96;
+            // passar o mouse no atributo: o que cada ponto aumenta
+            if (mx >= X(979) && mx < X(1580) && my >= Y(y - 46) && my < Y(y + 46) && buttonAt(mx, my) == null) {
+                attrTip = new java.util.ArrayList<>();
+                attrTip.add(t("attr." + names[i]).withStyle(net.minecraft.ChatFormatting.WHITE));
+                for (int l = 1; l <= 4; l++) {
+                    String key = "gui.binosvanillaplus.inv.attr." + names[i] + ".tip" + l;
+                    if (net.minecraft.client.resources.language.I18n.exists(key))
+                        attrTip.add(Component.translatable(key).withStyle(locked ? net.minecraft.ChatFormatting.DARK_GRAY : net.minecraft.ChatFormatting.GRAY));
+                }
+            }
             text(g, t("attr." + names[i]).getString(), 1027, y, 34, locked ? dim : white, false);
             text(g, locked ? "-" : String.valueOf(vals[i]), 1536, y, 40, locked ? dim : white, true);
         }
@@ -667,12 +680,19 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         box(g, 979, 1146, 601, 375, 1344);
         double dmg = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
         double spd = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED);
-        text(g, t("attr.physical_damage").getString(), 1013, 1217, 27, white, false);
-        text(g, String.format(java.util.Locale.ROOT, "%.1f", dmg), 1536, 1217, 36, white, true);
-        text(g, t("attr.attack_speed").getString(), 1013, 1335, 27, white, false);
-        text(g, String.format(java.util.Locale.ROOT, "%.2f", spd), 1536, 1335, 36, white, true);
-        text(g, t("attr.magic_damage").getString(), 1013, 1453, 27, dim, false);
-        text(g, "-", 1536, 1453, 36, dim, true);
+        float critC = Math.min(50f, 5f + 0.5f * agi), critD = 150f + 2f * str;
+        String[][] dmgRows = {
+                {"physical_damage", String.format(java.util.Locale.ROOT, "%.1f", dmg)},
+                {"attack_speed", String.format(java.util.Locale.ROOT, "%.2f", spd)},
+                {"crit_chance", String.format(java.util.Locale.ROOT, "%.1f%%", critC)},
+                {"crit_damage", String.format(java.util.Locale.ROOT, "%.0f%%", critD)},
+                {"magic_damage", "-"}};
+        for (int i = 0; i < dmgRows.length; i++) {
+            boolean magic = i == 4;
+            float y = 1196 + i * 72;
+            text(g, t("attr." + dmgRows[i][0]).getString(), 1013, y, 25, magic ? dim : white, false);
+            text(g, dmgRows[i][1], 1536, y, 32, magic ? dim : white, true);
+        }
         // derivados: defesa e recursos
         box(g, 1667, 540, 601, 981, 2003);
         float stamina = com.bino.binosvanillaplus.client.combat.Stamina.BASE_COMBAT + 2f * agi;
