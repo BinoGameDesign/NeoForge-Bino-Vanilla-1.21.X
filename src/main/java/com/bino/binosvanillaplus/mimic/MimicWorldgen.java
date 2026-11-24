@@ -45,9 +45,29 @@ public final class MimicWorldgen {
             "minecraft:chests/buried_treasure",
             "minecraft:chests/abandoned_mineshaft");   // (na mina os baus sao carrinhos; so conta se for um bloco)
 
+    // o pedaco novo so e' olhado no tick seguinte (no meio do carregamento dele nao se pode perguntar nada ao mundo)
+    private record Pending(ServerLevel level, long chunk) {}
+    private static final java.util.ArrayDeque<Pending> PENDING = new java.util.ArrayDeque<>();
+
     @SubscribeEvent
     public static void onChunkLoad(ChunkEvent.Load e) {
         if (!e.isNewChunk() || !(e.getLevel() instanceof ServerLevel level) || !(e.getChunk() instanceof LevelChunk chunk)) return;
+        if (chunk.getBlockEntities().isEmpty()) return;
+        synchronized (PENDING) { PENDING.add(new Pending(level, chunk.getPos().toLong())); }
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) {
+        for (int i = 0; i < 64; i++) {
+            Pending p;
+            synchronized (PENDING) { p = PENDING.poll(); }
+            if (p == null) return;
+            LevelChunk c = p.level().getChunkSource().getChunkNow(net.minecraft.world.level.ChunkPos.getX(p.chunk()), net.minecraft.world.level.ChunkPos.getZ(p.chunk()));
+            if (c != null) check(p.level(), c);
+        }
+    }
+
+    private static void check(ServerLevel level, LevelChunk chunk) {
         for (BlockEntity be : chunk.getBlockEntities().values()) {
             if (!(be instanceof ChestBlockEntity chest)) continue;
             ResourceKey<LootTable> table = chest.getLootTable();

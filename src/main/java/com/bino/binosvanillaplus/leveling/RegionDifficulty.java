@@ -71,7 +71,7 @@ public final class RegionDifficulty {
         for (int i = -1; i <= 1; i++) {
             for (int k = -1; k <= 1; k++) {
                 int sx = x + i * 24, sz = z + k * 24;
-                int y = level.hasChunkAt(new BlockPos(sx, 0, sz)) ? level.getHeight(Heightmap.Types.WORLD_SURFACE, sx, sz) - 1 : fallbackY;
+                int y = surfaceY(level, sx, sz, fallbackY + 1) - 1;
                 sum += biomeOffset(level.getBiome(new BlockPos(sx, y, sz)));
                 n++;
             }
@@ -84,12 +84,21 @@ public final class RegionDifficulty {
         double s = surfaceLevel(level, pos.getX(), pos.getZ());
         if (s < 0) return -1;
         if (!level.dimension().equals(Level.OVERWORLD)) return s;
-        int surface = level.hasChunkAt(pos) ? level.getHeight(Heightmap.Types.WORLD_SURFACE, pos.getX(), pos.getZ()) : level.getSeaLevel();
+        int surface = surfaceY(level, pos.getX(), pos.getZ(), level.getSeaLevel());
         int bottom = level.getMinBuildHeight();
         double depth = clamp((surface - pos.getY()) / (double) Math.max(16, surface - bottom), 0, 1);
         double bonus = 4 * depth;
         if (level.getBiome(pos).is(Biomes.DEEP_DARK)) bonus += 5;
         return clamp(s + bonus, MIN, MAX);
+    }
+
+    // altura do chao SEM carregar nada: so le pedacos do mundo ja prontos. (Pedir a altura de um pedaco que ainda esta
+    // carregando - por exemplo durante o proprio carregamento dele - travava o servidor para sempre: "Salvando mundo" infinito.)
+    private static int surfaceY(Level level, int x, int z, int fallback) {
+        net.minecraft.world.level.chunk.ChunkAccess c;
+        if (level instanceof net.minecraft.server.level.ServerLevel sl) c = sl.getChunkSource().getChunkNow(x >> 4, z >> 4);
+        else c = level.getChunk(x >> 4, z >> 4, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, false);
+        return c == null ? fallback : c.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15) + 1;
     }
 
     // faixa de 5 niveis: 1 = 1-5, 2 = 6-10 ...
