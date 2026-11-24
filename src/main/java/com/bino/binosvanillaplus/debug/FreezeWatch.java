@@ -34,7 +34,10 @@ public final class FreezeWatch {
     public static void onStopped(ServerStoppedEvent e) { serverThread = null; server = null; }
 
     @SubscribeEvent
-    public static void onTick(ServerTickEvent.Post e) { lastTick = System.currentTimeMillis(); }
+    public static void onTick(ServerTickEvent.Post e) { beat(); }
+
+    // o servidor terminou uma volta (no mundo de um jogador tambem quando pausado: IntegratedServerHeartbeatMixin)
+    public static void beat() { lastTick = System.currentTimeMillis(); }
 
     private static void run() {
         long reported = 0;
@@ -42,8 +45,6 @@ public final class FreezeWatch {
             try { Thread.sleep(2000); } catch (InterruptedException ex) { return; }
             Thread t = serverThread;
             if (t == null) continue;
-            var sv = server;
-            if (sv != null && sv.isPaused()) { lastTick = System.currentTimeMillis(); continue; }   // jogo pausado nao e' congelamento
             long now = System.currentTimeMillis(), stuck = now - lastTick;
             if (stuck < 8000) { reported = 0; continue; }
             if (reported != 0 && now - reported < 15000) continue;

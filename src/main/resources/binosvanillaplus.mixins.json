@@ -29,7 +29,8 @@
         "client.CameraRollMixin",
         "client.LivingEntityRendererDeathMixin",
         "client.LocalPlayerStaminaMixin",
-        "client.ItemInHandLayerCombatMixin"
+        "client.ItemInHandLayerCombatMixin",
+        "client.IntegratedServerHeartbeatMixin"
     ],
     "injectors": {
         "defaultRequire": 1
