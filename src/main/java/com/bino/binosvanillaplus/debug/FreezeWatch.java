@@ -16,10 +16,12 @@ public final class FreezeWatch {
 
     private static volatile long lastTick;
     private static volatile Thread serverThread;
+    private static volatile net.minecraft.server.MinecraftServer server;
     private static Thread watcher;
 
     @SubscribeEvent
     public static void onStarted(ServerStartedEvent e) {
+        server = e.getServer();
         serverThread = e.getServer().getRunningThread();
         lastTick = System.currentTimeMillis();
         if (watcher != null) return;
@@ -29,7 +31,7 @@ public final class FreezeWatch {
     }
 
     @SubscribeEvent
-    public static void onStopped(ServerStoppedEvent e) { serverThread = null; }
+    public static void onStopped(ServerStoppedEvent e) { serverThread = null; server = null; }
 
     @SubscribeEvent
     public static void onTick(ServerTickEvent.Post e) { lastTick = System.currentTimeMillis(); }
@@ -40,6 +42,8 @@ public final class FreezeWatch {
             try { Thread.sleep(2000); } catch (InterruptedException ex) { return; }
             Thread t = serverThread;
             if (t == null) continue;
+            var sv = server;
+            if (sv != null && sv.isPaused()) { lastTick = System.currentTimeMillis(); continue; }   // jogo pausado nao e' congelamento
             long now = System.currentTimeMillis(), stuck = now - lastTick;
             if (stuck < 8000) { reported = 0; continue; }
             if (reported != 0 && now - reported < 15000) continue;
