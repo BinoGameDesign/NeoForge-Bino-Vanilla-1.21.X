@@ -158,5 +158,6 @@
   "gui.binosvanillaplus.inv.attr.agi.tip3": "+2 combat stamina per point",
   "gui.binosvanillaplus.inv.attr.agi.tip4": "+1% attack speed per point",
   "gui.binosvanillaplus.inv.attr.int.tip1": "Reserved for magic (coming soon)",
-  "gui.binosvanillaplus.inv.attr.wil.tip1": "Reserved for magic (coming soon)"
+  "gui.binosvanillaplus.inv.attr.wil.tip1": "Reserved for magic (coming soon)",
+  "subtitles.binosvanillaplus.combat.issen_warp": "Issen warp"
 }

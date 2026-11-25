@@ -334,5 +334,13 @@
       }
     ],
     "subtitle": "subtitles.binosvanillaplus.combat.parry_perfect"
+  },
+  "combat.issen_warp": {
+    "sounds": [
+      {
+        "name": "binosvanillaplus:combat/issen_warp"
+      }
+    ],
+    "subtitle": "subtitles.binosvanillaplus.combat.issen_warp"
   }
 }

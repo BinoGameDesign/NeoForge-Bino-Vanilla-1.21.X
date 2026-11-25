@@ -44,6 +44,7 @@ public class ModSounds {
     public static final Supplier<SoundEvent> HIT_WATER = register("combat.hit_water");
     public static final Supplier<SoundEvent> PARRY = register("combat.parry");
     public static final Supplier<SoundEvent> PARRY_PERFECT = register("combat.parry_perfect");
+    public static final Supplier<SoundEvent> ISSEN_WARP = register("combat.issen_warp");   // teleporte do Issen em cadeia (tools/sounds/gen_issen_warp.py)
 
     private static Supplier<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, name)));

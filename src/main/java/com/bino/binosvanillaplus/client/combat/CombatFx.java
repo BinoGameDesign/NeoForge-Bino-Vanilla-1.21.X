@@ -80,6 +80,8 @@ public final class CombatFx {
     private static final Map<Integer, Death> DEATHS = new HashMap<>();
     private static final java.util.Random RANDOM = new java.util.Random();
     private static Window issen, rush;
+    private static long jumpAt = -100000, warpAt = -100000;   // Issen em cadeia com teleporte: chance aberta / teleporte feito
+    private static int chainCount;                              // elo da cadeia (para o "Issen x3")
     private static long flashAt = -100000, dodgeAt = -100000, letterboxAt = -100000, slashAt = -100000, zoomAt = -100000;
     private static float flashPower;
 
@@ -118,7 +120,7 @@ public final class CombatFx {
                 flashAt = now; flashPower = zone >= 2 ? 1f : zone == 1 ? 0.5f : 0.2f;
                 if (zone >= 2) zoomAt = now;
                 Stamina.give(40);   // acertar um parry devolve 40
-                if (zone == 2) CombatMoves.playLocal(CombatMove.ISSEN);   // Issen na hora
+                if (zone == 2) { CombatMoves.playLocal(CombatMove.ISSEN); chainCount = 1; }   // Issen na hora
             }
             case CombatFxPayload.ISSEN -> {
                 if (!mine) return;
@@ -147,8 +149,28 @@ public final class CombatFx {
             case CombatFxPayload.STAMINA -> { if (mine) { if (m.f() < 0) Stamina.fill(); else Stamina.give(m.f()); } }
             case CombatFxPayload.BLOCKED -> { if (mine) Defense.blocked(m.f()); }
             case CombatFxPayload.PLAYER_POSTURE -> { if (mine) Defense.posture(m.f(), m.b() == 1); }
+            case CombatFxPayload.ISSEN_JUMP -> {   // matou com o Issen e tem outro inimigo a vista: chance de teleportar
+                if (!mine) return;
+                jumpAt = now;
+                letterbox((long) m.f() + 500);   // a tela "fecha" (barras de cinema) enquanto a chance esta aberta
+                me.level().playLocalSound(me.getX(), me.getEyeY(), me.getZ(), ModSounds.ISSEN_WARP.get(), SoundSource.PLAYERS, 0.7f, 1.5f, false);
+                chainCount++;
+                issen = new Window(m.b(), now + (long) m.f() + 60);
+                Entity mob = mc.level.getEntity(m.b());
+                if (mob != null) {   // o alvo brilha (mesmo de longe)
+                    Vec3 at = mob.getBoundingBox().getCenter();
+                    mc.level.addParticle(ModParticles.IMPACT_STAR.get(), true, at.x, at.y, at.z, 1.6 * glintSize(mob), 4, 1);
+                    mc.level.addParticle(ModParticles.IMPACT_RING.get(), true, at.x, at.y, at.z, 2.0 * glintSize(mob), 4, 1);
+                }
+            }
+            case CombatFxPayload.ISSEN_WARPED -> {   // teleportou e cortou: luz forte, raios saindo do centro
+                if (!mine) return;
+                warpAt = now; flashAt = now; flashPower = 1.25f; zoomAt = now;
+                HitFx.kick(2.0f);
+            }
             case CombatFxPayload.ISSEN_CHAIN -> {   // outra chance de Issen (cadeia): clique esquerdo dentro da janela
                 if (!mine) return;
+                chainCount++;
                 issen = new Window(m.b(), now + (long) m.f() + 60);
                 Entity mob = mc.level.getEntity(m.b());
                 if (mob != null) {
@@ -176,7 +198,7 @@ public final class CombatFx {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) {
-        INCOMING.clear(); ATTACKS.clear(); POSTURE.clear(); KNEELING.clear(); DEATHS.clear(); issen = null; rush = null;
+        INCOMING.clear(); ATTACKS.clear(); POSTURE.clear(); KNEELING.clear(); DEATHS.clear(); issen = null; rush = null; chainCount = 0;
     }
 
     // a parte do mob que vai bater: a mao (mobs com bracos, como zumbi e esqueleto) ou a boca/garras (aranha, lobo...)
@@ -600,6 +622,32 @@ public final class CombatFx {
             g.fill(-len / 2, -4, len / 2, 5, ((int) (k * 70) << 24) | 0xBFE3FF);
             g.pose().popPose();
         }
+        // Issen em cadeia: enquanto a chance de teleporte esta aberta o mundo escurece (so o alvo importa)
+        long dj = now - jumpAt;
+        if (issenTarget(now) != -1 && dj < 2000) {
+            float k = Math.min(1f, dj / 120f);
+            g.fill(0, 0, w, h, ((int) (k * 70) << 24) | 0x050A18);
+        }
+        // teleporte: raios de luz saindo do centro e um risco horizontal (luz estilo Onimusha)
+        long dw = now - warpAt;
+        if (dw < 460) {
+            float k = 1f - dw / 460f, grow = Math.min(1f, dw / 90f);
+            float cx = w / 2f, cy = h / 2f, maxR = (float) Math.hypot(w, h) * 0.6f;
+            for (int i = 0; i < 28; i++) {
+                float ang = i * (360f / 28f) + (i * 37 % 11);   // espacamento um pouco irregular
+                float r0 = maxR * (0.12f + 0.25f * grow), r1 = maxR * (0.35f + 0.65f * grow) * (0.7f + 0.3f * ((i * 53) % 7) / 6f);
+                int thick = (i % 3 == 0) ? 2 : 1;
+                int col = (i % 4 == 0 ? 0xFFFFFF : 0xBFE3FF);
+                g.pose().pushPose();
+                g.pose().translate(cx, cy, 0);
+                g.pose().mulPose(Axis.ZP.rotationDegrees(ang));
+                g.fill((int) r0, -thick, (int) r1, thick, ((int) (k * (i % 4 == 0 ? 200 : 120)) << 24) | col);
+                g.pose().popPose();
+            }
+            int lw = (int) (w * Math.min(1f, dw / 60f));   // risco horizontal (lente)
+            g.fill(w / 2 - lw / 2, (int) cy - 1, w / 2 + lw / 2, (int) cy + 1, ((int) (k * 230) << 24) | 0xFFFFFF);
+            g.fill(w / 2 - lw / 2, (int) cy - 5, w / 2 + lw / 2, (int) cy + 5, ((int) (k * 60) << 24) | 0x9FD0FF);
+        }
         // flash do parry / Issen / critico
         long df = now - flashAt;
         if (df < 130) g.fill(0, 0, w, h, ((int) ((1 - df / 130f) * 90 * flashPower) << 24) | 0xE8F4FF);
@@ -607,6 +655,7 @@ public final class CombatFx {
         String tip = null; int col = 0xFFFFFF;
         if (issenTarget(now) != -1) { tip = Component.translatableWithFallback("combat.binosvanillaplus.issen", "Issen!").getString(); col = 0xBFE3FF; }
         else if (rushTarget(now) != -1) { tip = Component.translatableWithFallback("combat.binosvanillaplus.rush", "Rajada!").getString(); col = 0x8FB8FF; }
+        if (tip != null && issenTarget(now) != -1 && chainCount >= 2) tip = tip + " x" + chainCount;   // elo da cadeia
         if (tip != null) {
             float pulse = 1f + 0.08f * (float) Math.sin(now / 60.0);
             g.pose().pushPose();

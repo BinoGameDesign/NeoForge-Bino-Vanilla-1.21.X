@@ -114,8 +114,13 @@ public final class CombatActionsServer {
             case CombatActionPayload.ISSEN -> {
                 Window w = ISSEN.remove(p.getUUID());
                 CombatMovesServer.broadcast(p, CombatMove.ISSEN, false);
-                if (w == null || w.mobId() != target.getId() || now > w.until() || target.distanceToSqr(p) > 6 * 6) { CHAIN.remove(p.getUUID()); return; }
-                issen(p, target);
+                Chain c = CHAIN.get(p.getUUID());
+                boolean chained = c != null && c.opensAt() < 0 && c.mobId() == target.getId();
+                boolean jump = chained && c.jump();
+                double reach = jump ? JUMP_RANGE + 2 : 6;
+                if (w == null || w.mobId() != target.getId() || now > w.until() || target.distanceToSqr(p) > reach * reach) { CHAIN.remove(p.getUUID()); return; }
+                if (jump && !warpTo(p, target)) { CHAIN.remove(p.getUUID()); return; }   // nao achou lugar para aparecer
+                issen(p, target, chained ? c.link() : 1, jump);
             }
             case CombatActionPayload.RUSH -> {
                 Window w = RUSH.remove(p.getUUID());
@@ -179,7 +184,8 @@ public final class CombatActionsServer {
                 level.playSound(null, mid.x, mid.y, mid.z, ModSounds.PARRY_PERFECT.get(), SoundSource.PLAYERS, 1.2f, 1.0f);
                 send(p, CombatFxPayload.PARRY, mob, 2);
                 CombatMovesServer.broadcast(p, CombatMove.ISSEN, false);
-                issen(p, mob);
+                CHAIN.remove(p.getUUID());
+                issen(p, mob, 1, false);
                 return;
             }
             default -> {  // branco: so bloqueia
@@ -202,14 +208,15 @@ public final class CombatActionsServer {
     }
 
     // ---------------------------------------------------------------- Issen
-    private static void issen(ServerPlayer p, LivingEntity t) {
+    // link = elo da cadeia (1 = o primeiro): dano x4 no primeiro e +50% a cada elo (x4, x6, x8...)
+    private static void issen(ServerPlayer p, LivingEntity t, int link, boolean warped) {
         ServerLevel level = p.serverLevel();
         Vec3 dir = t.position().subtract(p.position()).multiply(1, 0, 1);
         dir = dir.lengthSqr() < 1e-4 ? p.getLookAngle().multiply(1, 0, 1) : dir;
         dir = dir.normalize();
         Vec3 from = p.position();
         FINISHED_BY_SPECIAL.put(t.getUUID(), level.getGameTime());
-        hit(p, t, attack(p) * 4f);
+        hit(p, t, attack(p) * 4f * (1f + 0.5f * (link - 1)));
         Posture.add(t, Posture.max(t));
         // atravessa: para o outro lado do mob, se couber
         Vec3 to = t.position().add(dir.scale(t.getBbWidth() * 0.5 + 1.2));
@@ -223,18 +230,65 @@ public final class CombatActionsServer {
         level.playSound(null, c.x, c.y, c.z, SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS, 0.6f, 1.6f);
         p.getMainHandItem().hurtAndBreak(1, p, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
         send(p, CombatFxPayload.ISSEN, t, 0);
+        if (warped) send(p, CombatFxPayload.ISSEN_WARPED, t, link);
         CombatFxPayload.stamina(p, -1);   // acertar um Issen enche a estamina
-        // Issen em cadeia (Onimusha 3): outra chance aparece daqui a 0,3-0,6 s, com janela 10% menor a cada elo
-        if (t.isAlive()) {
-            Chain c0 = CHAIN.get(p.getUUID());
-            int link = c0 != null && c0.mobId() == t.getId() ? c0.link() + 1 : 1;
-            long opens = level.getGameTime() + 6 + level.random.nextInt(7);
-            CHAIN.put(p.getUUID(), new Chain(t.getId(), link, opens));
-        } else CHAIN.remove(p.getUUID());
+        // Issen em cadeia (Onimusha 3): outra chance aparece daqui a 0,3-0,6 s, com janela 10% menor a cada elo.
+        //  - o mob sobreviveu: outro Issen nele mesmo;
+        //  - o mob morreu: se tiver outro inimigo a vista (ate JUMP_RANGE blocos), o proximo Issen teleporta ate ele.
+        long opens = level.getGameTime() + 6 + level.random.nextInt(7);
+        if (t.isAlive()) CHAIN.put(p.getUUID(), new Chain(t.getId(), link + 1, opens, false));
+        else {
+            LivingEntity next = nextVictim(p, t);
+            if (next != null) CHAIN.put(p.getUUID(), new Chain(next.getId(), link + 1, opens, true));
+            else CHAIN.remove(p.getUUID());
+        }
+    }
+
+    public static final double JUMP_RANGE = 24;
+
+    // o inimigo mais perto a vista (sem atravessar parede), que nao seja jogador nem o que acabou de morrer
+    private static LivingEntity nextVictim(ServerPlayer p, LivingEntity dead) {
+        LivingEntity best = null; double bestD = JUMP_RANGE * JUMP_RANGE;
+        for (LivingEntity e : p.level().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(JUMP_RANGE),
+                e -> e != dead && e.isAlive() && e instanceof net.minecraft.world.entity.monster.Enemy && !(e instanceof Player))) {
+            double d = e.distanceToSqr(p);
+            if (d < bestD && p.hasLineOfSight(e)) { bestD = d; best = e; }
+        }
+        return best;
+    }
+
+    // teleporta o jogador para a frente do mob (do lado de onde ele vem), olhando para o mob. false = sem lugar livre
+    private static boolean warpTo(ServerPlayer p, LivingEntity t) {
+        ServerLevel level = p.serverLevel();
+        Vec3 from = p.position();
+        Vec3 back = from.subtract(t.position()).multiply(1, 0, 1);
+        back = back.lengthSqr() < 1e-4 ? p.getLookAngle().scale(-1).multiply(1, 0, 1) : back;
+        back = back.normalize();
+        double r = t.getBbWidth() * 0.5 + 1.4;
+        for (int i = 0; i < 8; i++) {   // primeiro do lado de onde vem; se nao couber, gira em volta do mob
+            double a = Math.toRadians((i % 2 == 0 ? 1 : -1) * ((i + 1) / 2) * 45.0);
+            Vec3 d = new Vec3(back.x * Math.cos(a) - back.z * Math.sin(a), 0, back.x * Math.sin(a) + back.z * Math.cos(a));
+            Vec3 to = t.position().add(d.scale(r));
+            if (!level.noCollision(p, p.getBoundingBox().move(to.subtract(from)))) continue;
+            // rastro de luz onde estava e onde aparece
+            Vec3 c0 = from.add(0, p.getBbHeight() * 0.5, 0);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD, c0.x, c0.y, c0.z, 18, 0.25, 0.6, 0.25, 0.04);
+            level.sendParticles(ModParticles.IMPACT_RING.get(), c0.x, c0.y, c0.z, 0, 1.2, 4, 0, 1.0);
+            level.playSound(null, from.x, from.y, from.z, ModSounds.ISSEN_WARP.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
+            Vec3 look = t.getEyePosition().subtract(to.add(0, p.getEyeHeight(), 0));
+            float yaw = (float) (Math.toDegrees(Math.atan2(look.z, look.x)) - 90.0);
+            float pitch = (float) -Math.toDegrees(Math.atan2(look.y, Math.sqrt(look.x * look.x + look.z * look.z)));
+            p.teleportTo(level, to.x, to.y, to.z, yaw, pitch);
+            Vec3 c1 = to.add(0, p.getBbHeight() * 0.5, 0);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD, c1.x, c1.y, c1.z, 18, 0.25, 0.6, 0.25, 0.04);
+            level.playSound(null, to.x, to.y, to.z, ModSounds.ISSEN_WARP.get(), SoundSource.PLAYERS, 0.8f, 1.25f);
+            return true;
+        }
+        return false;
     }
 
     // ---------------------------------------------------------------- Issen em cadeia
-    private record Chain(int mobId, int link, long opensAt) {}
+    private record Chain(int mobId, int link, long opensAt, boolean jump) {}
     private static final Map<UUID, Chain> CHAIN = new HashMap<>();
     public static final float CHAIN_FIRST_MS = 500, CHAIN_MIN_MS = 120;
 
@@ -249,11 +303,14 @@ public final class CombatActionsServer {
             if (p == null || c.opensAt() < 0) { if (p == null) it.remove(); continue; }
             long now = p.level().getGameTime();
             if (now < c.opensAt()) continue;
-            if (!(p.level().getEntity(c.mobId()) instanceof LivingEntity t) || !t.isAlive() || t.distanceToSqr(p) > 6 * 6) { it.remove(); continue; }
+            double range = c.jump() ? JUMP_RANGE : 6;
+            if (!(p.level().getEntity(c.mobId()) instanceof LivingEntity t) || !t.isAlive() || t.distanceToSqr(p) > range * range
+                    || c.jump() && !p.hasLineOfSight(t)) { it.remove(); continue; }
             float ms = chainWindowMs(c.link());
             ISSEN.put(p.getUUID(), new Window(t.getId(), now + Math.max(2, Math.round(ms / 50f)) + Telegraphs.grace(p)));
-            PacketDistributor.sendToPlayer(p, new CombatFxPayload(CombatFxPayload.ISSEN_CHAIN, p.getId(), t.getId(), ms));
-            en.setValue(new Chain(c.mobId(), c.link(), -1));   // aberta: agora e' com o jogador
+            PacketDistributor.sendToPlayer(p, new CombatFxPayload(c.jump() ? CombatFxPayload.ISSEN_JUMP : CombatFxPayload.ISSEN_CHAIN,
+                    p.getId(), t.getId(), ms));
+            en.setValue(new Chain(c.mobId(), c.link(), -1, c.jump()));   // aberta: agora e' com o jogador
         }
     }
 
