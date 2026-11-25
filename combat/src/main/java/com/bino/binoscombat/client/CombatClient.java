@@ -34,6 +34,7 @@ public final class CombatClient {
             MovementHooks.CINEMA.add(CombatMoves::cinemaCam);
             MovementHooks.NUDGES.add((p, pt) -> new float[]{DodgeRoll.cameraDrop(p) + CombatMoves.cameraDrop(p), CombatMoves.cameraForward(p)});
             MovementHooks.crosshair = (g, x, y) -> Crosshair.draw(g, x, y, true);
+            MovementHooks.fpBodyElsewhereFn = CombatMoves::drawsFirstPersonBody;   // no golpe o corpo vem junto dos bracos
         });
     }
 

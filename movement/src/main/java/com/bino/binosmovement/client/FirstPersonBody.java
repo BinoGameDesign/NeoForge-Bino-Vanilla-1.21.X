@@ -33,13 +33,9 @@ public final class FirstPersonBody {
         if (!MovementConfig.firstPersonBody() || mc.player == null || mc.getCameraEntity() != mc.player) return false;
         if (!mc.options.getCameraType().isFirstPerson()) return false;
         Player p = mc.player;
-        return !p.isSpectator() && !p.isInvisible() && !p.isSleeping() && !p.isFallFlying() && !p.isVisuallySwimming();
+        return !p.isSpectator() && !p.isInvisible() && !p.isSleeping() && !p.isFallFlying() && !p.isVisuallySwimming()
+                && !MovementHooks.fpBodyElsewhereFn.test(p);
     }
-
-    private static long drawnAt;
-
-    // o corpo da primeira pessoa apareceu agora ha pouco? (senao o Combat desenha a perna do chute junto dos bracos)
-    public static boolean drawnRecently() { return net.minecraft.Util.getMillis() - drawnAt < 150; }
 
     // desenhando o corpo da primeira pessoa neste instante (para esconder cabeca, capacete e itens)
     public static boolean rendering() { return rendering; }
@@ -49,7 +45,6 @@ public final class FirstPersonBody {
         Minecraft mc = Minecraft.getInstance();
         if (e.getEntity() != mc.player || !active() || e.isCanceled()) return;
         rendering = true;
-        drawnAt = net.minecraft.Util.getMillis();
         PlayerModel<?> m = e.getRenderer().getModel();
         m.head.visible = false; m.hat.visible = false;
         m.rightArm.visible = false; m.leftArm.visible = false;

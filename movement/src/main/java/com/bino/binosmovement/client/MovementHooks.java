@@ -25,6 +25,9 @@ public final class MovementHooks {
     // o corpo inteiro esta numa animacao de outro mod (golpe, rolamento): a vida no corpo nao mexe no corpo todo
     public static Predicate<Player> bodyBusyFn = p -> false;
 
+    // outro mod desenha o corpo da primeira pessoa agora (o Combat, junto dos bracos do golpe): o Movement nao desenha
+    public static Predicate<Player> fpBodyElsewhereFn = p -> false;
+
     public static boolean stance(Player p) { return stanceFn.test(p); }
     public static boolean bodyBusy(Player p) { return bodyBusyFn.test(p); }
 

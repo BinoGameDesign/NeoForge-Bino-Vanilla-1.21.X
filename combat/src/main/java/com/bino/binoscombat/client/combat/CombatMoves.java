@@ -883,17 +883,6 @@ public final class CombatMoves {
         ModelPart[] arms = {model.rightArm, model.rightSleeve, model.leftArm, model.leftSleeve};
         for (ModelPart part : arms) { part.xScale = part.zScale = ARM_THIN; part.render(ps, vc, light, ov); }   // mais finos: nao tampam a tela
         for (ModelPart part : arms) part.xScale = part.zScale = 1f;
-        // perna levantada (chute da Surpresa, joelhada...): se o corpo da primeira pessoa (Movement) nao estiver
-        // aparecendo, a perna e' desenhada aqui junto com os bracos
-        if (!com.bino.binosmovement.client.FirstPersonBody.drawnRecently()) {
-            ModelPart[][] legs = {{model.rightLeg, model.rightPants}, {model.leftLeg, model.leftPants}};
-            for (ModelPart[] leg : legs) {
-                if (leg[0].xRot > -0.6f) continue;   // so a perna que sobe para a frente (xRot negativo = frente)
-                leg[0].visible = true; leg[1].visible = true;
-                leg[1].copyFrom(leg[0]);
-                for (ModelPart part : leg) part.render(ps, vc, light, ov);
-            }
-        }
         com.bino.binoscombat.client.CombatClientHooks.handArmor.render(ps, buf, light, p, true, model);    // armadura 3D nos bracos (Vanilla+)
         com.bino.binoscombat.client.CombatClientHooks.handArmor.render(ps, buf, light, p, false, model);
 
@@ -929,6 +918,49 @@ public final class CombatMoves {
         }
         ps.popPose();
         lastHeld = stack.copy();
+        fpBody(e, mc, p, model, src, w, right, pt, hc, light);
+    }
+
+    // o resto do corpo em primeira pessoa durante o golpe: tronco e pernas (o chute da Surpresa, a joelhada, o pulo)
+    // na mesma pose da terceira pessoa. Sem a meia inclinacao dos bracos (o corpo fica de pe), e quando voce olha para
+    // baixo ele recua um pouco, para a camera nao entrar no peito. A cabeca nunca aparece (a camera esta nela).
+    private static void fpBody(RenderHandEvent e, Minecraft mc, LocalPlayer p, net.minecraft.client.model.PlayerModel<?> model,
+                               BbAnims.Sample src, float w, boolean right, float pt, boolean hc, int light) {
+        if (!com.bino.binosmovement.MovementConfig.firstPersonBody()) return;
+        var cam = mc.gameRenderer.getMainCamera();
+        PoseStack ps = e.getPoseStack();
+        MultiBufferSource buf = e.getMultiBufferSource();
+        ps.pushPose();
+        ps.mulPose(new Quaternionf(cam.rotation()).conjugate());          // mundo -> olhos
+        Vec3 d = p.getPosition(pt).subtract(cam.getPosition());
+        float viewYaw = p.getViewYRot(pt);
+        float back = 0.12f + 0.25f * Mth.clamp(p.getViewXRot(pt) / 90f, 0f, 1f);
+        float yr = viewYaw * Mth.DEG_TO_RAD;
+        ps.translate(d.x + Mth.sin(yr) * back, d.y, d.z - Mth.cos(yr) * back);
+        if (hc) BbAnims.poseRoot(ps, src, w, right, viewYaw);
+        ps.mulPose(Axis.YP.rotationDegrees(180f - viewYaw));
+        if (!hc) BbAnims.rootShift(ps, src, w, right);
+        ps.scale(-1f, -1f, 1f);
+        ps.scale(0.9375f, 0.9375f, 0.9375f);
+        ps.translate(0f, -1.501f, 0f);
+        VertexConsumer vc = buf.getBuffer(RenderType.entityTranslucent(p.getSkin().texture()));
+        int ov = OverlayTexture.NO_OVERLAY;
+        model.jacket.copyFrom(model.body);
+        model.rightPants.copyFrom(model.rightLeg);
+        model.leftPants.copyFrom(model.leftLeg);
+        model.body.visible = model.rightLeg.visible = model.leftLeg.visible = true;
+        model.jacket.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.JACKET);
+        model.rightPants.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_PANTS_LEG);
+        model.leftPants.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_PANTS_LEG);
+        for (ModelPart part : new ModelPart[]{model.body, model.jacket, model.rightLeg, model.rightPants, model.leftLeg, model.leftPants})
+            part.render(ps, vc, light, ov);
+        ps.popPose();
+    }
+
+    // o Combat esta desenhando o corpo da primeira pessoa agora (golpe do Blockbench): o Movement nao desenha o dele
+    public static boolean drawsFirstPersonBody(Player p) {
+        Active a = activeFor(p);
+        return a != null && a.bb != null && Minecraft.getInstance().options.getCameraType().isFirstPerson();
     }
 
     private static final float FP_ARM_SPREAD = 0.5f;   // primeira pessoa: quanto os bracos abrem para o lado
