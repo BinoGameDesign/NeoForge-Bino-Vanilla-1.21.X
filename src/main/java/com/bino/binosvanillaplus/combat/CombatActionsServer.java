@@ -232,7 +232,7 @@ public final class CombatActionsServer {
         send(p, CombatFxPayload.ISSEN, t, 0);
         if (warped) send(p, CombatFxPayload.ISSEN_WARPED, t, link);
         CombatFxPayload.stamina(p, -1);   // acertar um Issen enche a estamina
-        // Issen em cadeia (Onimusha 3): outra chance aparece daqui a 0,3-0,6 s, com janela 10% menor a cada elo.
+        // Issen em cadeia (Onimusha 3): outra chance aparece daqui a 0,3-0,6 s (janela igual; contra jogadores, 10% menor a cada elo).
         //  - o mob sobreviveu: outro Issen nele mesmo;
         //  - o mob morreu: se tiver outro inimigo a vista (ate JUMP_RANGE blocos), o proximo Issen teleporta ate ele.
         long opens = level.getGameTime() + 6 + level.random.nextInt(7);
@@ -306,7 +306,8 @@ public final class CombatActionsServer {
             double range = c.jump() ? JUMP_RANGE : 6;
             if (!(p.level().getEntity(c.mobId()) instanceof LivingEntity t) || !t.isAlive() || t.distanceToSqr(p) > range * range
                     || c.jump() && !p.hasLineOfSight(t)) { it.remove(); continue; }
-            float ms = chainWindowMs(c.link());
+            // janela igual em toda a cadeia contra mobs; so contra jogadores ela encolhe 10% por elo (equilibrio do PvP)
+            float ms = t instanceof Player ? chainWindowMs(c.link()) : CHAIN_FIRST_MS;
             ISSEN.put(p.getUUID(), new Window(t.getId(), now + Math.max(2, Math.round(ms / 50f)) + Telegraphs.grace(p)));
             PacketDistributor.sendToPlayer(p, new CombatFxPayload(c.jump() ? CombatFxPayload.ISSEN_JUMP : CombatFxPayload.ISSEN_CHAIN,
                     p.getId(), t.getId(), ms));
