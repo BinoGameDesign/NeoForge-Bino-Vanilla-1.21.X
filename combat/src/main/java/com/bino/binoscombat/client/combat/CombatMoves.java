@@ -934,7 +934,8 @@ public final class CombatMoves {
         ps.mulPose(new Quaternionf(cam.rotation()).conjugate());          // mundo -> olhos
         Vec3 d = p.getPosition(pt).subtract(cam.getPosition());
         float viewYaw = p.getViewYRot(pt);
-        float back = 0.12f + 0.25f * Mth.clamp(p.getViewXRot(pt) / 90f, 0f, 1f);
+        float back = com.bino.binosmovement.client.FirstPersonBody.back(p, pt);
+        boolean noTorso = com.bino.binosmovement.client.FirstPersonBody.torsoHidden(p, pt);
         float yr = viewYaw * Mth.DEG_TO_RAD;
         ps.translate(d.x + Mth.sin(yr) * back, d.y, d.z - Mth.cos(yr) * back);
         if (hc) BbAnims.poseRoot(ps, src, w, right, viewYaw);
@@ -948,12 +949,14 @@ public final class CombatMoves {
         model.jacket.copyFrom(model.body);
         model.rightPants.copyFrom(model.rightLeg);
         model.leftPants.copyFrom(model.leftLeg);
-        model.body.visible = model.rightLeg.visible = model.leftLeg.visible = true;
-        model.jacket.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.JACKET);
+        model.body.visible = !noTorso;
+        model.rightLeg.visible = model.leftLeg.visible = true;
+        model.jacket.visible = !noTorso && p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.JACKET);
         model.rightPants.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_PANTS_LEG);
         model.leftPants.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_PANTS_LEG);
         for (ModelPart part : new ModelPart[]{model.body, model.jacket, model.rightLeg, model.rightPants, model.leftLeg, model.leftPants})
             part.render(ps, vc, light, ov);
+        model.body.visible = true;
         ps.popPose();
     }
 

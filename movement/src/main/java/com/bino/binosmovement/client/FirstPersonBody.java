@@ -25,7 +25,20 @@ public final class FirstPersonBody {
 
     private static boolean rendering;
     private static boolean pushed;
-    private static final float BACK = 0.18f, BACK_LOOKING_DOWN = 0.22f;   // blocos para tras
+    private static final float BACK = 0.22f, BACK_LOOKING_DOWN = 0.30f, BACK_CROUCH = 0.22f;   // blocos para tras
+    private static final float TORSO_HIDE_PITCH = 45f;   // olhando mais para baixo que isso o tronco some (so pernas)
+
+    // quanto o corpo recua (blocos), para longe de onde voce olha: a camera nunca fica dentro do peito
+    public static float back(Player p, float pt) {
+        float pitch = Mth.clamp(p.getViewXRot(pt) / 90f, 0f, 1f);
+        return BACK + BACK_LOOKING_DOWN * pitch + (p.isCrouching() ? BACK_CROUCH : 0f);
+    }
+
+    // olhando bem para baixo: sem tronco (dava para ver o pescoco e o topo do peito); ficam as pernas e os pes
+    public static boolean torsoHidden(Player p, float pt) { return p.getViewXRot(pt) > TORSO_HIDE_PITCH; }
+
+    private static boolean hideTorso;
+    public static boolean hidingTorso() { return rendering && hideTorso; }
 
     // o jogo deve desenhar o jogador local agora, mesmo em primeira pessoa?
     public static boolean active() {
@@ -51,13 +64,14 @@ public final class FirstPersonBody {
         m.rightSleeve.visible = false; m.leftSleeve.visible = false;
         float pt = e.getPartialTick();
         Player p = e.getEntity();
-        float pitch = Mth.clamp(p.getViewXRot(pt) / 90f, 0f, 1f);
-        float back = BACK + BACK_LOOKING_DOWN * pitch;
-        float yaw = Mth.rotLerp(pt, p.yBodyRotO, p.yBodyRot) * Mth.DEG_TO_RAD;
+        float back = back(p, pt);
+        hideTorso = torsoHidden(p, pt);
+        if (hideTorso) { m.body.visible = false; m.jacket.visible = false; }
+        float yaw = p.getViewYRot(pt) * Mth.DEG_TO_RAD;
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
         pushed = true;
-        ps.translate(Mth.sin(yaw) * back, 0, -Mth.cos(yaw) * back);   // para tras de onde o corpo olha
+        ps.translate(Mth.sin(yaw) * back, 0, -Mth.cos(yaw) * back);   // para tras de onde voce olha
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -68,6 +82,8 @@ public final class FirstPersonBody {
             rendering = false;
             PlayerModel<?> m = e.getRenderer().getModel();
             m.head.visible = true; m.hat.visible = true;
+            m.body.visible = true; m.jacket.visible = true;
+            hideTorso = false;
             m.rightArm.visible = true; m.leftArm.visible = true;
             m.rightSleeve.visible = true; m.leftSleeve.visible = true;
         }

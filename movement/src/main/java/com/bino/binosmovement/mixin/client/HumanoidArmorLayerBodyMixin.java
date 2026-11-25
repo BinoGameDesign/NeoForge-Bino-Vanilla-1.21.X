@@ -21,7 +21,10 @@ public abstract class HumanoidArmorLayerBodyMixin<T extends LivingEntity, M exte
     private void binosmovement$hideNearCamera(A model, EquipmentSlot slot, CallbackInfo ci) {
         if (!FirstPersonBody.rendering()) return;
         if (slot == EquipmentSlot.HEAD) model.setAllVisible(false);
-        else if (slot == EquipmentSlot.CHEST) { model.rightArm.visible = false; model.leftArm.visible = false; model.head.visible = false; model.hat.visible = false; }
+        else if (slot == EquipmentSlot.CHEST) {
+            model.rightArm.visible = false; model.leftArm.visible = false; model.head.visible = false; model.hat.visible = false;
+            if (FirstPersonBody.hidingTorso()) model.body.visible = false;   // olhando para baixo: sem o peitoral
+        }
         else { model.head.visible = false; model.hat.visible = false; }
     }
 }
