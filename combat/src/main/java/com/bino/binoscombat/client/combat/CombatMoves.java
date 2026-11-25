@@ -872,12 +872,28 @@ public final class CombatMoves {
 
         VertexConsumer vc = buf.getBuffer(RenderType.entityTranslucent(p.getSkin().texture()));
         int ov = OverlayTexture.NO_OVERLAY;
+        // primeira pessoa: os bracos abertos para o lado (ex.: mao esquerda no chute da Surpresa) ficam fora da tela;
+        // aqui eles abrem so metade, e a mao aparece
+        model.rightArm.zRot *= FP_ARM_SPREAD; model.leftArm.zRot *= FP_ARM_SPREAD;
+        model.rightArm.yRot *= FP_ARM_SPREAD; model.leftArm.yRot *= FP_ARM_SPREAD;
+        model.rightSleeve.copyFrom(model.rightArm); model.leftSleeve.copyFrom(model.leftArm);
         model.rightArm.visible = model.leftArm.visible = true;
         model.rightSleeve.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_SLEEVE);
         model.leftSleeve.visible = p.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_SLEEVE);
         ModelPart[] arms = {model.rightArm, model.rightSleeve, model.leftArm, model.leftSleeve};
         for (ModelPart part : arms) { part.xScale = part.zScale = ARM_THIN; part.render(ps, vc, light, ov); }   // mais finos: nao tampam a tela
         for (ModelPart part : arms) part.xScale = part.zScale = 1f;
+        // perna levantada (chute da Surpresa, joelhada...): se o corpo da primeira pessoa (Movement) nao estiver
+        // aparecendo, a perna e' desenhada aqui junto com os bracos
+        if (!com.bino.binosmovement.client.FirstPersonBody.drawnRecently()) {
+            ModelPart[][] legs = {{model.rightLeg, model.rightPants}, {model.leftLeg, model.leftPants}};
+            for (ModelPart[] leg : legs) {
+                if (leg[0].xRot > -0.6f) continue;   // so a perna que sobe para a frente (xRot negativo = frente)
+                leg[0].visible = true; leg[1].visible = true;
+                leg[1].copyFrom(leg[0]);
+                for (ModelPart part : leg) part.render(ps, vc, light, ov);
+            }
+        }
         com.bino.binoscombat.client.CombatClientHooks.handArmor.render(ps, buf, light, p, true, model);    // armadura 3D nos bracos (Vanilla+)
         com.bino.binoscombat.client.CombatClientHooks.handArmor.render(ps, buf, light, p, false, model);
 
@@ -915,6 +931,7 @@ public final class CombatMoves {
         lastHeld = stack.copy();
     }
 
+    private static final float FP_ARM_SPREAD = 0.5f;   // primeira pessoa: quanto os bracos abrem para o lado
     private static final float ARM_THIN = 0.82f, SWITCH_MS = 110f;
 
     // 0..1: quanto a arma ja passou da mao normal para a mao do boneco (no comeco e no fim do golpe)

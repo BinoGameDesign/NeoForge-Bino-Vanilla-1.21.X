@@ -21,9 +21,9 @@ import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
 
 // Mira propria (pixel art do Bino) no lugar da mira do jogo, com aviso de golpe vindo de FORA da visao:
-//  - golpe pelas costas (reto)          -> pisca o traco rosa embaixo
-//  - golpe por tras/lado esquerdo       -> pisca o risco rosa da esquerda
-//  - golpe por tras/lado direito        -> pisca o risco rosa da direita
+//  - golpe pelas costas (reto)          -> pisca o arco rosa embaixo do circulo
+//  - golpe por tras/lado esquerdo       -> pisca o arco rosa da esquerda
+//  - golpe por tras/lado direito        -> pisca o arco rosa da direita
 // O aviso vale em qualquer camera (primeira pessoa, ombro, terceira); a mira branca aparece onde o jogo
 // mostraria a mira (primeira pessoa) e no ombro (ShoulderCam desenha no ponto mirado).
 // Cor: a parte branca e' desenhada como "branco menos metade do fundo": fundo escuro = branca,
@@ -95,7 +95,7 @@ public final class Crosshair {
 
     // desenha a mira com o ponto do meio em (x, y); cross = false so os avisos
     public static void draw(GuiGraphics g, int x, int y, boolean cross) {
-        int ox = -8, oy = -10;   // o pontinho do meio da arte fica em (8, 10)
+        int ox = -8, oy = -8;    // o pontinho do meio da arte (circulo) fica em (8, 8)
         g.flush();
         // um pouco menor que a escala da interface: cada pixel da arte vira (escala - 1) pixels da tela (sempre inteiro,
         // fica nitido). Na escala 1 ou 2 fica do tamanho normal.

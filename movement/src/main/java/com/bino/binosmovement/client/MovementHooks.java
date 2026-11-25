@@ -31,9 +31,10 @@ public final class MovementHooks {
     // ---- camera
 
     // animacao de corpo inteiro tocando agora (Blockbench): a camera de primeira pessoa vai junto (HeadCam)
-    // headShare = quanto do giro da cabeca da animacao vai para a camera (golpes 0,5; andar 0, senao a tela balanca parado)
-    public record BodyFrame(BbAnims.Sample sample, float weight, boolean rightHanded, float headShare) {
-        public BodyFrame(BbAnims.Sample sample, float weight, boolean rightHanded) { this(sample, weight, rightHanded, 0.5f); }
+    // headShare = quanto do giro da cabeca da animacao vai para a camera (golpes 0,3; andar 0, senao a tela balanca parado)
+    // rotShare = quanto das inclinacoes pequenas do corpo vai para a camera (golpes 1; andar bem menos)
+    public record BodyFrame(BbAnims.Sample sample, float weight, boolean rightHanded, float headShare, float rotShare) {
+        public BodyFrame(BbAnims.Sample sample, float weight, boolean rightHanded) { this(sample, weight, rightHanded, 0.3f, 1f); }
     }
     public interface BodySource { BodyFrame frame(Player p, float partialTick); }
     public static final List<BodySource> BODY_SOURCES = new ArrayList<>();

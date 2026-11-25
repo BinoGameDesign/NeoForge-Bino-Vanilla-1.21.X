@@ -41,32 +41,72 @@ public final class HeadCam {
         return MovementConfig.headCamera() && MovementConfig.intensity() > 0.001f && mc.options.getCameraType().isFirstPerson();
     }
 
-    // deslocamento da camera (blocos, no mundo) pela animacao; null = sem animacao de corpo agora
+    // ===== suavidade (25/11: "a camera ta muito forte e puxando muito")
+    private static final float MOVE_SHARE = 0.45f;      // quanto do deslocamento do corpo a camera acompanha
+    private static final float MAX_FORWARD = 0.30f;     // no maximo isso para a frente/os lados (blocos): nao entra no mob
+    private static final float MAX_DOWN = 0.35f, MAX_UP = 0.25f;
+    private static final float TILT_SHARE = 0.45f;      // inclinacoes pequenas: so isso da inclinacao do corpo
+    private static final float SPIN_FULL_FROM = 150f;   // giros grandes (cambalhota, rodopio) vao inteiros a partir daqui
+    private static final float SMOOTH_S = 0.07f;        // a camera alcanca a animacao nesse tempo (segundos)
+
+    private static final Vector3f OFF = new Vector3f();
+    private static final Quaternionf SMOOTH_ROT = new Quaternionf();
+    private static long lastMs;
+
+    // deslocamento da camera (blocos, no mundo) pela animacao; null = sem animacao de corpo agora (a camera volta suave)
     public static Vec3 offset(Player p, float pt) {
         has = false;
-        if (!enabled() || p != Minecraft.getInstance().getCameraEntity()) return null;
+        if (!enabled() || p != Minecraft.getInstance().getCameraEntity()) { OFF.zero(); SMOOTH_ROT.identity(); return null; }
+        Vector3f target = new Vector3f();
+        Quaternionf targetRot = new Quaternionf();
         MovementHooks.BodyFrame f = MovementHooks.bodyFrame(p, pt);
-        if (f == null) return null;
-        float w = f.weight() * MovementConfig.intensity();
-        BbAnims.Sample s = BbAnims.weighted(f.sample(), Math.min(1f, w));
-        if (MovementConfig.shortSpins()) s = limited(s);
-        Matrix4f body = BbAnims.bodyMatrix(s, f.headShare());
-        float px = BbAnims.px();
-        float eyePx = p.getEyeHeight() / px;
-        Vector3f eye = new Vector3f(0, eyePx, 0);
-        Vector3f moved = body.transformPosition(new Vector3f(eye));
-        Vector3f d = moved.sub(eye).mul(px);
-        // espaco do Blockbench -> mundo: gira para onde o jogador olha (e espelha para canhoto). E' o olhar, nao o
-        // tronco: a cambalhota sai para a frente da tela (os bracos da primeira pessoa usam o mesmo)
-        float yaw = p.getViewYRot(pt);
-        Quaternionf frame = new Quaternionf().rotationY((180f - yaw) * Mth.DEG_TO_RAD);
-        Quaternionf q = body.getUnnormalizedRotation(new Quaternionf()).normalize();
-        if (!f.rightHanded()) { d.x = -d.x; q.set(q.x, -q.y, -q.z, q.w); }
-        frame.transform(d);
-        // giro no mundo = frame * q * frame^-1
-        ROT.set(frame).mul(q).mul(new Quaternionf(frame).conjugate());
+        if (f != null) {
+            float w = f.weight() * MovementConfig.intensity();
+            BbAnims.Sample s = BbAnims.weighted(f.sample(), Math.min(1f, w));
+            if (MovementConfig.shortSpins()) s = limited(s);
+            Matrix4f body = BbAnims.bodyMatrix(s, f.headShare());
+            float px = BbAnims.px();
+            Vector3f eye = new Vector3f(0, p.getEyeHeight() / px, 0);
+            Vector3f d = body.transformPosition(new Vector3f(eye)).sub(eye).mul(px * MOVE_SHARE);
+            d.x = Mth.clamp(d.x, -MAX_FORWARD, MAX_FORWARD);
+            d.z = Mth.clamp(d.z, -MAX_FORWARD, MAX_FORWARD);
+            d.y = Mth.clamp(d.y, -MAX_DOWN, MAX_UP);
+            // espaco do Blockbench -> mundo: gira para onde o jogador olha (e espelha para canhoto). E' o olhar, nao o
+            // tronco: a cambalhota sai para a frente da tela (os bracos da primeira pessoa usam o mesmo)
+            Quaternionf frame = new Quaternionf().rotationY((180f - p.getViewYRot(pt)) * Mth.DEG_TO_RAD);
+            Quaternionf q = body.getUnnormalizedRotation(new Quaternionf()).normalize();
+            if (!f.rightHanded()) { d.x = -d.x; q.set(q.x, -q.y, -q.z, q.w); }
+            q = gentle(q, f.rotShare());
+            frame.transform(d);
+            target.set(d);
+            // giro no mundo = frame * q * frame^-1
+            targetRot.set(frame).mul(q).mul(new Quaternionf(frame).conjugate());
+        }
+        // suaviza: a camera chega na animacao (e volta dela) sem tranco
+        long now = net.minecraft.Util.getMillis();
+        float dt = lastMs == 0 ? 1f : Math.min(0.25f, (now - lastMs) / 1000f);
+        lastMs = now;
+        float k = 1f - (float) Math.exp(-dt / SMOOTH_S);
+        OFF.lerp(target, k);
+        if (SMOOTH_ROT.dot(targetRot) < 0) targetRot.mul(-1f);   // mesmo lado da esfera: nao da a volta longa
+        SMOOTH_ROT.slerp(targetRot, k).normalize();
+        boolean moving = OFF.lengthSquared() > 1e-8f || Math.abs(SMOOTH_ROT.w) < 0.99999f;
+        if (!moving) return null;
+        ROT.set(SMOOTH_ROT);
         has = true;
-        return new Vec3(d.x, d.y, d.z);
+        return new Vec3(OFF.x, OFF.y, OFF.z);
+    }
+
+    // inclinacoes pequenas ficam mais fracas (TILT_SHARE); giros grandes (cambalhota do Juizo, rodopio da Tormenta)
+    // crescem ate inteiros, sem pulo no meio
+    private static Quaternionf gentle(Quaternionf q, float share) {
+        float ang = 2f * (float) Math.acos(Mth.clamp(Math.abs(q.w), 0f, 1f)) * Mth.RAD_TO_DEG;   // 0..180
+        if (ang < 0.01f) return q;
+        float small = TILT_SHARE * share;
+        float t = Mth.clamp((ang - 60f) / (SPIN_FULL_FROM - 60f), 0f, 1f);
+        t = t * t * (3 - 2 * t);
+        float out = ang * Mth.lerp(t, small, 1f);
+        return new Quaternionf().slerp(q, out / ang);
     }
 
     // "giro curto": cambalhota e rodopio ficam so uma inclinacao

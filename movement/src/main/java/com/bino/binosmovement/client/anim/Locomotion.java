@@ -187,7 +187,7 @@ public final class Locomotion {
         if (!Minecraft.getInstance().options.bobView().get()) return null;
         BbAnims.Sample a = sample(p, pt);
         if (a == null) return null;
-        return new MovementHooks.BodyFrame(a, CAMERA_SHARE, p.getMainArm() == HumanoidArm.RIGHT, 0f);
+        return new MovementHooks.BodyFrame(a, CAMERA_SHARE, p.getMainArm() == HumanoidArm.RIGHT, 0f, 0.3f);
     }
 
     // tem animacao do Blockbench para este jogador agora? (a vida procedural fica de fora)
