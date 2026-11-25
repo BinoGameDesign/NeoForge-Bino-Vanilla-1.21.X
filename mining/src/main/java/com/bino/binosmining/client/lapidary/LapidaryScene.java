@@ -138,6 +138,7 @@ public final class LapidaryScene {
         leavingItems = out;
         startOutro();
         if (mc.player != null && mc.player.containerMenu instanceof LapidaryMenu menu) {
+            if (!menu.getCarried().isEmpty()) giveBack();
             mc.player.connection.send(new ServerboundContainerClosePacket(menu.containerId));
             mc.player.containerMenu = mc.player.inventoryMenu;
         }
@@ -150,6 +151,7 @@ public final class LapidaryScene {
         if (leaving || phase == Phase.NONE || phase == Phase.OUTRO) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && mc.player.containerMenu instanceof LapidaryMenu menu) {
+            if (!menu.getCarried().isEmpty()) giveBack();
             mc.player.connection.send(new ServerboundContainerClosePacket(menu.containerId));
             mc.player.containerMenu = mc.player.inventoryMenu;
         }
@@ -278,6 +280,7 @@ public final class LapidaryScene {
     static final double LEAN = 0.9, OUTRO = 0.8;
     static double weight;
     private static double parX, parY, lastFrame;
+    private static final com.bino.binosmining.client.SceneLook LOOK = new com.bino.binosmining.client.SceneLook();   // olhar em volta
 
     public record Pose(Vec3 pos, float yaw, float pitch) {}
 
@@ -296,6 +299,10 @@ public final class LapidaryScene {
         eye = eye.add(0, Math.sin(t * 1.3) * 0.0035, 0);
         yaw += (float) (Math.sin(t * 0.61) * 0.16 + parX * 1.1);
         pitch += (float) (Math.sin(t * 0.83 + 1.1) * 0.13 - parY * 0.8);
+        // mouse na borda de cima / da esquerda / da direita: a camera olha para la
+        LOOK.update(ndc, phase == Phase.ACTIVE && !cutting(), dt);
+        pitch += LOOK.pitch();
+        yaw += LOOK.yaw();
         double kick = cutKick();
         if (kick > 0) {
             yaw += (float) ((Math.sin(t * 47) + Math.sin(t * 31 + 1)) * 0.15 * kick);
@@ -402,7 +409,8 @@ public final class LapidaryScene {
 
     // o mouse esta fora da mesa (sem alvo e fora do tampo)?
     public static boolean outside() {
-        return phase == Phase.ACTIVE && !cutting() && hover == Target.NONE && carried().isEmpty() && onTop() == null;
+        return phase == Phase.ACTIVE && !cutting() && hover == Target.NONE && carried().isEmpty() && onTop() == null
+                && !LOOK.busy(LapidaryPick.mouseNdc());   // olhando em volta nao sai
     }
 
     // ---------------------------------------------------------------- clique na mesa

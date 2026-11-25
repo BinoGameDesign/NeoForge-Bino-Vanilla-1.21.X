@@ -97,6 +97,7 @@ public final class BenchScene {
 
     // ---------------------------------------------------------------- slots de cada menu
     static int resultSlot() { return kind == Kind.CRAFTING ? 0 : 2; }
+    static int lastSlot = -1;   // casa do inventario de onde saiu o item que esta na mao
     static int invStart() { return kind == Kind.CRAFTING ? 10 : 3; }
     static boolean isInput(int slot) { return kind == Kind.CRAFTING ? slot >= 1 && slot <= 9 : slot == 0 || slot == 1; }
 
@@ -149,6 +150,7 @@ public final class BenchScene {
         leaving = true;
         startOutro();
         if (mc.player != null && menu() != null) {
+            if (!carried().isEmpty()) giveBack();
             mc.player.connection.send(new ServerboundContainerClosePacket(mc.player.containerMenu.containerId));
             mc.player.containerMenu = mc.player.inventoryMenu;
         }
@@ -162,6 +164,7 @@ public final class BenchScene {
         if (leaving || phase == Phase.NONE || phase == Phase.OUTRO) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && menu() != null) {
+            if (!carried().isEmpty()) giveBack();
             mc.player.connection.send(new ServerboundContainerClosePacket(mc.player.containerMenu.containerId));
             mc.player.containerMenu = mc.player.inventoryMenu;
         }
@@ -309,15 +312,15 @@ public final class BenchScene {
         if (phase != Phase.ACTIVE || hover >= 0 || !carried().isEmpty() || strikeAt > 0) return false;
         double[] p = onTop();
         double hx = 0.6, hz = kind == Kind.ANVIL ? 0.42 : 0.6;
-        if (p == null) return lookUp < 0.05 && LapidaryPick.mouseNdc()[1] < EDGE;   // olhando para o alto nao sai
+        if (p == null) return !LOOK.busy(LapidaryPick.mouseNdc());   // olhando em volta nao sai
         return Math.abs(p[0]) > hx || Math.abs(p[1]) > hz;
     }
 
     // ---------------------------------------------------------------- camera
     public record Pose(Vec3 pos, float yaw, float pitch) {}
-    private static double parX, parY, lastFrame, focusW, lookUp;
-    // olhar para cima: so com o mouse encostado na borda de cima da tela; saiu da borda, a camera volta sozinha
-    static final double EDGE = 0.9;
+    private static double parX, parY, lastFrame, focusW;
+    // olhar para cima / para os lados: mouse encostado na borda da tela (SceneLook)
+    private static final com.bino.binosmining.client.SceneLook LOOK = new com.bino.binosmining.client.SceneLook();
     @Nullable private static Vec3 lastFocus;
 
     static Pose scenePose() {
@@ -338,9 +341,10 @@ public final class BenchScene {
         eye = eye.add(0, Math.sin(t * 1.3) * 0.0035, 0);
         yaw += (float) (Math.sin(t * 0.61) * 0.16 + parX * 1.1);
         pitch += (float) (Math.sin(t * 0.83 + 1.1) * 0.13 - parY * 0.8);
-        // mouse perto do alto da tela: a camera levanta e olha para cima (ate ~32 graus)
-        lookUp += ((phase == Phase.ACTIVE && ndc[1] > EDGE ? 1 : 0) - lookUp) * (1 - Math.exp(-3.5 * dt));
-        pitch -= (float) (32 * LapidaryCut.inOutCubic(lookUp));
+        // mouse na borda de cima / da esquerda / da direita: a camera olha para la
+        LOOK.update(ndc, phase == Phase.ACTIVE, dt);
+        pitch += LOOK.pitch();
+        yaw += LOOK.yaw();
         // vibracao leve durante a raspada
         if (strikeAt > 0 && t - strikeAt > SCRAPE_START) {
             double k = 1 - LapidaryCut.window(t - strikeAt, STRIKE * 0.85, STRIKE);
@@ -455,6 +459,7 @@ public final class BenchScene {
         if (phase != Phase.ACTIVE || strikeAt > 0) return;
         ItemStack s = slot(slot);
         if (kind == Kind.CRAFTING || !carried().isEmpty()) {
+            lastSlot = slot;
             slotClick(slot, button, false);
             sound(SoundEvents.ITEM_PICKUP, 0.25f, 1.4f);
             return;
@@ -473,6 +478,10 @@ public final class BenchScene {
         if (m == null) return;
         ItemStack held = m.getCarried();
         int target = -1;
+        if (lastSlot >= invStart() && lastSlot < m.slots.size()) {   // primeiro: volta para a casa de onde saiu
+            ItemStack there = m.getSlot(lastSlot).getItem();
+            if (there.isEmpty() || ItemStack.isSameItemSameComponents(there, held) && there.getCount() < there.getMaxStackSize()) target = lastSlot;
+        }
         for (int i = invStart(); i < m.slots.size() && target < 0; i++) {
             ItemStack there = m.getSlot(i).getItem();
             if (ItemStack.isSameItemSameComponents(there, held) && there.getCount() < there.getMaxStackSize()) target = i;

@@ -139,6 +139,7 @@ public final class ChestScene {
         leaving = true;
         startOutro(false);
         if (mc.player != null && mc.player.containerMenu instanceof ChestMenu m) {
+            if (!m.getCarried().isEmpty()) giveBack();
             mc.player.connection.send(new ServerboundContainerClosePacket(m.containerId));
             mc.player.containerMenu = mc.player.inventoryMenu;
         }
@@ -152,6 +153,7 @@ public final class ChestScene {
         boolean byServer = true;
         if (mc.player != null && mc.player.containerMenu instanceof ChestMenu m) {
             byServer = false;
+            if (!m.getCarried().isEmpty()) giveBack();
             mc.player.connection.send(new ServerboundContainerClosePacket(m.containerId));
             mc.player.containerMenu = mc.player.inventoryMenu;
         }
@@ -314,7 +316,8 @@ public final class ChestScene {
 
     // ---------------------------------------------------------------- camera
     public record Pose(Vec3 pos, float yaw, float pitch) {}
-    private static double parX, parY, lastFrame, focusW, lookUp;
+    private static double parX, parY, lastFrame, focusW;
+    private static final com.bino.binosmining.client.SceneLook LOOK = new com.bino.binosmining.client.SceneLook();   // olhar em volta
     @Nullable private static Vec3 lastFocus;
 
     static Pose scenePose() {
@@ -338,9 +341,10 @@ public final class ChestScene {
         eye = eye.add(0, Math.sin(t * 1.3) * 0.0035, 0);
         yaw += (float) (Math.sin(t * 0.61) * 0.16 + parX * 1.1);
         pitch += (float) (Math.sin(t * 0.83 + 1.1) * 0.13 - parY * 0.8);
-        // mouse perto do alto da tela: a camera levanta e olha para cima
-        lookUp += ((phase == Phase.ACTIVE && ndc[1] > 0.9 ? 1 : 0) - lookUp) * (1 - Math.exp(-3.5 * dt));   // so na borda de cima
-        pitch -= (float) (32 * LapidaryCut.inOutCubic(lookUp));
+        // mouse na borda de cima / da esquerda / da direita: a camera olha para la
+        LOOK.update(ndc, phase == Phase.ACTIVE, dt);
+        pitch += LOOK.pitch();
+        yaw += LOOK.yaw();
         // mimico: susto quando ele aparece e tremida forte na mordida
         if (mimicSeenAt > 0) {
             double s = t - mimicSeenAt;
@@ -421,7 +425,7 @@ public final class ChestScene {
     public static boolean outside() {
         if (phase != Phase.ACTIVE || hoverSlot >= 0 || !carried().isEmpty()) return false;
         double[] p = onFloor();
-        if (p == null) return lookUp < 0.05 && LapidaryPick.mouseNdc()[1] < 0.9;   // olhando para o alto nao sai
+        if (p == null) return !LOOK.busy(LapidaryPick.mouseNdc());   // olhando em volta nao sai
         return Math.abs(p[0]) > halfWidth() + 0.12 || p[1] < -HALF_DEPTH - 0.12 || p[1] > HALF_DEPTH + 0.18;
     }
 

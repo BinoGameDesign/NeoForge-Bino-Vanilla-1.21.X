@@ -211,8 +211,8 @@ public class CompanionAllayEntity extends Allay {
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        // ----- PEGAR DE VOLTA o item equipado: agachado + botão direito com a mão vazia -----
-        if (player.isShiftKeyDown() && stack.isEmpty() && !this.tool.isEmpty()) {
+        // ----- PEGAR DE VOLTA o item equipado: botão direito com as duas mãos vazias (no lugar do carinho) -----
+        if (player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty() && !this.tool.isEmpty()) {
             if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
             if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
             ItemStack back = this.tool.copy();
@@ -225,7 +225,8 @@ public class CompanionAllayEntity extends Allay {
         }
 
         // ----- ENTREGAR um item que o pet sabe usar (tocha, lanterna) -----
-        if (usable(stack)) {
+        // balde de água só agachado (sem agachar, o balde lava o pet: veja mais abaixo)
+        if (usable(stack) && (!stack.is(Items.WATER_BUCKET) || player.isShiftKeyDown())) {
             if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
             if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
             ItemStack old = this.tool;
@@ -259,7 +260,7 @@ public class CompanionAllayEntity extends Allay {
             return InteractionResult.sidedSuccess(false);   // mesmo na espera, o clique é "consumido"
         }
 
-        // ----- BALDE DE ÁGUA: lava o pet e volta à cor original (o balde NÃO é gasto) -----
+        // ----- BALDE DE ÁGUA (sem agachar): lava o pet e volta à cor original (o balde NÃO é gasto) -----
         if (stack.is(Items.WATER_BUCKET) && getColorIndex() >= 0) {
             if (this.level().isClientSide) return InteractionResult.sidedSuccess(true);
             if (!player.getUUID().equals(this.ownerId)) return InteractionResult.PASS;
