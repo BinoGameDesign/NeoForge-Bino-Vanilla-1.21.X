@@ -20,6 +20,9 @@ public class ExampleModClient {
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+        // Combat (mod separado): a Agilidade do jogador local aumenta a estamina de combate
+        com.bino.binoscombat.CombatHooks.clientAgilityFn = com.bino.binosvanillaplus.client.stats.ClientStats::agility;
+        com.bino.binoscombat.client.CombatClientHooks.handArmor = com.bino.binosmining.client.gear.HandArmor::render;   // armadura 3D nos bracos dos golpes
     }
 
     @SubscribeEvent

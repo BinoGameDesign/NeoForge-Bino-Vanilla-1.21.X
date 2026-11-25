@@ -60,7 +60,15 @@ public class BinosVanillaMod {
         // ganchos do Mining: nivel dos mobs na curva da armadura e o "Miss" do desvio do conjunto de rubi
         com.bino.binosmining.MiningHooks.mobLevel = le -> com.bino.binosvanillaplus.leveling.MobLevels.eligible(le)
                 ? Math.max(1, com.bino.binosvanillaplus.leveling.MobLevels.get(le)) : 0;
-        com.bino.binosmining.MiningHooks.dodged = com.bino.binosvanillaplus.combat.CombatEvents::miss;
+        com.bino.binosmining.MiningHooks.dodged = com.bino.binoscombat.combat.CombatEvents::miss;
+        // Combat (mod separado): niveis, atributos e faccoes do Vanilla+ entram no combate
+        com.bino.binoscombat.CombatHooks.mobLevelFn = com.bino.binosvanillaplus.leveling.MobLevels::get;
+        com.bino.binoscombat.CombatHooks.extraFighterFn = e -> e instanceof com.bino.binosvanillaplus.faction.FactionMob;
+        com.bino.binoscombat.CombatHooks.agileMobFn = m -> m instanceof com.bino.binosvanillaplus.entity.rat.RatEntity;
+        com.bino.binoscombat.CombatHooks.vitalityFn = com.bino.binosvanillaplus.leveling.PlayerStats::vitality;
+        com.bino.binoscombat.CombatHooks.postureMultFn = com.bino.binosvanillaplus.leveling.PlayerStats::postureMult;
+        com.bino.binoscombat.CombatHooks.critChanceFn = com.bino.binosvanillaplus.leveling.PlayerStats::critChance;
+        com.bino.binoscombat.CombatHooks.critDamageFn = com.bino.binosvanillaplus.leveling.PlayerStats::critDamage;
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }

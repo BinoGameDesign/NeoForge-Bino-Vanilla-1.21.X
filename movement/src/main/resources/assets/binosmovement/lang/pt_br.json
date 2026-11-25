@@ -1,0 +1,11 @@
+{
+  "binosmovement.configuration.title": "Bino's Vanilla+ Movement",
+  "binosmovement.configuration.headCamera": "Câmera acompanha o corpo",
+  "binosmovement.configuration.headCamera.tooltip": "Em primeira pessoa a câmera vai junto com as animações (cambalhota gira a tela, estocada leva a câmera para a frente). A mira continua onde você mira.",
+  "binosmovement.configuration.cameraIntensity": "Intensidade da câmera",
+  "binosmovement.configuration.cameraIntensity.tooltip": "Quanto do movimento do corpo vai para a câmera (0 a 100%).",
+  "binosmovement.configuration.shortSpins": "Giro curto (conforto)",
+  "binosmovement.configuration.shortSpins.tooltip": "Para quem enjoa: cambalhotas, rodopios e tombos viram só uma inclinação da câmera.",
+  "binosmovement.configuration.firstPersonBody": "Ver o próprio corpo",
+  "binosmovement.configuration.firstPersonBody.tooltip": "Em primeira pessoa, olhando para baixo, você vê o tronco e as pernas."
+}

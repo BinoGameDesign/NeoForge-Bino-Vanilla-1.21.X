@@ -695,7 +695,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         }
         // derivados: defesa e recursos
         box(g, 1667, 540, 601, 981, 2003);
-        float stamina = com.bino.binosvanillaplus.client.combat.Stamina.BASE_COMBAT + 2f * agi;
+        float stamina = com.bino.binoscombat.client.combat.Stamina.BASE_COMBAT + 2f * agi;
         double armorW = p.getArmorValue() + p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS) * 1.5;
         int posture = (int) (100 + armorW * 1.5 + 3 * vit);
         String[][] rows = {

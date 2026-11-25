@@ -48,7 +48,7 @@ public class MimicRenderer extends MobRenderer<MimicEntity, MimicRenderer.Model>
     }
 
     // reacao ao golpe propria (mod Combat): a tampa/boca abre num susto e a lingua sacode
-    public static class Model extends HierarchicalModel<MimicEntity> implements com.bino.binosvanillaplus.client.combat.HitReactive {
+    public static class Model extends HierarchicalModel<MimicEntity> implements com.bino.binoscombat.client.combat.HitReactive {
         @Override
         public boolean hitReact(float k, float side, float front) {
             getAnyDescendantWithName("lid").ifPresent(p -> p.xRot += (float) Math.toRadians(28) * k);

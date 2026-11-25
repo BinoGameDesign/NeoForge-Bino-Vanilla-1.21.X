@@ -1,11 +1,11 @@
 # Som do teleporte do Issen em cadeia (sintetizado, original): um "shun" agudo e rapido, no estilo dos teleportes de
 # anime (sobe de tom num piscar, com brilho metalico e um baque grave curto no fim).
-# Rodar da raiz do repo: python3 tools/sounds/gen_issen_warp.py  ->  assets/binosvanillaplus/sounds/combat/issen_warp.ogg
+# Rodar da raiz do repo: python3 tools/sounds/gen_issen_warp.py  ->  assets/binoscombat/sounds/combat/issen_warp.ogg
 import numpy as np, os, subprocess, tempfile, wave
 from scipy.signal import butter, sosfilt
 
 SR = 44100
-OUT = "src/main/resources/assets/binosvanillaplus/sounds/combat"
+OUT = "combat/src/main/resources/assets/binoscombat/sounds/combat"
 rng = np.random.default_rng(11)
 
 def bp(x, lo, hi): return sosfilt(butter(2, [lo, hi], btype="band", fs=SR, output="sos"), x)

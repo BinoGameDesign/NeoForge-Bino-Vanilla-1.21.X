@@ -49,26 +49,6 @@ public class ModNetwork {
         registrar.playToClient(GraveMarkPayload.TYPE, GraveMarkPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.map.MapWaypoints.onGraveMark(payload)));
 
-        // mod Combat: numeros de dano (servidor -> clientes) e golpe no ar/agua (cliente -> servidor)
-        registrar.playToClient(com.bino.binosvanillaplus.combat.DamageNumberPayload.TYPE, com.bino.binosvanillaplus.combat.DamageNumberPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.DamageNumbers.receive(payload)));
-        registrar.playToServer(com.bino.binosvanillaplus.combat.SwingPayload.TYPE, com.bino.binosvanillaplus.combat.SwingPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatEvents.onSwing((ServerPlayer) context.player(), payload)));
-
-        // mod Combat: golpes do combo (cliente -> servidor) e animacao dos outros jogadores (servidor -> clientes)
-        registrar.playToServer(com.bino.binosvanillaplus.combat.MovePayload.TYPE, com.bino.binosvanillaplus.combat.MovePayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatMovesServer.onMove((ServerPlayer) context.player(), payload)));
-        registrar.playToClient(com.bino.binosvanillaplus.combat.MoveBroadcastPayload.TYPE, com.bino.binosvanillaplus.combat.MoveBroadcastPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.CombatMoves.receive(payload)));
-        registrar.playToServer(com.bino.binosvanillaplus.combat.CombatActionPayload.TYPE, com.bino.binosvanillaplus.combat.CombatActionPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.CombatActionsServer.onAction((ServerPlayer) context.player(), payload)));
-        registrar.playToClient(com.bino.binosvanillaplus.combat.CombatFxPayload.TYPE, com.bino.binosvanillaplus.combat.CombatFxPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.CombatFx.receive(payload)));
-        registrar.playToServer(com.bino.binosvanillaplus.combat.RollPayload.TYPE, com.bino.binosvanillaplus.combat.RollPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.combat.DodgeServer.onRoll((ServerPlayer) context.player(), payload)));
-        registrar.playToClient(com.bino.binosvanillaplus.combat.RollSeenPayload.TYPE, com.bino.binosvanillaplus.combat.RollSeenPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.combat.DodgeRoll.receive(payload)));
-
         // nivel do personagem e atributos (regras de 23/11)
         registrar.playToClient(com.bino.binosvanillaplus.leveling.StatsSyncPayload.TYPE, com.bino.binosvanillaplus.leveling.StatsSyncPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.stats.ClientStats.receive(payload)));

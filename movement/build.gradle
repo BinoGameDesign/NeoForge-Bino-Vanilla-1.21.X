@@ -1,0 +1,105 @@
+// Bino's Vanilla+ Movement: o motor de animacao do jogador (animacoes do Blockbench, vida no corpo, camera que
+// acompanha o corpo em primeira pessoa, corpo visivel, camera no ombro) e os movimentos do dia a dia.
+// Funciona sozinho. O Bino's Vanilla+ Combat precisa dele.
+//   Gerar o .jar: tarefa Gradle  movement > build > build   ->  movement/build/libs/binosmovement-<versao>.jar
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+    id 'idea'
+}
+
+def modId = project.movement_mod_id
+
+version = project.movement_mod_version
+group = 'com.bino.binosmovement'
+
+base {
+    archivesName = modId
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+sourceSets.main.resources {
+    srcDir('src/generated/resources')
+    exclude("**/*.bbmodel")
+    exclude("src/generated/**/.cache")
+}
+
+repositories {
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            def mcUser = project.findProperty('mc_user')
+            if (mcUser) programArguments.addAll '--username', mcUser.toString()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', modId, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+        }
+    }
+
+    mods {
+        "${modId}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    // so para testar no runClient (nao vira dependencia do mod)
+    runtimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
+    runtimeOnly "maven.modrinth:iris:1.8.12+1.21.1-neoforge"
+}
+
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : project.minecraft_version,
+            minecraft_version_range: project.minecraft_version_range,
+            neo_version            : project.neo_version,
+            loader_version_range   : project.loader_version_range,
+            mod_id                 : modId,
+            mod_name               : project.movement_mod_name,
+            mod_license            : project.movement_mod_license,
+            mod_version            : project.movement_mod_version,
+            mod_authors            : project.movement_mod_authors,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

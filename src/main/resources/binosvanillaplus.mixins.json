@@ -9,18 +9,8 @@
         "client.VillagerRendererMixin",
         "client.VillagerProfessionLayerMixin",
         "client.HumanoidModelEatMixin",
-        "client.LivingEntityHitFxMixin",
-        "client.LivingEntityRendererFlashMixin",
-        "client.LivingEntityRendererHitReactMixin",
-        "client.ModelPartAccessor",
-        "client.AgeableListModelAccessor",
         "client.ItemInHandRendererAccessor",
-        "client.HumanoidModelCombatMixin",
         "client.CreativeSearchAccessor",
-        "client.CameraRollMixin",
-        "client.LivingEntityRendererDeathMixin",
-        "client.LocalPlayerStaminaMixin",
-        "client.ItemInHandLayerCombatMixin",
         "client.IntegratedServerHeartbeatMixin",
         "client.CameraChestMixin"
     ],
@@ -29,8 +19,6 @@
     },
     "mixins": [
         "MonsterSpawnLightMixin",
-        "CreeperAccessor",
-        "SlimeTelegraphMixin",
         "CompoundContainerAccessor",
         "ContainerMenuMimicMixin",
         "ChestBlockEntityMimicMixin",
@@ -39,9 +27,6 @@
         "VillagerFactionPriceMixin",
         "EntityFactionAllyMixin",
         "VillagerBreedMixin",
-        "VillagerHostilesSensorMixin",
-        "MeleeAttackGoalTelegraphMixin",
-        "LivingEntityDeathMixin",
-        "PlayerAttackStrengthMixin"
+        "VillagerHostilesSensorMixin"
     ]
 }

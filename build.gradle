@@ -7,6 +7,8 @@ plugins {
 
 // o Bino's Vanilla+ usa o Mining (mod separado, pasta mining/): o Mining precisa estar configurado antes
 evaluationDependsOn(':mining')
+evaluationDependsOn(':movement')
+evaluationDependsOn(':combat')
 
 tasks.named('wrapper', Wrapper).configure {
     // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
@@ -124,6 +126,13 @@ neoForge {
         "binosmining" {
             sourceSet(project(':mining').sourceSets.main)
         }
+        // Movement e Combat tambem rodam junto
+        "binosmovement" {
+            sourceSet(project(':movement').sourceSets.main)
+        }
+        "binoscombat" {
+            sourceSet(project(':combat').sourceSets.main)
+        }
     }
 }
 
@@ -138,6 +147,9 @@ configurations {
 dependencies {
     // Bino's Vanilla+ Mining (mod separado; por enquanto o Vanilla+ precisa dele instalado)
     implementation project(':mining')
+    // Bino's Vanilla+ Movement e Combat (mods separados; por enquanto o Vanilla+ precisa dos dois)
+    implementation project(':movement')
+    implementation project(':combat')
     // só para testar no jogo de desenvolvimento (runClient). Não vira dependência do mod
     runtimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
     runtimeOnly "maven.modrinth:iris:1.8.12+1.21.1-neoforge"

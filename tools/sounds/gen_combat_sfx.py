@@ -1,12 +1,12 @@
 # Sons PROVISORIOS do mod Combat, sintetizados (sem copiar nada): golpe no ar, cortando carne, batendo em coisa dura e
-# na agua, para espada e machado. Gera .ogg mono em assets/binosvanillaplus/sounds/combat/.
+# na agua, para espada e machado. Gera .ogg mono em assets/binoscombat/sounds/combat/.
 # Trocar pelos sons definitivos e' so substituir os arquivos (mesmo nome) ou editar sounds.json.
 # Rodar da raiz do repo: python3 tools/sounds/gen_combat_sfx.py
 import numpy as np, os, subprocess, tempfile, wave
 from scipy.signal import butter, sosfilt
 
 SR = 44100
-OUT = "src/main/resources/assets/binosvanillaplus/sounds/combat"
+OUT = "combat/src/main/resources/assets/binoscombat/sounds/combat"
 rng = np.random.default_rng(7)
 
 def t(sec): return np.arange(int(SR * sec)) / SR

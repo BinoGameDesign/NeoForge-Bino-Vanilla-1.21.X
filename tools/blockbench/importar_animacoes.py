@@ -1,5 +1,9 @@
-# Leva animacoes de um .bbmodel do Blockbench para o mod (o jogo le o JSON gerado em assets/.../combat_anims/).
-#   python3 importar_animacoes.py combate_espada.bbmodel sword base_1 base_2 base_3
+# Leva animacoes de um .bbmodel do Blockbench para o mod (o jogo le o JSON gerado).
+#   Golpes (mod Combat):      python3 importar_animacoes.py combate_espada.bbmodel sword [nomes...]
+#                             -> combat/src/main/resources/assets/binoscombat/combat_anims/sword.json
+#   Movimentos (mod Movement): python3 importar_animacoes.py movimento.bbmodel movement:player [nomes...]
+#                             -> movement/src/main/resources/assets/binosmovement/movement_anims/player.json
+# Sem nomes = todas as animacoes do arquivo. Animacao marcada como "Loop" no Blockbench repete no jogo.
 # Guarda so os ossos e canais (rotacao, posicao, escala) com os keyframes e as curvas (linear, catmullrom,
 # bezier, step), do jeito que o Blockbench guarda. Os marcadores da linha do tempo viram o momento do acerto.
 import json, sys, os
@@ -14,7 +18,10 @@ def main():
     src, weapon, names = sys.argv[1], sys.argv[2], sys.argv[3:]
     m = json.load(open(src))
     here = os.path.dirname(os.path.abspath(__file__))
-    out_path = os.path.join(here, '..', '..', 'src', 'main', 'resources', 'assets', 'binosvanillaplus', 'combat_anims', weapon + '.json')
+    if weapon.startswith('movement:'):
+        out_path = os.path.join(here, '..', '..', 'movement', 'src', 'main', 'resources', 'assets', 'binosmovement', 'movement_anims', weapon.split(':', 1)[1] + '.json')
+    else:
+        out_path = os.path.join(here, '..', '..', 'combat', 'src', 'main', 'resources', 'assets', 'binoscombat', 'combat_anims', weapon + '.json')
     out = json.load(open(out_path)) if os.path.exists(out_path) else {}
     for a in m['animations']:
         if names and a['name'] not in names: continue
@@ -23,7 +30,7 @@ def main():
             if an.get('type', 'bone') != 'bone': continue
             chans = {}
             for ch in ('rotation', 'position', 'scale'):
-                ks = sorted([k for k in an['keyframes'] if k['channel'] == ch], key=lambda k: k['time'])
+                ks = sorted([k for k in an.get('keyframes', []) if k['channel'] == ch], key=lambda k: num(k['time']))
                 if not ks: continue
                 rows = []
                 for k in ks:
@@ -38,6 +45,7 @@ def main():
         hit = markers[0] if markers else a['length'] * 0.35
         out[a['name']] = {'length': a['length'], 'hits': markers or [hit],
                           'strike': [round(max(0, hit - 0.07), 4), round(hit + 0.04, 4)], 'bones': bones}
+        if a.get('loop') == 'loop': out[a['name']]['loop'] = True
         print(a['name'], a['length'], 'acerto', hit, 'ossos', sorted(bones))
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     json.dump(out, open(out_path, 'w'), separators=(',', ':'))

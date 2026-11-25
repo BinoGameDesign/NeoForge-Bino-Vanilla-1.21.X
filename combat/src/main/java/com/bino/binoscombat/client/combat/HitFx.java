@@ -1,0 +1,202 @@
+package com.bino.binoscombat.client.combat;
+
+import com.bino.binoscombat.BinosCombat;
+import com.bino.binoscombat.combat.CombatEvents;
+import com.bino.binoscombat.combat.SwingPayload;
+import com.bino.binoscombat.CombatSounds;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderLivingEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.HashMap;
+import java.util.Map;
+
+// Mod COMBAT (cliente): o "peso" do golpe.
+//  1) FLASH: quem toma dano fica todo branco por ~90 ms no instante do impacto (depois vem o vermelho normal).
+//  4) RECUO: o corpo de quem apanhou da um tranco para tras (na direcao do golpe) e volta, em ~0,25 s.
+//  5) CAMERA: quando VOCE acerta alguem, a camera trava ~50 ms (hitstop) e da uma tremidinha.
+//  2) SONS do golpe no ar/na agua (os de acerto e de bloco vem do servidor, CombatEvents).
+@EventBusSubscriber(modid = BinosCombat.MOD_ID, value = Dist.CLIENT)
+public final class HitFx {
+    private HitFx() {}
+
+    public static final long FLASH_MS = 90, RECOIL_MS = 260, STOP_MS = 50, SHAKE_MS = 170;
+    public static final double RECOIL = 0.16;   // blocos
+
+    private record Hit(long at, double dx, double dz) {}
+    private static final Map<Integer, Hit> HITS = new HashMap<>();
+
+    // chamado quando o cliente recebe o dano de uma entidade (mixin em LivingEntity.handleDamageEvent)
+    public static void onHurt(LivingEntity e, DamageSource src) {
+        Vec3 from = src.getSourcePosition() != null ? src.getSourcePosition() : src.getEntity() != null ? src.getEntity().position() : null;
+        double dx = 0, dz = 0;
+        if (from != null) {
+            Vec3 d = e.position().subtract(from).multiply(1, 0, 1);
+            if (d.lengthSqr() > 1.0e-4) { d = d.normalize(); dx = d.x; dz = d.z; }
+        }
+        HITS.put(e.getId(), new Hit(Util.getMillis(), dx, dz));
+        if (HITS.size() > 256) HITS.entrySet().removeIf(en -> Util.getMillis() - en.getValue().at() > 2000);
+    }
+
+    public static final long REACT_MS = 320;
+
+    // forca da reacao ao golpe agora (0..1): sobe rapido e volta devagar
+    public static float react(LivingEntity e) {
+        Hit h = HITS.get(e.getId());
+        if (h == null) return 0;
+        double u = (Util.getMillis() - h.at()) / (double) REACT_MS;
+        if (u >= 1 || u < 0) return 0;
+        return (float) (u < 0.15 ? u / 0.15 : Math.pow(1 - (u - 0.15) / 0.85, 2));
+    }
+
+    // de que lado veio o golpe, em relacao ao mob: +1 = da direita, -1 = da esquerda
+    public static float side(LivingEntity e) {
+        Hit h = HITS.get(e.getId());
+        if (h == null) return 0;
+        double y = Math.toRadians(e.yBodyRot);
+        double rx = -Math.cos(y), rz = -Math.sin(y);    // direita do mob
+        return (float) -(h.dx() * rx + h.dz() * rz);
+    }
+
+    // golpe de frente (+1) ou por tras (-1)
+    public static float front(LivingEntity e) {
+        Hit h = HITS.get(e.getId());
+        if (h == null) return 1;
+        double y = Math.toRadians(e.yBodyRot);
+        double fx = -Math.sin(y), fz = Math.cos(y);     // frente do mob
+        return (float) -(h.dx() * fx + h.dz() * fz);
+    }
+
+    // flash branco agora?
+    public static boolean flashing(LivingEntity e) {
+        Hit h = HITS.get(e.getId());
+        return h != null && Util.getMillis() - h.at() < FLASH_MS;
+    }
+
+    // ---------------------------------------------------------------- recuo (desenho deslocado, o corpo de verdade nao)
+    // LOWEST: so roda se ninguem cancelou o desenho (senao o Post nao vem e a pilha ficaria torta)
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST)
+    public static void onRenderPre(RenderLivingEvent.Pre<?, ?> e) {
+        Hit h = HITS.get(e.getEntity().getId());
+        double k = 0;
+        if (h != null) {
+            double u = (Util.getMillis() - h.at()) / (double) RECOIL_MS;
+            if (u < 1) k = u < 0.25 ? u / 0.25 : Math.pow(1 - (u - 0.25) / 0.75, 2);   // vai rapido e volta devagar
+        }
+        e.getPoseStack().pushPose();
+        if (k > 0) e.getPoseStack().translate(h.dx() * RECOIL * k, 0.02 * k, h.dz() * RECOIL * k);
+        // corpo inteiro: inclina para tras (na direcao do golpe, girando nos pes) e amassa um pouquinho
+        float r = react(e.getEntity());
+        if (r > 0 && h != null && (h.dx() != 0 || h.dz() != 0)) {
+            e.getPoseStack().mulPose(new org.joml.Quaternionf().rotateAxis((float) Math.toRadians(12 * r), (float) h.dz(), 0f, (float) -h.dx()));
+            e.getPoseStack().scale(1 + 0.05f * r, 1 - 0.07f * r, 1 + 0.05f * r);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRenderPost(RenderLivingEvent.Post<?, ?> e) { e.getPoseStack().popPose(); }
+
+    // ---------------------------------------------------------------- camera (hitstop + tremida)
+    private static long kickAt = -100000;
+    private static float kickYaw, kickPitch, kickPower;
+
+    @SubscribeEvent
+    public static void onAttack(AttackEntityEvent e) {
+        Minecraft mc = Minecraft.getInstance();
+        if (e.getEntity() != mc.player || !(e.getTarget() instanceof LivingEntity)) return;
+        kick(0.4f + 0.6f * mc.player.getAttackStrengthScale(0.5f));
+    }
+
+    // tranco da camera (hitstop + tremida); tambem usado pelo golpe pesado
+    public static void kick(float power) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        kickAt = Util.getMillis();
+        kickYaw = mc.player.getYRot();
+        kickPitch = mc.player.getXRot();
+        kickPower = power;
+    }
+
+    @SubscribeEvent
+    public static void onCamera(ViewportEvent.ComputeCameraAngles e) {
+        long dt = Util.getMillis() - kickAt;
+        if (dt > SHAKE_MS + STOP_MS) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || !mc.options.getCameraType().isFirstPerson()) return;
+        if (dt < STOP_MS) {   // travada: segura a camera onde estava no impacto
+            e.setYaw(e.getYaw() + (kickYaw - mc.player.getYRot()));
+            e.setPitch(e.getPitch() + (kickPitch - mc.player.getXRot()));
+        }
+        double k = Math.max(0, 1 - (dt) / (double) (SHAKE_MS + STOP_MS)) * kickPower;
+        k *= k;
+        double s = dt / 1000.0;
+        e.setYaw((float) (e.getYaw() + Math.sin(s * 95) * 0.55 * k));
+        e.setPitch((float) (e.getPitch() + Math.cos(s * 83) * 0.45 * k));
+        e.setRoll((float) (e.getRoll() + Math.sin(s * 70 + 1) * 0.7 * k));
+    }
+
+    // golpe num bloco que esta DEBAIXO d'agua: a lamina bate na agua primeiro
+    @SubscribeEvent
+    public static void onSwingBlock(PlayerInteractEvent.LeftClickBlock e) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || e.getEntity() != p || !e.getLevel().isClientSide() || e.getAction() != PlayerInteractEvent.LeftClickBlock.Action.START) return;
+        if (CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
+        Vec3 at = CombatEvents.waterInFront(p);
+        if (at == null) return;
+        waterFx(p, at);
+        PacketDistributor.sendToServer(new SwingPayload(true, at.x, at.y, at.z));
+    }
+
+    private static void waterFx(LocalPlayer p, Vec3 at) {
+        p.level().playLocalSound(at.x, at.y, at.z, CombatSounds.HIT_WATER.get(), SoundSource.PLAYERS, 0.9f, 0.9f + p.getRandom().nextFloat() * 0.2f, false);
+        for (int i = 0; i < 12; i++)
+            p.level().addParticle(ParticleTypes.SPLASH, at.x + (p.getRandom().nextDouble() - 0.5) * 0.5, at.y + 0.1, at.z + (p.getRandom().nextDouble() - 0.5) * 0.5, 0, 0.2, 0);
+    }
+
+    // ---------------------------------------------------------------- golpe no ar ou na agua
+    @SubscribeEvent
+    public static void onSwingEmpty(PlayerInteractEvent.LeftClickEmpty e) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || e.getEntity() != p) return;
+        CombatEvents.Weapon w = CombatEvents.weapon(p.getMainHandItem());
+        if (w == CombatEvents.Weapon.NONE) return;   // (o jogo zera a carga do ataque logo antes deste evento)
+        swingAir(p);
+    }
+
+    // golpe que nao pegou ninguem: som no ar (ou na agua) aqui e para os outros
+    public static void swingAir(LocalPlayer p) {
+        CombatEvents.Weapon w = CombatEvents.weapon(p.getMainHandItem());
+        if (w == CombatEvents.Weapon.NONE) return;
+        // a mira bate na agua dentro do alcance?
+        Vec3 at = CombatEvents.waterInFront(p);
+        if (at != null) {
+            waterFx(p, at);
+            PacketDistributor.sendToServer(new SwingPayload(true, at.x, at.y, at.z));
+        } else {
+            p.level().playLocalSound(p.getX(), p.getEyeY(), p.getZ(), w == CombatEvents.Weapon.SWORD ? CombatSounds.SWORD_SWING.get() : CombatSounds.AXE_SWING.get(),
+                    SoundSource.PLAYERS, 0.8f, 0.9f + p.getRandom().nextFloat() * 0.2f, false);
+            PacketDistributor.sendToServer(new SwingPayload(false, 0, 0, 0));
+        }
+    }
+
+}

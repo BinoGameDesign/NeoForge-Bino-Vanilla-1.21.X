@@ -140,7 +140,7 @@ public class MimicEntity extends Monster {
         }
 
         if (biteIn > 0 && --biteIn == 0 && t != null) {   // mordida (o aviso dourado avisou; da para aparar - mod Combat)
-            boolean parried = com.bino.binosvanillaplus.combat.Telegraphs.parriedCustom(this, t);
+            boolean parried = com.bino.binoscombat.combat.Telegraphs.parriedCustom(this, t);
             if (!parried && distanceTo(t) <= REACH + 0.6) doHurtTarget(t);
         }
         if (biteCd > 0) biteCd--;
@@ -174,14 +174,14 @@ public class MimicEntity extends Monster {
             setDeltaMovement(dir.x * 0.7, 0.36, dir.z * 0.7);
             hasImpulse = true;
             event(EV_BITE); biteIn = 6; biteCd = BITE_COOLDOWN;
-            com.bino.binosvanillaplus.combat.Telegraphs.startCustom(this, t, biteIn);
+            com.bino.binoscombat.combat.Telegraphs.startCustom(this, t, biteIn);
             playSound(SoundEvents.RAVAGER_ROAR, 0.5f, 1.6f);
             hopCd = 20;
             return;
         }
         if (d <= REACH && biteCd == 0) {
             event(EV_BITE); biteIn = 4; biteCd = BITE_COOLDOWN;
-            com.bino.binosvanillaplus.combat.Telegraphs.startCustom(this, t, biteIn);
+            com.bino.binoscombat.combat.Telegraphs.startCustom(this, t, biteIn);
             playSound(SoundEvents.CHEST_CLOSE, 1.0f, 0.8f);
             playSound(SoundEvents.HOGLIN_ATTACK, 0.9f, 0.6f + random.nextFloat() * 0.15f);
         } else if (onGround() && hopCd == 0 && d > REACH * 0.8) {   // pulo na direcao do alvo

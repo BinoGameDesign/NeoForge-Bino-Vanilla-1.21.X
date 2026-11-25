@@ -1,0 +1,11 @@
+{
+  "binosmovement.configuration.title": "Bino's Vanilla+ Movement",
+  "binosmovement.configuration.headCamera": "Camera follows the body",
+  "binosmovement.configuration.headCamera.tooltip": "In first person the camera moves with the animations (flips spin the view, thrusts push it forward). Your aim stays where you aim.",
+  "binosmovement.configuration.cameraIntensity": "Camera intensity",
+  "binosmovement.configuration.cameraIntensity.tooltip": "How much of the body motion reaches the camera (0 to 100%).",
+  "binosmovement.configuration.shortSpins": "Short spins (comfort)",
+  "binosmovement.configuration.shortSpins.tooltip": "For motion sickness: flips, spins and tumbles only tilt the camera.",
+  "binosmovement.configuration.firstPersonBody": "Show your own body",
+  "binosmovement.configuration.firstPersonBody.tooltip": "In first person you see your torso and legs when looking down."
+}

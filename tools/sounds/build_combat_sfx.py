@@ -1,12 +1,12 @@
 # Monta os sons do mod Combat a partir dos sons CC0 em tools/sounds/src (Kenney RPG Audio e StarNinjas no OpenGameArt):
 # corta silencio, ajusta tom, soma uma "pancada" grave nos acertos (para ter corpo) e grava .ogg mono 44,1 kHz em
-# assets/binosvanillaplus/sounds/combat/ com os nomes que o sounds.json usa. A agua continua a sintetizada
+# assets/binoscombat/sounds/combat/ com os nomes que o sounds.json usa. A agua continua a sintetizada
 # (gen_combat_sfx.py), porque os pacotes nao tem som de agua.
 # Rodar da raiz do repo: python3 tools/sounds/build_combat_sfx.py
 import numpy as np, subprocess, os, tempfile, wave
 SR = 44100
 SRC = "tools/sounds/src"
-OUT = "src/main/resources/assets/binosvanillaplus/sounds/combat"
+OUT = "combat/src/main/resources/assets/binoscombat/sounds/combat"
 
 def load(name):
     raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", f"{SRC}/{name}.ogg", "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"],

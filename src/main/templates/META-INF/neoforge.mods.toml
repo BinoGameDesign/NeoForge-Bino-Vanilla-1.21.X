@@ -99,3 +99,18 @@ config="${mod_id}.mixins.json"
     versionRange="[1.0.0,)"
     ordering="AFTER"
     side="BOTH"
+
+# Bino's Vanilla+ Movement e Combat: por enquanto obrigatorios
+[[dependencies.${mod_id}]]
+    modId="binosmovement"
+    type="required"
+    versionRange="[1.0.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="binoscombat"
+    type="required"
+    versionRange="[1.0.0,)"
+    ordering="AFTER"
+    side="BOTH"

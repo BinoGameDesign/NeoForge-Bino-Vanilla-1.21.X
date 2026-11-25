@@ -10,5 +10,9 @@ plugins {
 
 // Mods do conjunto Bino's Vanilla+ (cada um gera o seu proprio .jar):
 //   :        -> Bino's Vanilla+ (o resto, por enquanto num mod so)
-//   :mining  -> Bino's Vanilla+ Mining (binosmining)
+//   :mining   -> Bino's Vanilla+ Mining (binosmining)
+//   :movement -> Bino's Vanilla+ Movement (binosmovement): animacoes do jogador e camera
+//   :combat   -> Bino's Vanilla+ Combat (binoscombat): precisa do Movement
 include 'mining'
+include 'movement'
+include 'combat'

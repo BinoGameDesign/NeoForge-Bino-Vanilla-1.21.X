@@ -1,0 +1,151 @@
+{
+  "combat.sword_swing": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/sword_swing1",
+        "volume": 0.7
+      },
+      {
+        "name": "binoscombat:combat/sword_swing2",
+        "volume": 0.7
+      },
+      {
+        "name": "binoscombat:combat/sword_swing3",
+        "volume": 0.7
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.sword_swing"
+  },
+  "combat.sword_hit": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/sword_hit1",
+        "volume": 0.9
+      },
+      {
+        "name": "binoscombat:combat/sword_hit2",
+        "volume": 0.9
+      },
+      {
+        "name": "binoscombat:combat/sword_hit3",
+        "volume": 0.9
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.sword_hit"
+  },
+  "combat.sword_hit_hard": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/sword_hit_hard1",
+        "volume": 0.8
+      },
+      {
+        "name": "binoscombat:combat/sword_hit_hard2",
+        "volume": 0.8
+      },
+      {
+        "name": "binoscombat:combat/sword_hit_hard3",
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.sword_hit_hard"
+  },
+  "combat.axe_swing": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/axe_swing1",
+        "volume": 0.75
+      },
+      {
+        "name": "binoscombat:combat/axe_swing2",
+        "volume": 0.75
+      },
+      {
+        "name": "binoscombat:combat/axe_swing3",
+        "volume": 0.75
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.axe_swing"
+  },
+  "combat.axe_hit": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/axe_hit1",
+        "volume": 1.0
+      },
+      {
+        "name": "binoscombat:combat/axe_hit2",
+        "volume": 1.0
+      },
+      {
+        "name": "binoscombat:combat/axe_hit3",
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.axe_hit"
+  },
+  "combat.axe_hit_hard": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/axe_hit_hard1",
+        "volume": 0.9
+      },
+      {
+        "name": "binoscombat:combat/axe_hit_hard2",
+        "volume": 0.9
+      },
+      {
+        "name": "binoscombat:combat/axe_hit_hard3",
+        "volume": 0.9
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.axe_hit_hard"
+  },
+  "combat.hit_water": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/hit_water1",
+        "volume": 0.8
+      },
+      {
+        "name": "binoscombat:combat/hit_water2",
+        "volume": 0.8
+      },
+      {
+        "name": "binoscombat:combat/hit_water3",
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.hit_water"
+  },
+  "combat.parry": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/parry1"
+      },
+      {
+        "name": "binoscombat:combat/parry2"
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.parry"
+  },
+  "combat.parry_perfect": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/parry_perfect1"
+      },
+      {
+        "name": "binoscombat:combat/parry_perfect2"
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.parry_perfect"
+  },
+  "combat.issen_warp": {
+    "sounds": [
+      {
+        "name": "binoscombat:combat/issen_warp"
+      }
+    ],
+    "subtitle": "subtitles.binoscombat.combat.issen_warp"
+  }
+}
