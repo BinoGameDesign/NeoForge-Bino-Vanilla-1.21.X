@@ -3,10 +3,8 @@ package com.bino.binosvanillaplus.block;
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import com.bino.binosvanillaplus.item.ModItems;
 import com.bino.binosvanillaplus.block.custom.HookBlock;
-import com.bino.binosvanillaplus.block.custom.LapidaryTableBlock;
 import com.bino.binosvanillaplus.block.custom.RopeBlock;
 import net.minecraft.world.level.material.PushReaction;
-import com.bino.binosvanillaplus.block.custom.VariantOreBlock;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -24,100 +22,6 @@ public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS =
             DeferredRegister.createBlocks(BinosVanillaMod.MOD_ID);
 
-
-    public static final DeferredBlock<Block> RUBI_ORE = registerBlock("rubi_ore",
-            () -> new VariantOreBlock(UniformInt.of(3,7),
-                    BlockBehaviour.Properties.of()
-                            .strength(3.0f, 3.0f)
-                            .requiresCorrectToolForDrops()
-                            .noOcclusion() // permite que a luz chegue ao bloco, então os cristais deixam de ficar pretos
-                            .sound(SoundType.STONE)));
-
-    public static final DeferredBlock<Block> RUBI_DEEPSLATE_ORE = registerBlock("rubi_deepslate_ore",
-            () -> new VariantOreBlock(UniformInt.of(4,8),
-                    BlockBehaviour.Properties.of()
-                            .strength(4.0f, 5.0f)
-                            .requiresCorrectToolForDrops()
-                            .noOcclusion() // mesma coisa para o minério da deepslate
-                            .sound(SoundType.DEEPSLATE)));
-
-    public static final DeferredBlock<Block> RUBI_BLOCK = registerBlock("rubi_block",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .strength(5.0f, 6.0f)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.METAL)));
-
-    // ===== SAPPHIRE =====
-    public static final DeferredBlock<Block> SAPPHIRE_ORE = registerBlock("sapphire_ore",
-            () -> new VariantOreBlock(UniformInt.of(3,7),
-                    BlockBehaviour.Properties.of()
-                            .strength(3.0f, 3.0f)
-                            .requiresCorrectToolForDrops()
-                            .noOcclusion() // deixa a luz chegar aos cristais
-                            .sound(SoundType.STONE)));
-
-    public static final DeferredBlock<Block> SAPPHIRE_DEEPSLATE_ORE = registerBlock("sapphire_deepslate_ore",
-            () -> new VariantOreBlock(UniformInt.of(4,8),
-                    BlockBehaviour.Properties.of()
-                            .strength(4.0f, 5.0f)
-                            .requiresCorrectToolForDrops()
-                            .noOcclusion() // deixa a luz chegar aos cristais
-                            .sound(SoundType.DEEPSLATE)));
-
-    public static final DeferredBlock<Block> SAPPHIRE_BLOCK = registerBlock("sapphire_block",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .strength(5.0f, 6.0f)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.METAL)));
-
-    // ===== JADE =====
-    public static final DeferredBlock<Block> JADE_ORE = registerBlock("jade_ore",
-            () -> new VariantOreBlock(UniformInt.of(3,7),
-                    BlockBehaviour.Properties.of()
-                            .strength(3.0f, 3.0f)
-                            .requiresCorrectToolForDrops()
-                            .noOcclusion() // deixa a luz chegar aos cristais
-                            .sound(SoundType.STONE)));
-
-    public static final DeferredBlock<Block> JADE_DEEPSLATE_ORE = registerBlock("jade_deepslate_ore",
-            () -> new VariantOreBlock(UniformInt.of(4,8),
-                    BlockBehaviour.Properties.of()
-                            .strength(4.0f, 5.0f)
-                            .requiresCorrectToolForDrops()
-                            .noOcclusion() // deixa a luz chegar aos cristais
-                            .sound(SoundType.DEEPSLATE)));
-
-    public static final DeferredBlock<Block> JADE_BLOCK = registerBlock("jade_block",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .strength(5.0f, 6.0f)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.METAL)));
-
-    // Minério de forja: solta a Pedra de Forja +1 (loot table em data/.../loot_table/blocks/forge_ore.json)
-    public static final DeferredBlock<Block> FORGE_ORE = registerBlock("forge_ore",
-            () -> new VariantOreBlock(UniformInt.of(2,5),
-                    BlockBehaviour.Properties.of()
-                            .strength(3.0f, 3.0f)
-                            .requiresCorrectToolForDrops()
-                            .noOcclusion() // deixa a luz chegar aos cristais
-                            .sound(SoundType.STONE)));
-
-    // Bloco de Pedra Filosofal (9 pedras filosofais grandes). Cristal opaco muito refletivo no shader
-    // (euphoria/terrain/philosopher_block.glsl no Complementary; philosopher_block_s.png em packs LabPBR) e luz fraca (nivel 6).
-    public static final DeferredBlock<Block> PHILOSOPHER_BLOCK = registerBlock("philosopher_block",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .strength(5.0f, 6.0f)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.AMETHYST)
-                    .lightLevel(st -> 6)   // brilho fraco proprio do cristal
-                    .isValidSpawn((st, lv, pos, type) -> false)));
-
-    // Mesa de Lapidação (modelo 3D: noOcclusion porque não é um cubo cheio)
-    public static final DeferredBlock<Block> LAPIDARY_TABLE = registerBlock("lapidary_table",
-            () -> new LapidaryTableBlock(BlockBehaviour.Properties.of()
-                    .strength(2.5f)
-                    .sound(SoundType.WOOD)
-                    .noOcclusion()));
 
     // Tumulo de quem morreu: inquebravel (some ao pegar tudo / dissipar). Sem item no criativo (o item existe so como icone do mapa).
     public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.GraveBlock> GRAVE = BLOCKS.register("grave",

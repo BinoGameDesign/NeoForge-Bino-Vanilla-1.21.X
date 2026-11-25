@@ -1,0 +1,9 @@
+{
+  "name": "forge_ore",
+  "glsl": "forge_ore.glsl",
+  "mat0": [
+    "binosmining:forge_ore"
+  ],
+  "blocklight": "binosmining:forge",
+  "held_lighting": false
+}

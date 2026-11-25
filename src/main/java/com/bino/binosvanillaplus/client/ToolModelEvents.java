@@ -1,5 +1,7 @@
 package com.bino.binosvanillaplus.client;
 
+import com.bino.binosmining.client.HeldToolModel;
+
 import com.bino.binosvanillaplus.BinosVanillaMod;
 import java.util.List;
 import java.util.Map;
@@ -11,11 +13,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ModelEvent;
 
-// Liga o modelo 3D das ferramentas (rubi, espadas de safira/jade/diamante e outros itens) (models/item/<nome>_3d.json) ao item (que continua com o icone 2D)
+// Liga o modelo 3D dos itens do Vanilla+ (queijo, ratoeira, lanterna...; as ferramentas de gema ficam no Mining) (models/item/<nome>_3d.json) ao item (que continua com o icone 2D)
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public class ToolModelEvents {
 
-    private static final List<String> TOOLS = List.of("rubi_sword", "sapphire_sword", "jade_sword", "minecraft:diamond_sword", "rubi_pickaxe", "sapphire_pickaxe", "jade_pickaxe", "minecraft:diamond_pickaxe", "rubi_shovel", "sapphire_shovel", "jade_shovel", "minecraft:diamond_shovel", "rubi_axe", "sapphire_axe", "jade_axe", "minecraft:diamond_axe", "minecraft:diamond_hoe", "rubi_hoe", "sapphire_hoe", "jade_hoe", "cheese", "cheese_slice", "rat_trap", "cage", "rat_meat", "cooked_rat_meat", "cyalume_stick", "climbing_hook",
+    private static final List<String> TOOLS = List.of("cheese", "cheese_slice", "rat_trap", "cage", "rat_meat", "cooked_rat_meat", "cyalume_stick", "climbing_hook",
             "flashlight", "dynamite", "detonator", "explorer_whistle", "explorer_sonar", "camera");
 
     private static ResourceLocation id(String path) {

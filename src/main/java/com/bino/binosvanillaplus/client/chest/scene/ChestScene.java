@@ -1,9 +1,9 @@
 package com.bino.binosvanillaplus.client.chest.scene;
 
-import com.bino.binosvanillaplus.client.lapidary.LapidaryCut;
-import com.bino.binosvanillaplus.client.lapidary.LapidaryHands;
-import com.bino.binosvanillaplus.client.lapidary.LapidaryPick;
-import com.bino.binosvanillaplus.client.lapidary.LapidaryRemote;
+import com.bino.binosmining.client.lapidary.LapidaryCut;
+import com.bino.binosmining.client.lapidary.LapidaryHands;
+import com.bino.binosmining.client.lapidary.LapidaryPick;
+import com.bino.binosmining.client.lapidary.LapidaryRemote;
 import com.bino.binosvanillaplus.mimic.MimicEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;

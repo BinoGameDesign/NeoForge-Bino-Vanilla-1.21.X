@@ -191,17 +191,17 @@
         },
         {
           "type": "minecraft:item",
-          "name": "binosvanillaplus:raw_rubi",
+          "name": "binosmining:raw_rubi",
           "weight": 3
         },
         {
           "type": "minecraft:item",
-          "name": "binosvanillaplus:raw_sapphire",
+          "name": "binosmining:raw_sapphire",
           "weight": 3
         },
         {
           "type": "minecraft:item",
-          "name": "binosvanillaplus:raw_jade",
+          "name": "binosmining:raw_jade",
           "weight": 3
         },
         {

@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Gera os arquivos de idioma do mod Mining (todas as chaves de gemas, equipamentos, forja, lapidario).
 
-Fonte: data/*.py (um dicionario por idioma). Saida: src/main/resources/assets/binosvanillaplus/lang/<codigo>.json
+Fonte: data/*.py (um dicionario por idioma). Saida: mining/src/main/resources/assets/binosmining/lang/<codigo>.json
+(as descobertas do diario, discovery.*, ficam no Bino's Vanilla+ e nao sao geradas aqui)
 Uso:  python3 tools/lang/mining_lang.py          (gera e valida)
 O pt_br.json existente e' a referencia das chaves e dos %s; nao e' sobrescrito.
 """
 import importlib, json, os, pkgutil, re, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-LANG = os.path.join(ROOT, 'src/main/resources/assets/binosvanillaplus/lang')
-NS = 'binosvanillaplus'
+LANG = os.path.join(ROOT, 'mining/src/main/resources/assets/binosmining/lang')
+NS = 'binosmining'
 GEMS = ['rubi', 'sapphire', 'jade']
 PARTS = ['sword', 'pickaxe', 'shovel', 'axe', 'hoe', 'helmet', 'chestplate', 'leggings', 'boots']
 TOOLTIPS = ['forge_stone_bonus', 'forge_stone_first', 'forge_stone_use', 'forged', 'diamond_tool', 'rubi_sword',
@@ -71,8 +72,6 @@ def build(d):
         out[f'subtitles.{NS}.{s}'] = d['sub'][s]
     for h in HINTS:
         out[f'lapidary.{NS}.' + ('hint.' + h if h not in ('more', 'nothing') else h)] = d['hint'][h]
-    for k in DISC:
-        out[f'discovery.{NS}.ore.{k}'] = d['disc'][k]
     out[f'creativetab.{NS}.mining'] = 'Mining'
     return out
 
@@ -104,8 +103,11 @@ def main():
     return 1 if problems else 0
 
 def write(code, out):
-    with open(os.path.join(LANG, code + '.json'), 'w', encoding='utf-8') as f:
-        json.dump(out, f, ensure_ascii=False, indent=2)
+    path = os.path.join(LANG, code + '.json')
+    merged = json.load(open(path, encoding='utf-8')) if os.path.exists(path) else {}
+    merged.update(out)   # mantem chaves escritas a mao (ex.: cenas da bancada/bigorna)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(merged, f, ensure_ascii=False, indent=2)
         f.write('\n')
 
 if __name__ == '__main__':

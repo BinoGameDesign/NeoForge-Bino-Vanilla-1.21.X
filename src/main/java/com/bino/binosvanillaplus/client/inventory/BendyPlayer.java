@@ -202,7 +202,7 @@ public final class BendyPlayer {
 
     // uma camada de uma peca de armadura
     private static void armorPiece(PoseStack ps, VertexConsumer vc, EquipmentSlot slot, ItemStack st, int light, int overlay, int color) {
-        net.minecraft.client.model.HumanoidModel<?> m3 = com.bino.binosvanillaplus.client.armor.Armor3D.model(st);
+        net.minecraft.client.model.HumanoidModel<?> m3 = com.bino.binosmining.client.armor.Armor3D.model(st);
         if (m3 != null) { armor3D(ps, vc, m3, slot, light, overlay, color); return; }
         boolean inner = slot == EquipmentSlot.LEGS;
         Rig r = inner ? armorInner : armorOuter;

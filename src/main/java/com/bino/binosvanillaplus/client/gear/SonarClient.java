@@ -29,6 +29,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 import java.util.*;
+import com.bino.binosmining.client.gear.ClientGlow;
 
 // Sonar (lado do jogador): o pulso sai do jogador e cresce ate o alcance em ~1,2 s; tudo que a onda alcanca ganha
 // contorno branco por alguns segundos, visivel atraves das paredes: minerios e fosseis (contorno so das faces de fora

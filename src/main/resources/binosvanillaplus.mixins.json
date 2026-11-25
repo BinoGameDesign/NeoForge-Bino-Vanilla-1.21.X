@@ -4,19 +4,10 @@
     "package": "com.bino.binosvanillaplus.mixin",
     "compatibilityLevel": "JAVA_21",
     "client": [
-        "client.MinecraftGlowMixin",
         "client.LocalPlayerElytraMixin",
         "client.ElytraLayerMixin",
-        "client.LevelRendererMiningMixin",
         "client.VillagerRendererMixin",
         "client.VillagerProfessionLayerMixin",
-        "client.ClientHooksArmorTextureMixin",
-        "client.ItemRendererForgeOutlineMixin",
-        "client.LivingEntityRendererForgeOutlineMixin",
-        "client.GuiGraphicsForgeOutlineMixin",
-        "client.CameraLapidaryMixin",
-        "client.HumanoidModelLapidaryMixin",
-        "client.PlayerRendererHandArmorMixin",
         "client.HumanoidModelEatMixin",
         "client.LivingEntityHitFxMixin",
         "client.LivingEntityRendererFlashMixin",
@@ -30,7 +21,8 @@
         "client.LivingEntityRendererDeathMixin",
         "client.LocalPlayerStaminaMixin",
         "client.ItemInHandLayerCombatMixin",
-        "client.IntegratedServerHeartbeatMixin"
+        "client.IntegratedServerHeartbeatMixin",
+        "client.CameraChestMixin"
     ],
     "injectors": {
         "defaultRequire": 1

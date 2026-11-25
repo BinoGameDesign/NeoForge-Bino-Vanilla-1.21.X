@@ -45,7 +45,6 @@ public class BinosVanillaMod {
 
         ModEntities.register(modEventBus);
         ModParticles.register(modEventBus);
-        com.bino.binosvanillaplus.item.ModArmorMaterials.register(modEventBus);   // materiais das armaduras
 
         com.bino.binosvanillaplus.item.ModDataComponents.register(modEventBus);   // nível de forja dos itens
         com.bino.binosvanillaplus.menu.ModMenuTypes.register(modEventBus);   // janelas (menu da Mesa de Lapidação)
@@ -58,10 +57,10 @@ public class BinosVanillaMod {
         com.bino.binosvanillaplus.loot.AreaChestLoot.register(modEventBus);   // loot de bau melhora com o nivel da area
         com.bino.binosvanillaplus.block.entity.ModBlockEntities.register(modEventBus);   // dono da corda solta
 
-        // Durabilidade x1.25 das ferramentas de diamante (evento do barramento do mod)
-        modEventBus.addListener(com.bino.binosvanillaplus.event.DiamondBuffEvents::onModifyDefaultComponents);
-        // Register the item to a creative tab
-        modEventBus.addListener(this::addCreative);
+        // ganchos do Mining: nivel dos mobs na curva da armadura e o "Miss" do desvio do conjunto de rubi
+        com.bino.binosmining.MiningHooks.mobLevel = le -> com.bino.binosvanillaplus.leveling.MobLevels.eligible(le)
+                ? Math.max(1, com.bino.binosvanillaplus.leveling.MobLevels.get(le)) : 0;
+        com.bino.binosmining.MiningHooks.dodged = com.bino.binosvanillaplus.combat.CombatEvents::miss;
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
@@ -69,25 +68,6 @@ public class BinosVanillaMod {
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(com.bino.binosvanillaplus.block.custom.MilkCauldronBlock::registerVanillaInteraction);   // leite no caldeirao
 
-    }
-
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if(event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
-            event.accept(ModItems.RUBI);
-        }
-
-        if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-            event.accept(ModBlocks.RUBI_ORE);
-        }
-
-        if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-            event.accept(ModBlocks.RUBI_DEEPSLATE_ORE);
-        }
-
-        if(event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-            event.accept(ModBlocks.RUBI_BLOCK);
-        }
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
@@ -102,6 +82,10 @@ public class BinosVanillaMod {
     {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
+            // botao Receitas+ na cena da bancada do Mining
+            com.bino.binosmining.client.MiningClientHooks.recipeBrowser = s -> new com.bino.binosvanillaplus.client.recipes.RecipeLookupScreen(s,
+                    com.bino.binosvanillaplus.client.recipes.RecipeLookupScreen.Mode.BROWSE, null);
+            com.bino.binosmining.client.MiningClientHooks.isRecipeBrowser = s -> s instanceof com.bino.binosvanillaplus.client.recipes.RecipeLookupScreen;
             // a textura da Chave Dimensional muda com o nivel (ver models/item/dimensional_key.json)
             event.enqueueWork(() -> net.minecraft.client.renderer.item.ItemProperties.register(
                     com.bino.binosvanillaplus.item.ModItems.DIMENSIONAL_KEY.get(),

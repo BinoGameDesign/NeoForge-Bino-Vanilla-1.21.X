@@ -1,7 +1,7 @@
 package com.bino.binosvanillaplus.client.chest.scene;
 
-import com.bino.binosvanillaplus.client.lapidary.LapidaryCut;
-import com.bino.binosvanillaplus.client.lapidary.LapidaryPick;
+import com.bino.binosmining.client.lapidary.LapidaryCut;
+import com.bino.binosmining.client.lapidary.LapidaryPick;
 import com.bino.binosvanillaplus.client.ui.BinoUi;
 import com.bino.binosvanillaplus.client.ui.Glass;
 import com.bino.binosvanillaplus.client.ui.Tween;

@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.bino.binosmining.client.gear.ClientGlow;
 
 // Sinal do apito para quem ouviu: a silhueta branca de quem apitou aparece por alguns segundos, atraves de paredes.
 // Se quem apitou esta longe demais para o jogo ter a entidade carregada, aparece uma silhueta branca (desenho) na

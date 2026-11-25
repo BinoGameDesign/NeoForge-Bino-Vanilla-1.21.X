@@ -1,0 +1,10 @@
+{
+  "name": "jade_ore",
+  "glsl": "jade_ore.glsl",
+  "mat0": [
+    "binosmining:jade_ore",
+    "binosmining:jade_deepslate_ore"
+  ],
+  "blocklight": "binosmining:jade",
+  "held_lighting": false
+}

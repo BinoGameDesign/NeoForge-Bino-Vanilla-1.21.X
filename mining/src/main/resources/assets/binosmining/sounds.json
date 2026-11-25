@@ -1,0 +1,26 @@
+{
+  "lapidary_spin": {
+    "sounds": [
+      "binosmining:lapidary_spin"
+    ],
+    "subtitle": "subtitles.binosmining.lapidary_spin"
+  },
+  "lapidary_ready": {
+    "sounds": [
+      "binosmining:lapidary_ready"
+    ],
+    "subtitle": "subtitles.binosmining.lapidary_ready"
+  },
+  "lapidary_done": {
+    "sounds": [
+      "binosmining:lapidary_done"
+    ],
+    "subtitle": "subtitles.binosmining.lapidary_done"
+  },
+  "lapidary_contact": {
+    "sounds": [
+      "binosmining:lapidary_contact"
+    ],
+    "subtitle": "subtitles.binosmining.lapidary_contact"
+  }
+}

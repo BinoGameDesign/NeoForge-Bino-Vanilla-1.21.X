@@ -14,9 +14,6 @@ public class ModMenuTypes {
     public static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, BinosVanillaMod.MOD_ID);
 
-    public static final Supplier<MenuType<LapidaryMenu>> LAPIDARY = MENUS.register("lapidary_table",
-            () -> new MenuType<>(LapidaryMenu::new, FeatureFlags.DEFAULT_FLAGS));
-
     public static final Supplier<MenuType<SpiritMenu>> SPIRIT = MENUS.register("spirit",
             () -> new MenuType<>(SpiritMenu::new, FeatureFlags.DEFAULT_FLAGS));
 

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": {
+      "item": "binosmining:jade"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "G G"
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosmining:jade_helmet"
+  }
+}

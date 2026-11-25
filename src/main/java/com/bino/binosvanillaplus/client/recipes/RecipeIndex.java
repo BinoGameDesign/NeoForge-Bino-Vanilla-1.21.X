@@ -1,7 +1,7 @@
 package com.bino.binosvanillaplus.client.recipes;
 
 import com.bino.binosvanillaplus.item.ModItems;
-import com.bino.binosvanillaplus.menu.LapidaryMenu;
+import com.bino.binosmining.menu.LapidaryMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.HolderLookup;
@@ -13,6 +13,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 
 import java.util.*;
+import com.bino.binosmining.item.MiningItems;
 
 // Indice de receitas: "como fazer o item X" e "onde o item X e' usado". Reconstruido quando as receitas mudam.
 public class RecipeIndex {
@@ -66,7 +67,7 @@ public class RecipeIndex {
             }
         }
         // Mesa de Lapidacao (nao e' uma receita do jogo: vem do mapa bruto -> gema do proprio menu)
-        for (var raw : List.of(ModItems.RAW_DIAMOND, ModItems.RAW_RUBI, ModItems.RAW_SAPPHIRE, ModItems.RAW_JADE)) {
+        for (var raw : List.of(MiningItems.RAW_DIAMOND, MiningItems.RAW_RUBI, MiningItems.RAW_SAPPHIRE, MiningItems.RAW_JADE)) {
             Item gem = LapidaryMenu.gemFor(new ItemStack(raw.get()));
             if (gem == null) continue;
             add(new RecipeEntry(RecipeCategory.LAPIDARY, null,

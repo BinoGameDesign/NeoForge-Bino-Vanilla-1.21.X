@@ -1,0 +1,21 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.bino.binosmining.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "client": [
+        "client.CameraLapidaryMixin",
+        "client.ClientHooksArmorTextureMixin",
+        "client.GuiGraphicsForgeOutlineMixin",
+        "client.HumanoidModelLapidaryMixin",
+        "client.ItemRendererForgeOutlineMixin",
+        "client.LevelRendererMiningMixin",
+        "client.LivingEntityRendererForgeOutlineMixin",
+        "client.PlayerRendererHandArmorMixin",
+        "client.MinecraftGlowMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "mixins": []
+}

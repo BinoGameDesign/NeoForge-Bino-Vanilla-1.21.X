@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "binosmining:forge_stone_5"
+    },
+    {
+      "item": "binosmining:philosopher_fragment"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosmining:forge_stone_6"
+  }
+}

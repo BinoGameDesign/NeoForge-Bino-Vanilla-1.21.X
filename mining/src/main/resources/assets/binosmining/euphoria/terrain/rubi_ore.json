@@ -1,0 +1,10 @@
+{
+  "name": "rubi_ore",
+  "glsl": "rubi_ore.glsl",
+  "mat0": [
+    "binosmining:rubi_ore",
+    "binosmining:rubi_deepslate_ore"
+  ],
+  "blocklight": "binosmining:rubi",
+  "held_lighting": false
+}

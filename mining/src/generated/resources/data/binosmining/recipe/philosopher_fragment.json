@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:diamond"
+    },
+    {
+      "item": "binosmining:rubi"
+    },
+    {
+      "item": "binosmining:sapphire"
+    },
+    {
+      "item": "binosmining:jade"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosmining:philosopher_fragment"
+  }
+}

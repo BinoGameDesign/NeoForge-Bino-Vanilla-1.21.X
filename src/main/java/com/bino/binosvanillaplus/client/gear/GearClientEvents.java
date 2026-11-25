@@ -15,6 +15,10 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
+import com.bino.binosmining.client.gear.ForgeIconOutline;
+import com.bino.binosmining.client.gear.ForgeGlow;
+import com.bino.binosmining.client.gear.ForgeOutline;
+import com.bino.binosmining.client.gear.ForgeArmorGlowLayer;
 
 // Tecla da lanterna do capacete (K) e o desenho da lanterna na lateral do capacete
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)

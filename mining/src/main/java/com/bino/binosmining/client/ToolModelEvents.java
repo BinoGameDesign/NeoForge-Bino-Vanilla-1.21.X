@@ -1,0 +1,51 @@
+package com.bino.binosmining.client;
+
+import com.bino.binosmining.BinosMining;
+import java.util.List;
+import java.util.Map;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ModelEvent;
+
+// Liga o modelo 3D das ferramentas (rubi, espadas de safira/jade/diamante e outros itens) (models/item/<nome>_3d.json) ao item (que continua com o icone 2D)
+@EventBusSubscriber(modid = BinosMining.MOD_ID, value = Dist.CLIENT)
+public class ToolModelEvents {
+
+    private static final List<String> TOOLS = List.of("rubi_sword", "sapphire_sword", "jade_sword", "minecraft:diamond_sword", "rubi_pickaxe", "sapphire_pickaxe", "jade_pickaxe", "minecraft:diamond_pickaxe", "rubi_shovel", "sapphire_shovel", "jade_shovel", "minecraft:diamond_shovel", "rubi_axe", "sapphire_axe", "jade_axe", "minecraft:diamond_axe", "minecraft:diamond_hoe", "rubi_hoe", "sapphire_hoe", "jade_hoe");
+
+    private static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath(BinosMining.MOD_ID, path);
+    }
+
+    // "minecraft:diamond_sword" = item do jogo base (o modelo 3D continua no nosso mod: item/diamond_sword_3d)
+    private static String name(String tool) { return tool.contains(":") ? tool.substring(tool.indexOf(':') + 1) : tool; }
+
+    private static ResourceLocation itemId(String tool) {
+        return tool.startsWith("minecraft:") ? ResourceLocation.withDefaultNamespace(name(tool)) : id(tool);
+    }
+
+    private static ModelResourceLocation solidKey(String tool) {
+        return ModelResourceLocation.standalone(id("item/" + name(tool) + "_3d"));
+    }
+
+    @SubscribeEvent
+    public static void onRegisterAdditional(ModelEvent.RegisterAdditional event) {
+        for (String tool : TOOLS) event.register(solidKey(tool));
+    }
+
+    @SubscribeEvent
+    public static void onModifyBaking(ModelEvent.ModifyBakingResult event) {
+        Map<ModelResourceLocation, BakedModel> models = event.getModels();
+        for (String tool : TOOLS) {
+            ModelResourceLocation itemKey = ModelResourceLocation.inventory(itemId(tool));
+            BakedModel flat = models.get(itemKey);
+            BakedModel solid = models.get(solidKey(tool));
+            if (flat == null || solid == null) continue;   // algo faltando: o item continua 2D
+            models.put(itemKey, new HeldToolModel(flat, solid));
+        }
+    }
+}

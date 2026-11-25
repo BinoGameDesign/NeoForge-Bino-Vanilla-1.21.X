@@ -25,9 +25,6 @@ public class ModBlockEntities {
     public static final Supplier<BlockEntityType<CameraTripodBlockEntity>> CAMERA_TRIPOD = BLOCK_ENTITIES.register("camera_tripod",
             () -> BlockEntityType.Builder.of(CameraTripodBlockEntity::new, ModBlocks.CAMERA_TRIPOD.get()).build(null));
 
-    public static final Supplier<BlockEntityType<LapidaryTableBlockEntity>> LAPIDARY_TABLE = BLOCK_ENTITIES.register("lapidary_table",
-            () -> BlockEntityType.Builder.of(LapidaryTableBlockEntity::new, ModBlocks.LAPIDARY_TABLE.get()).build(null));
-
     public static final Supplier<BlockEntityType<RatTrapBlockEntity>> RAT_TRAP = BLOCK_ENTITIES.register("rat_trap",
             () -> BlockEntityType.Builder.of(RatTrapBlockEntity::new, ModBlocks.RAT_TRAP.get()).build(null));
 

@@ -27,78 +27,10 @@ public class ModCreativeModeTabs {
         return ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, path);
     }
 
-    // ---------------------------------------------------------------- Mining
-    // minerios, gemas, blocos, mesa de lapidacao, pedras de forja, pedra filosofal, ferramentas e armaduras
-    public static final Supplier<CreativeModeTab> MINING_TAB = CREATIVE_MODE_TAB.register("mining",
-            () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.MINING_TAB_ICON.get()))
-                    .title(Component.translatable("creativetab.binosvanillaplus.mining"))
-                    .displayItems((params, output) -> {
-                        output.accept(ModBlocks.RUBI_ORE);
-                        output.accept(ModBlocks.RUBI_DEEPSLATE_ORE);
-                        output.accept(ModBlocks.SAPPHIRE_ORE);
-                        output.accept(ModBlocks.SAPPHIRE_DEEPSLATE_ORE);
-                        output.accept(ModBlocks.JADE_ORE);
-                        output.accept(ModBlocks.JADE_DEEPSLATE_ORE);
-                        output.accept(ModBlocks.FORGE_ORE);
-                        output.accept(ModItems.RAW_DIAMOND);
-                        output.accept(ModItems.RAW_RUBI);
-                        output.accept(ModItems.RAW_SAPPHIRE);
-                        output.accept(ModItems.RAW_JADE);
-                        output.accept(ModItems.RUBI);
-                        output.accept(ModItems.SAPPHIRE);
-                        output.accept(ModItems.JADE);
-                        output.accept(ModBlocks.RUBI_BLOCK);
-                        output.accept(ModBlocks.SAPPHIRE_BLOCK);
-                        output.accept(ModBlocks.JADE_BLOCK);
-                        output.accept(ModBlocks.PHILOSOPHER_BLOCK);
-                        output.accept(ModBlocks.LAPIDARY_TABLE);
-                        output.accept(ModItems.FORGE_STONE_1);
-                        output.accept(ModItems.FORGE_STONE_2);
-                        output.accept(ModItems.FORGE_STONE_3);
-                        output.accept(ModItems.FORGE_STONE_4);
-                        output.accept(ModItems.FORGE_STONE_5);
-                        output.accept(ModItems.FORGE_STONE_6);
-                        output.accept(ModItems.FORGE_STONE_7);
-                        output.accept(ModItems.FORGE_STONE_8);
-                        output.accept(ModItems.FORGE_STONE_9);
-                        output.accept(ModItems.FORGE_STONE_10);
-                        output.accept(ModItems.PHILOSOPHER_FRAGMENT);
-                        output.accept(ModItems.PHILOSOPHER_STONE_INCOMPLETE);
-                        output.accept(ModItems.PHILOSOPHER_STONE_SMALL);
-                        output.accept(ModItems.PHILOSOPHER_STONE_LARGE);
-                        output.accept(ModItems.RUBI_SWORD);
-                        output.accept(ModItems.RUBI_PICKAXE);
-                        output.accept(ModItems.RUBI_SHOVEL);
-                        output.accept(ModItems.RUBI_AXE);
-                        output.accept(ModItems.RUBI_HOE);
-                        output.accept(ModItems.RUBI_HELMET);
-                        output.accept(ModItems.RUBI_CHESTPLATE);
-                        output.accept(ModItems.RUBI_LEGGINGS);
-                        output.accept(ModItems.RUBI_BOOTS);
-                        output.accept(ModItems.SAPPHIRE_SWORD);
-                        output.accept(ModItems.SAPPHIRE_PICKAXE);
-                        output.accept(ModItems.SAPPHIRE_SHOVEL);
-                        output.accept(ModItems.SAPPHIRE_AXE);
-                        output.accept(ModItems.SAPPHIRE_HOE);
-                        output.accept(ModItems.SAPPHIRE_HELMET);
-                        output.accept(ModItems.SAPPHIRE_CHESTPLATE);
-                        output.accept(ModItems.SAPPHIRE_LEGGINGS);
-                        output.accept(ModItems.SAPPHIRE_BOOTS);
-                        output.accept(ModItems.JADE_SWORD);
-                        output.accept(ModItems.JADE_PICKAXE);
-                        output.accept(ModItems.JADE_SHOVEL);
-                        output.accept(ModItems.JADE_AXE);
-                        output.accept(ModItems.JADE_HOE);
-                        output.accept(ModItems.JADE_HELMET);
-                        output.accept(ModItems.JADE_CHESTPLATE);
-                        output.accept(ModItems.JADE_LEGGINGS);
-                        output.accept(ModItems.JADE_BOOTS);
-                    }).build());
-
     // ---------------------------------------------------------------- Exploration
     public static final Supplier<CreativeModeTab> EXPLORATION_TAB = CREATIVE_MODE_TAB.register("exploration",
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.CYALUME_STICK.get()))
-                    .withTabsBefore(id("mining"))
+                    .withTabsBefore(ResourceLocation.fromNamespaceAndPath("binosmining", "mining"))   // logo depois da aba do Mining
                     .title(Component.translatable("creativetab.binosvanillaplus.exploration"))
                     .displayItems((params, output) -> {
                         output.accept(ModItems.CYALUME_STICK);

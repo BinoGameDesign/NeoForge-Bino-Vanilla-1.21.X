@@ -1,0 +1,10 @@
+{
+  "loader": "neoforge:obj",
+  "model": "binosmining:models/block/rubi_ore.obj",
+  "flip_v": true,
+  "automatic_culling": true,
+  "shade_quads": true,
+  "textures": {
+    "particle": "binosmining:block/rubi_ore"
+  }
+}

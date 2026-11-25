@@ -1,7 +1,7 @@
 package com.bino.binosvanillaplus.event;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
-import com.bino.binosvanillaplus.item.custom.MultiBreakTool;
+import com.bino.binosmining.item.custom.MultiBreakTool;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;

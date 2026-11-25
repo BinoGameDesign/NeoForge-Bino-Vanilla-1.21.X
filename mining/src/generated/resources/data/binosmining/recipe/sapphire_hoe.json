@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": {
+      "item": "binosmining:sapphire"
+    },
+    "S": {
+      "item": "minecraft:stick"
+    }
+  },
+  "pattern": [
+    "GG ",
+    " S ",
+    " S "
+  ],
+  "result": {
+    "count": 1,
+    "id": "binosmining:sapphire_hoe"
+  }
+}

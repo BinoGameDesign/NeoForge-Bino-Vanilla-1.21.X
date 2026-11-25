@@ -1,0 +1,191 @@
+package com.bino.binosmining.menu;
+
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.ResultContainer;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import com.bino.binosmining.item.MiningItems;
+import com.bino.binosmining.block.MiningBlocks;
+import com.bino.binosmining.menu.MiningMenus;
+
+// Menu da Mesa de Lapidação: slot 0 = minério bruto, slot 1 = sílex, slot 2 = resultado
+public class LapidaryMenu extends AbstractContainerMenu {
+
+    private static final int RESULT_SLOT = 2;
+
+    private final ContainerLevelAccess access;
+    private final Player owner;
+
+    // Os dois espaços de entrada. Sempre que mudam, o resultado é recalculado.
+    private final Container input = new SimpleContainer(2) {
+        @Override
+        public void setChanged() {
+            super.setChanged();
+            LapidaryMenu.this.slotsChanged(this);
+        }
+    };
+    private final ResultContainer result = new ResultContainer();
+
+    // Usado pelo cliente (quando o servidor abre o menu)
+    public LapidaryMenu(int containerId, Inventory inventory) {
+        this(containerId, inventory, ContainerLevelAccess.NULL);
+    }
+
+    public LapidaryMenu(int containerId, Inventory inventory, ContainerLevelAccess access) {
+        super(MiningMenus.LAPIDARY.get(), containerId);
+        this.access = access;
+        this.owner = inventory.player;
+
+        // Posições iguais às da bigorna: 27, 76 e 134 (altura 47)
+        this.addSlot(new Slot(this.input, 0, 27, 47) {
+            @Override public boolean mayPlace(ItemStack stack) { return gemFor(stack) != null; }
+        });
+        this.addSlot(new Slot(this.input, 1, 76, 47) {
+            @Override public boolean mayPlace(ItemStack stack) { return stack.is(Items.FLINT); }
+        });
+        this.addSlot(new Slot(this.result, 0, 134, 47) {
+            @Override public boolean mayPlace(ItemStack stack) { return false; }   // ninguém coloca nada no resultado
+
+            // Ao pegar o resultado: gasta 1 minério e 1 sílex
+            @Override
+            public void onTake(Player player, ItemStack stack) {
+                LapidaryMenu.this.input.removeItem(0, 1);
+                LapidaryMenu.this.input.removeItem(1, 1);
+                LapidaryMenu.this.access.execute((level, pos) ->
+                        level.playSound(null, pos, SoundEvents.GRINDSTONE_USE, SoundSource.BLOCKS, 0.8f, 1.2f));
+                super.onTake(player, stack);
+            }
+        });
+
+        // Inventário do jogador (3 linhas) e barra de itens
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                this.addSlot(new Slot(inventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(inventory, col, 8 + col * 18, 142));
+        }
+    }
+
+    // Qual gema sai de cada minério bruto (nulo = item não aceito)
+    public static Item gemFor(ItemStack raw) {
+        if (raw.is(MiningItems.RAW_DIAMOND)) return Items.DIAMOND;
+        if (raw.is(MiningItems.RAW_RUBI)) return MiningItems.RUBI.get();
+        if (raw.is(MiningItems.RAW_SAPPHIRE)) return MiningItems.SAPPHIRE.get();
+        if (raw.is(MiningItems.RAW_JADE)) return MiningItems.JADE.get();
+        return null;
+    }
+
+    @Override
+    public void slotsChanged(Container container) {
+        super.slotsChanged(container);
+        if (container == this.input) {
+            Item gem = gemFor(this.input.getItem(0));
+            boolean ready = gem != null && this.input.getItem(1).is(Items.FLINT);
+            this.result.setItem(0, ready ? new ItemStack(gem) : ItemStack.EMPTY);
+            this.broadcastChanges();
+            this.showOnTable(0);
+        }
+    }
+
+    // Botoes do menu (a cena em primeira pessoa aperta no fim da animacao): 0 = lapida uma gema, 1 = lapida tudo
+    // o que der. A gema vai direto para o inventario (ou cai no chao se estiver cheio).
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id != 0 && id != 1) return false;
+        int times = id == 1 ? Math.min(this.input.getItem(0).getCount(), this.input.getItem(1).getCount()) : 1;
+        boolean made = false;
+        for (int i = 0; i < times; i++) {
+            Item gem = gemFor(this.input.getItem(0));
+            if (gem == null || !this.input.getItem(1).is(Items.FLINT)) break;
+            ItemStack out = new ItemStack(gem);
+            this.input.removeItem(0, 1);
+            this.input.removeItem(1, 1);
+            if (!player.getInventory().add(out)) player.drop(out, false);
+            made = true;
+        }
+        return made;
+    }
+
+    // posicao da mesa (so existe no servidor)
+    public java.util.Optional<net.minecraft.core.BlockPos> tablePos() {
+        return this.access.evaluate((level, pos) -> pos);
+    }
+
+    // Avisa os jogadores por perto do que esta em cima da mesa (cut: 0 nada, 1 comecou uma lapidacao, 2 lapidar tudo)
+    private void showOnTable(int cut) {
+        this.access.execute((level, pos) -> {
+            if (level instanceof net.minecraft.server.level.ServerLevel server)
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingChunk(server, new net.minecraft.world.level.ChunkPos(pos),
+                        new com.bino.binosmining.network.LapidaryDisplayPayload(pos, this.owner.getId(),
+                                this.input.getItem(1).copy(), this.input.getItem(0).copy(), cut));
+        });
+    }
+
+    // O cliente comecou a animacao de lapidar: repassa para quem esta por perto (so visual)
+    public static void onCutStarted(net.minecraft.server.level.ServerPlayer player, net.minecraft.core.BlockPos pos, boolean all) {
+        if (player.containerMenu instanceof LapidaryMenu menu && menu.tablePos().map(pos::equals).orElse(false)
+                && !menu.result.getItem(0).isEmpty()) {
+            menu.showOnTable(all ? 2 : 1);
+        }
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return stillValid(this.access, player, MiningBlocks.LAPIDARY_TABLE.get());
+    }
+
+    // Ao fechar o menu, devolve ao jogador o que ficou nos espaços de entrada
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        // a mesa fica vazia para quem esta olhando
+        this.access.execute((level, pos) -> {
+            if (level instanceof net.minecraft.server.level.ServerLevel server)
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingChunk(server, new net.minecraft.world.level.ChunkPos(pos),
+                        new com.bino.binosmining.network.LapidaryDisplayPayload(pos, -1, ItemStack.EMPTY, ItemStack.EMPTY, 0));
+        });
+        this.access.execute((level, pos) -> this.clearContainer(player, this.input));
+    }
+
+    // Shift + clique
+    @Override
+    public ItemStack quickMoveStack(Player player, int index) {
+        ItemStack original = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack stack = slot.getItem();
+            original = stack.copy();
+
+            if (index == RESULT_SLOT) {
+                if (!this.moveItemStackTo(stack, 3, 39, true)) return ItemStack.EMPTY;
+                slot.onQuickCraft(stack, original);
+            } else if (index < RESULT_SLOT) {
+                if (!this.moveItemStackTo(stack, 3, 39, false)) return ItemStack.EMPTY;
+            } else if (gemFor(stack) != null) {
+                if (!this.moveItemStackTo(stack, 0, 1, false)) return ItemStack.EMPTY;
+            } else if (stack.is(Items.FLINT)) {
+                if (!this.moveItemStackTo(stack, 1, 2, false)) return ItemStack.EMPTY;
+            } else if (index < 30) {
+                if (!this.moveItemStackTo(stack, 30, 39, false)) return ItemStack.EMPTY;
+            } else if (!this.moveItemStackTo(stack, 3, 30, false)) {
+                return ItemStack.EMPTY;
+            }
+
+            if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY); else slot.setChanged();
+            if (stack.getCount() == original.getCount()) return ItemStack.EMPTY;
+            slot.onTake(player, stack);
+        }
+        return original;
+    }
+}

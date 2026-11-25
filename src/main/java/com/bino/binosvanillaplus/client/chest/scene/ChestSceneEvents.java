@@ -1,8 +1,8 @@
 package com.bino.binosvanillaplus.client.chest.scene;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
-import com.bino.binosvanillaplus.client.lapidary.LapidaryPick;
-import com.bino.binosvanillaplus.client.lapidary.LapidaryScene;
+import com.bino.binosmining.client.lapidary.LapidaryPick;
+import com.bino.binosmining.client.lapidary.LapidaryScene;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;

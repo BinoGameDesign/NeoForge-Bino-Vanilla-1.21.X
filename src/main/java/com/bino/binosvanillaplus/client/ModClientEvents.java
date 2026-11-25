@@ -107,7 +107,7 @@ public class ModClientEvents {
     @SubscribeEvent
     public static void registerReloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener)
-                manager -> { AllayColorTextures.clear(); com.bino.binosvanillaplus.client.gear.HandArmor.reset(); });
+                manager -> { AllayColorTextures.clear(); com.bino.binosmining.client.gear.HandArmor.reset(); });
     }
 
 

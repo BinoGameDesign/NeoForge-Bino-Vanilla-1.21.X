@@ -1,0 +1,102 @@
+package com.bino.binosmining.client.armor;
+
+import com.bino.binosmining.BinosMining;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
+import com.bino.binosmining.item.MiningItems;
+
+// Armaduras com modelo 3D (feitas no Blockbench e convertidas por tools/bbmodel_armor.py).
+// O jogo desenha a peca com o modelo daqui no lugar da caixa normal da armadura; mexe junto com o corpo.
+@EventBusSubscriber(modid = BinosMining.MOD_ID, value = Dist.CLIENT)
+public final class Armor3D {
+    private Armor3D() {}
+
+    private record Entry(Supplier<? extends Item> item, ModelLayerLocation layer, Supplier<LayerDefinition> mesh, ResourceLocation texture) {}
+
+    private static final Map<Item, HumanoidModel<LivingEntity>> MODELS = new HashMap<>();
+
+    private static Entry entry(Supplier<? extends Item> item, String name, Supplier<LayerDefinition> mesh) {
+        return new Entry(item, new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosMining.MOD_ID, "armor/" + name), "main"), mesh,
+                ResourceLocation.fromNamespaceAndPath(BinosMining.MOD_ID, "textures/models/armor/" + name + "_3d.png"));
+    }
+
+    private static final Entry[] ENTRIES = {
+            entry(MiningItems.JADE_HELMET, "jade_helmet", Armor3DMeshes::jadeHelmet),
+            entry(MiningItems.JADE_CHESTPLATE, "jade_chestplate", Armor3DMeshes::jadeChestplate),
+            entry(MiningItems.JADE_LEGGINGS, "jade_leggings", Armor3DMeshes::jadeLeggings),
+            entry(MiningItems.JADE_BOOTS, "jade_boots", Armor3DMeshes::jadeBoots),
+            entry(MiningItems.SAPPHIRE_HELMET, "sapphire_helmet", Armor3DMeshes::sapphireHelmet),
+            entry(MiningItems.SAPPHIRE_CHESTPLATE, "sapphire_chestplate", Armor3DMeshes::sapphireChestplate),
+            entry(MiningItems.SAPPHIRE_LEGGINGS, "sapphire_leggings", Armor3DMeshes::sapphireLeggings),
+            entry(MiningItems.SAPPHIRE_BOOTS, "sapphire_boots", Armor3DMeshes::sapphireBoots),
+            entry(MiningItems.RUBI_HELMET, "rubi_helmet", Armor3DMeshes::rubiHelmet),
+            entry(MiningItems.RUBI_CHESTPLATE, "rubi_chestplate", Armor3DMeshes::rubiChestplate),
+            entry(MiningItems.RUBI_LEGGINGS, "rubi_leggings", Armor3DMeshes::rubiLeggings),
+            entry(MiningItems.RUBI_BOOTS, "rubi_boots", Armor3DMeshes::rubiBoots),
+            // pecas do jogo base: a textura do modelo vem de texture() (mixin ClientHooksArmorTextureMixin)
+            entry(() -> Items.DIAMOND_HELMET, "diamond_helmet", Armor3DMeshes::diamondHelmet),
+            entry(() -> Items.DIAMOND_CHESTPLATE, "diamond_chestplate", Armor3DMeshes::diamondChestplate),
+            entry(() -> Items.DIAMOND_LEGGINGS, "diamond_leggings", Armor3DMeshes::diamondLeggings),
+            entry(() -> Items.DIAMOND_BOOTS, "diamond_boots", Armor3DMeshes::diamondBoots),
+    };
+
+    private static final Map<Item, ResourceLocation> TEXTURES = new HashMap<>();
+
+    // textura do modelo 3D (ou null se a peca nao tem modelo 3D); usada para as pecas do jogo base
+    public static ResourceLocation texture(ItemStack stack) {
+        if (TEXTURES.isEmpty()) for (Entry en : ENTRIES) TEXTURES.put(en.item().get(), en.texture());
+        return TEXTURES.get(stack.getItem());
+    }
+
+    @SubscribeEvent
+    public static void onLayers(EntityRenderersEvent.RegisterLayerDefinitions e) {
+        for (Entry en : ENTRIES) e.registerLayerDefinition(en.layer(), en.mesh());
+    }
+
+    // os modelos sao montados de novo quando os recursos recarregam
+    @SubscribeEvent
+    public static void onAddLayers(EntityRenderersEvent.AddLayers e) {
+        MODELS.clear();
+        for (Entry en : ENTRIES) MODELS.put(en.item().get(), new HumanoidModel<>(e.getEntityModels().bakeLayer(en.layer())));
+    }
+
+    // modelo 3D da peca (ou null se ela usa a armadura normal)
+    public static HumanoidModel<LivingEntity> model(ItemStack stack) {
+        if (MODELS.isEmpty()) {
+            var set = Minecraft.getInstance().getEntityModels();
+            for (Entry en : ENTRIES) MODELS.put(en.item().get(), new HumanoidModel<>(set.bakeLayer(en.layer())));
+        }
+        return MODELS.get(stack.getItem());
+    }
+
+    @SubscribeEvent
+    public static void onExtensions(RegisterClientExtensionsEvent e) {
+        IClientItemExtensions ext = new IClientItemExtensions() {
+            @Override
+            public HumanoidModel<?> getHumanoidArmorModel(LivingEntity entity, ItemStack stack, EquipmentSlot slot, HumanoidModel<?> original) {
+                HumanoidModel<LivingEntity> m = model(stack);
+                return m != null ? m : original;
+            }
+        };
+        Item[] items = new Item[ENTRIES.length];
+        for (int i = 0; i < ENTRIES.length; i++) items[i] = ENTRIES[i].item().get();
+        e.registerItem(ext, items);
+    }
+}

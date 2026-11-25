@@ -1,0 +1,15 @@
+{
+  "values": [
+    "binosmining:rubi_ore",
+    "binosmining:rubi_deepslate_ore",
+    "binosmining:rubi_block",
+    "binosmining:sapphire_ore",
+    "binosmining:sapphire_deepslate_ore",
+    "binosmining:sapphire_block",
+    "binosmining:jade_ore",
+    "binosmining:jade_deepslate_ore",
+    "binosmining:jade_block",
+    "binosmining:forge_ore",
+    "binosmining:philosopher_block"
+  ]
+}

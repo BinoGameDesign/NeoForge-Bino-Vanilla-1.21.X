@@ -1,0 +1,10 @@
+{
+  "name": "sapphire_ore",
+  "glsl": "sapphire_ore.glsl",
+  "mat0": [
+    "binosmining:sapphire_ore",
+    "binosmining:sapphire_deepslate_ore"
+  ],
+  "blocklight": "binosmining:sapphire",
+  "held_lighting": false
+}

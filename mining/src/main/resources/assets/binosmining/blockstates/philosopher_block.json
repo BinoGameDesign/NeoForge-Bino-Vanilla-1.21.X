@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "binosmining:block/philosopher_block"
+    }
+  }
+}

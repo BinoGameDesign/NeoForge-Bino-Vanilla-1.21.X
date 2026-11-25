@@ -347,7 +347,7 @@ public class RecipeLookupScreen extends Screen {
     private AbstractContainerMenu fillMenu() {
         if (parent instanceof AbstractContainerScreen<?> cs) return cs.getMenu();
         Minecraft mc = Minecraft.getInstance();
-        if (parent instanceof com.bino.binosvanillaplus.client.bench.BenchSceneScreen && mc.player != null
+        if (parent instanceof com.bino.binosmining.client.bench.BenchSceneScreen && mc.player != null
                 && mc.player.containerMenu != mc.player.inventoryMenu) return mc.player.containerMenu;
         return null;
     }

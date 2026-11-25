@@ -1,8 +1,0 @@
-{
-  "name": "rubi_block",
-  "glsl": "rubi_block.glsl",
-  "mat0": [
-    "binosvanillaplus:rubi_block"
-  ],
-  "held_lighting": false
-}

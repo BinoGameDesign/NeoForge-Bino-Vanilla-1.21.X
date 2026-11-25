@@ -16,13 +16,6 @@ public class ModDataComponents {
     public static final DeferredRegister<DataComponentType<?>> COMPONENTS =
             DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, BinosVanillaMod.MOD_ID);
 
-    // persistent = é salvo no mundo; networkSynchronized = o servidor envia ao jogador (para a dica do item)
-    public static final Supplier<DataComponentType<Integer>> FORGE_LEVEL = COMPONENTS.register("forge_level",
-            () -> DataComponentType.<Integer>builder()
-                    .persistent(ExtraCodecs.NON_NEGATIVE_INT)
-                    .networkSynchronized(ByteBufCodecs.VAR_INT)
-                    .build());
-
     // Chave Dimensional: nivel (upgrades recebidos) e minerios ja usados (nao podem repetir)
     public static final Supplier<DataComponentType<Integer>> KEY_LEVEL = COMPONENTS.register("key_level",
             () -> DataComponentType.<Integer>builder()

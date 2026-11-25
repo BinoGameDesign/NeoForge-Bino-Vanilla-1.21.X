@@ -91,3 +91,11 @@ config="${mod_id}.mixins.json"
 # stop your mod loading on the server for example.
 #[features.${mod_id}]
 #openGLVersion="[3.2,)"
+
+# Bino's Vanilla+ Mining (gemas, forja, lapidacao): por enquanto obrigatorio
+[[dependencies.${mod_id}]]
+    modId="binosmining"
+    type="required"
+    versionRange="[1.0.0,)"
+    ordering="AFTER"
+    side="BOTH"

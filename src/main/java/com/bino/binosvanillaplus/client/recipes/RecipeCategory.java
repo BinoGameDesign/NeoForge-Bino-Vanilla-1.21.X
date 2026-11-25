@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import java.util.function.Supplier;
+import com.bino.binosmining.block.MiningBlocks;
 
 // Tipos de receita mostrados no navegador (cada um e' uma aba)
 public enum RecipeCategory {
@@ -16,7 +17,7 @@ public enum RecipeCategory {
     CAMPFIRE("campfire", "Fogueira", () -> new ItemStack(Items.CAMPFIRE)),
     STONECUTTING("stonecutting", "Cortador de pedra", () -> new ItemStack(Items.STONECUTTER)),
     SMITHING("smithing", "Bancada de ferreiro", () -> new ItemStack(Items.SMITHING_TABLE)),
-    LAPIDARY("lapidary", "Mesa de Lapidação", () -> new ItemStack(ModBlocks.LAPIDARY_TABLE.get()));
+    LAPIDARY("lapidary", "Mesa de Lapidação", () -> new ItemStack(MiningBlocks.LAPIDARY_TABLE.get()));
 
     private final String id;
     private final String fallback;

@@ -1,8 +1,8 @@
 package com.bino.binosvanillaplus.client.combat;
 
 import com.bino.binosvanillaplus.BinosVanillaMod;
-import com.bino.binosvanillaplus.client.HeldToolModel;
-import com.bino.binosvanillaplus.client.lapidary.LapidaryHands;
+import com.bino.binosmining.client.HeldToolModel;
+import com.bino.binosmining.client.lapidary.LapidaryHands;
 import com.bino.binosvanillaplus.combat.CombatActionPayload;
 import com.bino.binosvanillaplus.combat.CombatEvents;
 import com.bino.binosvanillaplus.combat.CombatMove;
@@ -865,8 +865,8 @@ public final class CombatMoves {
         ModelPart[] arms = {model.rightArm, model.rightSleeve, model.leftArm, model.leftSleeve};
         for (ModelPart part : arms) { part.xScale = part.zScale = ARM_THIN; part.render(ps, vc, light, ov); }   // mais finos: nao tampam a tela
         for (ModelPart part : arms) part.xScale = part.zScale = 1f;
-        com.bino.binosvanillaplus.client.gear.HandArmor.render(ps, buf, light, p, true, model);
-        com.bino.binosvanillaplus.client.gear.HandArmor.render(ps, buf, light, p, false, model);
+        com.bino.binosmining.client.gear.HandArmor.render(ps, buf, light, p, true, model);
+        com.bino.binosmining.client.gear.HandArmor.render(ps, buf, light, p, false, model);
 
         ItemStack stack = p.getMainHandItem();
         if (!stack.isEmpty()) {   // a arma: igual a camada do item na mao da terceira pessoa

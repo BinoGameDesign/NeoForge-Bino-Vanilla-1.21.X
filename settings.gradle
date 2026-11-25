@@ -7,3 +7,8 @@ pluginManagement {
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+
+// Mods do conjunto Bino's Vanilla+ (cada um gera o seu proprio .jar):
+//   :        -> Bino's Vanilla+ (o resto, por enquanto num mod so)
+//   :mining  -> Bino's Vanilla+ Mining (binosmining)
+include 'mining'

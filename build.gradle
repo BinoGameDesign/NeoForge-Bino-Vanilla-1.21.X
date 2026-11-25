@@ -5,6 +5,9 @@ plugins {
     id 'idea'
 }
 
+// o Bino's Vanilla+ usa o Mining (mod separado, pasta mining/): o Mining precisa estar configurado antes
+evaluationDependsOn(':mining')
+
 tasks.named('wrapper', Wrapper).configure {
     // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
     // Switching this to Wrapper.DistributionType.ALL will download the full gradle sources that comes with
@@ -117,6 +120,10 @@ neoForge {
         "${mod_id}" {
             sourceSet(sourceSets.main)
         }
+        // o Mining roda junto no runClient do Vanilla+
+        "binosmining" {
+            sourceSet(project(':mining').sourceSets.main)
+        }
     }
 }
 
@@ -129,6 +136,8 @@ configurations {
 }
 
 dependencies {
+    // Bino's Vanilla+ Mining (mod separado; por enquanto o Vanilla+ precisa dele instalado)
+    implementation project(':mining')
     // só para testar no jogo de desenvolvimento (runClient). Não vira dependência do mod
     runtimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
     runtimeOnly "maven.modrinth:iris:1.8.12+1.21.1-neoforge"

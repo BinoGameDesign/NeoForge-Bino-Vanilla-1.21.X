@@ -1,8 +1,0 @@
-{
-  "name": "philosopher_block",
-  "glsl": "philosopher_block.glsl",
-  "mat0": [
-    "binosvanillaplus:philosopher_block"
-  ],
-  "held_lighting": false
-}

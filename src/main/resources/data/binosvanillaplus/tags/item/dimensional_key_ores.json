@@ -11,8 +11,8 @@
     "minecraft:diamond",
     "minecraft:emerald",
     "minecraft:netherite_ingot",
-    "binosvanillaplus:rubi",
-    "binosvanillaplus:sapphire",
-    "binosvanillaplus:jade"
+    "binosmining:rubi",
+    "binosmining:sapphire",
+    "binosmining:jade"
   ]
 }

@@ -16,12 +16,6 @@ public class ModSounds {
     public static final Supplier<SoundEvent> WHISTLE = register("whistle");
     public static final Supplier<SoundEvent> SONAR_PING = register("sonar_ping");
     public static final Supplier<SoundEvent> CAMERA_SHUTTER = register("camera_shutter");
-    // mesa de lapidacao (cena em primeira pessoa)
-    public static final Supplier<SoundEvent> LAPIDARY_SPIN = register("lapidary_spin");
-    public static final Supplier<SoundEvent> LAPIDARY_READY = register("lapidary_ready");
-    public static final Supplier<SoundEvent> LAPIDARY_DONE = register("lapidary_done");
-    public static final Supplier<SoundEvent> LAPIDARY_CONTACT = register("lapidary_contact");
-
     // Cave Goblin (por enquanto apontam para sons do jogo com outro tom, em sounds.json; trocar pelos gravados depois)
     public static final Supplier<SoundEvent> CAVE_GOBLIN_AMBIENT = register("cave_goblin.ambient");
     public static final Supplier<SoundEvent> CAVE_GOBLIN_HURT = register("cave_goblin.hurt");

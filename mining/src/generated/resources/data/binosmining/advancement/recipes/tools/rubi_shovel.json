@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_rubi": {
+      "conditions": {
+        "items": [
+          {
+            "items": "binosmining:rubi"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "binosmining:rubi_shovel"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_rubi"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "binosmining:rubi_shovel"
+    ]
+  }
+}
