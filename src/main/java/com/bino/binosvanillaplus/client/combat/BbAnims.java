@@ -205,10 +205,16 @@ public final class BbAnims {
 
     public static Sample mix(Sample from, Sample to, float k) {
         return new Sample() {
-            public float[] rot(String b) { return lerp(from.rot(b), to.rot(b), k); }
+            public float[] rot(String b) {   // corpo inteiro (root/tumble): pelo caminho curto, sem desfazer o giro de 360
+                return b.equals("root") || b.equals("tumble") ? lerpAngle(from.rot(b), to.rot(b), k) : lerp(from.rot(b), to.rot(b), k);
+            }
             public float[] pos(String b) { return lerp(from.pos(b), to.pos(b), k); }
             public float[] scale(String b) { return lerp(from.scale(b), to.scale(b), k); }
         };
+    }
+
+    private static float[] lerpAngle(float[] a, float[] b, float k) {
+        return new float[]{a[0] + Mth.wrapDegrees(b[0] - a[0]) * k, a[1] + Mth.wrapDegrees(b[1] - a[1]) * k, a[2] + Mth.wrapDegrees(b[2] - a[2]) * k};
     }
 
     private static float[] lerp(float[] a, float[] b, float k) {
@@ -250,6 +256,9 @@ public final class BbAnims {
     // corpo inteiro (root + tumble), no espaco do jogador depois de virar para onde o corpo olha (bodyYaw)
     static void poseRoot(PoseStack ps, Sample a, float w, boolean right, float bodyYaw) {
         float[] rp = a.pos("root"), rr = a.rot("root"), tp = a.pos("tumble"), tr = a.rot("tumble");
+        // entrando/saindo (w < 1): o giro vai pelo caminho curto. Sem isso, um golpe que termina girado -360
+        // (tormenta, juizo) desgirava o corpo inteiro enquanto a animacao some.
+        if (w < 1f) for (int i = 0; i < 3; i++) { rr[i] = Mth.wrapDegrees(rr[i]); tr[i] = Mth.wrapDegrees(tr[i]); }
         if (!right) { rp[0] = -rp[0]; rr[1] = -rr[1]; rr[2] = -rr[2]; tp[0] = -tp[0]; tr[1] = -tr[1]; tr[2] = -tr[2]; }
         ps.mulPose(Axis.YP.rotationDegrees(180f - bodyYaw));
         ps.translate(rp[0] * PX * w, rp[1] * PX * w, rp[2] * PX * w);
@@ -333,10 +342,12 @@ public final class BbAnims {
         v[MoveAnims.HZ] += (h.z - h0.z) / 16f * 0.6f * w;
         float[] rp = a.pos("root"), rr = a.rot("root"), tr = a.rot("tumble"), br = a.rot("body");
         v[MoveAnims.TW] = -br[1] * w;
-        v[MoveAnims.LN] = -rr[0] / 0.3f * w;
+        // inclinacao do root: so ate 45 graus vira "inclinar"; o que passar disso (cambalhota, como no juizo) e' giro
+        float lean = Mth.clamp(Mth.wrapDegrees(rr[0]), -45f, 45f);
+        v[MoveAnims.LN] = -lean / 0.3f * w;
         v[MoveAnims.SP] = -rr[1];
         v[MoveAnims.RL] = -tr[2] * w;
-        v[MoveAnims.FL] = -tr[0];
+        v[MoveAnims.FL] = -tr[0] - (rr[0] - lean);
         v[MoveAnims.DX] = -rp[2] / 16f * w;
         v[MoveAnims.HOP] = Math.max(0, rp[1]) / 16f * w;
         v[MoveAnims.CR] = Mth.clamp(-rp[1] / 16f / 0.12f, 0f, 1f) * w;
