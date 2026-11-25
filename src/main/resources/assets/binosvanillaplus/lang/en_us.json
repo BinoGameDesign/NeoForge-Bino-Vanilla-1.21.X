@@ -140,7 +140,7 @@
   "gui.binosvanillaplus.combos.parry": "Parry",
   "gui.binosvanillaplus.combos.parry.desc": "R right on the hit (white blocks, yellow stuns, blue = Issen). Hold R to block (up to 2 s).",
   "gui.binosvanillaplus.combos.issen": "Issen chain",
-  "gui.binosvanillaplus.combos.issen.desc": "A blue parry triggers an Issen. Then another chance appears: left click on time to chain another, until the enemy falls.",
+  "gui.binosvanillaplus.combos.issen.desc": "A blue parry triggers an Issen. Then another chance appears: left click on time to chain another. If the Issen kills and another enemy is in sight, you warp to it and strike again, stronger each time.",
   "gui.binosvanillaplus.combos.backstab": "Backstab",
   "gui.binosvanillaplus.combos.backstab.desc": "Crouching, behind an enemy that hasn't seen you.",
   "gui.binosvanillaplus.combos.critical": "Critical",

@@ -330,7 +330,7 @@
   "gui.binosvanillaplus.combos.parry": "Parry",
   "gui.binosvanillaplus.combos.parry.desc": "R na hora do golpe (brilho branco bloqueia, amarelo atordoa, azul = Issen). Segure R para bloquear (até 2 s).",
   "gui.binosvanillaplus.combos.issen": "Issen em cadeia",
-  "gui.binosvanillaplus.combos.issen.desc": "O parry azul faz um Issen. Depois dele aparece outra chance: clique esquerdo na hora para emendar outro, até o inimigo cair.",
+  "gui.binosvanillaplus.combos.issen.desc": "O parry azul faz um Issen. Depois dele aparece outra chance: clique esquerdo na hora para emendar outro. Se o Issen matar e houver outro inimigo à vista, você teleporta até ele e corta de novo, cada vez mais forte.",
   "gui.binosvanillaplus.combos.backstab": "Facada pelas costas",
   "gui.binosvanillaplus.combos.backstab.desc": "Abaixado, atrás de um inimigo que não te viu.",
   "gui.binosvanillaplus.combos.critical": "Crítico",
