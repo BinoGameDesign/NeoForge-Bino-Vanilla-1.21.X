@@ -117,7 +117,7 @@ public class MiningBlocks {
 
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);
-        MiningItems.ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties()));
+        MiningItems.ITEMS.register(name, () -> new BlockItem(toReturn.get(), new Item.Properties()));
         return toReturn;
     }
 

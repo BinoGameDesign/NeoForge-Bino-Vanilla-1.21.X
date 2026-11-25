@@ -43,17 +43,19 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
+    // nomes proprios (runCombatClient...): o runClient fica so na raiz (Vanilla+ com todos os mods juntos).
+    // Antes, rodar runClient abria um jogo para cada modulo ao mesmo tempo.
     runs {
-        client {
+        combatClient {
             client()
             def mcUser = project.findProperty('mc_user')
             if (mcUser) programArguments.addAll '--username', mcUser.toString()
         }
-        server {
+        combatServer {
             server()
             programArgument '--nogui'
         }
-        data {
+        combatData {
             data()
             programArguments.addAll '--mod', modId, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
