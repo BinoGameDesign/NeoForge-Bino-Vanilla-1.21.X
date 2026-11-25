@@ -92,7 +92,13 @@ public final class Armor3D {
             @Override
             public HumanoidModel<?> getHumanoidArmorModel(LivingEntity entity, ItemStack stack, EquipmentSlot slot, HumanoidModel<?> original) {
                 HumanoidModel<LivingEntity> m = model(stack);
-                return m != null ? m : original;
+                if (m == null) return original;
+                // mesmas partes visiveis do modelo do jogo (ex.: outro mod esconde o capacete em primeira pessoa)
+                m.head.visible = original.head.visible; m.hat.visible = original.hat.visible;
+                m.body.visible = original.body.visible;
+                m.rightArm.visible = original.rightArm.visible; m.leftArm.visible = original.leftArm.visible;
+                m.rightLeg.visible = original.rightLeg.visible; m.leftLeg.visible = original.leftLeg.visible;
+                return m;
             }
         };
         Item[] items = new Item[ENTRIES.length];
