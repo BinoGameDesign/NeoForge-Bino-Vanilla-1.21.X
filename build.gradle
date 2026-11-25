@@ -155,8 +155,10 @@ dependencies {
     runtimeOnly "maven.modrinth:iris:1.8.12+1.21.1-neoforge"
     // Complementary: add-on e patches para blocos de mods (só para testar no runClient)
     runtimeOnly "maven.modrinth:euphoria-patches:QMsRXtSJ"       // Euphoria Patches 1.10.5-r5.9.3 (NeoForge)
-    runtimeOnly "maven.modrinth:supplemental-patches:lnHbQ2EA"   // Supplemental Patches 1.0.2 (NeoForge 1.21.1)
-    runtimeOnly "maven.modrinth:kotlin-for-forge:5.12.0"         // exigido pelo Supplemental Patches
+    // DESLIGADOS POR ENQUANTO (25/11): quando algum mod falha ao carregar, o Supplemental Patches quebra antes da tela
+    // de erro do NeoForge aparecer e esconde o motivo. Tirar o // de novo depois que o jogo abrir certinho.
+    // runtimeOnly "maven.modrinth:supplemental-patches:lnHbQ2EA"   // Supplemental Patches 1.0.2 (NeoForge 1.21.1)
+    // runtimeOnly "maven.modrinth:kotlin-for-forge:5.12.0"         // exigido pelo Supplemental Patches
     // Jade (mostra informacoes do bloco olhado). Opcional: o mod funciona sem ele
     compileOnly "maven.modrinth:jade:15.9.4+neoforge"
     localRuntime "maven.modrinth:jade:15.9.4+neoforge"
