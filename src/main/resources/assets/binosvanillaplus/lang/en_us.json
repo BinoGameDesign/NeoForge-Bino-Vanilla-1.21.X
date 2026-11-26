@@ -102,5 +102,18 @@
   "message.binosvanillaplus.thirst.dirty_hint": "Tip: water taken from the world isn't safe and may cause nausea. Boil the bottle in a furnace, smoker or campfire to get Boiled Water.",
   "tooltip.binosvanillaplus.water.dirty": "Unboiled water: quenches thirst, but may cause nausea",
   "tooltip.binosvanillaplus.water.boil": "Boil it in a furnace, smoker or campfire",
-  "tooltip.binosvanillaplus.water.boiled": "Quenches thirst safely"
+  "tooltip.binosvanillaplus.water.boiled": "Quenches thirst safely",
+  "item.binosvanillaplus.vial": "Vial",
+  "item.binosvanillaplus.flask": "Flask",
+  "item.binosvanillaplus.large_flask": "Large Flask",
+  "item.binosvanillaplus.jug": "Jug",
+  "item.binosvanillaplus.filled_vial": "Vial of %s",
+  "item.binosvanillaplus.filled_flask": "Flask of %s",
+  "item.binosvanillaplus.filled_large_flask": "Large Flask of %s",
+  "item.binosvanillaplus.filled_jug": "Jug of %s",
+  "vessel.binosvanillaplus.water": "Water",
+  "vessel.binosvanillaplus.boiled_water": "Boiled Water",
+  "tooltip.binosvanillaplus.vessel.doses": "Doses: %s/%s",
+  "tooltip.binosvanillaplus.vessel.half": "Half dose: drinks fast, but counts for half",
+  "tooltip.binosvanillaplus.vessel.boil_full": "When full, boil it in a furnace, smoker or campfire"
 }

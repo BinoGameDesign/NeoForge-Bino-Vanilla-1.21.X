@@ -293,5 +293,18 @@
   "message.binosvanillaplus.thirst.dirty_hint": "Dica: água tirada do mundo não é segura e pode dar náusea. Ferva a garrafa na fornalha, no defumador ou na fogueira para virar Água Fervida.",
   "tooltip.binosvanillaplus.water.dirty": "Água não fervida: mata a sede, mas pode dar náusea",
   "tooltip.binosvanillaplus.water.boil": "Ferva na fornalha, defumador ou fogueira",
-  "tooltip.binosvanillaplus.water.boiled": "Mata a sede sem risco"
+  "tooltip.binosvanillaplus.water.boiled": "Mata a sede sem risco",
+  "item.binosvanillaplus.vial": "Frasquinho",
+  "item.binosvanillaplus.flask": "Frasco",
+  "item.binosvanillaplus.large_flask": "Frasco Grande",
+  "item.binosvanillaplus.jug": "Garrafão",
+  "item.binosvanillaplus.filled_vial": "Frasquinho de %s",
+  "item.binosvanillaplus.filled_flask": "Frasco de %s",
+  "item.binosvanillaplus.filled_large_flask": "Frasco Grande de %s",
+  "item.binosvanillaplus.filled_jug": "Garrafão de %s",
+  "vessel.binosvanillaplus.water": "Água",
+  "vessel.binosvanillaplus.boiled_water": "Água Fervida",
+  "tooltip.binosvanillaplus.vessel.doses": "Doses: %s/%s",
+  "tooltip.binosvanillaplus.vessel.half": "Meia dose: bebe rápido, mas vale metade",
+  "tooltip.binosvanillaplus.vessel.boil_full": "Cheio, ferva na fornalha, defumador ou fogueira"
 }

@@ -170,7 +170,7 @@ public final class Thirst {
     }
 
     // agua do mundo: pode dar nausea; a primeira vez mostra a dica
-    private static void dirty(ServerPlayer p, float chance) {
+    public static void dirty(ServerPlayer p, float chance) {
         if (p.getRandom().nextFloat() < chance) p.addEffect(new MobEffectInstance(MobEffects.CONFUSION, NAUSEA_TICKS, 0));
         if (!p.getData(ModAttachments.THIRST_HINT.get())) {
             p.setData(ModAttachments.THIRST_HINT.get(), true);

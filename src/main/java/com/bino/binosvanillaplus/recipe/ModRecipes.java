@@ -19,5 +19,9 @@ public class ModRecipes {
     public static final Supplier<RecipeSerializer<HelmetLampRecipe>> HELMET_LAMP = SERIALIZERS.register("helmet_lamp",
             () -> new SimpleCraftingRecipeSerializer<>(HelmetLampRecipe::new));
 
+    // passar agua/pocoes entre garrafas e frascos (ver thirst/Vessels)
+    public static final Supplier<RecipeSerializer<VesselPourRecipe>> VESSEL_POUR = SERIALIZERS.register("vessel_pour",
+            () -> new SimpleCraftingRecipeSerializer<>(VesselPourRecipe::new));
+
     public static void register(IEventBus eventBus) { SERIALIZERS.register(eventBus); }
 }

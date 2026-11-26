@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:campfire_cooking",
+  "category": "misc",
+  "ingredient": {
+    "type": "neoforge:components",
+    "items": "binosvanillaplus:filled_large_flask",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      },
+      "binosvanillaplus:doses": 3
+    }
+  },
+  "result": {
+    "id": "binosvanillaplus:filled_large_flask",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      },
+      "binosvanillaplus:doses": 3,
+      "binosvanillaplus:boiled": true
+    }
+  },
+  "experience": 0.05,
+  "cookingtime": 600
+}

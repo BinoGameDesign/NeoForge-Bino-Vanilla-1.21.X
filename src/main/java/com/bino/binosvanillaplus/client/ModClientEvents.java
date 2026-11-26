@@ -79,6 +79,13 @@ public class ModClientEvents {
                 com.bino.binosvanillaplus.item.ModItems.PILLAGER_CIVILIAN_SPAWN_EGG.get());
         // Agua Fervida: o liquido da garrafa (camada 0) num azul claro e limpo
         event.register((stack, tint) -> tint == 0 ? 0xFF7FD4F5 : 0xFFFFFFFF, com.bino.binosvanillaplus.item.ModItems.BOILED_WATER.get());
+        // frascos cheios: o liquido na cor da pocao (agua fervida mais clara)
+        event.register((stack, tint) -> {
+            if (tint != 0) return 0xFFFFFFFF;
+            if (com.bino.binosvanillaplus.thirst.Vessels.boiled(stack)) return 0xFF7FD4F5;
+            return net.minecraft.util.FastColor.ARGB32.opaque(com.bino.binosvanillaplus.thirst.Vessels.contents(stack).getColor());
+        }, com.bino.binosvanillaplus.item.ModItems.FILLED_VIAL.get(), com.bino.binosvanillaplus.item.ModItems.FILLED_FLASK.get(),
+                com.bino.binosvanillaplus.item.ModItems.FILLED_LARGE_FLASK.get(), com.bino.binosvanillaplus.item.ModItems.FILLED_JUG.get());
     }
 
     // Ensina o jogo a desenhar o coração rosa: usa o comportamento do coração normal (sobe e some)

@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:smoking",
+  "category": "misc",
+  "ingredient": {
+    "type": "neoforge:components",
+    "items": "binosvanillaplus:filled_jug",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      },
+      "binosvanillaplus:doses": 4
+    }
+  },
+  "result": {
+    "id": "binosvanillaplus:filled_jug",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      },
+      "binosvanillaplus:doses": 4,
+      "binosvanillaplus:boiled": true
+    }
+  },
+  "experience": 0.05,
+  "cookingtime": 250
+}

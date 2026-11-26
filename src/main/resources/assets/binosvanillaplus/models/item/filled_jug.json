@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "binosvanillaplus:item/jug_overlay",
+    "layer1": "binosvanillaplus:item/jug"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "B",
+    "G"
+  ],
+  "key": {
+    "B": {
+      "tag": "minecraft:wooden_buttons"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    }
+  },
+  "result": {
+    "id": "binosvanillaplus:vial",
+    "count": 2
+  }
+}

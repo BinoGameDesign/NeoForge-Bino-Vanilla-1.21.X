@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": {
+    "type": "neoforge:components",
+    "items": "binosvanillaplus:filled_flask",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      },
+      "binosvanillaplus:doses": 2
+    }
+  },
+  "result": {
+    "id": "binosvanillaplus:filled_flask",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      },
+      "binosvanillaplus:doses": 2,
+      "binosvanillaplus:boiled": true
+    }
+  },
+  "experience": 0.05,
+  "cookingtime": 250
+}

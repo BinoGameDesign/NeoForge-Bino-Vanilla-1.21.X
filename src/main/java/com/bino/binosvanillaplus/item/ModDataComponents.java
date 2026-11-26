@@ -55,6 +55,12 @@ public class ModDataComponents {
     public static final Supplier<DataComponentType<PhotoData>> PHOTO = COMPONENTS.register("photo",
             () -> DataComponentType.<PhotoData>builder().persistent(PhotoData.CODEC).networkSynchronized(PhotoData.STREAM_CODEC).build());
 
+    // Frascos (sede/pocoes): doses que ainda restam e se a agua dentro foi fervida
+    public static final Supplier<DataComponentType<Integer>> DOSES = COMPONENTS.register("doses",
+            () -> DataComponentType.<Integer>builder().persistent(ExtraCodecs.NON_NEGATIVE_INT).networkSynchronized(ByteBufCodecs.VAR_INT).build());
+    public static final Supplier<DataComponentType<Boolean>> BOILED = COMPONENTS.register("boiled",
+            () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
+
     public static void register(IEventBus eventBus) {
         COMPONENTS.register(eventBus);
     }
