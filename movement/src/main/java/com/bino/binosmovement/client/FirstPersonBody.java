@@ -14,8 +14,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 
 // O proprio corpo em primeira pessoa: olhando para baixo voce ve o tronco e as pernas (andando, pulando, no golpe).
-// A cabeca, o chapeu, os bracos e o que esta nas maos nao aparecem (as maos continuam as da primeira pessoa e a
-// camera fica dentro da cabeca). O corpo vai um pouco para tras quando voce olha para baixo, para a camera nao
+// A cabeca e o chapeu nao aparecem (a camera fica dentro da cabeca); os itens nas maos sao os da primeira pessoa. O corpo vai um pouco para tras quando voce olha para baixo, para a camera nao
 // entrar no peito.
 // Quem faz o jogo desenhar o jogador em primeira pessoa: LevelRendererBodyMixin. Capacete e itens: os mixins
 // HumanoidArmorLayerBodyMixin e ItemInHandLayerBodyMixin olham para rendering().
@@ -25,8 +24,10 @@ public final class FirstPersonBody {
 
     private static boolean rendering;
     private static boolean pushed;
-    private static final float BACK = 0.22f, BACK_LOOKING_DOWN = 0.30f, BACK_CROUCH = 0.22f;   // blocos para tras
-    private static final float TORSO_HIDE_PITCH = 45f;   // olhando mais para baixo que isso o tronco some (so pernas)
+    // Modelo: o First-person Model (tr7zw). O corpo inteiro aparece (tronco, bracos, pernas, armadura), menos a cabeca;
+    // recua um pouco para a camera nao ficar dentro do peito; maos vazias sao os bracos do proprio corpo (nada de
+    // maozinha do jogo), e a mao com item continua a do jogo (itens, minerar, comer, arco), sem braco duplicado.
+    private static final float BACK = 0.16f, BACK_LOOKING_DOWN = 0.22f, BACK_CROUCH = 0.20f;   // blocos para tras
 
     // quanto o corpo recua (blocos), para longe de onde voce olha: a camera nunca fica dentro do peito
     public static float back(Player p, float pt) {
@@ -34,11 +35,19 @@ public final class FirstPersonBody {
         return BACK + BACK_LOOKING_DOWN * pitch + (p.isCrouching() ? BACK_CROUCH : 0f);
     }
 
-    // olhando bem para baixo: sem tronco (dava para ver o pescoco e o topo do peito); ficam as pernas e os pes
-    public static boolean torsoHidden(Player p, float pt) { return p.getViewXRot(pt) > TORSO_HIDE_PITCH; }
+    // o tronco sempre aparece (como no First-person Model)
+    public static boolean torsoHidden(Player p, float pt) { return false; }
+    public static boolean hidingTorso() { return false; }
 
-    private static boolean hideTorso;
-    public static boolean hidingTorso() { return rendering && hideTorso; }
+    // a mao deste lado e' desenhada pelo jogo (tem item)? entao o braco do corpo nao aparece (sem braco duplicado)
+    public static boolean vanillaHand(Player p, net.minecraft.world.entity.HumanoidArm side) {
+        boolean main = side == p.getMainArm();
+        return !(main ? p.getMainHandItem() : p.getOffhandItem()).isEmpty();
+    }
+
+    private static boolean rightShown, leftShown;
+    // braco do corpo aparecendo agora (para a manga da armadura do peito)
+    public static boolean armShown(boolean rightArm) { return rendering && (rightArm ? rightShown : leftShown); }
 
     // o jogo deve desenhar o jogador local agora, mesmo em primeira pessoa?
     public static boolean active() {
@@ -60,13 +69,13 @@ public final class FirstPersonBody {
         rendering = true;
         PlayerModel<?> m = e.getRenderer().getModel();
         m.head.visible = false; m.hat.visible = false;
-        m.rightArm.visible = false; m.leftArm.visible = false;
-        m.rightSleeve.visible = false; m.leftSleeve.visible = false;
-        float pt = e.getPartialTick();
         Player p = e.getEntity();
+        rightShown = !vanillaHand(p, net.minecraft.world.entity.HumanoidArm.RIGHT);
+        leftShown = !vanillaHand(p, net.minecraft.world.entity.HumanoidArm.LEFT);
+        if (!rightShown) { m.rightArm.visible = false; m.rightSleeve.visible = false; }
+        if (!leftShown) { m.leftArm.visible = false; m.leftSleeve.visible = false; }
+        float pt = e.getPartialTick();
         float back = back(p, pt);
-        hideTorso = torsoHidden(p, pt);
-        if (hideTorso) { m.body.visible = false; m.jacket.visible = false; }
         float yaw = p.getViewYRot(pt) * Mth.DEG_TO_RAD;
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
@@ -83,7 +92,6 @@ public final class FirstPersonBody {
             PlayerModel<?> m = e.getRenderer().getModel();
             m.head.visible = true; m.hat.visible = true;
             m.body.visible = true; m.jacket.visible = true;
-            hideTorso = false;
             m.rightArm.visible = true; m.leftArm.visible = true;
             m.rightSleeve.visible = true; m.leftSleeve.visible = true;
         }

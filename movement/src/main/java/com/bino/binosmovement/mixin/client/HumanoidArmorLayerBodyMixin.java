@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Corpo da primeira pessoa: sem capacete (a camera fica dentro da cabeca) e sem as mangas da armadura do peito.
+// Corpo da primeira pessoa: sem capacete (a camera fica dentro da cabeca) e sem a manga da armadura no braco escondido.
 // Entra logo depois de o jogo escolher as partes visiveis da peca (setPartVisibility). Armaduras com modelo proprio
 // (as armaduras 3D do Mining) copiam essas partes visiveis do modelo do jogo, entao somem junto.
 // (antes era no renderArmorPiece, mas o NeoForge mudou os parametros dele e o mixin nao pegava: o capacete aparecia
@@ -22,8 +22,10 @@ public abstract class HumanoidArmorLayerBodyMixin<T extends LivingEntity, M exte
         if (!FirstPersonBody.rendering()) return;
         if (slot == EquipmentSlot.HEAD) model.setAllVisible(false);
         else if (slot == EquipmentSlot.CHEST) {
-            model.rightArm.visible = false; model.leftArm.visible = false; model.head.visible = false; model.hat.visible = false;
-            if (FirstPersonBody.hidingTorso()) model.body.visible = false;   // olhando para baixo: sem o peitoral
+            // manga da armadura so no braco do corpo que aparece (a mao com item e' a da primeira pessoa)
+            if (!FirstPersonBody.armShown(true)) model.rightArm.visible = false;
+            if (!FirstPersonBody.armShown(false)) model.leftArm.visible = false;
+            model.head.visible = false; model.hat.visible = false;
         }
         else { model.head.visible = false; model.hat.visible = false; }
     }
