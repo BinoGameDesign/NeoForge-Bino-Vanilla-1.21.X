@@ -13,7 +13,8 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
 // Mimico revelado: modelo do mimico do Bino (simples ou duplo) com a textura do bau em que ele estava
-// (normal, armadilha ou natal). Animacoes do Blockbench: reveal (abrir a boca), bite (morder), hop (pulo).
+// (normal, armadilha ou natal). Animacoes do Blockbench: reveal (abrir a boca), bite (morder), hop (pulo) e, na agua e
+// parado, a "water" do Bino com bolhas de vez em quando (ChestWater).
 public class MimicRenderer extends MobRenderer<MimicEntity, MimicRenderer.Model> {
     private final Model singleModel, doubleModel;
 
@@ -65,6 +66,7 @@ public class MimicRenderer extends MobRenderer<MimicEntity, MimicRenderer.Model>
         private AnimationDefinition reveal() { return dbl ? MimicChestDoubleAnimations.REVEAL : MimicChestAnimations.REVEAL; }
         private AnimationDefinition bite() { return dbl ? MimicChestDoubleAnimations.BITE : MimicChestAnimations.BITE; }
         private AnimationDefinition hop() { return dbl ? MimicChestDoubleAnimations.HOP : MimicChestAnimations.HOP; }
+        private AnimationDefinition water() { return dbl ? MimicChestDoubleAnimations.WATER : MimicChestAnimations.WATER; }
 
         @Override
         public void setupAnim(MimicEntity e, float limbSwing, float limbSwingAmount, float age, float netHeadYaw, float headPitch) {
@@ -76,8 +78,20 @@ public class MimicRenderer extends MobRenderer<MimicEntity, MimicRenderer.Model>
             }
             // boca entreaberta enquanto caca (mostra os dentes)
             getAnyDescendantWithName("lid").ifPresent(p -> p.xRot += (float) Math.toRadians(14));
-            if (e.hop.isStarted() && e.hop.getAccumulatedTime() < hop().lengthInSeconds() * 1000f) this.animate(e.hop, hop(), age);
-            if (e.bite.isStarted() && e.bite.getAccumulatedTime() < bite().lengthInSeconds() * 1000f) this.animate(e.bite, bite(), age);
+            boolean hopping = e.hop.isStarted() && e.hop.getAccumulatedTime() < hop().lengthInSeconds() * 1000f;
+            boolean biting = e.bite.isStarted() && e.bite.getAccumulatedTime() < bite().lengthInSeconds() * 1000f;
+            if (hopping) this.animate(e.hop, hop(), age);
+            if (biting) this.animate(e.bite, bite(), age);
+            // na agua e parado: de vez em quando a tampa sobe e escapam bolhas, igual aos baus
+            AnimationDefinition water = water();
+            long wt = ChestWater.step(e, e.level(), age - (float) Math.floor(age), e.isInWater() && !hopping && !biting,
+                    water.lengthInSeconds(), (n, big) -> {
+                        double yaw = Math.toRadians(e.yBodyRot);
+                        ChestWater.bubbles(e.level(), e.getX(), e.getY() + 0.5, e.getZ(), -Math.sin(yaw), Math.cos(yaw),
+                                dbl ? 0.92 : 0.42, dbl ? n * 2 : n, big);
+                    });
+            if (wt >= 0) net.minecraft.client.animation.KeyframeAnimations.animate(this, water, wt, 1f, WATER_CACHE);
         }
+        private static final org.joml.Vector3f WATER_CACHE = new org.joml.Vector3f();
     }
 }

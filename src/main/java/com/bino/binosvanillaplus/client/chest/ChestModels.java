@@ -13,29 +13,29 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import java.util.function.Supplier;
 
 // Os baus do Bino (tools/blockbench/chests/*.bbmodel -> *ModelData / *Animations): camada do modelo, textura e
-// animacoes de abrir/fechar de cada versao.
+// animacoes de abrir/fechar e a de agua (ChestWater) de cada versao.
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID, value = Dist.CLIENT)
 public final class ChestModels {
     private ChestModels() {}
 
     public enum Kind {
-        NORMAL("chest", ChestModelData::createBodyLayer, ChestAnimations.OPEN, ChestAnimations.CLOSE),
-        TRAPPED("trapped_chest", TrappedChestModelData::createBodyLayer, TrappedChestAnimations.OPEN, TrappedChestAnimations.CLOSE),
-        CHRISTMAS("christmas_chest", ChristmasChestModelData::createBodyLayer, ChristmasChestAnimations.OPEN, ChristmasChestAnimations.CLOSE),
-        ENDER("ender_chest", EnderChestModelData::createBodyLayer, EnderChestAnimations.OPEN, EnderChestAnimations.CLOSE),
-        NORMAL_DOUBLE("chest_double", ChestDoubleModelData::createBodyLayer, ChestDoubleAnimations.OPEN, ChestDoubleAnimations.CLOSE),
-        TRAPPED_DOUBLE("trapped_chest_double", TrappedChestDoubleModelData::createBodyLayer, TrappedChestDoubleAnimations.OPEN, TrappedChestDoubleAnimations.CLOSE),
-        CHRISTMAS_DOUBLE("christmas_chest_double", ChristmasChestDoubleModelData::createBodyLayer, ChristmasChestDoubleAnimations.OPEN, ChristmasChestDoubleAnimations.CLOSE);
+        NORMAL("chest", ChestModelData::createBodyLayer, ChestAnimations.OPEN, ChestAnimations.CLOSE, ChestAnimations.WATER),
+        TRAPPED("trapped_chest", TrappedChestModelData::createBodyLayer, TrappedChestAnimations.OPEN, TrappedChestAnimations.CLOSE, TrappedChestAnimations.WATER),
+        CHRISTMAS("christmas_chest", ChristmasChestModelData::createBodyLayer, ChristmasChestAnimations.OPEN, ChristmasChestAnimations.CLOSE, ChristmasChestAnimations.WATER),
+        ENDER("ender_chest", EnderChestModelData::createBodyLayer, EnderChestAnimations.OPEN, EnderChestAnimations.CLOSE, EnderChestAnimations.WATER),
+        NORMAL_DOUBLE("chest_double", ChestDoubleModelData::createBodyLayer, ChestDoubleAnimations.OPEN, ChestDoubleAnimations.CLOSE, ChestDoubleAnimations.WATER),
+        TRAPPED_DOUBLE("trapped_chest_double", TrappedChestDoubleModelData::createBodyLayer, TrappedChestDoubleAnimations.OPEN, TrappedChestDoubleAnimations.CLOSE, TrappedChestDoubleAnimations.WATER),
+        CHRISTMAS_DOUBLE("christmas_chest_double", ChristmasChestDoubleModelData::createBodyLayer, ChristmasChestDoubleAnimations.OPEN, ChristmasChestDoubleAnimations.CLOSE, ChristmasChestDoubleAnimations.WATER);
 
         public final ModelLayerLocation layer;
         public final ResourceLocation texture;
         public final Supplier<LayerDefinition> mesh;
-        public final AnimationDefinition open, close;
+        public final AnimationDefinition open, close, water;
 
-        Kind(String name, Supplier<LayerDefinition> mesh, AnimationDefinition open, AnimationDefinition close) {
+        Kind(String name, Supplier<LayerDefinition> mesh, AnimationDefinition open, AnimationDefinition close, AnimationDefinition water) {
             this.layer = new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "chest/" + name), "main");
             this.texture = ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "textures/entity/chest_bino/" + name + ".png");
-            this.mesh = mesh; this.open = open; this.close = close;
+            this.mesh = mesh; this.open = open; this.close = close; this.water = water;
         }
 
         public Kind doubled() {

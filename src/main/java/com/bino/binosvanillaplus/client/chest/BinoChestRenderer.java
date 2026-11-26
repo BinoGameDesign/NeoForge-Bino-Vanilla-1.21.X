@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.entity.EnderChestBlockEntity;
 import net.minecraft.world.level.block.entity.LidBlockEntity;
 import net.minecraft.world.level.block.entity.TrappedChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.phys.AABB;
 import org.joml.Vector3f;
@@ -29,6 +30,7 @@ import java.util.WeakHashMap;
 // Desenha os baus do jogo (normal, armadilha, natal, ender; simples e duplo) com os modelos do Bino.
 //  - O bau duplo e' desenhado inteiro pela metade LEFT (a metade RIGHT nao desenha nada).
 //  - Tampa: a animacao "open" do Blockbench tocada conforme a abertura do jogo (0..1); fechando, toca a "close".
+//  - Debaixo d'agua (bloco alagado) e fechado: de vez em quando toca a animacao "water" e solta bolhas (ChestWater).
 //  - Mimico disfarcado: e' o mesmo bau; so ganha uma "respiracao" de leve quando o servidor manda (MimicChest).
 public class BinoChestRenderer<T extends BlockEntity & LidBlockEntity> implements BlockEntityRenderer<T> {
     private final Map<ChestModels.Kind, BinoChestModel> models = new EnumMap<>(ChestModels.Kind.class);
@@ -71,6 +73,16 @@ public class BinoChestRenderer<T extends BlockEntity & LidBlockEntity> implement
             KeyframeAnimations.animate(model, def, (long) (t * def.lengthInSeconds() * 1000f), 1f, CACHE);
         }
         if (be.getLevel() != null) {
+            boolean wet = st.hasProperty(BlockStateProperties.WATERLOGGED) && st.getValue(BlockStateProperties.WATERLOGGED);
+            final Direction partner = toPartner;
+            AnimationDefinition water = kind.water;
+            long wt = ChestWater.step(be, be.getLevel(), partialTick, wet && open <= 0.001f, water.lengthInSeconds(), (n, big) -> {
+                double cx = pos.getX() + 0.5 + (partner == null ? 0 : partner.getStepX() * 0.5);
+                double cz = pos.getZ() + 0.5 + (partner == null ? 0 : partner.getStepZ() * 0.5);
+                ChestWater.bubbles(be.getLevel(), cx, pos.getY() + 0.5, cz, facing.getStepX(), facing.getStepZ(),
+                        partner == null ? 0.42 : 0.92, partner == null ? n : n * 2, big);
+            });
+            if (wt >= 0) KeyframeAnimations.animate(model, water, wt, 1f, CACHE);
             float br = MimicChest.breath(pos);
             if (toPartner != null) br = Math.max(br, MimicChest.breath(pos.relative(toPartner)));
             if (br > 0) model.lidPitch(br);
