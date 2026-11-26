@@ -70,6 +70,9 @@ public class ModItems {
     public static final DeferredItem<Item> RAT_SPAWN_EGG = ITEMS.register("rat_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.RAT, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
     // Ovo de Mimico: guardar num bau e fechar transforma o bau em mimico (nao invoca nada no chao)
+    // Agua Fervida (sede): garrafa de agua fervida na fornalha, defumador ou fogueira, sem risco de nausea
+    public static final DeferredItem<Item> BOILED_WATER = ITEMS.register("boiled_water",
+            () -> new com.bino.binosvanillaplus.thirst.BoiledWaterItem(new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> MIMIC_SPAWN_EGG = ITEMS.register("mimic_spawn_egg",
             () -> new com.bino.binosvanillaplus.mimic.MimicEggItem(new Item.Properties()));
     public static final DeferredItem<Item> DIRE_RAT_SPAWN_EGG = ITEMS.register("dire_rat_spawn_egg",

@@ -19,6 +19,7 @@
     },
     "mixins": [
         "MonsterSpawnLightMixin",
+        "ItemStackWaterStackMixin",
         "CompoundContainerAccessor",
         "ContainerMenuMimicMixin",
         "ChestBlockEntityMimicMixin",

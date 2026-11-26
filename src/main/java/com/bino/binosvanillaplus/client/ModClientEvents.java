@@ -77,6 +77,8 @@ public class ModClientEvents {
     public static void onItemColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) {
         event.register((stack, tint) -> tint == 0 ? com.bino.binosvanillaplus.item.CivilianSpawnEggItem.BASE : com.bino.binosvanillaplus.item.CivilianSpawnEggItem.SPOTS,
                 com.bino.binosvanillaplus.item.ModItems.PILLAGER_CIVILIAN_SPAWN_EGG.get());
+        // Agua Fervida: o liquido da garrafa (camada 0) num azul claro e limpo
+        event.register((stack, tint) -> tint == 0 ? 0xFF7FD4F5 : 0xFFFFFFFF, com.bino.binosvanillaplus.item.ModItems.BOILED_WATER.get());
     }
 
     // Ensina o jogo a desenhar o coração rosa: usa o comportamento do coração normal (sobe e some)

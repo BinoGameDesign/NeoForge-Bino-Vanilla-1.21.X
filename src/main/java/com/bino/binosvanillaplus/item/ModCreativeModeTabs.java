@@ -49,6 +49,7 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.COOKED_RAT_MEAT);
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.CHEESE);
                         output.accept(ModItems.CHEESE_SLICE);
+                        output.accept(ModItems.BOILED_WATER);
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.RAT_TRAP);
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.CAGE);
                         output.accept(ModItems.RAT_SPAWN_EGG);

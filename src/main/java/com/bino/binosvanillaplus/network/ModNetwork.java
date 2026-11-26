@@ -55,6 +55,12 @@ public class ModNetwork {
         registrar.playToServer(com.bino.binosvanillaplus.leveling.StatsActionPayload.TYPE, com.bino.binosvanillaplus.leveling.StatsActionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.leveling.PlayerStats.onAction((ServerPlayer) context.player(), payload)));
 
+        // sede (regras de 26/11)
+        registrar.playToClient(com.bino.binosvanillaplus.thirst.ThirstSyncPayload.TYPE, com.bino.binosvanillaplus.thirst.ThirstSyncPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.client.thirst.ClientThirst.receive(payload)));
+        registrar.playToServer(com.bino.binosvanillaplus.thirst.DrinkWaterPayload.TYPE, com.bino.binosvanillaplus.thirst.DrinkWaterPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> com.bino.binosvanillaplus.thirst.Thirst.onSip((ServerPlayer) context.player())));
+
         // lanterna do capacete (tecla)
         registrar.playToServer(HelmetLampTogglePayload.TYPE, HelmetLampTogglePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> toggleHelmetLamp((ServerPlayer) context.player())));

@@ -44,5 +44,13 @@ public final class ModAttachments {
             () -> AttachmentType.<java.util.List<Integer>>builder(() -> java.util.List.of(1, 0, 0, 0, 0, 0))
                     .serialize(Codec.INT.listOf()).copyOnDeath().build());
 
+    // sede do jogador (0..20, ver thirst/Thirst): zera so na morte, como a fome; o cansaco acumulado; a dica da agua suja
+    public static final Supplier<AttachmentType<Integer>> THIRST = ATTACHMENTS.register("thirst",
+            () -> AttachmentType.builder(() -> 20).serialize(Codec.INT).build());
+    public static final Supplier<AttachmentType<Float>> THIRST_EXH = ATTACHMENTS.register("thirst_exhaustion",
+            () -> AttachmentType.builder(() -> 0f).serialize(Codec.FLOAT).build());
+    public static final Supplier<AttachmentType<Boolean>> THIRST_HINT = ATTACHMENTS.register("thirst_hint",
+            () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).copyOnDeath().build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }

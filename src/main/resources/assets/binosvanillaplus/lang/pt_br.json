@@ -286,5 +286,12 @@
   "gui.binosvanillaplus.inv.attr.agi.tip4": "+1% de velocidade de ataque por ponto",
   "gui.binosvanillaplus.inv.attr.int.tip1": "Reservado para a magia (em breve)",
   "gui.binosvanillaplus.inv.attr.wil.tip1": "Reservado para a magia (em breve)",
-  "tooltip.binosvanillaplus.flashlight.use": "Botão direito: liga/desliga. Capacete + Lanterna na bancada: lanterna no capacete (tecla K)."
+  "tooltip.binosvanillaplus.flashlight.use": "Botão direito: liga/desliga. Capacete + Lanterna na bancada: lanterna no capacete (tecla K).",
+  "item.binosvanillaplus.boiled_water": "Água Fervida",
+  "death.attack.binosvanillaplus.dehydration": "%1$s morreu de sede",
+  "death.attack.binosvanillaplus.dehydration.player": "%1$s morreu de sede enquanto fugia de %2$s",
+  "message.binosvanillaplus.thirst.dirty_hint": "Dica: água tirada do mundo não é segura e pode dar náusea. Ferva a garrafa na fornalha, no defumador ou na fogueira para virar Água Fervida.",
+  "tooltip.binosvanillaplus.water.dirty": "Água não fervida: mata a sede, mas pode dar náusea",
+  "tooltip.binosvanillaplus.water.boil": "Ferva na fornalha, defumador ou fogueira",
+  "tooltip.binosvanillaplus.water.boiled": "Mata a sede sem risco"
 }

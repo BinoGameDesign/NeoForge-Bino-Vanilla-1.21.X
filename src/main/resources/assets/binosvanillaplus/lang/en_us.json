@@ -95,5 +95,12 @@
   "gui.binosvanillaplus.inv.attr.agi.tip3": "+2 combat stamina per point",
   "gui.binosvanillaplus.inv.attr.agi.tip4": "+1% attack speed per point",
   "gui.binosvanillaplus.inv.attr.int.tip1": "Reserved for magic (coming soon)",
-  "gui.binosvanillaplus.inv.attr.wil.tip1": "Reserved for magic (coming soon)"
+  "gui.binosvanillaplus.inv.attr.wil.tip1": "Reserved for magic (coming soon)",
+  "item.binosvanillaplus.boiled_water": "Boiled Water",
+  "death.attack.binosvanillaplus.dehydration": "%1$s died of thirst",
+  "death.attack.binosvanillaplus.dehydration.player": "%1$s died of thirst whilst fleeing %2$s",
+  "message.binosvanillaplus.thirst.dirty_hint": "Tip: water taken from the world isn't safe and may cause nausea. Boil the bottle in a furnace, smoker or campfire to get Boiled Water.",
+  "tooltip.binosvanillaplus.water.dirty": "Unboiled water: quenches thirst, but may cause nausea",
+  "tooltip.binosvanillaplus.water.boil": "Boil it in a furnace, smoker or campfire",
+  "tooltip.binosvanillaplus.water.boiled": "Quenches thirst safely"
 }
