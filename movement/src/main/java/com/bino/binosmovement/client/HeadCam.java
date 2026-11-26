@@ -48,7 +48,10 @@ public final class HeadCam {
     private static final float TILT_SHARE = 0.45f;      // inclinacoes pequenas: so isso da inclinacao do corpo
     private static final float SPIN_FULL_FROM = 150f;   // giros grandes (cambalhota, rodopio) vao inteiros a partir daqui
     private static final float SMOOTH_S = 0.07f;        // a camera alcanca a animacao nesse tempo (segundos)
+    private static final float BREATH_UP = 0.008f;      // respiracao: blocos para cima com o peito cheio
+    private static final float BREATH_PITCH = -0.25f;   // respiracao: graus (negativo = olha um tiquinho para cima)
 
+    private static float breathPitch;
     private static final Vector3f OFF = new Vector3f();
     private static final Quaternionf SMOOTH_ROT = new Quaternionf();
     private static long lastMs;
@@ -82,6 +85,12 @@ public final class HeadCam {
             // giro no mundo = frame * q * frame^-1
             targetRot.set(frame).mul(q).mul(new Quaternionf(frame).conjugate());
         }
+        // respiracao: a camera sobe e desce bem de leve e inclina um tiquinho (segue "Movimento da visao")
+        if (Minecraft.getInstance().options.bobView().get()) {
+            float br = com.bino.binosmovement.client.anim.Locomotion.breath(p) * MovementConfig.intensity();
+            target.y += BREATH_UP * br;
+            breathPitch = BREATH_PITCH * br;
+        } else breathPitch = 0f;
         // suaviza: a camera chega na animacao (e volta dela) sem tranco
         long now = net.minecraft.Util.getMillis();
         float dt = lastMs == 0 ? 1f : Math.min(0.25f, (now - lastMs) / 1000f);
@@ -128,6 +137,7 @@ public final class HeadCam {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onAngles(ViewportEvent.ComputeCameraAngles e) {
         if (!has) return;
+        e.setPitch(e.getPitch() + breathPitch);   // respiracao: inclina um tiquinho
         float d = Mth.DEG_TO_RAD;
         Quaternionf base = new Quaternionf().rotationYXZ(Mth.PI - e.getYaw() * d, -e.getPitch() * d, -e.getRoll() * d);
         Quaternionf t = new Quaternionf(ROT).mul(base);

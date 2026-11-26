@@ -792,7 +792,10 @@ public final class CombatMoves {
             if (!ItemStack.isSameItem(stack, lastHeld)) equipAt = now;   // trocou de item: sobe de baixo
             float eq = 1f - Mth.clamp((now - equipAt) / (float) EQUIP_MS, 0f, 1f);
             v[MoveAnims.HY] -= 0.6f * eq * eq;
-            v[MoveAnims.HY] += Mth.sin(now / 650f) * 0.006f;   // respiracao
+            // a mao com a arma segue o corpo (andar, correr, pulo, aterrissagem) e a respiracao (Movement)
+            float[] o = com.bino.binosmovement.client.FirstPersonHands.handOffset(p, p.getMainArm(), e.getPartialTick());
+            float sd = p.getMainArm() == HumanoidArm.RIGHT ? 1f : -1f;
+            v[MoveAnims.HX] += o[0] * sd; v[MoveAnims.HY] += o[1]; v[MoveAnims.HZ] += o[2];
         }
         v[MoveAnims.HY] -= 0.55f * dip; v[MoveAnims.AP] += 35f * dip; v[MoveAnims.HX] += 0.08f * dip;
         // nunca encosta na camera (senao a arma vira uma placa enorme na tela)

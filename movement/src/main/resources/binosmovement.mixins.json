@@ -9,7 +9,8 @@
         "client.LevelRendererBodyMixin",
         "client.ItemInHandLayerBodyMixin",
         "client.HumanoidArmorLayerBodyMixin",
-        "client.CustomHeadLayerBodyMixin"
+        "client.CustomHeadLayerBodyMixin",
+        "client.ItemInHandRendererInvoker"
     ],
     "injectors": {
         "defaultRequire": 1

@@ -255,6 +255,14 @@ public final class Locomotion {
         return new MovementHooks.BodyFrame(a, CAMERA_SHARE, p.getMainArm() == HumanoidArm.RIGHT, 0f, 0.3f);
     }
 
+    // respiracao agora (0 = expirou, 1 = peito cheio), mais funda com cansaco: para a camera e as maos da primeira pessoa
+    public static float breath(Player p) {
+        State s = STATES.get(p.getId());
+        if (s == null) return 0f;
+        float b = 0.5f - 0.5f * Mth.cos(s.breath);
+        return b * b * (3 - 2 * b) * (1f + 1.2f * s.exertion);
+    }
+
     // tem animacao do Blockbench para este jogador agora? (a vida procedural fica de fora)
     public static boolean active(Player p) { return !anims().isEmpty() && !skip(p) && !MovementHooks.stance(p); }
 }
