@@ -38,6 +38,9 @@ public final class PlayerLife {
         // o jogo NUNCA zera a inclinacao lateral do tronco (body.zRot): antes a respiracao somava nela a cada quadro
         // e o tronco ia girando sozinho, separado das pernas. Agora zera aqui e so define (nao soma).
         m.body.zRot = 0f;
+        // a respiracao das animacoes mexe na escala; aqui (sem animacao do Blockbench) tudo volta ao normal
+        for (var part : new net.minecraft.client.model.geom.ModelPart[]{m.body, m.head, m.rightArm, m.leftArm, m.rightLeg, m.leftLeg})
+            { part.xScale = 1f; part.yScale = 1f; part.zScale = 1f; }
         if (skip(p) || m.crouching) return;
         float amt = Math.min(1f, amount);
         float phase = limbSwing * 0.6662f;

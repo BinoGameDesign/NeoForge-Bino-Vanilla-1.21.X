@@ -47,6 +47,10 @@ public final class Locomotion {
         double lastY = Double.NaN;
         String land; float landT = 99f;
         float lastAge = -1;
+        float exertion;          // cansaco (0..1): sobe correndo/pulando, desce parado -> respiracao mais rapida e funda
+        float breath;            // fase da respiracao (radianos)
+        final float seed;        // cada jogador com os proprios movimentos involuntarios
+        State(int id) { seed = (id * 0.6180339f) % 1f * 100f; }
     }
 
     private static final Map<Integer, State> STATES = new HashMap<>();
@@ -63,7 +67,7 @@ public final class Locomotion {
     public static BbAnims.Sample sample(Player p, float pt) {
         Map<String, BbAnims.Anim> an = anims();
         if (an.isEmpty() || skip(p)) return null;
-        State s = STATES.computeIfAbsent(p.getId(), k -> new State());
+        State s = STATES.computeIfAbsent(p.getId(), State::new);
         float age = p.tickCount + pt;
         float dt = s.lastAge < 0 ? 0f : Mth.clamp((age - s.lastAge) / 20f, 0f, 0.25f);
         s.lastAge = age;
@@ -120,6 +124,12 @@ public final class Locomotion {
         float vyNow = s.vy;
         s.jumpT += dt;
         s.landT += dt;
+        // cansaco e respiracao
+        boolean sprint = p.isSprinting() && ground;
+        s.exertion = Mth.clamp(s.exertion + (sprint ? 0.22f * dt : -0.06f * dt), 0f, 1f);
+        if (s.land != null && s.landT < dt * 1.5f) s.exertion = Math.min(1f, s.exertion + ("aterrissar_pesado".equals(s.land) ? 0.15f : 0.04f));
+        float rate = 0.26f + 0.55f * s.exertion;   // respiracoes por segundo (parado ~16 por minuto; cansado ~48)
+        s.breath = (s.breath + dt * rate * Mth.TWO_PI) % (Mth.TWO_PI * 1000f);
 
         float speed = Math.min(1f, p.walkAnimation.speed());
         float moving = Mth.clamp(speed / 0.35f, 0f, 1f);
@@ -150,17 +160,70 @@ public final class Locomotion {
         BbAnims.part(right ? m.rightLeg : m.leftLeg, a, "right_leg", 1f, mir, right ? -1.9f : 1.9f, 12, 0, false);
         BbAnims.part(right ? m.leftLeg : m.rightLeg, a, "left_leg", 1f, mir, right ? 1.9f : -1.9f, 12, 0, false);
         boolean swinging = m.attackTime > 0f || p.isUsingItem();
-        arm(m, a, right ? m.rightArm : m.leftArm, "right_arm", right ? m.rightArmPose : m.leftArmPose, mir, right ? -5 : 5, swinging);
-        arm(m, a, right ? m.leftArm : m.rightArm, "left_arm", right ? m.leftArmPose : m.rightArmPose, mir, right ? 5 : -5, swinging);
+        boolean mainFree = arm(m, a, right ? m.rightArm : m.leftArm, "right_arm", right ? m.rightArmPose : m.leftArmPose, mir, right ? -5 : 5, swinging);
+        boolean offFree = arm(m, a, right ? m.leftArm : m.rightArm, "left_arm", right ? m.leftArmPose : m.rightArmPose, mir, right ? 5 : -5, swinging);
+        State s = STATES.get(p.getId());
+        if (s != null) {
+            crouchFix(m, s);
+            alive(m, p, s, ageInTicks / 20f, right ? mainFree : offFree, right ? offFree : mainFree);
+        }
         return true;
     }
 
+    // o agachar das animacoes ja abaixa o corpo inteiro (root): o abaixamento do jogo sai, senao abaixava duas vezes
+    private static void crouchFix(HumanoidModel<?> m, State s) {
+        if (!m.crouching) return;
+        float k = Mth.clamp(s.w[3] + s.w[4], 0f, 1f);
+        m.body.y -= 3.2f * k; m.head.y -= 4.2f * k;
+        m.rightArm.y -= 3.2f * k; m.leftArm.y -= 3.2f * k;
+        m.rightLeg.y -= 0.2f * k; m.leftLeg.y -= 0.2f * k;
+    }
+
+    // ===== vida por cima das animacoes: respiracao (mais rapida e funda quando cansado) e movimentos involuntarios
+    // (a cabeca vagueia, o tronco balanca, os bracos soltos oscilam) que nunca se repetem igual
+    private static final float BREATH_CHEST = 0.025f, BREATH_CHEST_TIRED = 0.045f;   // peito enchendo (escala)
+    private static final float BREATH_SHOULDER = 0.25f, BREATH_SHOULDER_TIRED = 0.45f; // ombros subindo (pixels)
+
+    private static void alive(HumanoidModel<?> m, Player p, State s, float t, boolean rightFree, boolean leftFree) {
+        float ex = s.exertion;
+        // inspira mais rapido que expira (curva assimetrica), 0..1
+        float b = 0.5f - 0.5f * Mth.cos(s.breath);
+        b = b * b * (3 - 2 * b);
+        float chest = (BREATH_CHEST + (BREATH_CHEST_TIRED - BREATH_CHEST) * ex) * b;
+        m.body.zScale *= 1f + chest;
+        m.body.yScale *= 1f + chest * 0.25f;
+        float sh = (BREATH_SHOULDER + (BREATH_SHOULDER_TIRED - BREATH_SHOULDER) * ex) * b;
+        m.rightArm.y -= sh; m.leftArm.y -= sh;
+        m.head.y -= sh * 0.5f;
+        m.head.xRot -= (0.6f + 1.4f * ex) * b * Mth.DEG_TO_RAD;
+        // involuntarios: mais fortes parado, quase nada andando/correndo
+        float idle = Mth.clamp(s.w[0] + s.w[3], 0f, 1f);
+        float still = 0.25f + 0.75f * idle;
+        float q = s.seed;
+        float n1 = wander(t, q, 0.071f, 0.163f, 0.297f), n2 = wander(t, q + 7f, 0.089f, 0.211f, 0.383f);
+        float n3 = wander(t, q + 13f, 0.053f, 0.137f, 0.241f), n4 = wander(t, q + 21f, 0.11f, 0.29f, 0.47f);
+        m.head.yRot += 2.4f * still * n1 * Mth.DEG_TO_RAD;
+        m.head.xRot += 1.1f * still * n2 * Mth.DEG_TO_RAD;
+        m.body.zRot += 0.5f * still * n3 * Mth.DEG_TO_RAD;
+        m.body.yRot += 0.7f * still * n1 * Mth.DEG_TO_RAD;
+        if (rightFree) { m.rightArm.zRot += 0.9f * still * (n4 + ex * 0.6f * b) * Mth.DEG_TO_RAD; m.rightArm.xRot += 0.6f * still * n2 * Mth.DEG_TO_RAD; }
+        if (leftFree) { m.leftArm.zRot -= 0.9f * still * (n3 + ex * 0.6f * b) * Mth.DEG_TO_RAD; m.leftArm.xRot += 0.6f * still * n1 * Mth.DEG_TO_RAD; }
+    }
+
+    // ruido suave (-1..1): tres ondas que nao batem entre si, entao o movimento nunca repete igual
+    private static float wander(float t, float seed, float f1, float f2, float f3) {
+        return (Mth.sin((t * f1 + seed * 0.37f) * Mth.TWO_PI) * 0.55f
+                + Mth.sin((t * f2 + seed * 0.71f) * Mth.TWO_PI) * 0.3f
+                + Mth.sin((t * f3 + seed * 0.13f) * Mth.TWO_PI) * 0.15f);
+    }
+
     // braco: animacao so quando esta livre; segurando item parado, o jogo levanta um pouco o braco (igual ao jogo)
-    private static void arm(HumanoidModel<?> m, BbAnims.Sample a, ModelPart arm, String bone, HumanoidModel.ArmPose pose,
-                            boolean mir, float dx, boolean swinging) {
-        if (swinging || (pose != HumanoidModel.ArmPose.EMPTY && pose != HumanoidModel.ArmPose.ITEM)) return;
+    private static boolean arm(HumanoidModel<?> m, BbAnims.Sample a, ModelPart arm, String bone, HumanoidModel.ArmPose pose,
+                               boolean mir, float dx, boolean swinging) {
+        if (swinging || (pose != HumanoidModel.ArmPose.EMPTY && pose != HumanoidModel.ArmPose.ITEM)) return false;
         BbAnims.part(arm, a, bone, 1f, mir, dx, 2, 0, false);
         if (pose == HumanoidModel.ArmPose.ITEM) arm.xRot = arm.xRot * 0.5f - Mth.PI / 10f;
+        return true;
     }
 
     // corpo inteiro (root/tumble: sobe e desce, inclina) na hora de desenhar; golpes do Combat mandam por cima
@@ -173,6 +236,8 @@ public final class Locomotion {
         PoseStack ps = e.getPoseStack();
         ps.pushPose();
         PUSHED.add(p.getId());
+        State s = STATES.get(p.getId());
+        if (s != null && p.isCrouching()) ps.translate(0, 0.125f * Mth.clamp(s.w[3] + s.w[4], 0f, 1f), 0);   // desfaz o abaixar do jogo
         BbAnims.poseRoot(ps, a, 1f, p.getMainArm() == HumanoidArm.RIGHT, Mth.rotLerp(e.getPartialTick(), p.yBodyRotO, p.yBodyRot));
     }
 

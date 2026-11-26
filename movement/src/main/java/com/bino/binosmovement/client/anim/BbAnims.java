@@ -252,6 +252,8 @@ public final class BbAnims {
             // posicao: x/z a partir do lugar padrao (o jogo nao refaz x/z do tronco e das pernas); y soma a do jogo (agachar)
             p.x = dx + ox * w; p.y += oy * w; p.z = dz + oz * w;
         }
+        float[] sc = a.scale(bone);   // escala (ex.: o peito enchendo); sem chave = 1
+        p.xScale = Mth.lerp(w, 1f, sc[0]); p.yScale = Mth.lerp(w, 1f, sc[1]); p.zScale = Mth.lerp(w, 1f, sc[2]);
     }
 
     // escala do jogador (o jogo desenha o jogador em 0,9375) por pixel do Blockbench
