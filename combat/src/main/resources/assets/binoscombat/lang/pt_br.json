@@ -63,5 +63,6 @@
   "gui.binoscombat.combos.critical": "Crítico",
   "gui.binoscombat.combos.critical.desc": "Pesado perto de um inimigo de guarda quebrada (ajoelhado).",
   "subtitles.binoscombat.combat.issen_warp": "Teleporte do Issen",
-  "key.categories.binoscombat": "Bino's Vanilla+ Combate"
+  "key.categories.binoscombat": "Bino's Vanilla+ Combate",
+  "message.binoscombat.guard_need_weapon": "Para defender, segure uma espada, um machado ou um escudo"
 }

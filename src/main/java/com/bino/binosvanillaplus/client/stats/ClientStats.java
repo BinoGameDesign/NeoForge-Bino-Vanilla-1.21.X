@@ -43,7 +43,7 @@ public final class ClientStats {
         if (e.getName().getPath().equals("experience_bar")) {
             e.setCanceled(true);
             Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null && mc.gameMode != null && mc.gameMode.hasExperience() && mc.player.jumpableVehicle() == null) xpBar(e.getGuiGraphics(), mc);
+            if (mc.player != null && !mc.options.hideGui && mc.gameMode != null && mc.gameMode.hasExperience() && mc.player.jumpableVehicle() == null) xpBar(e.getGuiGraphics(), mc);
         }
     }
 

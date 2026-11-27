@@ -34,7 +34,8 @@ public final class Defense {
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "key.categories.binoscombat");   // o "recarregar shaders" do Iris vai para a V (IrisKeyFix)
     public static final long MAX_HOLD_MS = 2000;
 
-    private static boolean holding, gotHit;
+    private static boolean holding, gotHit, wasDown;
+    private static long hintAt;
     private static long holdStart;
     private static float posture;
     private static long brokenUntil, postureAt;
@@ -77,8 +78,21 @@ public final class Defense {
         long now = now();
         boolean weapon = CombatEvents.weapon(p.getMainHandItem()) != CombatEvents.Weapon.NONE;
         boolean shield = p.getOffhandItem().getItem() instanceof ShieldItem;
-        while (DEFEND.consumeClick()) {
-            if (mc.screen != null || (!weapon && !shield) || stunned() || DodgeRoll.rolling(p) || holding) continue;
+        // (27/11) conta o aperto tambem pela borda do "segurando" (se outro mod comer o clique da R, a defesa ainda sai)
+        int presses = 0;
+        while (DEFEND.consumeClick()) presses++;
+        boolean down = mc.screen == null && DEFEND.isDown();
+        if (presses == 0 && down && !wasDown) presses = 1;
+        wasDown = down;
+        for (; presses > 0; presses--) {
+            if (mc.screen != null || stunned() || DodgeRoll.rolling(p) || holding) continue;
+            if (!weapon && !shield) {   // sem espada/machado nem escudo: avisa em vez de ficar mudo
+                if (now - hintAt > 3000) {
+                    hintAt = now;
+                    p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.binoscombat.guard_need_weapon"), true);
+                }
+                continue;
+            }
             // 1) golpe com aviso vindo agora: parry
             int mob = CombatFx.parryTarget(p, now);
             if (mob != -1) {

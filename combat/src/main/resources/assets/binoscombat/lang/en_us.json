@@ -63,5 +63,6 @@
   "gui.binoscombat.combos.critical": "Critical",
   "gui.binoscombat.combos.critical.desc": "Heavy near an enemy with a broken guard (kneeling).",
   "subtitles.binoscombat.combat.issen_warp": "Issen warp",
-  "key.categories.binoscombat": "Bino's Vanilla+ Combat"
+  "key.categories.binoscombat": "Bino's Vanilla+ Combat",
+  "message.binoscombat.guard_need_weapon": "Defend needs a sword, an axe or a shield"
 }
