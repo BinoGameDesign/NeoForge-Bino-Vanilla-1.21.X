@@ -54,7 +54,8 @@ public final class ClientStats {
         GuiGraphics g = e.getGuiGraphics();
         int w = g.guiWidth(), h = g.guiHeight();
         // nivel do personagem: no lugar do numero do jogo, com os digitos de nivel (cor pela dezena)
-        HudDigits.level(g, level, w / 2f, h - 31 - 4 - 3);
+        // (27/11) maior e no meio do vao entre as faixas: armadura/coracoes a esquerda, sede/fome a direita
+        HudDigits.level(g, level, w / 2f, h - 39.5f, 1.5f);
         // barras completas: digitos do Bino em verde, a esquerda da barra de experiencia
         if (mc.player.jumpableVehicle() == null) barsNumber(g, mc, w, h);
     }

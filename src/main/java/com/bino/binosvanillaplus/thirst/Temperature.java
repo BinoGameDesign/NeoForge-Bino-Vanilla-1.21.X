@@ -66,6 +66,7 @@ public final class Temperature {
     public static final float STAGE_1 = 30f, STAGE_2 = 60f, STAGE_3 = 90f;
     public static final float LINING = 3f, INSULATION = 1f;
     public static final int DAMAGE_EVERY = 120;
+    public static final float SMOOTH_BASE = 0.3f, SMOOTH_SHARE = 0.05f;   // °C por segundo que a temperatura anda (+5% da diferenca)
 
     public static final ResourceKey<DamageType> HEATSTROKE = ResourceKey.create(Registries.DAMAGE_TYPE,
             ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "heatstroke"));
@@ -200,7 +201,14 @@ public final class Temperature {
         ServerLevel level = p.serverLevel();
         boolean safe = p.getAbilities().invulnerable || level.getDifficulty() == Difficulty.PEACEFUL;
         if (p.tickCount % 20 == 0) {   // uma vez por segundo
-            float amb = ambient(p);
+            // (27/11) a temperatura muda aos poucos: anda ate a do lugar um pouco por segundo (troca de bioma, fogueira...)
+            float target = ambient(p);
+            Float cur = AMBIENT.get(id);
+            float amb = target;
+            if (cur != null) {
+                float diff = target - cur, step = SMOOTH_BASE + Math.abs(diff) * SMOOTH_SHARE;
+                amb = cur + Mth.clamp(diff, -step, step);
+            }
             AMBIENT.put(id, amb);
             float[] tol = tolerance(p);
             float low = COMFORT_LOW - tol[0], high = COMFORT_HIGH + tol[1];

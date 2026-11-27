@@ -50,16 +50,19 @@ public final class HudDigits {
         g.pose().popPose();
     }
 
-    /** nivel do personagem com os digitos grandes, na cor da dezena; centrado em cx, y = topo */
-    public static void level(GuiGraphics g, int level, float cx, float y) {
+    /** nivel do personagem com os digitos de nivel, na cor da dezena; centrado em (cx, cy), no tamanho "scale" */
+    public static void level(GuiGraphics g, int level, float cx, float cy, float scale) {
         String s = String.valueOf(level);
         int row = level >= 100 ? 10 : Math.max(0, level / 10);
         float w = s.length() * (LW - 1) + 1;
-        float x = cx - w / 2f;
+        g.pose().pushPose();
+        g.pose().translate(cx - w * scale / 2f, cy - LH * scale / 2f, 0);
+        g.pose().scale(scale, scale, 1f);
         RenderSystem.enableBlend();
         for (int i = 0; i < s.length(); i++) {
             int d = s.charAt(i) - '0';
-            g.blit(LEVEL, Math.round(x + i * (LW - 1)), Math.round(y), d * LW, row * LH, LW, LH, 80, 110);
+            g.blit(LEVEL, i * (LW - 1), 0, d * LW, row * LH, LW, LH, 80, 110);
         }
+        g.pose().popPose();
     }
 }
