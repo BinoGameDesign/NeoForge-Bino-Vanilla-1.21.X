@@ -82,7 +82,7 @@ public final class ClientStats {
         if (lastBars >= 0 && bars > lastBars) { fromBars = lastBars; animStart = net.minecraft.Util.getMillis(); }
         lastBars = bars;
         int f = animFrame();
-        float right = w / 2f - 91 - 2, top = h - 29 - 1;
+        float right = w / 2f + XP_LEFT - 2, top = h - 29 - 1;
         if (f > 0 && f < ANIM_FRAMES - 1) {   // numero girando: o desenho do quadro, centrado onde fica o numero
             String now = String.valueOf(bars);
             float center = right - HudDigits.width(now) / 2f;
@@ -97,10 +97,12 @@ public final class ClientStats {
     private static final net.minecraft.resources.ResourceLocation XP_BAR =
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.bino.binosvanillaplus.BinosVanillaMod.MOD_ID, "textures/gui/xp_bar.png");
     public static final int XP_W = 179, XP_H = 5;
+    // (27/11) a barra termina exatamente onde termina o ultimo icone de fome (w/2 + 91)
+    public static final int XP_LEFT = 91 - XP_W;   // x da barra = w/2 + XP_LEFT = w/2 - 88
 
     // fundo inteiro e a parte cheia ate onde a experiencia chegou (desenho do Bino, 179x5)
     private static void xpBar(GuiGraphics g, Minecraft mc) {
-        int x = g.guiWidth() / 2 - 91, y = g.guiHeight() - 29;
+        int x = g.guiWidth() / 2 + XP_LEFT, y = g.guiHeight() - 29;
         com.mojang.blaze3d.systems.RenderSystem.enableBlend();
         g.blit(XP_BAR, x, y, 0, 0, XP_W, XP_H, XP_W, 10);
         int f = animFrame();
