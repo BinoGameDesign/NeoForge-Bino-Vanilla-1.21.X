@@ -14,7 +14,8 @@ D={
 '8':[".####.","##..##","##..##",".####.","##..##","##..##","##..##",".####."],
 '9':[".####.","##..##","##..##","##..##",".#####","....##","....##",".####."],
 }
-S=2            # cada pixel do desenho vira 2x2
+import sys
+S=int(sys.argv[1]) if len(sys.argv)>1 else 2   # cada pixel do desenho vira SxS
 CW,CH=6*S+2,8*S+2
 # estilos: (brilho, face, lado, sombra)
 # cores do Bino (27/11), do nivel mais baixo ao mais alto: uma por dezena e a ultima para o 100
@@ -44,7 +45,7 @@ def glyph(d, st, rainbow=False):
 sheet=Image.new('RGBA',(CW*10,CH*11),(0,0,0,0))
 for r,st in enumerate(STY):
     for c in range(10): sheet.alpha_composite(glyph(str(c),st,rainbow=False),(c*CW,r*CH))
-sheet.save('tools/ui/nivel_numeros.png')
+sheet.save('tools/ui/nivel_numeros.png' if S==2 else 'src/main/resources/assets/binosvanillaplus/textures/gui/level_digits.png')
 # previa: alguns niveis montados
 def word(n):
     st=STY[10] if n>=100 else STY[n//10]; s=str(n)

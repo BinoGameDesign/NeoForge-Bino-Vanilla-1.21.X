@@ -38,6 +38,12 @@ public final class ClientStats {
     @SubscribeEvent
     public static void onLayer(RenderGuiLayerEvent.Pre e) {
         if (e.getName().getPath().equals("experience_level")) e.setCanceled(true);
+        // barra de experiencia nova do Bino (mesmo canto esquerdo da do jogo)
+        if (e.getName().getPath().equals("experience_bar")) {
+            e.setCanceled(true);
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null && mc.gameMode != null && mc.gameMode.hasExperience() && mc.player.jumpableVehicle() == null) xpBar(e.getGuiGraphics(), mc);
+        }
     }
 
     @SubscribeEvent
@@ -45,19 +51,27 @@ public final class ClientStats {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui || mc.gameMode == null || !mc.gameMode.hasExperience()) return;
         GuiGraphics g = e.getGuiGraphics();
-        var font = mc.font;
         int w = g.guiWidth(), h = g.guiHeight();
-        // nivel do personagem: no lugar do numero do jogo, 20% maior, por cima do resto do visor
-        String lv = String.valueOf(level);
-        float k = 1.2f;
-        g.pose().pushPose();
-        g.pose().translate(w / 2f - font.width(lv) * k / 2f, h - 31 - 4 - 2, 200);   // o do jogo fica em h-35
-        g.pose().scale(k, k, 1f);
-        outlined(g, lv, 0, 0, 0xFFFFFF);
-        g.pose().popPose();
-        // barras completas: verde, a esquerda da barra de experiencia
-        String bars = String.valueOf(mc.player.experienceLevel);
-        outlined(g, bars, w / 2 - 91 - 3 - font.width(bars), h - 29 - 2, 0x80FF20);
+        // nivel do personagem: no lugar do numero do jogo, com os digitos de nivel (cor pela dezena)
+        HudDigits.level(g, level, w / 2f, h - 31 - 4 - 3);
+        // barras completas: digitos do Bino em verde, a esquerda da barra de experiencia
+        if (mc.player.jumpableVehicle() == null) {
+            String bars = String.valueOf(mc.player.experienceLevel);
+            HudDigits.draw(g, bars, w / 2f - 91 - 2 - HudDigits.width(bars), h - 29 - 1, 1f, 0x20FF27);
+        }
+    }
+
+    private static final net.minecraft.resources.ResourceLocation XP_BAR =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.bino.binosvanillaplus.BinosVanillaMod.MOD_ID, "textures/gui/xp_bar.png");
+    public static final int XP_W = 179, XP_H = 5;
+
+    // fundo inteiro e a parte cheia ate onde a experiencia chegou (desenho do Bino, 179x5)
+    private static void xpBar(GuiGraphics g, Minecraft mc) {
+        int x = g.guiWidth() / 2 - 91, y = g.guiHeight() - 29;
+        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+        g.blit(XP_BAR, x, y, 0, 0, XP_W, XP_H, XP_W, 10);
+        int fill = (int) (mc.player.experienceProgress * (XP_W + 1));
+        if (fill > 0) g.blit(XP_BAR, x, y, 0, 5, Math.min(XP_W, fill), XP_H, XP_W, 10);
     }
 
     private static void outlined(GuiGraphics g, String s, int x, int y, int col) {

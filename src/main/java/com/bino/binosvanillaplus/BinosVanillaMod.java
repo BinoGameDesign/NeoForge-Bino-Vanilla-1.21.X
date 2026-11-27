@@ -71,6 +71,7 @@ public class BinosVanillaMod {
         com.bino.binoscombat.CombatHooks.critDamageFn = com.bino.binosvanillaplus.leveling.PlayerStats::critDamage;
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);   // °C ou °F
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

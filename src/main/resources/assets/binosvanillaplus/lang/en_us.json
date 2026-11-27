@@ -127,5 +127,6 @@
   "tooltip.binosvanillaplus.lining.wool": "Wool Lining: withstands more cold",
   "tooltip.binosvanillaplus.lining.light": "Light Lining: withstands more heat",
   "tooltip.binosvanillaplus.drink.warm": "Warms you for %s s",
-  "tooltip.binosvanillaplus.drink.cool": "Cools you for %s s"
+  "tooltip.binosvanillaplus.drink.cool": "Cools you for %s s",
+  "binosvanillaplus.configuration.fahrenheit": "Temperature in °F (Fahrenheit)"
 }

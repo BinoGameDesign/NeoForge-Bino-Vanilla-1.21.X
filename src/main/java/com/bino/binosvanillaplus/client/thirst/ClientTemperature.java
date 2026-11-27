@@ -63,22 +63,13 @@ public final class ClientTemperature {
         g.pose().scale(SCALE, SCALE, 1f);
         g.blitSprite(THERMO[band(ambient)], 0, 0, 10, 21);
         g.pose().popPose();
-        var font = mc.font;
-        String num = String.valueOf(ambient), unit = "°C";
-        float k = SCALE;
-        textRight(g, num, tx - 2, ty + 2, k);
-        textRight(g, unit, tx - 2, ty + 2 + 9 * k + 1, k);
-    }
-
-    private static void textRight(GuiGraphics g, String s, float rightX, float y, float k) {
-        var font = Minecraft.getInstance().font;
-        g.pose().pushPose();
-        g.pose().translate(rightX - font.width(s) * k, y, 0);
-        g.pose().scale(k, k, 1f);
-        g.drawString(font, s, 1, 0, 0xFF3A3A3A, false);
-        g.drawString(font, s, 0, 1, 0xFF3A3A3A, false);
-        g.drawString(font, s, 0, 0, 0xFFE8E8E8, false);
-        g.pose().popPose();
+        // numero (digitos do Bino, em branco) e embaixo a unidade, alinhados a direita do termometro
+        boolean f = com.bino.binosvanillaplus.ClientConfig.fahrenheit();
+        String num = String.valueOf(f ? Math.round(ambient * 9f / 5f + 32f) : ambient), unit = f ? "°F" : "°C";
+        float k = SCALE, gap = 2;
+        float numW = com.bino.binosvanillaplus.client.stats.HudDigits.width(num) * k, unitW = com.bino.binosvanillaplus.client.stats.HudDigits.width(unit) * k;
+        com.bino.binosvanillaplus.client.stats.HudDigits.draw(g, num, tx - gap - numW, ty + 1, k, 0xFFFFFF);
+        com.bino.binosvanillaplus.client.stats.HudDigits.draw(g, unit, tx - gap - unitW, ty + 1 + (8 + 2) * k, k, 0xFFFFFF);
     }
 
     // calor forte: bordas alaranjadas na tela (etapa 2 fraca, etapa 3 mais forte)
