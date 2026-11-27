@@ -17,14 +17,6 @@ public final class WaterBottles {
         return pc != null && pc.is(Potions.WATER) && pc.customEffects().isEmpty();
     }
 
-    /** pilha maxima especial: garrafa de agua e frasquinho de agua acumulam 64; -1 = a do item */
-    public static int maxStack(ItemStack s) {
-        if (s.isEmpty()) return -1;
-        if (s.getItem() == Items.POTION) return is(s) ? 64 : -1;
-        if (s.getItem() instanceof FilledVesselItem v && v.size == 1) {
-            PotionContents pc = s.get(DataComponents.POTION_CONTENTS);
-            if (pc != null && pc.is(Potions.WATER) && pc.customEffects().isEmpty()) return 64;
-        }
-        return -1;
-    }
+    /** pilha maxima especial: garrafa de agua acumula 64 (os frascos ja sao 64); -1 = a do item */
+    public static int maxStack(ItemStack s) { return is(s) ? 64 : -1; }
 }

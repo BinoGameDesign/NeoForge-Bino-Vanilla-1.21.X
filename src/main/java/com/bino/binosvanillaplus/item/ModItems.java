@@ -77,19 +77,19 @@ public class ModItems {
     public static final DeferredItem<Item> VIAL = ITEMS.register("vial",
             () -> new com.bino.binosvanillaplus.thirst.VesselItem(1, () -> ModItems.FILLED_VIAL.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> FILLED_VIAL = ITEMS.register("filled_vial",
-            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(1, 1, 16, () -> ModItems.VIAL.get(), new Item.Properties().stacksTo(16)));
+            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(1, 0.5f, 16, () -> ModItems.VIAL.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> FLASK = ITEMS.register("flask",
-            () -> new com.bino.binosvanillaplus.thirst.VesselItem(3, () -> ModItems.FILLED_FLASK.get(), new Item.Properties().stacksTo(16)));
+            () -> new com.bino.binosvanillaplus.thirst.VesselItem(3, () -> ModItems.FILLED_FLASK.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> FILLED_FLASK = ITEMS.register("filled_flask",
-            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(3, 2, 32, () -> ModItems.FLASK.get(), new Item.Properties().stacksTo(1)));
+            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(3, 2f, 40, () -> ModItems.FLASK.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> LARGE_FLASK = ITEMS.register("large_flask",
-            () -> new com.bino.binosvanillaplus.thirst.VesselItem(4, () -> ModItems.FILLED_LARGE_FLASK.get(), new Item.Properties().stacksTo(16)));
+            () -> new com.bino.binosvanillaplus.thirst.VesselItem(4, () -> ModItems.FILLED_LARGE_FLASK.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> FILLED_LARGE_FLASK = ITEMS.register("filled_large_flask",
-            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(4, 3, 36, () -> ModItems.LARGE_FLASK.get(), new Item.Properties().stacksTo(1)));
+            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(4, 3f, 48, () -> ModItems.LARGE_FLASK.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> JUG = ITEMS.register("jug",
-            () -> new com.bino.binosvanillaplus.thirst.VesselItem(5, () -> ModItems.FILLED_JUG.get(), new Item.Properties().stacksTo(16)));
+            () -> new com.bino.binosvanillaplus.thirst.VesselItem(5, () -> ModItems.FILLED_JUG.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> FILLED_JUG = ITEMS.register("filled_jug",
-            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(5, 4, 40, () -> ModItems.JUG.get(), new Item.Properties().stacksTo(1)));
+            () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(5, 4f, 56, () -> ModItems.JUG.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> MIMIC_SPAWN_EGG = ITEMS.register("mimic_spawn_egg",
             () -> new com.bino.binosvanillaplus.mimic.MimicEggItem(new Item.Properties()));
     public static final DeferredItem<Item> DIRE_RAT_SPAWN_EGG = ITEMS.register("dire_rat_spawn_egg",

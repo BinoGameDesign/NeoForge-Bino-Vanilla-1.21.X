@@ -45,8 +45,11 @@ public final class ModAttachments {
                     .serialize(Codec.INT.listOf()).copyOnDeath().build());
 
     // sede do jogador (0..20, ver thirst/Thirst): zera so na morte, como a fome; o cansaco acumulado; a dica da agua suja
-    public static final Supplier<AttachmentType<Integer>> THIRST = ATTACHMENTS.register("thirst",
-            () -> AttachmentType.builder(() -> 20).serialize(Codec.INT).build());
+    public static final Supplier<AttachmentType<Float>> THIRST = ATTACHMENTS.register("thirst",
+            () -> AttachmentType.builder(() -> 20f).serialize(Codec.FLOAT).build());
+    // reserva escondida da sede (como a saturacao da fome): gasta antes das gotas
+    public static final Supplier<AttachmentType<Float>> THIRST_HYD = ATTACHMENTS.register("thirst_hydration",
+            () -> AttachmentType.builder(() -> 5f).serialize(Codec.FLOAT).build());
     public static final Supplier<AttachmentType<Float>> THIRST_EXH = ATTACHMENTS.register("thirst_exhaustion",
             () -> AttachmentType.builder(() -> 0f).serialize(Codec.FLOAT).build());
     public static final Supplier<AttachmentType<Boolean>> THIRST_HINT = ATTACHMENTS.register("thirst_hint",

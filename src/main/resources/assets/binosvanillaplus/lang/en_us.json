@@ -95,7 +95,7 @@
   "gui.binosvanillaplus.inv.attr.agi.tip3": "+2 combat stamina per point",
   "gui.binosvanillaplus.inv.attr.agi.tip4": "+1% attack speed per point",
   "gui.binosvanillaplus.inv.attr.int.tip1": "Reserved for magic (coming soon)",
-  "gui.binosvanillaplus.inv.attr.wil.tip1": "Reserved for magic (coming soon)",
+  "gui.binosvanillaplus.inv.attr.wil.tip1": "+2% hunger and thirst per point",
   "item.binosvanillaplus.boiled_water": "Boiled Water",
   "death.attack.binosvanillaplus.dehydration": "%1$s died of thirst",
   "death.attack.binosvanillaplus.dehydration.player": "%1$s died of thirst whilst fleeing %2$s",
@@ -113,7 +113,8 @@
   "item.binosvanillaplus.filled_jug": "Jug of %s",
   "vessel.binosvanillaplus.water": "Water",
   "vessel.binosvanillaplus.boiled_water": "Boiled Water",
-  "tooltip.binosvanillaplus.vessel.doses": "Doses: %s/%s",
-  "tooltip.binosvanillaplus.vessel.half": "Half dose: drinks fast, but counts for half",
-  "tooltip.binosvanillaplus.vessel.boil_full": "When full, boil it in a furnace, smoker or campfire"
+  "tooltip.binosvanillaplus.vessel.half": "Half a bottle: drinks fast, but counts for half",
+  "tooltip.binosvanillaplus.vessel.mult": "Worth %s bottles: effect and thirst multiplied",
+  "gui.binosvanillaplus.inv.attr.wil.tip2": "(still 10 icons; each one lasts longer)",
+  "gui.binosvanillaplus.inv.attr.wil.tip3": "In the future: mana"
 }

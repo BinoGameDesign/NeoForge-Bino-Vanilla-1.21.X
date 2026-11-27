@@ -45,7 +45,7 @@ public class VesselItem extends Item {
         level.playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.BOTTLE_FILL, SoundSource.NEUTRAL, 1f, size >= 4 ? 0.85f : 1f);
         level.gameEvent(player, GameEvent.FLUID_PICKUP, pos);
         player.awardStat(Stats.ITEM_USED.get(this));
-        ItemStack full = Vessels.filled(f, new PotionContents(Potions.WATER), f.maxDoses, false);
+        ItemStack full = Vessels.filled(f, new PotionContents(Potions.WATER), false);
         return InteractionResultHolder.sidedSuccess(ItemUtils.createFilledResult(stack, player, full), level.isClientSide());
     }
 }

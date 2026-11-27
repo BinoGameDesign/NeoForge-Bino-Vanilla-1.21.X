@@ -7,8 +7,7 @@
     "components": {
       "minecraft:potion_contents": {
         "potion": "minecraft:water"
-      },
-      "binosvanillaplus:doses": 2
+      }
     }
   },
   "result": {
@@ -17,7 +16,6 @@
       "minecraft:potion_contents": {
         "potion": "minecraft:water"
       },
-      "binosvanillaplus:doses": 2,
       "binosvanillaplus:boiled": true
     }
   },

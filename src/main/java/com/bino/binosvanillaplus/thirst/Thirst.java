@@ -37,14 +37,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-// SEDE (regras de 26/11): barra de 10 gotas (0..20 pontos) acima da fome; as bolhas de ar ficam acima dela.
-//  - Enche com umas 2-3 garrafas: garrafa de agua e agua fervida = 8 pontos (4 gotas).
+// SEDE (regras de 26/11, ritmo refeito em 27/11): barra de 10 gotas (0..20 pontos) acima da fome; o ar fica acima dela.
+//  - Enche com umas 2-3 garrafas: garrafa de agua e agua fervida = 8 pontos (4 gotas); frascos multiplicam (Vessels).
 //  - Agua do mundo (garrafa enchida no rio/mar ou beber direto, agachado e com a mao vazia) NAO e' fervida: mata a
 //    sede, mas pode dar nausea. Ferver a garrafa (fornalha, defumador ou fogueira) da a Agua Fervida, sem risco.
 //    Na primeira vez aparece uma dica; a garrafa de agua tambem avisa na descricao.
 //  - Comidas aquosas dao um pouco (tabela WATERY): melancia, sopas e ensopados, leite, pocoes, frutas.
-//  - Gasto: um pouco o tempo todo (1 ponto a cada ~45 s), mais o esforco (parte do cansaco da fome: correr, pular,
-//    nadar, lutar) e o calor (deserto, savana, badlands, Nether gastam mais; frio gasta menos).
+//  - Gasto NO RITMO DA FOME: o mesmo cansaco da fome (correr, pular, nadar, lutar, curar) e, como a saturacao da fome,
+//    uma reserva escondida ("hidratacao") que gasta antes das gotas. Calor (deserto, savana, badlands, Nether)
+//    multiplica o gasto e ainda seca um pouco parado; frio gasta menos.
+//  - VONTADE: cada ponto +2% de fome e de sede (100 pontos = 3x): a barra continua com 10 itens, cada um vale mais
+//    (o que se come/bebe enche proporcionalmente menos e cada item dura proporcionalmente mais). Fome: FoodDataWillMixin.
 //  - Igual a fome: com 3 gotas ou menos nao da para correr; zerada, para de regenerar e perde vida a cada 4 s (ate 5
 //    coracoes no facil, meio coracao no normal, ate morrer no dificil). No pacifico volta sozinha. Criativo nao gasta.
 //  - Futuro: a mana vai usar a sede como combustivel das magias.
@@ -52,12 +55,12 @@ import java.util.UUID;
 public final class Thirst {
     private Thirst() {}
 
-    public static final int MAX = 20;
-    public static final int NO_SPRINT_AT = 6;          // igual a fome: 3 gotas ou menos
-    public static final float POINT = 4f;              // cansaco que gasta 1 ponto (como a fome)
-    public static final float PASSIVE_PER_TICK = POINT / 900f;   // 1 ponto a cada 45 s parado
-    public static final float EXERTION_SHARE = 0.7f;   // parte do cansaco da fome que tambem vira sede
-    public static final int BOTTLE = 8, SIP = 2;
+    public static final float MAX = 20f;
+    public static final float NO_SPRINT_AT = 6f;        // igual a fome: 3 gotas ou menos
+    public static final float POINT = 4f;               // cansaco que gasta 1 ponto (como a fome)
+    public static final float HYDRATION = 0.6f;         // reserva que cada gole deixa (fracao do que deu), como a saturacao
+    public static final float HEAT_IDLE_PER_TICK = POINT / 2400f;   // calor: parado, 1 ponto a cada 2 min por "grau" de calor
+    public static final float BOTTLE = 8f, SIP = 2f;
     public static final float BOTTLE_NAUSEA = 0.5f, SIP_NAUSEA = 0.2f;
     public static final int NAUSEA_TICKS = 200;
     public static final int DAMAGE_EVERY = 80;
@@ -84,18 +87,35 @@ public final class Thirst {
         WATERY.put(Items.POTION, 4);   // pocoes de efeito (a de agua e' tratada a parte)
     }
 
-    public static int get(Player p) { return p.getData(ModAttachments.THIRST.get()); }
+    /** sede em pontos visiveis (0..20, com fracao) */
+    public static float get(Player p) { return p.getData(ModAttachments.THIRST.get()); }
 
-    public static void set(ServerPlayer p, int v) {
-        v = Math.max(0, Math.min(MAX, v));
-        if (v != get(p)) { p.setData(ModAttachments.THIRST.get(), v); sync(p); }
+    /** quanto cada ponto da barra vale com a Vontade (1 = normal, 3 = 100 pontos) */
+    public static float will(Player p) { return com.bino.binosvanillaplus.leveling.PlayerStats.willScale(p); }
+
+    public static void set(ServerPlayer p, float v) {
+        v = Math.max(0f, Math.min(MAX, v));
+        float old = get(p);
+        p.setData(ModAttachments.THIRST.get(), v);
+        if (shown(old) != shown(v)) sync(p);
+        float hyd = p.getData(ModAttachments.THIRST_HYD.get());
+        if (hyd > v) p.setData(ModAttachments.THIRST_HYD.get(), v);   // a reserva nunca passa das gotas (como a saturacao)
     }
 
-    public static void add(ServerPlayer p, int v) { set(p, get(p) + v); }
+    /** bebeu/comeu: "pontos de garrafa" (a Vontade faz cada ponto da barra valer mais, entao enche menos) */
+    public static void add(ServerPlayer p, float v) {
+        float gain = v / will(p);
+        set(p, get(p) + gain);
+        float hyd = Math.min(get(p), p.getData(ModAttachments.THIRST_HYD.get()) + gain * HYDRATION);
+        p.setData(ModAttachments.THIRST_HYD.get(), hyd);
+    }
+
+    /** meias gotas mostradas (0..20) */
+    public static int shown(float v) { return (int) Math.ceil(v - 1e-4f); }
 
     public static boolean isWaterBottle(ItemStack s) { return WaterBottles.is(s); }
 
-    public static void sync(ServerPlayer p) { PacketDistributor.sendToPlayer(p, new ThirstSyncPayload(get(p))); }
+    public static void sync(ServerPlayer p) { PacketDistributor.sendToPlayer(p, new ThirstSyncPayload(shown(get(p)))); }
 
     // ---------------------------------------------------------------- gasto e efeitos
     private static final Map<UUID, Float> LAST_FOOD_EXH = new HashMap<>();
@@ -110,23 +130,26 @@ public final class Thirst {
             if (p.tickCount % 20 == 0) add(p, 1);
             return;
         }
-        // esforco: o que o cansaco da fome subiu neste tick (ele volta 4 quando gasta comida)
+        // esforco: o mesmo que o cansaco da fome subiu neste tick (ele volta 4 quando gasta comida). A Vontade ja vem
+        // descontada nele (FoodDataWillMixin).
         float fe = p.getFoodData().getExhaustionLevel();
         Float prev = LAST_FOOD_EXH.put(p.getUUID(), fe);
         float exertion = 0;
-        if (prev != null) { exertion = fe - prev; if (exertion < -1f) exertion += 4f; if (exertion < 0) exertion = 0; }
-
-        float exh = p.getData(ModAttachments.THIRST_EXH.get()) + PASSIVE_PER_TICK * heat(p) + exertion * EXERTION_SHARE;
+        if (prev != null) { exertion = fe - prev; if (exertion < -1f) exertion += POINT; if (exertion < 0) exertion = 0; }
+        float heat = heat(p);
+        float exh = p.getData(ModAttachments.THIRST_EXH.get()) + exertion * heat + Math.max(0f, heat - 1f) * HEAT_IDLE_PER_TICK / will(p);
         if (exh >= POINT) {
             exh -= POINT;
-            set(p, get(p) - 1);
+            float hyd = p.getData(ModAttachments.THIRST_HYD.get());
+            if (hyd > 0f) p.setData(ModAttachments.THIRST_HYD.get(), Math.max(0f, hyd - 1f));   // gasta a reserva antes
+            else set(p, get(p) - 1f);
         }
         p.setData(ModAttachments.THIRST_EXH.get(), exh);
 
         if (get(p) <= NO_SPRINT_AT && p.isSprinting()) p.setSprinting(false);
 
         // zerada: perde vida aos poucos, como a fome
-        if (get(p) <= 0) {
+        if (get(p) <= 0f) {
             int t = DAMAGE_TIMER.merge(p.getUUID(), 1, Integer::sum);
             if (t >= DAMAGE_EVERY) {
                 DAMAGE_TIMER.put(p.getUUID(), 0);
@@ -151,7 +174,7 @@ public final class Thirst {
     @SubscribeEvent
     public static void onHeal(LivingHealEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p) || p.getAbilities().invulnerable) return;
-        if (get(p) <= 0 && e.getAmount() <= 1.0f && !p.hasEffect(MobEffects.REGENERATION)) e.setCanceled(true);
+        if (get(p) <= 0f && e.getAmount() <= 1.0f && !p.hasEffect(MobEffects.REGENERATION)) e.setCanceled(true);
     }
 
     // ---------------------------------------------------------------- beber

@@ -132,9 +132,12 @@ public final class CombatActionsServer {
             case CombatActionPayload.BACKSTAB -> {
                 CombatMovesServer.broadcast(p, CombatMove.BACKSTAB, false);
                 if (!p.isCrouching() || target.distanceToSqr(p) > 3.2 * 3.2 || !behind(p, target) || target instanceof net.minecraft.world.entity.player.Player) return;
-                Posture.freeze(target, 24);   // fica parado enquanto a arma entra e sai
                 boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
-                STABS.add(new StabHit(p.getUUID(), target.getId(), now + 9, axe));
+                // o golpe entra no marcador de acerto da animacao do Blockbench (pelas_costas), nao num numero fixo
+                BbTiming.Times bt = BbTiming.get(CombatMove.BACKSTAB, axe);
+                int hitTicks = bt != null ? Math.max(1, Math.round(bt.hit() * 20f)) : 9;
+                Posture.freeze(target, Math.max(24, hitTicks + 14));   // fica parado enquanto a arma entra e sai
+                STABS.add(new StabHit(p.getUUID(), target.getId(), now + hitTicks, axe));
             }
             case CombatActionPayload.CRITICAL -> {
                 CombatMovesServer.broadcast(p, CombatMove.CRITICAL, false);

@@ -20,6 +20,7 @@
     "mixins": [
         "MonsterSpawnLightMixin",
         "ItemStackWaterStackMixin",
+        "FoodDataWillMixin",
         "CompoundContainerAccessor",
         "ContainerMenuMimicMixin",
         "ChestBlockEntityMimicMixin",

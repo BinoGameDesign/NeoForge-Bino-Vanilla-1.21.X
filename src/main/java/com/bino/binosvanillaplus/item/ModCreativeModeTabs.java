@@ -49,14 +49,6 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.COOKED_RAT_MEAT);
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.CHEESE);
                         output.accept(ModItems.CHEESE_SLICE);
-                        output.accept(ModItems.BOILED_WATER);
-                        for (var v : java.util.List.of(ModItems.VIAL, ModItems.FLASK, ModItems.LARGE_FLASK, ModItems.JUG)) output.accept(v);
-                        for (var v : java.util.List.of(ModItems.FILLED_VIAL, ModItems.FILLED_FLASK, ModItems.FILLED_LARGE_FLASK, ModItems.FILLED_JUG)) {
-                            var f = (com.bino.binosvanillaplus.thirst.FilledVesselItem) v.get();
-                            output.accept(f.getDefaultInstance());
-                            output.accept(com.bino.binosvanillaplus.thirst.Vessels.filled(f,
-                                    new net.minecraft.world.item.alchemy.PotionContents(net.minecraft.world.item.alchemy.Potions.WATER), f.maxDoses, true));
-                        }
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.RAT_TRAP);
                         output.accept(com.bino.binosvanillaplus.block.ModBlocks.CAGE);
                         output.accept(ModItems.RAT_SPAWN_EGG);
@@ -76,6 +68,18 @@ public class ModCreativeModeTabs {
                     .withTabsBefore(id("exploration"))
                     .title(Component.translatable("creativetab.binosvanillaplus.adventure"))
                     .displayItems((params, output) -> {
+                        // sede: garrafas e frascos
+                        output.accept(net.minecraft.world.item.Items.GLASS_BOTTLE);
+                        output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(net.minecraft.world.item.Items.POTION,
+                                net.minecraft.world.item.alchemy.Potions.WATER));
+                        output.accept(ModItems.BOILED_WATER);
+                        for (var v : java.util.List.of(ModItems.VIAL, ModItems.FLASK, ModItems.LARGE_FLASK, ModItems.JUG)) output.accept(v);
+                        for (var v : java.util.List.of(ModItems.FILLED_VIAL, ModItems.FILLED_FLASK, ModItems.FILLED_LARGE_FLASK, ModItems.FILLED_JUG)) {
+                            var f = (com.bino.binosvanillaplus.thirst.FilledVesselItem) v.get();
+                            output.accept(f.getDefaultInstance());
+                            output.accept(com.bino.binosvanillaplus.thirst.Vessels.filled(f,
+                                    new net.minecraft.world.item.alchemy.PotionContents(net.minecraft.world.item.alchemy.Potions.WATER), true));
+                        }
                         output.accept(ModItems.DIMENSIONAL_KEY);
                     }).build());
 

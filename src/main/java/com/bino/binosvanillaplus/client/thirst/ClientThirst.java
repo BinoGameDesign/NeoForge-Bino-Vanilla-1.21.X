@@ -36,13 +36,13 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class ClientThirst {
     private ClientThirst() {}
 
-    private static int level = Thirst.MAX;
+    private static int level = (int) Thirst.MAX;
 
     public static void receive(ThirstSyncPayload m) { level = m.level(); }
     public static int level() { return level; }
 
     @SubscribeEvent
-    public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) { level = Thirst.MAX; }
+    public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) { level = (int) Thirst.MAX; }
 
     // ---------------------------------------------------------------- barra
     private static ResourceLocation sprite(String n) { return ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "hud/" + n); }

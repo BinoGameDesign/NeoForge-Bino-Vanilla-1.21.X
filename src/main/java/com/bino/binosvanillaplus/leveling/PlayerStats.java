@@ -27,7 +27,9 @@ import java.util.List;
 //               1 + 0,02 x Vitalidade, e a cura continua enchendo os coracoes no mesmo ritmo) e +3 de postura sua
 //   AGILIDADE   +2 de estamina de combate, +1% de velocidade de ataque, +0,25% de evasao (25% com 100 pontos) e
 //               +0,5% de chance de critico (50% com 100 pontos), por ponto
-//   INTELIGENCIA / VONTADE: reservados para a magia (travados, nao recebem pontos ainda)
+//   VONTADE     +2% de fome e de sede por ponto (100 pontos = 3x): as barras continuam com 10 itens, cada um vale mais
+//               (Thirst e FoodDataWillMixin). No futuro tambem a mana.
+//   INTELIGENCIA: reservada para a magia (travada, nao recebe pontos ainda)
 // Os dados ficam no jogador (sobrevivem a morte) e vao para o cliente (visor e aba Atributos).
 @EventBusSubscriber(modid = BinosVanillaMod.MOD_ID)
 public final class PlayerStats {
@@ -88,7 +90,7 @@ public final class PlayerStats {
                     net.minecraft.sounds.SoundSource.PLAYERS, 0.8f, 1.2f);
         } else if (m.kind() == ACT_ADD) {
             int st = m.stat();
-            if (st != STR && st != VIT && st != AGI) return;   // Inteligencia e Vontade: so com a magia
+            if (st != STR && st != VIT && st != AGI && st != WIL) return;   // Inteligencia: so com a magia
             if (freePoints(p) <= 0) return;
             set(p, st, get(p, st) + 1);
         }
@@ -135,6 +137,9 @@ public final class PlayerStats {
     public static void onDimension(PlayerEvent.PlayerChangedDimensionEvent e) { if (e.getEntity() instanceof ServerPlayer p) sync(p); }
 
     // Vitalidade = mais vida por coracao: o dano que chega (depois da armadura) e a cura sao divididos pelo mesmo fator
+    // Vontade = fome e sede maiores: cada item da barra vale 1 + 0,02 x Vontade (o gasto e o ganho sao divididos por ele)
+    public static float willScale(Player p) { return 1f + 0.02f * get(p, WIL); }
+
     public static float heartScale(Player p) { return 1f + 0.02f * get(p, VIT); }
 
     @SubscribeEvent

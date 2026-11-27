@@ -118,9 +118,10 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
             tabs(3445, 806);
         } else if (tab == TAB_ATTR) {
             tabs(624, 700);
-            // "+" de Forca, Vitalidade e Agilidade (Inteligencia e Vontade: so com a magia)
+            // "+" de Forca, Vitalidade, Vontade e Agilidade (Inteligencia: so com a magia)
             buttons.add(new Btn(1356, 576, 64, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.STR, t("attr.add")));
             buttons.add(new Btn(1356, 672, 64, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.VIT, t("attr.add")));
+            buttons.add(new Btn(1356, 864, 64, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.WIL, t("attr.add")));
             buttons.add(new Btn(1356, 960, 64, 14, null, "+", ATTR_ADD + com.bino.binosvanillaplus.leveling.PlayerStats.AGI, t("attr.add")));
         } else {
             tabs(2682, 806);
@@ -661,7 +662,7 @@ public class BinoInventoryScreen extends AbstractContainerScreen<BinoInventoryMe
         int[] vals = {str, vit, com.bino.binosvanillaplus.client.stats.ClientStats.intelligence(), com.bino.binosvanillaplus.client.stats.ClientStats.will(), agi};
         attrTip = null;
         for (int i = 0; i < 5; i++) {
-            boolean locked = i == 2 || i == 3;
+            boolean locked = i == 2;   // Inteligencia: so com a magia
             float y = 607 + i * 96;
             // passar o mouse no atributo: o que cada ponto aumenta
             if (mx >= X(979) && mx < X(1580) && my >= Y(y - 46) && my < Y(y + 46) && buttonAt(mx, my) == null) {
