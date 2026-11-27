@@ -34,6 +34,12 @@ public final class ClientTemperature {
 
     public static void receive(TemperatureSyncPayload m) { ambient = m.ambient(); exposure = m.exposure(); has = true; }
 
+    // tamanho do visor (opcao do cliente) para todos os mods
+    @SubscribeEvent
+    public static void onFrame(net.neoforged.neoforge.client.event.RenderFrameEvent.Pre e) {
+        com.bino.binosmovement.client.HudScale.scale = com.bino.binosvanillaplus.ClientConfig.hudScale();
+    }
+
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) { has = false; ambient = 20; exposure = 0; }
 
@@ -49,17 +55,17 @@ public final class ClientTemperature {
         e.registerBelow(VanillaGuiLayers.CROSSHAIR, ResourceLocation.fromNamespaceAndPath(BinosVanillaMod.MOD_ID, "heat_vignette"), ClientTemperature::vignette);
     }
 
-    // (27/11) espelha a estamina do outro lado: a mesma altura (32 px, de h-54 a h-22) e do lado de fora das barras;
-    // um vao a mais deixa o numero verde das barras de experiencia aparecer
-    private static final float SCALE = 32f / 21f, TEXT = 1.5f;
+    // (27/11) espelha a estamina do outro lado: centrado na mesma altura (meio em h-38) e encostado nas barras como
+    // ela (2 px), so desviando do numero verde das barras de experiencia; um pouco menor que a estamina
+    private static final float SCALE = 27f / 21f, TEXT = 1.25f;
 
     private static void render(GuiGraphics g, DeltaTracker dt) {
         Minecraft mc = Minecraft.getInstance();
         if (!has || mc.options.hideGui || mc.gameMode == null || !mc.gameMode.canHurtPlayer()) return;
         if (!(mc.getCameraEntity() instanceof Player)) return;
         int w = g.guiWidth(), h = g.guiHeight();
-        float right = w / 2f - 91 - 2 - 11;               // espelho da estamina (w/2 + 91 + 2), mais o numero verde
-        float tx = right - 10 * SCALE, ty = h - 54;
+        float right = Math.min(w / 2f - 91 - 2, com.bino.binosvanillaplus.client.stats.ClientStats.barsNumberLeft(w) - 2);
+        float tx = right - 10 * SCALE, ty = h - 38 - 21 * SCALE / 2f;
         g.pose().pushPose();
         g.pose().translate(tx, ty, 0);
         g.pose().scale(SCALE, SCALE, 1f);
@@ -70,8 +76,8 @@ public final class ClientTemperature {
         String num = String.valueOf(f ? Math.round(ambient * 9f / 5f + 32f) : ambient), unit = f ? "°F" : "°C";
         float k = TEXT, gap = 2;
         float numW = com.bino.binosvanillaplus.client.stats.HudDigits.width(num) * k, unitW = com.bino.binosvanillaplus.client.stats.HudDigits.width(unit) * k;
-        com.bino.binosvanillaplus.client.stats.HudDigits.draw(g, num, tx - gap - numW, ty + 2, k, 0xFFFFFF);
-        com.bino.binosvanillaplus.client.stats.HudDigits.draw(g, unit, tx - gap - unitW, ty + 2 + (8 + 2) * k, k, 0xFFFFFF);
+        com.bino.binosvanillaplus.client.stats.HudDigits.draw(g, num, tx - gap - numW, ty + 1, k, 0xFFFFFF);
+        com.bino.binosvanillaplus.client.stats.HudDigits.draw(g, unit, tx - gap - unitW, ty + 1 + (8 + 3) * k, k, 0xFFFFFF);
     }
 
     // calor forte: bordas alaranjadas na tela (etapa 2 fraca, etapa 3 mais forte)

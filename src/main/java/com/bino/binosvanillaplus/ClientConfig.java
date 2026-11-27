@@ -13,7 +13,16 @@ public final class ClientConfig {
             .translation("binosvanillaplus.configuration.fahrenheit")
             .define("fahrenheit", false);
 
+    public static final ModConfigSpec.IntValue HUD_SCALE = BUILDER
+            .comment("Tamanho do visor de baixo (hotbar, vida, fome, sede, experiencia, temperatura, estamina), em %, por cima da Escala da interface")
+            .translation("binosvanillaplus.configuration.hudScale")
+            .defineInRange("hudScale", 115, 75, 150);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
+
+    public static float hudScale() {
+        try { return HUD_SCALE.get() / 100f; } catch (IllegalStateException e) { return 1f; }
+    }
 
     public static boolean fahrenheit() {
         try { return FAHRENHEIT.get(); } catch (IllegalStateException e) { return false; }

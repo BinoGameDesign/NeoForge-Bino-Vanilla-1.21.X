@@ -319,5 +319,6 @@
   "tooltip.binosvanillaplus.lining.light": "Forro Leve: aguenta mais calor",
   "tooltip.binosvanillaplus.drink.warm": "Aquece por %s s",
   "tooltip.binosvanillaplus.drink.cool": "Refresca por %s s",
-  "binosvanillaplus.configuration.fahrenheit": "Temperatura em °F (Fahrenheit)"
+  "binosvanillaplus.configuration.fahrenheit": "Temperatura em °F (Fahrenheit)",
+  "binosvanillaplus.configuration.hudScale": "Tamanho do visor (%)"
 }

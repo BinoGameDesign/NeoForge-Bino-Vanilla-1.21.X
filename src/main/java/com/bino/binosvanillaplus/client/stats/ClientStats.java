@@ -55,9 +55,11 @@ public final class ClientStats {
         int w = g.guiWidth(), h = g.guiHeight();
         // nivel do personagem: no lugar do numero do jogo, com os digitos de nivel (cor pela dezena)
         // (27/11) maior e no meio do vao entre as faixas: armadura/coracoes a esquerda, sede/fome a direita
+        com.bino.binosmovement.client.HudScale.push(g);   // mesmo tamanho do resto do visor
         HudDigits.level(g, level, w / 2f, h - 39.5f, 1.5f);
         // barras completas: digitos do Bino em verde, a esquerda da barra de experiencia
         if (mc.player.jumpableVehicle() == null) barsNumber(g, mc, w, h);
+        com.bino.binosmovement.client.HudScale.pop(g);
     }
 
     // ---------------------------------------------------------------- animacao de subir uma barra (desenho do Bino)
@@ -98,7 +100,14 @@ public final class ClientStats {
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.bino.binosvanillaplus.BinosVanillaMod.MOD_ID, "textures/gui/xp_bar.png");
     public static final int XP_W = 179, XP_H = 5;
     // (27/11) a barra termina exatamente onde termina o ultimo icone de fome (w/2 + 91)
-    public static final int XP_LEFT = 91 - XP_W;   // x da barra = w/2 + XP_LEFT = w/2 - 88
+    public static final int XP_LEFT = 93 - XP_W;   // x da barra = w/2 + XP_LEFT = w/2 - 86 (27/11: 2 px a mais para a direita)
+
+    /** x onde comeca o numero verde de barras (a temperatura fica a esquerda dele) */
+    public static float barsNumberLeft(int guiW) {
+        Minecraft mc = Minecraft.getInstance();
+        int bars = mc.player != null ? mc.player.experienceLevel : 0;
+        return guiW / 2f + XP_LEFT - 2 - HudDigits.width(String.valueOf(bars));
+    }
 
     // fundo inteiro e a parte cheia ate onde a experiencia chegou (desenho do Bino, 179x5)
     private static void xpBar(GuiGraphics g, Minecraft mc) {

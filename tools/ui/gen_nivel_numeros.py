@@ -21,7 +21,7 @@ CW,CH=6*S+2,8*S+2
 # cores do Bino (27/11), do nivel mais baixo ao mais alto: uma por dezena e a ultima para o 100
 FACES=[(191,191,191),(32,255,107),(32,176,255),(255,124,21),(255,191,0),(242,255,32),(143,255,32),(114,32,255),(255,64,224),(255,32,111),(255,255,255)]
 def mix(a,b,k): return tuple(int(a[i]+(b[i]-a[i])*k) for i in range(3))
-STY=[(mix(f,(255,255,255),0.55), f, mix(f,(0,0,0),0.28), mix(f,(0,0,0),0.55)) for f in FACES]
+STY=[(mix(f,(255,255,255),0.55), f, mix(f,(0,0,0),0.48), mix(f,(0,0,0),0.75)) for f in FACES]   # (27/11) sombras mais escuras
 def glyph(d, st, rainbow=False):
     hi,face,side,shadow=st
     im=Image.new('RGBA',(CW,CH),(0,0,0,0))

@@ -124,6 +124,11 @@ public final class Stamina {
         LocalPlayer p = mc.player;
         if (p == null || mc.options.hideGui || free() || mc.gameMode == null || !mc.gameMode.canHurtPlayer()) return;
         GuiGraphics g = e.getGuiGraphics();
+        com.bino.binosmovement.client.HudScale.push(g);   // mesmo tamanho do resto do visor
+        try { draw(g); } finally { com.bino.binosmovement.client.HudScale.pop(g); }
+    }
+
+    private static void draw(GuiGraphics g) {
         long now = now();
         int s = 2;
         int x0 = g.guiWidth() / 2 + 91 + 2, y0 = g.guiHeight() - 22 - 16 * s;
