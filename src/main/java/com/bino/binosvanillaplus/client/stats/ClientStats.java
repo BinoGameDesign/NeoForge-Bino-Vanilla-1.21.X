@@ -32,7 +32,8 @@ public final class ClientStats {
     public static int freePoints() { return Math.max(0, level - 1 - str - vit - agi - intel - wil); }
 
     @SubscribeEvent
-    public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) { level = 1; str = vit = agi = intel = wil = 0; }
+    public static void onLogout(ClientPlayerNetworkEvent.LoggingOut e) {
+        lastBars = -1; animStart = -1; level = 1; str = vit = agi = intel = wil = 0; }
 
     // o numero do jogo sai (camada "experience_level")
     @SubscribeEvent
@@ -55,10 +56,41 @@ public final class ClientStats {
         // nivel do personagem: no lugar do numero do jogo, com os digitos de nivel (cor pela dezena)
         HudDigits.level(g, level, w / 2f, h - 31 - 4 - 3);
         // barras completas: digitos do Bino em verde, a esquerda da barra de experiencia
-        if (mc.player.jumpableVehicle() == null) {
-            String bars = String.valueOf(mc.player.experienceLevel);
-            HudDigits.draw(g, bars, w / 2f - 91 - 2 - HudDigits.width(bars), h - 29 - 1, 1f, 0x20FF27);
+        if (mc.player.jumpableVehicle() == null) barsNumber(g, mc, w, h);
+    }
+
+    // ---------------------------------------------------------------- animacao de subir uma barra (desenho do Bino)
+    // xp_bar_anim.png (tools/ui/barra_xp_animacao.png): 6 quadros de 190x9 a 9 quadros por segundo. Quadro 0 = numero
+    // antigo, 1-4 = o numero "girando" (desenho do Bino, centrado no numero), 5 = numero novo; a barra brilha junto.
+    private static final net.minecraft.resources.ResourceLocation XP_ANIM =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.bino.binosvanillaplus.BinosVanillaMod.MOD_ID, "textures/gui/xp_bar_anim.png");
+    private static final int ANIM_FRAMES = 6, ANIM_FPS = 9, SHEET_W = 190, SHEET_H = 54, BAR_U = 11, NUM_CENTER_U = 6;
+    private static int lastBars = -1, fromBars;
+    private static long animStart = -1;
+
+    /** quadro da animacao agora (0..5), ou -1 se nao esta tocando */
+    private static int animFrame() {
+        if (animStart < 0) return -1;
+        int f = (int) ((net.minecraft.Util.getMillis() - animStart) * ANIM_FPS / 1000L);
+        if (f >= ANIM_FRAMES) { animStart = -1; return -1; }
+        return f;
+    }
+
+    private static void barsNumber(GuiGraphics g, Minecraft mc, int w, int h) {
+        int bars = mc.player.experienceLevel;
+        if (lastBars >= 0 && bars > lastBars) { fromBars = lastBars; animStart = net.minecraft.Util.getMillis(); }
+        lastBars = bars;
+        int f = animFrame();
+        float right = w / 2f - 91 - 2, top = h - 29 - 1;
+        if (f > 0 && f < ANIM_FRAMES - 1) {   // numero girando: o desenho do quadro, centrado onde fica o numero
+            String now = String.valueOf(bars);
+            float center = right - HudDigits.width(now) / 2f;
+            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            g.blit(XP_ANIM, Math.round(center - NUM_CENTER_U), Math.round(top - 1), 0, f * 9, 8, 9, SHEET_W, SHEET_H);
+            return;
         }
+        String s = String.valueOf(f == 0 ? fromBars : bars);
+        HudDigits.draw(g, s, right - HudDigits.width(s), top, 1f, 0x20FF27);
     }
 
     private static final net.minecraft.resources.ResourceLocation XP_BAR =
@@ -70,6 +102,11 @@ public final class ClientStats {
         int x = g.guiWidth() / 2 - 91, y = g.guiHeight() - 29;
         com.mojang.blaze3d.systems.RenderSystem.enableBlend();
         g.blit(XP_BAR, x, y, 0, 0, XP_W, XP_H, XP_W, 10);
+        int f = animFrame();
+        if (f >= 0) {   // subiu uma barra: a barra cheia brilhando (quadro da animacao)
+            g.blit(XP_ANIM, x, y, BAR_U, f * 9 + 2, XP_W, XP_H, SHEET_W, SHEET_H);
+            return;
+        }
         int fill = (int) (mc.player.experienceProgress * (XP_W + 1));
         if (fill > 0) g.blit(XP_BAR, x, y, 0, 5, Math.min(XP_W, fill), XP_H, XP_W, 10);
     }
