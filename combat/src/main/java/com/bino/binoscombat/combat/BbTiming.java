@@ -30,8 +30,9 @@ public final class BbTiming {
         };
     }
 
-    // length (s), hit = primeiro acerto (s), chain = a partir de quando o proximo golpe pode sair (s)
-    public record Times(float length, float hit, float chain) {}
+    // length (s), hit = primeiro acerto (s), chain = a partir de quando o proximo golpe pode sair (s),
+    // hits = todos os marcadores de acerto da linha do tempo (s), na ordem
+    public record Times(float length, float hit, float chain, float[] hits) {}
 
     private static final Map<String, Map<String, Times>> CACHE = new HashMap<>();
 
@@ -55,7 +56,11 @@ public final class BbTiming {
                     float hit = hits.size() > 0 ? hits.get(0).getAsFloat() : len * 0.35f;
                     float last = hits.size() > 0 ? hits.get(hits.size() - 1).getAsFloat() : hit;
                     float chain = o.has("chain") ? o.get("chain").getAsFloat() : Math.min(len, last + 0.10f);
-                    out.put(en.getKey(), new Times(len, hit, chain));
+                    float[] all = new float[Math.max(1, hits.size())];
+                    if (hits.size() == 0) all[0] = hit;
+                    for (int i = 0; i < hits.size(); i++) all[i] = hits.get(i).getAsFloat();
+                    java.util.Arrays.sort(all);
+                    out.put(en.getKey(), new Times(len, hit, chain, all));
                 }
             }
         } catch (Exception ex) {

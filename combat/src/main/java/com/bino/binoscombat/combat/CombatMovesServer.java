@@ -37,10 +37,11 @@ public final class CombatMovesServer {
     private CombatMovesServer() {}
 
     private record Recent(CombatMove move, boolean heavy, long tick, int window) {}
-    private record Pending(CombatMove move, boolean axe, long atTick, int charge, int step) {}
+    // um acerto marcado na animacao (golpes com varios marcadores tem varios; o dano e' dividido entre eles)
+    private record Pending(CombatMove move, boolean axe, long atTick, int charge, int step, float share, boolean first, boolean last) {}
 
     private static final Map<UUID, Recent> RECENT = new HashMap<>();
-    private static final Map<UUID, Pending> PENDING = new HashMap<>();
+    private static final Map<UUID, java.util.List<Pending>> PENDING = new HashMap<>();
     private static final Map<UUID, Long> HEAVY_READY = new HashMap<>();
     static boolean ownHit;   // golpe feito aqui (pesado, Issen, critico...): sem o bonus do leve por cima
     private static CombatMove hitting;   // golpe do servidor que esta batendo agora (para a postura)
@@ -97,7 +98,12 @@ public final class CombatMovesServer {
         if (move.serverHit(m.heavy())) {
             if (now < HEAVY_READY.getOrDefault(p.getUUID(), 0L)) return;   // ainda recarregando
             // passo do combo nos 4 bits de baixo, nivel de carga do pesado nos bits 4-5
-            PENDING.put(p.getUUID(), new Pending(move, axe, now + MoveTiming.windupTicks(move, m.heavy(), axe, delay), (m.step() >> 4) & 3, m.step() & 15));
+            // um acerto em cada marcador de acerto da animacao do Blockbench (o dano dividido entre eles)
+            int[] at = MoveTiming.hitTicks(move, m.heavy(), axe, delay);
+            java.util.List<Pending> list = new java.util.ArrayList<>();
+            for (int i = 0; i < at.length; i++)
+                list.add(new Pending(move, axe, now + at[i], (m.step() >> 4) & 3, m.step() & 15, 1f / at.length, i == 0, i == at.length - 1));
+            PENDING.put(p.getUUID(), list);
             HEAVY_READY.put(p.getUUID(), now + MoveTiming.lengthTicks(move, m.heavy(), axe, delay) - 3);
         }
         RECENT.put(p.getUUID(), new Recent(move, m.heavy(), now, MoveTiming.windupTicks(move, m.heavy(), axe, delay) + 5));
@@ -189,9 +195,14 @@ public final class CombatMovesServer {
     @SubscribeEvent
     public static void onTick(PlayerTickEvent.Post e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
-        Pending pd = PENDING.get(p.getUUID());
-        if (pd == null || p.level().getGameTime() < pd.atTick()) return;
-        PENDING.remove(p.getUUID());
+        java.util.List<Pending> list = PENDING.get(p.getUUID());
+        if (list == null) return;
+        long now = p.level().getGameTime();
+        while (!list.isEmpty() && now >= list.get(0).atTick()) strike(p, list.remove(0));
+        if (list.isEmpty()) PENDING.remove(p.getUUID());
+    }
+
+    private static void strike(ServerPlayer p, Pending pd) {
         if (!p.isAlive() || CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.NONE) return;
         ServerLevel level = p.serverLevel();
         CombatMove mv = pd.move();
@@ -205,7 +216,7 @@ public final class CombatMovesServer {
             case JUDGMENT -> -0.2; case ROLL_THRUST, FORWARD, SURPRISE -> 0.6; case PIERCE -> 0.85; case LAUNCHER -> 0.45; default -> 0.35;
         };
         float charge = CombatMove.chargeMult(pd.charge());
-        float dmg = (float) p.getAttributeValue(Attributes.ATTACK_DAMAGE) * mv.damage(true, pd.axe()) * charge;   // Forca ja vem no atributo
+        float dmg = (float) p.getAttributeValue(Attributes.ATTACK_DAMAGE) * mv.damage(true, pd.axe()) * charge * pd.share();   // Forca ja vem no atributo
         boolean launched = false;
         Vec3 look = p.getLookAngle().multiply(1, 0, 1).normalize();
         boolean hitAny = false;
@@ -252,7 +263,7 @@ public final class CombatMovesServer {
             }
         }
         if (launched) CombatFxPayload.stamina(p, 40);   // levantar o inimigo devolve estamina
-        if (hitAny) p.getMainHandItem().hurtAndBreak(1, p, EquipmentSlot.MAINHAND);
+        if (hitAny && pd.first()) p.getMainHandItem().hurtAndBreak(1, p, EquipmentSlot.MAINHAND);
         if (slam) {
             level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, level.getBlockState(p.blockPosition().below())),
                     p.getX(), p.getY() + 0.1, p.getZ(), 40, 1.2, 0.05, 1.2, 0.18);
@@ -260,6 +271,6 @@ public final class CombatMovesServer {
         }
         level.playSound(p, p.getX(), p.getEyeY(), p.getZ(), pd.axe() ? CombatSounds.AXE_SWING.get() : CombatSounds.SWORD_SWING.get(),
                 SoundSource.PLAYERS, 1.0f, 0.75f);
-        p.resetAttackStrengthTicker();
+        if (pd.last()) p.resetAttackStrengthTicker();
     }
 }

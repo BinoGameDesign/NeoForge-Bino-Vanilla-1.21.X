@@ -87,6 +87,7 @@ public final class CombatMoves {
         final CombatMove move; final boolean heavy, axe; final long start; final int length; final MoveAnims.Key[] keys;
         final BbAnims.Anim bb;                    // animacao do Blockbench (terceira pessoa), se ja existir para o golpe
         boolean hitDone;
+        int hitIdx;   // quantos marcadores de acerto da animacao ja passaram
         float[] from = MoveAnims.REST;            // pose de onde este golpe sai (o fim do golpe anterior)
         long pauseStart, pauseEnd;                // pausa no acerto (a pose congela um instante)
         Active(CombatMove move, boolean heavy, boolean axe, long start, int length) {
@@ -103,10 +104,17 @@ public final class CombatMoves {
             float k = Mth.clamp((t(now) - start) / CHAIN_BLEND_MS, 0f, 1f);
             return k >= 1f ? s : BbAnims.mix(fromBb, s, k * k * (3 - 2 * k));
         }
-        long t(long now) { return now < pauseEnd ? Math.min(now, pauseStart) : now - (pauseEnd - pauseStart); }
+        long pausedBefore;                        // soma das pausas que ja acabaram (golpes de varios acertos)
+        long t(long now) { return (now < pauseEnd ? Math.min(now, pauseStart) : now - (pauseEnd - pauseStart)) - pausedBefore; }
         float u(long now) { return Mth.clamp((t(now) - start) / (float) length, 0f, 1f); }
         boolean done(long now) { return t(now) - start >= length; }
-        void pause(long now, long ms) { if (pauseEnd == 0) { pauseStart = now; pauseEnd = now + ms; } }
+        void pause(long now, long ms) { if (pauseEnd == 0) pauseAgain(now, ms); }
+        // outra pausa curta (marcador de acerto extra), depois que a anterior acabou
+        void pauseAgain(long now, long ms) {
+            if (now < pauseEnd) return;
+            pausedBefore += pauseEnd - pauseStart;
+            pauseStart = now; pauseEnd = now + ms;
+        }
     }
 
     // novo golpe: sai da pose em que o anterior estava (sem voltar ao descanso no meio do combo)
@@ -525,10 +533,27 @@ public final class CombatMoves {
         chargeTick(mc, p, now);
         Active a = ACTIVE.get(p.getId());
         if (a == null) { queued = null; return; }
-        if (!a.hitDone && a.u(now) >= MoveTiming.impact(a.move, a.axe)) { a.hitDone = true; impact(mc, p, a); }
+        // cada marcador de acerto da animacao do Blockbench: o primeiro e' o golpe; os outros (rolamento, rajada) dao o peso
+        float[] marks = MoveTiming.hitFractions(a.move, a.axe);
+        while (a.hitIdx < marks.length && a.u(now) >= marks[a.hitIdx]) {
+            if (a.hitIdx == 0) { a.hitDone = true; impact(mc, p, a); }
+            else extraImpact(mc, p, a);
+            a.hitIdx++;
+        }
         boolean canChain = a.u(now) >= MoveTiming.chain(a.move, a.heavy, a.axe);
         if (queued != null && canChain) { boolean h = queued; queued = null; begin(p, h, now); }
         else if (a.done(now)) ACTIVE.remove(p.getId());
+    }
+
+    // marcador de acerto extra (golpe de varios acertos): tranco, pausa curta e som; o dano vem do servidor ou do primeiro
+    private static void extraImpact(Minecraft mc, LocalPlayer p, Active a) {
+        if (mc.screen instanceof com.bino.binoscombat.client.combo.ComboListScreen) return;
+        if (a.move.visualOnly() && a.move != CombatMove.RUSH) return;
+        HitFx.kick(0.7f);
+        a.pauseAgain(now(), 45);
+        lastMoveEnd += 45;
+        p.level().playLocalSound(p.getX(), p.getEyeY(), p.getZ(), a.axe ? CombatSounds.AXE_SWING.get() : CombatSounds.SWORD_SWING.get(),
+                SoundSource.PLAYERS, 0.8f, 0.9f + p.getRandom().nextFloat() * 0.15f, false);
     }
 
     private static void impact(Minecraft mc, LocalPlayer p, Active a) {

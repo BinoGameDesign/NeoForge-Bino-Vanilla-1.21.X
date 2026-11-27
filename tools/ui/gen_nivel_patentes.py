@@ -1,4 +1,7 @@
-# Rascunho dos icones de nivel (estilo de patentes que evoluem a cada 10 niveis). 10 faixas, 16x16 cada.
+# Rascunho dos icones de nivel (estilo DDTank): um icone por nivel, 0 a 100, 16x16 cada.
+# A dezena escolhe a patente (0-9 madeira, 10-19 pedra ... 90-99 lendaria) e a unidade acende os pontinhos de baixo:
+# 1-5 = 1 a 5 pontos prateados; 6-9 = os 5 pontos, com 1 a 4 deles dourados. Nivel 100 = lendaria radiante.
+# Folha: 10 colunas (unidade) x 11 linhas (dezena; a ultima so tem o 100).
 from PIL import Image
 W=16
 def sh(c,k): return tuple(max(0,min(255,int(v*k))) for v in c)
@@ -31,7 +34,7 @@ TIERS=[ # (nome, metal/borda, preenchimento, gema ou None, divisas, extras)
 ]
 def px(im,x,y,c):
     if 0<=x<W and 0<=y<W: im.putpixel((x,y),c+(255,))
-def tier(t):
+def tier(t, unit=0, radiant=False):
     name,edge,fill,gem,chev,ex=t
     im=Image.new('RGBA',(W,W),(0,0,0,0))
     ox,oy=2,3 if "crown" in ex else 2
@@ -77,11 +80,27 @@ def tier(t):
     if "star" in ex and "crown" not in ex:
         sc=(255,240,140)
         for (x,y) in [(7,0),(8,0),(7,1),(8,1),(6,1),(9,1)]: px(im,x,y,sc)
+    # pontinhos da unidade (embaixo do escudo)
+    silver,gold=(214,220,230),(255,206,60)
+    for k in range(5):
+        x=3+k*2+ (1 if k>=0 else 0)
+        lit = unit>=k+1 if unit<=5 else True
+        if not lit: continue
+        isgold = unit>5 and k < unit-5
+        px(im,x,15,gold if isgold else silver)
+    if radiant:
+        for (x,y) in [(0,1),(15,1),(0,13),(15,13),(1,0),(14,0)]: px(im,x,y,(255,250,210))
+        for k in range(5): px(im,4+k*2,15,(255,240,120))
     return im
-sheet=Image.new('RGBA',(W*10,W),(0,0,0,0))
-for i,t in enumerate(TIERS): sheet.paste(tier(t),(i*W,0))
+sheet=Image.new('RGBA',(W*10,W*11),(0,0,0,0))
+for lv in range(100):
+    sheet.paste(tier(TIERS[lv//10], lv%10),( (lv%10)*W, (lv//10)*W ))
+sheet.paste(tier(TIERS[9], 0, radiant=True),(0,10*W))
 sheet.save('/tmp/claude-0/lvl/nivel_patentes.png')
-prev=Image.new('RGBA',(W*10+18,W+4),(55,55,60,255)); 
-prev=Image.new('RGBA',(10*(W+2)+2,W+4),(55,55,60,255))
-for i in range(10): prev.alpha_composite(sheet.crop((i*W,0,i*W+W,W)),(2+i*(W+2),2))
-prev.resize((prev.width*8,prev.height*8),Image.NEAREST).save('/tmp/claude-0/lvl/preview.png')
+G=2
+prev=Image.new('RGBA',(10*(W+G)+G,11*(W+G)+G),(55,55,60,255))
+for r in range(11):
+    for c in range(10):
+        if r==10 and c>0: continue
+        prev.alpha_composite(sheet.crop((c*W,r*W,c*W+W,r*W+W)),(G+c*(W+G),G+r*(W+G)))
+prev.resize((prev.width*5,prev.height*5),Image.NEAREST).save('/tmp/claude-0/lvl/preview.png')

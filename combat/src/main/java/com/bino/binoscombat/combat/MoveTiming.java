@@ -66,6 +66,26 @@ public final class MoveTiming {
         };
     }
 
+    /** momento (em ticks desde o comeco do golpe) de CADA marcador de acerto da animacao do Blockbench, ja com a
+     *  velocidade da arma; sem animacao, so o impacto de sempre */
+    public static int[] hitTicks(CombatMove m, boolean heavy, boolean axe, float delay) {
+        BbTiming.Times bb = BbTiming.get(m, axe);
+        if (bb == null) return new int[]{windupTicks(m, heavy, axe, delay)};
+        float len = lengthMs(m, heavy, axe, delay);
+        int[] out = new int[bb.hits().length];
+        for (int i = 0; i < out.length; i++) out[i] = Math.max(1, Math.round(len * (bb.hits()[i] / bb.length()) / 50f));
+        return out;
+    }
+
+    /** fracoes (0..1) da animacao em que cada marcador de acerto cai (cliente: efeitos de cada acerto) */
+    public static float[] hitFractions(CombatMove m, boolean axe) {
+        BbTiming.Times bb = BbTiming.get(m, axe);
+        if (bb == null) return new float[]{impact(m)};
+        float[] out = new float[bb.hits().length];
+        for (int i = 0; i < out.length; i++) out[i] = bb.hits()[i] / bb.length();
+        return out;
+    }
+
     public static int lengthTicks(CombatMove m, boolean heavy, boolean axe, float delay) { return Math.round(lengthMs(m, heavy, axe, delay) / 50f); }
     public static int windupTicks(CombatMove m, boolean heavy, boolean axe, float delay) { return Math.max(1, Math.round(lengthMs(m, heavy, axe, delay) * impact(m, axe) / 50f)); }
 }

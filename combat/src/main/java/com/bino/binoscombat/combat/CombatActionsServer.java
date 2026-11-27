@@ -44,6 +44,19 @@ public final class CombatActionsServer {
 
     private record RushHit(UUID player, int mobId, long at, int left) {}
     private record StabHit(UUID player, int mobId, long at, boolean axe) {}
+    // golpe especial esperando o marcador de acerto da animacao (Issen, critico)
+    private record Delayed(UUID player, int mobId, long at, java.util.function.BiConsumer<ServerPlayer, LivingEntity> run) {}
+    private static final List<Delayed> DELAYED = new ArrayList<>();
+
+    /** ticks ate o primeiro marcador de acerto da animacao deste golpe */
+    private static int hitTicks(ServerPlayer p, CombatMove m) {
+        boolean axe = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+        return MoveTiming.hitTicks(m, false, axe, p.getCurrentItemAttackStrengthDelay())[0];
+    }
+
+    private static void later(ServerPlayer p, LivingEntity t, CombatMove m, java.util.function.BiConsumer<ServerPlayer, LivingEntity> run) {
+        DELAYED.add(new Delayed(p.getUUID(), t.getId(), p.level().getGameTime() + hitTicks(p, m), run));
+    }
     private record ArrowParry(long until, int zone) {
         boolean perfect() { return zone == 2; }
     }
@@ -120,13 +133,18 @@ public final class CombatActionsServer {
                 double reach = jump ? JUMP_RANGE + 2 : 6;
                 if (w == null || w.mobId() != target.getId() || now > w.until() || target.distanceToSqr(p) > reach * reach) { CHAIN.remove(p.getUUID()); return; }
                 if (jump && !warpTo(p, target)) { CHAIN.remove(p.getUUID()); return; }   // nao achou lugar para aparecer
-                issen(p, target, chained ? c.link() : 1, jump);
+                int link = chained ? c.link() : 1;
+                Posture.freeze(target, hitTicks(p, CombatMove.ISSEN) + 2);   // o mob espera o corte (acerta no marcador da animacao)
+                later(p, target, CombatMove.ISSEN, (pl, t) -> issen(pl, t, link, jump));
             }
             case CombatActionPayload.RUSH -> {
                 Window w = RUSH.remove(p.getUUID());
                 CombatMovesServer.broadcast(p, CombatMove.RUSH, false);
                 if (w == null || w.mobId() != target.getId() || now > w.until() || target.distanceToSqr(p) > 6 * 6) return;
-                RUSHES.add(new RushHit(p.getUUID(), target.getId(), now + 1, 5));
+                // um acerto em cada marcador da animacao (rajada)
+                boolean axeR = CombatEvents.weapon(p.getMainHandItem()) == CombatEvents.Weapon.AXE;
+                int[] at = MoveTiming.hitTicks(CombatMove.RUSH, false, axeR, p.getCurrentItemAttackStrengthDelay());
+                for (int i = 0; i < at.length; i++) RUSHES.add(new RushHit(p.getUUID(), target.getId(), now + at[i], at.length - i));
                 send(p, CombatFxPayload.RUSH, target, 0);
             }
             case CombatActionPayload.BACKSTAB -> {
@@ -142,7 +160,8 @@ public final class CombatActionsServer {
             case CombatActionPayload.CRITICAL -> {
                 CombatMovesServer.broadcast(p, CombatMove.CRITICAL, false);
                 if (!Posture.broken(target) || target.distanceToSqr(p) > 4.5 * 4.5) return;
-                critical(p, target);
+                Posture.freeze(target, hitTicks(p, CombatMove.CRITICAL) + 4);
+                later(p, target, CombatMove.CRITICAL, CombatActionsServer::critical);
             }
             default -> {}
         }
@@ -188,7 +207,8 @@ public final class CombatActionsServer {
                 send(p, CombatFxPayload.PARRY, mob, 2);
                 CombatMovesServer.broadcast(p, CombatMove.ISSEN, false);
                 CHAIN.remove(p.getUUID());
-                issen(p, mob, 1, false);
+                Posture.freeze(mob, hitTicks(p, CombatMove.ISSEN) + 8);
+                later(p, mob, CombatMove.ISSEN, (pl, t) -> issen(pl, t, 1, false));
                 return;
             }
             default -> {  // branco: so bloqueia
@@ -343,6 +363,22 @@ public final class CombatActionsServer {
     public static void onServerTick(ServerTickEvent.Post e) {
         if (FINISHED_BY_SPECIAL.size() > 256) FINISHED_BY_SPECIAL.clear();
         chainTick(e);
+        // Issen e critico: o corte entra no marcador de acerto da animacao
+        if (!DELAYED.isEmpty()) {
+            List<Delayed> due = new ArrayList<>();
+            for (Iterator<Delayed> it = DELAYED.iterator(); it.hasNext(); ) {
+                Delayed d = it.next();
+                ServerPlayer p = e.getServer().getPlayerList().getPlayer(d.player());
+                if (p == null || !p.isAlive()) { it.remove(); continue; }
+                if (p.level().getGameTime() < d.at()) continue;
+                it.remove();
+                due.add(d);
+            }
+            for (Delayed d : due) {
+                ServerPlayer p = e.getServer().getPlayerList().getPlayer(d.player());
+                if (p != null && p.level().getEntity(d.mobId()) instanceof LivingEntity t && t.isAlive()) d.run().accept(p, t);
+            }
+        }
         // facada pelas costas: o golpe entra no momento certo da animacao
         for (Iterator<StabHit> it = STABS.iterator(); it.hasNext(); ) {
             StabHit s = it.next();
@@ -379,7 +415,7 @@ public final class CombatActionsServer {
             Vec3 c = t.getBoundingBox().getCenter();
             level.sendParticles(CombatParticles.IMPACT_STAR.get(), c.x + (level.random.nextDouble() - 0.5) * 0.6, c.y + (level.random.nextDouble() - 0.5) * 0.6,
                     c.z + (level.random.nextDouble() - 0.5) * 0.6, 0, 0.8, 0, 0, 1.0);
-            if (r.left() > 1) next.add(new RushHit(r.player(), r.mobId(), level.getGameTime() + 2, r.left() - 1));
+
         }
         RUSHES.addAll(next);
     }
