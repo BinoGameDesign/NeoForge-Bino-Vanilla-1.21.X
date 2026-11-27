@@ -55,5 +55,13 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<Boolean>> THIRST_HINT = ATTACHMENTS.register("thirst_hint",
             () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).copyOnDeath().build());
 
+    // temperatura (thirst/Temperature): exposicao (-100 frio .. +100 calor) e ate quando dura o refresco / o aquecimento
+    public static final Supplier<AttachmentType<Float>> TEMP_EXPOSURE = ATTACHMENTS.register("temp_exposure",
+            () -> AttachmentType.builder(() -> 0f).serialize(Codec.FLOAT).build());
+    public static final Supplier<AttachmentType<Long>> TEMP_COOL_UNTIL = ATTACHMENTS.register("temp_cool_until",
+            () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG).build());
+    public static final Supplier<AttachmentType<Long>> TEMP_WARM_UNTIL = ATTACHMENTS.register("temp_warm_until",
+            () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG).build());
+
     public static void register(IEventBus bus) { ATTACHMENTS.register(bus); }
 }

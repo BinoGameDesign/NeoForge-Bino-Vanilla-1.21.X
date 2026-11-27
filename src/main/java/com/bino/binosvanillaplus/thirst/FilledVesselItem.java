@@ -64,6 +64,7 @@ public class FilledVesselItem extends Item {
             CriteriaTriggers.CONSUME_ITEM.trigger(sp, stack);
             if (Vessels.isWater(pc)) {
                 Thirst.add(sp, Thirst.BOTTLE * mult);
+                Temperature.refresh(sp, true, Math.round(60 * Math.max(0.5f, mult)), 15f * mult);
                 if (!boiled) Thirst.dirty(sp, size == 1 ? 0.25f : Thirst.BOTTLE_NAUSEA);
             } else {
                 Thirst.add(sp, 4f * mult);

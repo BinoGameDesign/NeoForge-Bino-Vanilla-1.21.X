@@ -80,6 +80,11 @@ public class ModCreativeModeTabs {
                             output.accept(com.bino.binosvanillaplus.thirst.Vessels.filled(f,
                                     new net.minecraft.world.item.alchemy.PotionContents(net.minecraft.world.item.alchemy.Potions.WATER), true));
                         }
+                        // temperatura
+                        output.accept(ModItems.WOOL_LINING);
+                        output.accept(ModItems.LIGHT_LINING);
+                        output.accept(ModItems.HOT_TEA);
+                        output.accept(ModItems.REFRESHMENT);
                         output.accept(ModItems.DIMENSIONAL_KEY);
                     }).build());
 

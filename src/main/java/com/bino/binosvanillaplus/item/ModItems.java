@@ -90,6 +90,13 @@ public class ModItems {
             () -> new com.bino.binosvanillaplus.thirst.VesselItem(5, () -> ModItems.FILLED_JUG.get(), new Item.Properties().stacksTo(64)));
     public static final DeferredItem<Item> FILLED_JUG = ITEMS.register("filled_jug",
             () -> new com.bino.binosvanillaplus.thirst.FilledVesselItem(5, 4f, 56, () -> ModItems.JUG.get(), new Item.Properties().stacksTo(64)));
+    // Temperatura: forros para a armadura e bebidas
+    public static final DeferredItem<Item> WOOL_LINING = ITEMS.register("wool_lining", () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final DeferredItem<Item> LIGHT_LINING = ITEMS.register("light_lining", () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final DeferredItem<Item> HOT_TEA = ITEMS.register("hot_tea",
+            () -> new com.bino.binosvanillaplus.thirst.TemperatureDrinkItem(false, 120, 6f, new Item.Properties().stacksTo(16)));
+    public static final DeferredItem<Item> REFRESHMENT = ITEMS.register("refreshment",
+            () -> new com.bino.binosvanillaplus.thirst.TemperatureDrinkItem(true, 120, 8f, new Item.Properties().stacksTo(16)));
     public static final DeferredItem<Item> MIMIC_SPAWN_EGG = ITEMS.register("mimic_spawn_egg",
             () -> new com.bino.binosvanillaplus.mimic.MimicEggItem(new Item.Properties()));
     public static final DeferredItem<Item> DIRE_RAT_SPAWN_EGG = ITEMS.register("dire_rat_spawn_egg",

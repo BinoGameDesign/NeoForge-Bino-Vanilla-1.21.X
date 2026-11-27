@@ -62,6 +62,10 @@ public class ModDataComponents {
     public static final Supplier<DataComponentType<Boolean>> BOILED = COMPONENTS.register("boiled",
             () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
 
+    // forro da armadura (temperatura): 1 = la (frio), 2 = leve (calor)
+    public static final Supplier<DataComponentType<Integer>> LINING = COMPONENTS.register("lining",
+            () -> DataComponentType.<Integer>builder().persistent(ExtraCodecs.NON_NEGATIVE_INT).networkSynchronized(ByteBufCodecs.VAR_INT).build());
+
     public static void register(IEventBus eventBus) {
         COMPONENTS.register(eventBus);
     }

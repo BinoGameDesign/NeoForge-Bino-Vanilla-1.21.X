@@ -116,5 +116,16 @@
   "tooltip.binosvanillaplus.vessel.half": "Half a bottle: drinks fast, but counts for half",
   "tooltip.binosvanillaplus.vessel.mult": "Worth %s bottles: effect and thirst multiplied",
   "gui.binosvanillaplus.inv.attr.wil.tip2": "(still 10 icons; each one lasts longer)",
-  "gui.binosvanillaplus.inv.attr.wil.tip3": "In the future: mana"
+  "gui.binosvanillaplus.inv.attr.wil.tip3": "In the future: mana",
+  "item.binosvanillaplus.wool_lining": "Wool Lining",
+  "item.binosvanillaplus.light_lining": "Light Lining",
+  "item.binosvanillaplus.hot_tea": "Hot Tea",
+  "item.binosvanillaplus.refreshment": "Refreshment",
+  "enchantment.binosvanillaplus.insulation": "Insulation",
+  "death.attack.binosvanillaplus.heatstroke": "%1$s died of heatstroke",
+  "death.attack.binosvanillaplus.heatstroke.player": "%1$s died of heatstroke whilst fleeing %2$s",
+  "tooltip.binosvanillaplus.lining.wool": "Wool Lining: withstands more cold",
+  "tooltip.binosvanillaplus.lining.light": "Light Lining: withstands more heat",
+  "tooltip.binosvanillaplus.drink.warm": "Warms you for %s s",
+  "tooltip.binosvanillaplus.drink.cool": "Cools you for %s s"
 }

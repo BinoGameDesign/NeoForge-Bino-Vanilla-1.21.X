@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "binosvanillaplus:dehydration"
+    "binosvanillaplus:dehydration",
+    "binosvanillaplus:heatstroke"
   ]
 }

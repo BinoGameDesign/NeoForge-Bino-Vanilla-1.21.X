@@ -17,19 +17,10 @@ D={
 S=2            # cada pixel do desenho vira 2x2
 CW,CH=6*S+2,8*S+2
 # estilos: (brilho, face, lado, sombra)
-STY=[
- ((255,255,255),(214,220,230),(150,158,172),(92,98,112)),    # 0-9   prata
- ((220,255,200),(120,214,96),(66,150,60),(36,92,40)),        # 10-19 verde
- ((210,240,255),(96,180,250),(48,110,200),(28,62,130)),      # 20-29 azul
- ((240,220,255),(176,120,240),(118,70,190),(70,36,120)),     # 30-39 roxo
- ((255,255,235),(255,226,70),(240,150,40),(180,84,30)),      # 40-49 amarelo
- ((255,236,210),(255,160,60),(220,96,30),(150,50,24)),       # 50-59 laranja
- ((255,220,220),(240,70,70),(170,36,46),(104,20,34)),        # 60-69 vermelho
- ((255,225,245),(250,110,200),(190,60,150),(120,30,96)),     # 70-79 rosa
- ((225,255,255),(80,240,230),(30,170,180),(16,100,120)),     # 80-89 ciano
- ((255,255,240),(255,214,60),(214,140,20),(140,80,10)),      # 90-99 ouro
- ((255,255,255),(255,240,150),(255,170,60),(200,60,120)),    # 100   lendario
-]
+# cores do Bino (27/11), do nivel mais baixo ao mais alto: uma por dezena e a ultima para o 100
+FACES=[(191,191,191),(32,255,107),(32,176,255),(255,124,21),(255,191,0),(242,255,32),(143,255,32),(114,32,255),(255,64,224),(255,32,111),(255,255,255)]
+def mix(a,b,k): return tuple(int(a[i]+(b[i]-a[i])*k) for i in range(3))
+STY=[(mix(f,(255,255,255),0.55), f, mix(f,(0,0,0),0.28), mix(f,(0,0,0),0.55)) for f in FACES]
 def glyph(d, st, rainbow=False):
     hi,face,side,shadow=st
     im=Image.new('RGBA',(CW,CH),(0,0,0,0))
@@ -52,13 +43,13 @@ def glyph(d, st, rainbow=False):
     return im
 sheet=Image.new('RGBA',(CW*10,CH*11),(0,0,0,0))
 for r,st in enumerate(STY):
-    for c in range(10): sheet.alpha_composite(glyph(str(c),st,rainbow=(r==10)),(c*CW,r*CH))
-sheet.save('/tmp/claude-0/num/nivel_numeros.png')
+    for c in range(10): sheet.alpha_composite(glyph(str(c),st,rainbow=False),(c*CW,r*CH))
+sheet.save('tools/ui/nivel_numeros.png')
 # previa: alguns niveis montados
 def word(n):
     st=STY[10] if n>=100 else STY[n//10]; s=str(n)
     w=Image.new('RGBA',(len(s)*(CW-1)+1,CH),(0,0,0,0))
-    for i,ch in enumerate(s): w.alpha_composite(glyph(ch,st,rainbow=n>=100),(i*(CW-1),0))
+    for i,ch in enumerate(s): w.alpha_composite(glyph(ch,st,rainbow=False),(i*(CW-1),0))
     return w
 prev=Image.new('RGBA',(CW*10+20+260,CH*11+20),(40,36,60,255))
 prev.alpha_composite(sheet,(10,10))

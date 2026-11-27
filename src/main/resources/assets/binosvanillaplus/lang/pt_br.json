@@ -307,5 +307,16 @@
   "tooltip.binosvanillaplus.vessel.half": "Meia garrafa: bebe rápido, mas vale metade",
   "tooltip.binosvanillaplus.vessel.mult": "Vale %s garrafas: efeito e sede multiplicados",
   "gui.binosvanillaplus.inv.attr.wil.tip2": "(continuam 10 ícones; cada um dura mais)",
-  "gui.binosvanillaplus.inv.attr.wil.tip3": "No futuro: mana"
+  "gui.binosvanillaplus.inv.attr.wil.tip3": "No futuro: mana",
+  "item.binosvanillaplus.wool_lining": "Forro de Lã",
+  "item.binosvanillaplus.light_lining": "Forro Leve",
+  "item.binosvanillaplus.hot_tea": "Chá Quente",
+  "item.binosvanillaplus.refreshment": "Refresco",
+  "enchantment.binosvanillaplus.insulation": "Isolamento",
+  "death.attack.binosvanillaplus.heatstroke": "%1$s morreu de insolação",
+  "death.attack.binosvanillaplus.heatstroke.player": "%1$s morreu de insolação enquanto fugia de %2$s",
+  "tooltip.binosvanillaplus.lining.wool": "Forro de Lã: aguenta mais frio",
+  "tooltip.binosvanillaplus.lining.light": "Forro Leve: aguenta mais calor",
+  "tooltip.binosvanillaplus.drink.warm": "Aquece por %s s",
+  "tooltip.binosvanillaplus.drink.cool": "Refresca por %s s"
 }

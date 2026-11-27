@@ -23,5 +23,9 @@ public class ModRecipes {
     public static final Supplier<RecipeSerializer<VesselPourRecipe>> VESSEL_POUR = SERIALIZERS.register("vessel_pour",
             () -> new SimpleCraftingRecipeSerializer<>(VesselPourRecipe::new));
 
+    // forro da armadura (temperatura)
+    public static final Supplier<RecipeSerializer<LiningRecipe>> LINING = SERIALIZERS.register("lining",
+            () -> new SimpleCraftingRecipeSerializer<>(LiningRecipe::new));
+
     public static void register(IEventBus eventBus) { SERIALIZERS.register(eventBus); }
 }

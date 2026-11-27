@@ -79,6 +79,9 @@ public class ModClientEvents {
                 com.bino.binosvanillaplus.item.ModItems.PILLAGER_CIVILIAN_SPAWN_EGG.get());
         // Agua Fervida: o liquido da garrafa (camada 0) num azul claro e limpo
         event.register((stack, tint) -> tint == 0 ? 0xFF7FD4F5 : 0xFFFFFFFF, com.bino.binosvanillaplus.item.ModItems.BOILED_WATER.get());
+        // bebidas de temperatura: cha marrom, refresco rosado
+        event.register((stack, tint) -> tint == 0 ? 0xFFA0602E : 0xFFFFFFFF, com.bino.binosvanillaplus.item.ModItems.HOT_TEA.get());
+        event.register((stack, tint) -> tint == 0 ? 0xFFF38BA0 : 0xFFFFFFFF, com.bino.binosvanillaplus.item.ModItems.REFRESHMENT.get());
         // frascos cheios: o liquido na cor da pocao (agua fervida mais clara)
         event.register((stack, tint) -> {
             if (tint != 0) return 0xFFFFFFFF;

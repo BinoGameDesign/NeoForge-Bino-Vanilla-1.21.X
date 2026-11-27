@@ -160,15 +160,8 @@ public final class Thirst {
         } else DAMAGE_TIMER.remove(p.getUUID());
     }
 
-    // calor do lugar: deserto/badlands/savana (temperatura do bioma >= 1,5) e Nether gastam mais; frio gasta menos
-    public static float heat(Player p) {
-        if (p.level().dimension() == Level.NETHER) return 2.0f;
-        float t = p.level().getBiome(p.blockPosition()).value().getBaseTemperature();
-        if (t >= 1.5f) return 1.75f;
-        if (t >= 1.0f) return 1.25f;
-        if (t < 0.15f) return 0.75f;
-        return 1f;
-    }
+    // calor: quanto a temperatura (Temperature) multiplica o gasto de sede (1 = nada; etapas de calor 1,25 e 1,5)
+    public static float heat(Player p) { return Temperature.thirstFactor(p); }
 
     // sem agua nenhuma nao regenera sozinho (efeito Regeneracao e cura forte, como a pocao, continuam valendo)
     @SubscribeEvent
@@ -182,14 +175,19 @@ public final class Thirst {
     public static void onFinishUsing(LivingEntityUseItemEvent.Finish e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
         ItemStack s = e.getItem();
-        if (s.getItem() instanceof BoiledWaterItem) { add(p, BOTTLE); return; }
+        if (s.getItem() instanceof BoiledWaterItem) { add(p, BOTTLE); Temperature.refresh(p, true, 60, 15f); return; }
         if (isWaterBottle(s)) {
             add(p, BOTTLE);
+            Temperature.refresh(p, true, 60, 15f);
             dirty(p, BOTTLE_NAUSEA);
             return;
         }
         Integer v = WATERY.get(s.getItem());
         if (v != null) add(p, v);
+        // temperatura: sopas aquecem, melancia refresca
+        if (s.is(Items.MUSHROOM_STEW) || s.is(Items.BEETROOT_SOUP) || s.is(Items.RABBIT_STEW) || s.is(Items.SUSPICIOUS_STEW))
+            Temperature.refresh(p, false, 60, 10f);
+        else if (s.is(Items.MELON_SLICE)) Temperature.refresh(p, true, 30, 5f);
     }
 
     // agua do mundo: pode dar nausea; a primeira vez mostra a dica
@@ -215,6 +213,7 @@ public final class Thirst {
         if (!p.level().getFluidState(pos).is(FluidTags.WATER)) return;
         LAST_SIP.put(p.getUUID(), now);
         add(p, SIP);
+        Temperature.refresh(p, true, 20, 5f);
         dirty(p, SIP_NAUSEA);
         p.level().playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.1f + p.getRandom().nextFloat() * 0.2f);
         var v = bh.getLocation();
