@@ -97,6 +97,8 @@ public final class ClientStats {
     private static final net.minecraft.resources.ResourceLocation XP_BAR =
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.bino.binosvanillaplus.BinosVanillaMod.MOD_ID, "textures/gui/xp_bar.png");
     public static final int XP_W = 179, XP_H = 5;
+    // (27/11) a barra termina exatamente onde termina o ultimo icone de fome (w/2 + 91); o numero verde vai junto
+    public static int xpX(int guiW) { return guiW / 2 + 91 - XP_W; }
     // (27/11) a barra termina exatamente onde termina o ultimo icone de fome (w/2 + 91)
     public static final int XP_LEFT = 91 - XP_W;   // x da barra = w/2 + XP_LEFT = w/2 - 88
 
