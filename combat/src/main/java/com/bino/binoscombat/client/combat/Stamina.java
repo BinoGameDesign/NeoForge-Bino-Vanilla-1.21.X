@@ -125,7 +125,11 @@ public final class Stamina {
         if (p == null || mc.options.hideGui || free() || mc.gameMode == null || !mc.gameMode.canHurtPlayer()) return;
         GuiGraphics g = e.getGuiGraphics();
         com.bino.binosmovement.client.HudScale.push(g);   // mesmo tamanho do resto do visor
-        try { draw(g); } finally { com.bino.binosmovement.client.HudScale.pop(g); }
+        // (27/11) por cima de tudo do visor: em tela pequena ela encosta no minimapa, e a moldura dele (que vai para o
+        // desenho depois, junto com a maquete 3D) passava por cima do circulo
+        g.flush();
+        g.pose().translate(0, 0, 400);
+        try { draw(g); g.flush(); } finally { com.bino.binosmovement.client.HudScale.pop(g); }
     }
 
     private static void draw(GuiGraphics g) {
