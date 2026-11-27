@@ -60,6 +60,7 @@ public final class MobLevels {
         if (!(e instanceof Mob m)) return false;
         if (e instanceof Npc || e instanceof EnderDragon || e instanceof WitherBoss || e instanceof Warden || e instanceof ElderGuardian) return false;
         if (e instanceof CompanionAllayEntity || e instanceof GraveAllayEntity) return false;
+        if (e instanceof com.bino.binosvanillaplus.entity.rat.KingRatEntity) return false;   // chefe: numeros fixos
         if (e instanceof OwnableEntity o && o.getOwnerUUID() != null) return false;   // domados
         return true;
     }

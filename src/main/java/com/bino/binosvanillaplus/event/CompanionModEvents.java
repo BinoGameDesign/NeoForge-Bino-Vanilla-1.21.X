@@ -55,6 +55,7 @@ public class CompanionModEvents {
         event.put(ModEntities.CAVE_GOBLIN.get(), com.bino.binosvanillaplus.entity.goblin.CaveGoblinEntity.createAttributes().build());
         event.put(ModEntities.RAT.get(), com.bino.binosvanillaplus.entity.rat.RatEntity.createAttributes().build());
         event.put(ModEntities.DIRE_RAT.get(), com.bino.binosvanillaplus.entity.rat.DireRatEntity.createAttributes().build());
+        event.put(ModEntities.KING_RAT.get(), com.bino.binosvanillaplus.entity.rat.KingRatEntity.createAttributes().build());
         event.put(ModEntities.MIMIC.get(), com.bino.binosvanillaplus.mimic.MimicEntity.createAttributes(false).build());
         event.put(ModEntities.MIMIC_DOUBLE.get(), com.bino.binosvanillaplus.mimic.MimicEntity.createAttributes(true).build());
         event.put(ModEntities.COMPANION_ALLAY.get(),

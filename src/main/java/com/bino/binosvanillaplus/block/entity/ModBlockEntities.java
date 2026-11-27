@@ -31,6 +31,9 @@ public class ModBlockEntities {
     public static final Supplier<BlockEntityType<CageBlockEntity>> CAGE = BLOCK_ENTITIES.register("cage",
             () -> BlockEntityType.Builder.of(CageBlockEntity::new, ModBlocks.CAGE.get()).build(null));
 
+    public static final Supplier<BlockEntityType<com.bino.binosvanillaplus.entity.rat.KingRatNestBlockEntity>> KING_RAT_NEST = BLOCK_ENTITIES.register("king_rat_nest",
+            () -> BlockEntityType.Builder.of(com.bino.binosvanillaplus.entity.rat.KingRatNestBlockEntity::new, ModBlocks.KING_RAT_NEST.get()).build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

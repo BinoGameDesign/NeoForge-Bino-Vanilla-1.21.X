@@ -129,5 +129,11 @@
   "tooltip.binosvanillaplus.drink.warm": "Warms you for %s s",
   "tooltip.binosvanillaplus.drink.cool": "Cools you for %s s",
   "binosvanillaplus.configuration.fahrenheit": "Temperature in °F (Fahrenheit)",
-  "binosvanillaplus.configuration.hudScale": "HUD size (%)"
+  "binosvanillaplus.configuration.hudScale": "HUD size (%)",
+  "entity.binosvanillaplus.king_rat": "King Rat",
+  "entity.binosvanillaplus.king_rat_spit": "King Rat Spit",
+  "item.binosvanillaplus.king_rat_spawn_egg": "King Rat Spawn Egg",
+  "item.binosvanillaplus.rat_flute": "Rat Flute",
+  "block.binosvanillaplus.king_rat_nest": "King Rat Nest",
+  "tooltip.binosvanillaplus.rat_flute": "Calls a band of rats that defends you for 60 s (nearby rats too)"
 }

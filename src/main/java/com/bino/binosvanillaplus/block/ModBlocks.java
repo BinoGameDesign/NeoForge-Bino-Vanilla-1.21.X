@@ -45,6 +45,11 @@ public class ModBlocks {
     public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.MilkCauldronBlock> MILK_CAULDRON = BLOCKS.register("milk_cauldron",
             () -> new com.bino.binosvanillaplus.block.custom.MilkCauldronBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.CAULDRON)));
 
+    // Ninho do King Rat (escondido embaixo da cama do rei no covil; inquebravel, invisivel)
+    public static final DeferredBlock<com.bino.binosvanillaplus.entity.rat.KingRatNestBlock> KING_RAT_NEST = registerBlock("king_rat_nest",
+            () -> new com.bino.binosvanillaplus.entity.rat.KingRatNestBlock(BlockBehaviour.Properties.of().strength(-1f, 3600000f).noLootTable()
+                    .noCollission().noOcclusion().pushReaction(PushReaction.BLOCK)));
+
     // Ratoeira (ate 16 iscas de queijo)
     public static final DeferredBlock<com.bino.binosvanillaplus.block.custom.RatTrapBlock> RAT_TRAP = registerBlock("rat_trap",
             () -> new com.bino.binosvanillaplus.block.custom.RatTrapBlock(BlockBehaviour.Properties.of().strength(0.6f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.DESTROY)));

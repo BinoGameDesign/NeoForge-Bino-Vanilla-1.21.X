@@ -99,6 +99,11 @@ public class ModItems {
             () -> new com.bino.binosvanillaplus.thirst.TemperatureDrinkItem(true, 120, 8f, new Item.Properties().stacksTo(16)));
     public static final DeferredItem<Item> MIMIC_SPAWN_EGG = ITEMS.register("mimic_spawn_egg",
             () -> new com.bino.binosvanillaplus.mimic.MimicEggItem(new Item.Properties()));
+    // King Rat: ovo (testes) e a Flauta dos Ratos (o que ele deixa)
+    public static final DeferredItem<Item> KING_RAT_SPAWN_EGG = ITEMS.register("king_rat_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.KING_RAT, 0x6C6662, 0xE8B62C, new Item.Properties()));
+    public static final DeferredItem<Item> RAT_FLUTE = ITEMS.register("rat_flute",
+            () -> new com.bino.binosvanillaplus.item.custom.RatFluteItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
     public static final DeferredItem<Item> DIRE_RAT_SPAWN_EGG = ITEMS.register("dire_rat_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(com.bino.binosvanillaplus.entity.ModEntities.DIRE_RAT, 0xFFFFFF, 0xFFFFFF, new Item.Properties()));
     public static final DeferredItem<Item> RAT_MEAT = ITEMS.register("rat_meat",

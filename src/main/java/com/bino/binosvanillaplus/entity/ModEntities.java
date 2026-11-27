@@ -49,6 +49,22 @@ public class ModEntities {
                             .clientTrackingRange(8)
                             .build("dire_rat"));
 
+    // King Rat (chefe do covil): base 0,9 x 2,0; com SCALE 1,45 fica do tamanho de um golem de ferro
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.rat.KingRatEntity>> KING_RAT =
+            ENTITY_TYPES.register("king_rat",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.rat.KingRatEntity>of(com.bino.binosvanillaplus.entity.rat.KingRatEntity::new, MobCategory.MONSTER)
+                            .sized(0.9f, 2.0f)
+                            .eyeHeight(1.7f)
+                            .clientTrackingRange(10)
+                            .build("king_rat"));
+    // cuspe do King Rat
+    public static final Supplier<EntityType<com.bino.binosvanillaplus.entity.rat.KingRatSpitEntity>> KING_RAT_SPIT =
+            ENTITY_TYPES.register("king_rat_spit",
+                    () -> EntityType.Builder.<com.bino.binosvanillaplus.entity.rat.KingRatSpitEntity>of(com.bino.binosvanillaplus.entity.rat.KingRatSpitEntity::new, MobCategory.MISC)
+                            .sized(0.4f, 0.4f)
+                            .clientTrackingRange(4).updateInterval(10)
+                            .build("king_rat_spit"));
+
     // Mimico revelado (o bau que pula e morde): simples e duplo
     public static final Supplier<EntityType<com.bino.binosvanillaplus.mimic.MimicEntity>> MIMIC =
             ENTITY_TYPES.register("mimic",

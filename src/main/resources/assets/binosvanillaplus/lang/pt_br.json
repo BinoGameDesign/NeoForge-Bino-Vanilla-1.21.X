@@ -320,5 +320,11 @@
   "tooltip.binosvanillaplus.drink.warm": "Aquece por %s s",
   "tooltip.binosvanillaplus.drink.cool": "Refresca por %s s",
   "binosvanillaplus.configuration.fahrenheit": "Temperatura em °F (Fahrenheit)",
-  "binosvanillaplus.configuration.hudScale": "Tamanho do visor (%)"
+  "binosvanillaplus.configuration.hudScale": "Tamanho do visor (%)",
+  "entity.binosvanillaplus.king_rat": "Rei Rato",
+  "entity.binosvanillaplus.king_rat_spit": "Cuspe do Rei Rato",
+  "item.binosvanillaplus.king_rat_spawn_egg": "Ovo Gerador de Rei Rato",
+  "item.binosvanillaplus.rat_flute": "Flauta dos Ratos",
+  "block.binosvanillaplus.king_rat_nest": "Ninho do Rei Rato",
+  "tooltip.binosvanillaplus.rat_flute": "Chama um bando de ratos que te defende por 60 s (e os ratos por perto também)"
 }

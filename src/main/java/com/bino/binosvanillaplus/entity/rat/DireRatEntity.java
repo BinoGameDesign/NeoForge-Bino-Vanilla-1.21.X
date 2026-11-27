@@ -90,6 +90,8 @@ public class DireRatEntity extends RatEntity implements Enemy {
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new FleeGoal(this));
+        goalSelector.addGoal(2, new AllyFollowGoal(this));   // Flauta dos Ratos
+        targetSelector.addGoal(0, new AllyDefendGoal(this));
         goalSelector.addGoal(1, new RetreatGoal(this));   // muito ferido: recua para o escuro e manda os ratos na frente
         goalSelector.addGoal(2, new EatCakeGoal(this, st -> st.getBlock() instanceof CheeseBlock));   // so o queijo grande
         goalSelector.addGoal(2, new TailWhipGoal(this));

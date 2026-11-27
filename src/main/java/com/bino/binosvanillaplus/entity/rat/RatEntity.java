@@ -73,6 +73,12 @@ public class RatEntity extends PathfinderMob {
     private int swarmTicks, sleepTicks, eatTicks, wantSleep;
     int rallyTicks;   // chamado por um Rato Gigante para atacar um jogador
 
+    // Flauta dos Ratos (27/11): aliado de um jogador por um tempo (defende ele, segue ele); o bando chamado pela flauta
+    // some quando o tempo acaba
+    @javax.annotation.Nullable private java.util.UUID allyOwner;
+    private int allyTicks;
+    private boolean fluteBand;
+
     public RatEntity(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
         this.xpReward = 1;
@@ -110,9 +116,43 @@ public class RatEntity extends PathfinderMob {
         if (getState() == ST_SLEEP || getState() == ST_EAT) setState(ST_NORMAL);
     }
 
+    public boolean isAlly() { return allyTicks > 0 && allyOwner != null; }
+
+    @javax.annotation.Nullable
+    public Player allyOwner() { return isAlly() ? level().getPlayerByUUID(allyOwner) : null; }
+
+    /** fica do lado deste jogador por "ticks"; band = chamado pela flauta (some no fim) */
+    public void befriend(Player p, int ticks, boolean band) {
+        allyOwner = p.getUUID();
+        allyTicks = Math.max(allyTicks, ticks);
+        fluteBand |= band;
+        swarmTicks = 0; rallyTicks = 0;
+        if (getTarget() instanceof Player) setTarget(null);
+        if (getState() == ST_SLEEP || getState() == ST_EAT || getState() == ST_FLEE) setState(ST_NORMAL);
+    }
+
+    @Override
+    public boolean isAlliedTo(net.minecraft.world.entity.Entity other) {
+        if (isAlly()) {
+            if (other instanceof Player p && p.getUUID().equals(allyOwner)) return true;
+            if (other instanceof RatEntity r && r.isAlly() && allyOwner.equals(r.allyOwner)) return true;
+            return super.isAlliedTo(other);
+        }
+        if (other instanceof KingRatEntity) return true;   // do lado do rei
+        return super.isAlliedTo(other);
+    }
+
+    @Override
+    public boolean canAttack(LivingEntity target) {
+        if (isAlly() && (target instanceof Player || target instanceof RatEntity r && r.isAlly())) return false;
+        return super.canAttack(target);
+    }
+
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
+        goalSelector.addGoal(2, new AllyFollowGoal(this));
+        targetSelector.addGoal(0, new AllyDefendGoal(this));
         goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.TemptGoal(this, 1.0,
                 net.minecraft.world.item.crafting.Ingredient.of(com.bino.binosvanillaplus.item.ModItems.CHEESE_SLICE.get(), com.bino.binosvanillaplus.block.ModBlocks.CHEESE.get()), false));   // queijo na mao atrai
         goalSelector.addGoal(1, new FleeGoal(this));
@@ -123,14 +163,15 @@ public class RatEntity extends PathfinderMob {
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
-        targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, p -> isAngry()));
+        targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, p -> isAngry() && !isAlly()));
         targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Mob.class, 10, true, false,
-                m -> isAngry() && !(m instanceof RatEntity) && !(m instanceof Cat) && !(m instanceof Ocelot)));
+                m -> isAngry() && !isAlly() && !(m instanceof RatEntity) && !(m instanceof KingRatEntity) && !(m instanceof Cat) && !(m instanceof Ocelot)));
     }
 
     // de quem foge: gatos e jaguatiricas sempre; o resto so quando nao esta bravo
     boolean scares(LivingEntity e) {
-        if (e instanceof RatEntity) return false;
+        if (e instanceof RatEntity || e instanceof KingRatEntity) return false;
+        if (isAlly()) return e instanceof Cat || e instanceof Ocelot;
         if (e instanceof Cat || e instanceof Ocelot) return true;
         if (isAngry()) return false;
         if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
@@ -143,6 +184,15 @@ public class RatEntity extends PathfinderMob {
         super.tick();
         if (level().isClientSide) { clientTick(); return; }
         if (alarmTicks > 0) alarmTicks--;
+        if (allyTicks > 0 && --allyTicks == 0) {   // acabou o tempo da flauta
+            allyOwner = null;
+            setTarget(null);
+            if (fluteBand && level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, getX(), getY() + 0.2, getZ(), 8, 0.2, 0.2, 0.2, 0.02);
+                discard();
+                return;
+            }
+        }
         if (swarmTicks > 0 && --swarmTicks == 0 && rallyTicks == 0) setTarget(null);
         if (rallyTicks > 0 && --rallyTicks == 0 && swarmTicks == 0) setTarget(null);
         if (eatTicks > 0 && --eatTicks == 0 && getState() == ST_EAT) setState(ST_NORMAL);
@@ -261,6 +311,7 @@ public class RatEntity extends PathfinderMob {
         super.addAdditionalSaveData(tag);
         tag.putInt("RatVariant", getVariant());
         tag.putInt("RatSwarm", swarmTicks);
+        if (allyOwner != null && allyTicks > 0) { tag.putUUID("RatAllyOwner", allyOwner); tag.putInt("RatAllyTicks", allyTicks); tag.putBoolean("RatFluteBand", fluteBand); }
     }
 
     @Override
@@ -268,9 +319,48 @@ public class RatEntity extends PathfinderMob {
         super.readAdditionalSaveData(tag);
         entityData.set(VARIANT, tag.getInt("RatVariant"));
         swarmTicks = tag.getInt("RatSwarm");
+        if (tag.hasUUID("RatAllyOwner")) { allyOwner = tag.getUUID("RatAllyOwner"); allyTicks = tag.getInt("RatAllyTicks"); fluteBand = tag.getBoolean("RatFluteBand"); }
     }
 
     // ================================================================== OBJETIVOS
+
+    // aliado da flauta: segue o dono (teleporta se ficar muito longe)
+    static class AllyFollowGoal extends Goal {
+        private final RatEntity r;
+        AllyFollowGoal(RatEntity r) { this.r = r; setFlags(EnumSet.of(Flag.MOVE)); }
+        @Override public boolean canUse() { Player o = r.allyOwner(); return o != null && r.getTarget() == null && r.distanceToSqr(o) > 6 * 6; }
+        @Override public boolean canContinueToUse() { Player o = r.allyOwner(); return o != null && r.getTarget() == null && r.distanceToSqr(o) > 3 * 3; }
+        @Override public void tick() {
+            Player o = r.allyOwner();
+            if (o == null) return;
+            if (r.distanceToSqr(o) > 24 * 24) { r.moveTo(o.getX(), o.getY(), o.getZ(), r.getYRot(), 0); r.getNavigation().stop(); return; }
+            if (r.tickCount % 10 == 0) r.getNavigation().moveTo(o, 1.4);
+        }
+        @Override public void stop() { r.getNavigation().stop(); }
+    }
+
+    // aliado da flauta: ataca quem bateu no dono, quem o dono atacou ou o monstro mais perto do dono
+    static class AllyDefendGoal extends net.minecraft.world.entity.ai.goal.target.TargetGoal {
+        private final RatEntity r;
+        private LivingEntity pick;
+        AllyDefendGoal(RatEntity r) { super(r, false); this.r = r; setFlags(EnumSet.of(Flag.TARGET)); }
+        @Override public boolean canUse() {
+            Player o = r.allyOwner();
+            if (o == null) return false;
+            pick = valid(o.getLastHurtByMob()) ? o.getLastHurtByMob() : valid(o.getLastHurtMob()) ? o.getLastHurtMob() : null;
+            if (pick == null) {
+                for (net.minecraft.world.entity.Mob m : r.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, o.getBoundingBox().inflate(10),
+                        m -> m instanceof net.minecraft.world.entity.monster.Enemy && valid(m))) {
+                    if (pick == null || m.distanceToSqr(o) < pick.distanceToSqr(o)) pick = m;
+                }
+            }
+            return pick != null && pick != r.getTarget();
+        }
+        private boolean valid(LivingEntity e) {
+            return e != null && e.isAlive() && !(e instanceof Player) && !(e instanceof RatEntity x && x.isAlly()) && r.canAttack(e);
+        }
+        @Override public void start() { r.setTarget(pick); super.start(); }
+    }
 
     // Foge correndo (estado FLEE escolhe a animacao de correr) para o ESCURO e para fora da vista de quem assustou.
     // Quando um rato se assusta, os ratos calmos por perto tambem fogem (alarme do grupo).
