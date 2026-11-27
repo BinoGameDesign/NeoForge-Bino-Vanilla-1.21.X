@@ -1,3 +1,14 @@
+# (27/11) A hotbar agora e' desenhada no codigo com o vidro do inventario (client/ui/HotbarGlass.java). Aqui so ficam
+# os desenhos do jogo transparentes (o jogo continua desenhando os itens por cima).
+# Para voltar ao desenho em pixels de antes, rode com o argumento "pixels".
+import sys
+if len(sys.argv) < 2 or sys.argv[1] != 'pixels':
+    from PIL import Image
+    OUT='src/main/resources/assets/minecraft/textures/gui/sprites/hud/'
+    for n,sz in [('hotbar',(182,22)),('hotbar_selection',(24,23)),('hotbar_offhand_left',(29,24)),('hotbar_offhand_right',(29,24))]:
+        Image.new('RGBA',sz,(0,0,0,0)).save(OUT+n+'.png')
+    sys.exit(0)
+
 # Hotbar no estilo do inventario do Bino: pocos escuros arredondados (rgba(33,33,33,0.84)) com fio de luz em cima e a
 # moldura branca de selecao (igual a "select" do inventario). Substitui os desenhos do jogo (hud/hotbar*).
 from PIL import Image

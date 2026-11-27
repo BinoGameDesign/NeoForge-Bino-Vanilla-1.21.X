@@ -233,6 +233,10 @@ public final class BendyPlayer {
         m.head.copyFrom(r.head); m.body.copyFrom(r.body);
         m.rightArm.copyFrom(r.rArm); m.leftArm.copyFrom(r.lArm);
         m.rightLeg.copyFrom(r.rLeg); m.leftLeg.copyFrom(r.lLeg);
+        // (27/11) o modelo da peca e' o mesmo do mundo: o corpo da primeira pessoa esconde o capacete e a manga do braco
+        // com item, e isso ficava valendo aqui. No menu mostra tudo (o mundo escolhe de novo a cada quadro).
+        m.head.visible = true; m.hat.visible = true; m.body.visible = true;
+        m.rightArm.visible = true; m.leftArm.visible = true; m.rightLeg.visible = true; m.leftLeg.visible = true;
         switch (slot) {
             case HEAD -> { m.head.render(ps, vc, light, overlay, color); m.hat.render(ps, vc, light, overlay, color); }
             case CHEST -> { m.body.render(ps, vc, light, overlay, color); m.rightArm.render(ps, vc, light, overlay, color); m.leftArm.render(ps, vc, light, overlay, color); }
